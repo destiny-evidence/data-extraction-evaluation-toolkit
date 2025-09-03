@@ -58,32 +58,32 @@ jobs:
       - name: Run test with pytest
         run: uv run pytest --cov=src/app --cov-report=xml
 
-      - name: Code coverage reporting
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: coverage.xml
-          badge: true
-          fail_below_min: true
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: file
-          thresholds: "80 90"
+      # - name: Code coverage reporting
+      #   uses: irongut/CodeCoverageSummary@v1.3.0
+      #   with:
+      #     filename: coverage.xml
+      #     badge: true
+      #     fail_below_min: true
+      #     format: markdown
+      #     hide_branch_rate: false
+      #     hide_complexity: true
+      #     indicators: true
+      #     output: file
+      #     thresholds: "80 90"
 
-      - name: Add title to coverage markdown file
-        run: |
-          echo '## data-extraction-evaluation-toolkit coverage' > fetch-abstracts-coverage-results.md
-          echo '---' >> data-extraction-evaluation-toolkit.md
-          cat code-coverage-results.md >> data-extraction-evaluation-toolkit-results.md
+      # - name: Add title to coverage markdown file
+      #   run: |
+      #     echo '## data-extraction-evaluation-toolkit coverage' > fetch-abstracts-coverage-results.md
+      #     echo '---' >> data-extraction-evaluation-toolkit.md
+      #     cat code-coverage-results.md >> data-extraction-evaluation-toolkit-results.md
 
-      - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
-        with:
-          header: "data-extraction-evaluation-toolkit Coverage"
-          recreate: true
-          path: data-extraction-evaluation-toolkit-coverage-results.md
+      # - name: Add Coverage PR Comment
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   if: github.event_name == 'pull_request'
+      #   with:
+      #     header: "data-extraction-evaluation-toolkit Coverage"
+      #     recreate: true
+      #     path: data-extraction-evaluation-toolkit-coverage-results.md
 
       - name: Minimize uv cache
         run: uv cache prune --ci
