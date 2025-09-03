@@ -1,0 +1,77 @@
+[dependency-groups]
+dev = [
+    "mypy>=1.17.1",
+    "pre-commit>=4.3.0",
+    "pytest-cov>=6.2.1",
+    "pytest-env>=1.1.5",
+    "pytest-mock>=3.14.1",
+    "pytest>=8.4.1",
+    "ruff>=0.12.11",
+]
+
+[project]
+authors = [
+    "Nik Loynes <n.loynes@ucl.ac.uk>",
+]
+dependencies = [
+    "pydantic-settings>=2.10.1",
+    "pydantic>=2.11.7",
+]
+description = " A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
+name = "data-extraction-evaluation-toolkit"
+readme = "README.md"
+requires-python = ">=3.12.11"
+version = "0.1.0"
+
+[tool.mypy]
+explicit_package_bases = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
+pythonpath = "."
+testpaths = ["tests"]
+
+[tool.ruff]
+extend-exclude = ["app/migrations/versions/*.py", "docs/*.py"]
+fix = true
+force-exclude = true
+target-version = "py312"
+lint.ignore = [
+    "ANN003", # kwargs type annotation required
+    "ARG002", # kwargs unused
+    "COM812", # trailing commas (ruff-format recommended)
+    "D104", # module docstring
+    "D203", # no-blank-line-before-class
+    "D205", # missing-blank-line-after-summary
+    "D212", # multi-line-summary-first-line
+    "D403", # forcing upper-case
+    "D407", # removed dashes lines under sections
+    "D417", # argument description in docstring (unreliable)
+    "E501", # let's keep this for now (long lines)
+    "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
+    "ISC001", # simplify implicit str concatenation (ruff-format recommended)
+    "TD002", # name for TO DO
+    "TD003", # pedantic issue number requester in to dos
+]
+lint.per-file-ignores = {"tests*" = [
+    "ANN001", # No return type annotation
+    "ANN201", # No return type annotation
+    "ARG001", # Unused function argument
+    "D100", # Missing docstring in public module
+    "D103", # Missing docstring in public function
+    "INP001", # File is part of an implicit namespace package.
+    "PLR0913", # Too many arguments in function definition
+    "PLR2004", # Magic value used in comparison
+    "S101", # Use of `assert` detected,
+]}
+lint.select = ["ALL"]
+lint.mccabe.max-complexity = 18
+lint.pep8-naming.classmethod-decorators = ["classmethod"]
+
+[tool.tomlsort]
+all = true
+spaces_indent_inline_array = 4
+trailing_comma_inline_array = true
+overrides."project.classifiers".inline_arrays = false
+overrides."tool.coverage.paths.source".inline_arrays = false
