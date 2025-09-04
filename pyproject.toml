@@ -15,8 +15,10 @@ authors = [
 ]
 dependencies = [
     "destiny-sdk>=0.3.0",
+    "marker-pdf>=1.9.1",
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
+    "pypandoc>=1.15",
 ]
 description = " A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
