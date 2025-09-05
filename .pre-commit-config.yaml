@@ -38,10 +38,41 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-case-conflict
+        exclude: |
+          (?x)^(
+              (tests/test_files/.*)|
+          )$
+
       - id: check-docstring-first
+        exclude: |
+          (?x)^(
+              (tests/test_files/.*)|
+          )$
+
+
       - id: check-merge-conflict
+        exclude: |
+          (?x)^(
+              (tests/test_files/.*)|
+          )$
+
       - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+              (tests/test_files/.*)|
+          )$
+
       - id: mixed-line-ending
+        exclude: |
+          (?x)^(
+              (tests/test_files/.*)|
+          )$
+
         args:
           - --fix=lf
       - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+              (tests/test_files/.*)|
+          )$
+

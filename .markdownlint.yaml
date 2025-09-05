@@ -1,3 +1,5 @@
 ---
 # Markdown linting rules to ignore.
 MD013: false #  line-length
+ignore:
+  - "tests/**"
