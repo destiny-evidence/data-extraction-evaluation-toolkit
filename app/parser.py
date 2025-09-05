@@ -108,7 +108,7 @@ class DocumentParser:
     def __call__(
         self,
         input_file: str | PathLike,
-        output_file: str | PathLike | None,
+        output_file: str | PathLike | None = None,
         parser: ParserLibrary | None = None,
         input_file_type: InputFileType | None = None,
         *,
@@ -181,6 +181,25 @@ class DocumentParser:
 
         """
         return parse_method(input_file, parser)
+
+    @staticmethod
+    def write_to_file(parsed_text: str, output_file: str | PathLike) -> str:
+        """
+        Write parsed text to markdown file.
+
+        Args:
+            parsed_text (str): _description_
+            output_file (str | PathLike): _description_
+
+        Returns:
+            str: _description_
+
+        """
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+
+        Path(output_file).write_text(parsed_text, encoding="utf-8")
+
+        return str(output_file)
 
     @staticmethod
     def detect_filetype(file: str | PathLike) -> InputFileType:
