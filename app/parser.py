@@ -1,12 +1,19 @@
 """Utilities for parsing input files (e.g. pdf) for documents into output files (e.g. md)."""
 
+from collections.abc import Callable
 from enum import StrEnum, auto
 from os import PathLike
+from pathlib import Path
+from typing import Any
 
 import pypandoc
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
-from marker.output import save_output, text_from_rendered
+from marker.output import text_from_rendered
+
+# init marker converter
+artifact_dict = create_model_dict()
+converter = PdfConverter(artifact_dict=artifact_dict)
 
 
 class InvalidInputFileTypeError(Exception):
@@ -15,6 +22,26 @@ class InvalidInputFileTypeError(Exception):
 
     Args:
         Exception (_type_):
+
+    """
+
+
+class FileParserMismatchError(Exception):
+    """
+    Raise when we have an input-file <> parser mismatch.
+
+    Args:
+        Exception (_type_):
+
+    """
+
+
+class BadEnglishError(Exception):
+    """
+    Raise when our rudimentary English checker fails.
+
+    Args:
+        Exception (_type_): _description_
 
     """
 
@@ -64,10 +91,17 @@ class DocumentParser:
             default_parser_pdf (ParserLibrary, optional): _description_. Defaults to 'marker'.
             default_parser_epub (ParserLibrary, optional): _description_. Defaults to 'pandoc'.
             default_parser_html (ParserLibrary, optional): _description_. Defaults to 'pandoc'.
+
         """
         self.default_parser_epub = default_parser_epub
         self.default_parser_html = default_parser_html
         self.default_parser_pdf = default_parser_pdf
+
+        self.input_file_parser_method_map = {
+            InputFileType.PDF: self.parse_pdf,
+            InputFileType.EPUB: self.parse_epub,
+            InputFileType.HTML: self.parse_html,
+        }
 
     def __call__(
         self,
@@ -75,6 +109,8 @@ class DocumentParser:
         output_file: str | PathLike | None,
         parser: ParserLibrary | None = None,
         input_file_type: InputFileType | None = None,
+        *,
+        check_language: bool = False,
         **kwargs,
     ) -> str:
         """
@@ -92,7 +128,57 @@ class DocumentParser:
             str: _description_
 
         """
-        return "test"
+        if not input_file_type:
+            input_file_type = self.detect_filetype(input_file)
+        if input_file_type not in InputFileType:
+            raise InvalidInputFileTypeError
+
+        if not parser:
+            parser = self.__getattribute__(f"default_parser_{input_file_type.value}")
+        if parser is None:  # for pedantic mypy
+            raise ValueError
+
+        parse_method = self.input_file_parser_method_map.get(input_file_type)
+        if parse_method is None:
+            raise InvalidInputFileTypeError
+
+        parsed_text = self.parse(
+            input_file=input_file, parser=parser, parse_method=parse_method, **kwargs
+        )
+
+        if check_language and not self.check_text_is_english(parsed_text):
+            bad_english_error = f"{input_file} was not parsed with good English."
+            raise BadEnglishError(bad_english_error)
+
+        if output_file:
+            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+            with Path(output_file).open("w") as outfile:
+                outfile.write(parsed_text)
+                return str(output_file)
+        return parsed_text
+
+    def parse(
+        self,
+        input_file: str | PathLike,
+        parser: ParserLibrary,
+        parse_method: Callable[[str | PathLike[Any], ParserLibrary], str],
+        **kwargs,
+    ) -> str:
+        """
+        Parse target file.
+        Wraps around specific parser methods.
+
+        Args:
+            input_file (str | PathLike): _description_
+            input_file_type (InputFileType): _description_
+            parser (ParserLibrary): _description_
+            parse_method (Callable[[str  |  PathLike, ParserLibrary], str]): _description_
+
+        Returns:
+            str: _description_
+
+        """
+        return parse_method(input_file, parser)
 
     @staticmethod
     def detect_filetype(file: str | PathLike) -> InputFileType:
@@ -116,13 +202,82 @@ class DocumentParser:
         return InputFileType(extension)
 
     @staticmethod
-    def parse_pdf(file: str | PathLike, parser: ParserLibrary):
-        pass
+    def parse_pdf(file: str | PathLike, parser: ParserLibrary) -> str:
+        """
+        Parse pdf file to string in md format.
+
+        Args:
+            file (str | PathLike): Path to pdf file.
+            parser (ParserLibrary): The Parser to use.
+
+        Raises:
+            FileParserMismatchError: If an illegal parser was selected.
+
+        Returns:
+            str: The text, as str, formatted as markdown.
+
+        """
+        if parser == ParserLibrary.MARKER:
+            rendered = converter(file)
+            # right now we are discarding metadata and images.
+            text, metadata, images = text_from_rendered(rendered)
+            return text
+        # here, we could implement the other pdf parsers.
+        bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
+        raise FileParserMismatchError(bad_parser_file_combo)
 
     @staticmethod
-    def parse_epub(file: str | PathLike, parser: ParserLibrary):
-        pass
+    def parse_epub(file: str | PathLike, parser: ParserLibrary) -> str:
+        """
+        Parse epub file to string in md format.
+
+        Args:
+            file (str | PathLike): Path to epub file.
+            parser (ParserLibrary): The Parser to use.
+
+        Raises:
+            FileParserMismatchError: If an illegal parser was selected.
+
+        Returns:
+            str: The text, as str, formatted as markdown.
+
+        """
+        if parser == ParserLibrary.PANDOC:
+            return pypandoc.convert_file(file, to="md", format="epub")
+        bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
+        raise FileParserMismatchError(bad_parser_file_combo)
 
     @staticmethod
-    def parse_html(file: str | PathLike, parser: ParserLibrary):
-        pass
+    def parse_html(file: str | PathLike, parser: ParserLibrary) -> str:
+        """
+        Parse html file to string in md format.
+
+        Args:
+            file (str | PathLike): Path to html file.
+            parser (ParserLibrary): The Parser to use.
+
+        Raises:
+            FileParserMismatchError: If an illegal parser was selected.
+
+        Returns:
+            str: The text, as str, formatted as markdown.
+
+        """
+        if parser == ParserLibrary.PANDOC:
+            return pypandoc.convert_file(file, to="md", format="html")
+        bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
+        raise FileParserMismatchError(bad_parser_file_combo)
+
+    @staticmethod
+    def check_text_is_english(parsed_text: str) -> bool:  # noqa: ARG004
+        """
+        Check if parsed text is intelligible English.
+
+        Args:
+            parsed_text (str): the parsed text as string.
+
+        Returns:
+            bool: Indicating whether it's 'proper' English or not.
+
+        """
+        return True

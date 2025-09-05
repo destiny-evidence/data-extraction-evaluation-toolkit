@@ -16,6 +16,7 @@ authors = [
 dependencies = [
     "destiny-sdk>=0.3.0",
     "marker-pdf>=1.9.1",
+    "pydantic-extra-types>=2.10.5",
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
     "pypandoc>=1.15",
@@ -29,6 +30,14 @@ version = "0.1.0"
 [tool.mypy]
 explicit_package_bases = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "pypandoc.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "marker.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
