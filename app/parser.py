@@ -11,6 +11,8 @@ from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
 
+from app.assess_text_quality import is_english
+
 # init marker converter
 artifact_dict = create_model_dict()
 converter = PdfConverter(artifact_dict=artifact_dict)
@@ -269,7 +271,7 @@ class DocumentParser:
         raise FileParserMismatchError(bad_parser_file_combo)
 
     @staticmethod
-    def check_text_is_english(parsed_text: str) -> bool:  # noqa: ARG004
+    def check_text_is_english(parsed_text: str) -> bool:
         """
         Check if parsed text is intelligible English.
 
@@ -280,4 +282,4 @@ class DocumentParser:
             bool: Indicating whether it's 'proper' English or not.
 
         """
-        return True
+        return is_english(parsed_text)
