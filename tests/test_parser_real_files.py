@@ -21,10 +21,10 @@ def _normalise(text: str) -> str:
     return re.sub(r"(?m)^\s*(#\s*)", r"\1", text)
 
 
-# def test_real_pdf_parses_correctly(valid_parsed_pdf):
-#     parser = DocumentParser()
-#     parsed = parser(input_file="tests/test_files/input/Abroms_2008.pdf").lower()
-#     assert _normalise(parsed) == _normalise(valid_parsed_pdf)
+def test_real_pdf_parses_correctly(valid_parsed_pdf):
+    parser = DocumentParser()
+    parsed = parser(input_file="tests/test_files/input/vieira_2008.pdf").lower()
+    assert _normalise(parsed) == _normalise(valid_parsed_pdf)
 
 
 def test_real_epub_parses_correctly(valid_parsed_epub):
@@ -42,7 +42,7 @@ def test_real_html_parses_correctly(valid_parsed_html):
 def test_output_file_is_written(tmp_path, valid_parsed_pdf):
     parser = DocumentParser()
     out = tmp_path / "out.md"
-    parser("tests/test_files/input/Abroms_2008.pdf", output_file=out)
+    parser("tests/test_files/input/vieira_2008.pdf", output_file=out)
     assert Path(out).is_file()
 
 
