@@ -2,8 +2,14 @@
 
 import re
 
+from nltk import download
 from nltk.corpus import brown
+from nltk.data import find
 
+try:
+    find("corpora/brown")
+except LookupError:
+    download("brown")
 bc_brown = {x.lower() for x in brown.words()}
 
 

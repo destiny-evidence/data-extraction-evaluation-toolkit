@@ -46,7 +46,7 @@ def mock_pypandoc(monkeypatch):
     """Stub `pypandoc.convert_file`."""
     monkeypatch.setattr(
         "app.parser.pypandoc.convert_file",
-        lambda file, to, _format: f"converted {file} to {to} ({_format})",
+        lambda file, to, format: f"converted {file} to {to} ({format})",
     )
 
 
@@ -97,10 +97,12 @@ def test_documentparser_parser_none_raises_value_error(mock_pypandoc, mock_is_en
     monkeypatch.setattr(
         DocumentParser,
         "detect_filetype",
-        lambda _: InputFileType.PDF,  # ``self``/``cls`` is ignored
+        lambda self,  # noqa: ARG005
+        input_file: InputFileType.PDF,  # Ensure self is included, # noqa: ARG005
     )
+
     # PT011: give a match string so Ruff knows this is a real test
-    with pytest.raises(ValueError, match="default_parser_pdf"):
+    with pytest.raises(ValueError, match="no parser supplied."):
         p("any.pdf")
     monkeypatch.undo()
 

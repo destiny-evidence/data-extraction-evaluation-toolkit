@@ -138,11 +138,13 @@ class DocumentParser:
         if not parser:
             parser = self.__getattribute__(f"default_parser_{input_file_type.value}")
         if parser is None:  # for pedantic mypy
-            raise ValueError
+            missing_parser = "no parser supplied."
+            raise ValueError(missing_parser)
 
         parse_method = self.input_file_parser_method_map.get(input_file_type)
         if parse_method is None:
-            raise InvalidInputFileTypeError
+            missing_parse_method = "no parse method supplied."
+            raise InvalidInputFileTypeError(missing_parse_method)
 
         parsed_text = self.parse(
             input_file=input_file, parser=parser, parse_method=parse_method, **kwargs
