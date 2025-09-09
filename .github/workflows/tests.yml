@@ -45,17 +45,29 @@ jobs:
             uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
             uv-${{ runner.os }}
 
+      - name: Install Pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
-      - name: Run test with pytest
+      - name: Run tests with pytest
         run: |
-          if [ "${{ github.event.pull_request.base.ref }}" == "main" ]; then
-            # Omit --ignore for PRs to main
-            uv run pytest --cov=app/ --cov-report=xml
+          TARGET_BRANCH=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
           else
-            # Include --ignore for PRs to development
-            uv run pytest --ignore=tests/test_parser_real_files.py --cov=app/ --cov-report=xml
+            TARGET_BRANCH="${{ github.ref_name }}"
+          fi
+
+          echo "Target branch is: $TARGET_BRANCH"
+
+          if [ "$TARGET_BRANCH" = "main" ]; then
+            echo "Running all tests (including real files)..."
+            uv run pytest --cov=app --cov-report=xml
+          else
+            echo "Omitting real file parser tests..."
+            uv run pytest --ignore=tests/test_parser_real_files.py --cov=app --cov-report=xml
           fi
 
       - name: Code coverage reporting
