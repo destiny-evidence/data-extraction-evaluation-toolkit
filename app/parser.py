@@ -101,7 +101,7 @@ class DocumentParser:
         self.default_parser_pdf = default_parser_pdf
 
         logger.debug(f"default epub parser: {self.default_parser_epub}")
-        logger.debug(f"default epub parser: {self.default_parser_html}")
+        logger.debug(f"default html parser: {self.default_parser_html}")
         logger.debug(f"default pdf parser: {self.default_parser_pdf}")
 
         self.input_file_parser_method_map = {
