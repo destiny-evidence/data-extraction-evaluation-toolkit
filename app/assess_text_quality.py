@@ -22,6 +22,10 @@ class EmptyTextError(Exception):
 
     """
 
+    def __init__(self, msg: str = "Supplied text is empty.", *args, **kwargs) -> None:  # noqa: ANN002
+        """Init the exception with default message."""
+        super().__init__(msg, *args, **kwargs)
+
 
 def is_english(text: str, threshold: float = 0.2) -> bool:
     """
@@ -32,7 +36,6 @@ def is_english(text: str, threshold: float = 0.2) -> bool:
         threshold (float, optional): _description_. Defaults to 0.2.
 
     Raises:
-        EmptyTextError: _description_
         EmptyTextError: _description_
 
     Returns:
