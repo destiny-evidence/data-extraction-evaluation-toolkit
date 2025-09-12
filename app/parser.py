@@ -256,7 +256,7 @@ class DocumentParser:
             str: The text, as str, formatted as markdown.
 
         """
-        logger.debug(f"parsing file {file!r} using parser {parser.value}...")
+        logger.debug(f"parsing file {file} using parser {parser.value}...")
         if parser == ParserLibrary.MARKER:
             rendered = converter(file)
             # right now we are discarding metadata and images.
@@ -283,7 +283,7 @@ class DocumentParser:
             str: The text, as str, formatted as markdown.
 
         """
-        logger.debug(f"parsing file {file!r} using parser {parser.value}...")
+        logger.debug(f"parsing file {file} using parser {parser.value}...")
         if parser == ParserLibrary.PANDOC:
             logger.debug("successfully parsed epub.")
             return pypandoc.convert_file(file, to="md", format="epub")
@@ -306,7 +306,7 @@ class DocumentParser:
             str: The text, as str, formatted as markdown.
 
         """
-        logger.debug(f"parsing file {file!r} using parser {parser.value}...")
+        logger.debug(f"parsing file {file} using parser {parser.value}...")
         if parser == ParserLibrary.PANDOC:
             logger.debug("successfully parsed html.")
             return pypandoc.convert_file(file, to="md", format="html")
