@@ -12,16 +12,16 @@ In addition to offering an end-to-end workflow for data extraction, this softwar
 
 ## Installation
 
-### Installing pandoc
+### Installing `pandoc`
 
-This software depends on [pandoc](https://pandoc.org/), a widespread open source file/document conversion utility. In this codebase, this is implemented using `pypandoc`, but this depends on `pandoc` being installed at a system level.
+This software depends on [`pandoc`](https://pandoc.org/), a widespread open source file/document conversion utility. In this codebase, this is implemented using `pypandoc`, but this depends on `pandoc` being installed at a system level.
 
 ```shell
 brew install pandoc # mac
 apt install pandoc # ubuntu/debian
 choco install pandoc # windows
 ```
-
+### Installing `uv`
 [uv](https://docs.astral.sh/uv) is used for dependency management and managing virtual environments. You can install uv either using pipx or the uv installer script:
 
 ```sh
