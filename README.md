@@ -4,7 +4,7 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 
 ## tl, dr
 
-A key innovation the Destiny project seeks to deliver is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can be assessed for in/exclusion in target systematic reviews with minimal human involvement, thereby freeing up researchers to dedicate time and resources towards higher-value tasks.
+A key innovation the Destiny project seeks to deliver is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
 
 This software enables this end-to-end process, through leveraging LLMs (Large Language Models) for extraction, benchmarking and classification of such data extraction tasks. `data-extraction-evaluation-toolkit` is conveived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more LLM-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
 
