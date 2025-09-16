@@ -1,52 +1,29 @@
 """Utilities for parsing input files (e.g. pdf) for documents into output files (e.g. md)."""
 
 from collections.abc import Callable
-from enum import StrEnum, auto
+from enum import Enum, StrEnum, auto
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import pypandoc
 from loguru import logger
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
+from pydantic import BaseModel, Field
 
 from app.assess_text_quality import is_english
+from app.exceptions import (
+    BadEnglishError,
+    FileParserMismatchError,
+    InvalidInputFileTypeError,
+    InvalidOutputFileTypeError,
+)
 
 # init marker converter
 artifact_dict = create_model_dict()
 converter = PdfConverter(artifact_dict=artifact_dict)
-
-
-class InvalidInputFileTypeError(Exception):
-    """
-    Raise when user supplies a not permitted input file type.
-
-    Args:
-        Exception (_type_):
-
-    """
-
-
-class FileParserMismatchError(Exception):
-    """
-    Raise when we have an input-file <> parser mismatch.
-
-    Args:
-        Exception (_type_):
-
-    """
-
-
-class BadEnglishError(Exception):
-    """
-    Raise when our rudimentary English checker fails.
-
-    Args:
-        Exception (_type_): _description_
-
-    """
 
 
 class InputFileType(StrEnum):
@@ -61,21 +38,52 @@ class InputFileType(StrEnum):
     PDF = auto()
     EPUB = auto()
     HTML = auto()
-    JPEG = auto()
-    PNG = auto()
 
 
-class ParserLibrary(StrEnum):
+class OutputFileType(StrEnum):
     """
-    Enumeration of permitted (external) parser libraries.
+    Enumeration of permitted output file types.
 
     Args:
         StrEnum (_type_):
 
     """
 
-    MARKER = auto()
-    PANDOC = auto()
+    MD = auto()
+    PNG = auto()
+    JSON = auto()
+
+
+class ParserBase(BaseModel):
+    """Generic data model for a Parser."""
+
+    name: str
+    input_file_types: list[InputFileType]
+    output_file_types: list[OutputFileType]
+
+    class Config:  # noqa: D106
+        use_enum_values = True
+
+
+class MarkerParser(ParserBase):
+    """Data model for the marker parser."""
+
+    name = "marker"
+    input_file_types = ["pdf"]
+    output_file_types = ["md", "png", "json"]
+
+
+class PandocParser(ParserBase):
+    """Data model for the pandoc parser."""
+
+    name = "pandoc"
+    input_file_types = ["epub", "html"]
+    output_file_types = ["md"]
+
+
+ParserLibrary = Annotated[
+    MarkerParser | PandocParser, Field(discriminator="parser type")
+]
 
 
 class DocumentParser:
@@ -83,9 +91,9 @@ class DocumentParser:
 
     def __init__(
         self,
-        default_parser_pdf: ParserLibrary = ParserLibrary.MARKER,
-        default_parser_epub: ParserLibrary = ParserLibrary.PANDOC,
-        default_parser_html: ParserLibrary = ParserLibrary.PANDOC,
+        default_parser_pdf: ParserLibrary = MarkerParser,
+        default_parser_epub: ParserLibrary = PandocParser,
+        default_parser_html: ParserLibrary = PandocParser,
     ) -> None:
         """
         Initialise instance of DocumentParser with default parsers.
@@ -113,10 +121,12 @@ class DocumentParser:
     def __call__(
         self,
         input_file: str | PathLike,
-        output_file: str | PathLike | None = None,
+        out_path: str | PathLike | None = None,
         parser: ParserLibrary | None = None,
         input_file_type: InputFileType | None = None,
         *,
+        save_images: bool = False,
+        save_metadata: bool = False,
         check_language: bool = False,
         **kwargs,
     ) -> str:
@@ -130,6 +140,9 @@ class DocumentParser:
                                                      uses the default parser.
             input_file_type (InputFileType | None, optional): _description_. Defaults to None.
                                                              If None, infers file type using `detect_filetype`.
+            save_images (bool): Defaults to False. Whether to write parsed images (png) to file, or not. `out_path`
+                                can't be None.
+            save_metadata (bool): Defaults to None. Whether to write parsed metadata (json).
 
         Returns:
             str: _description_
@@ -162,15 +175,23 @@ class DocumentParser:
         logger.debug(f"parse method: {parse_method}.")
 
         parsed_text = self.parse(
-            input_file=input_file, parser=parser, parse_method=parse_method, **kwargs
+            input_file=input_file,
+            parser=parser,
+            parse_method=parse_method,
+            save_images=save_images,
+            save_metadata=save_metadata,
+            **kwargs,
         )
 
         if check_language and not self.check_text_is_english(parsed_text):
             bad_english_error = f"{input_file} was not parsed with good English."
             raise BadEnglishError(bad_english_error)
 
-        if output_file:
-            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+        if out_path:
+            Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+            if Path(out_path).is_file():
+
+
             with Path(output_file).open("w") as outfile:
                 outfile.write(parsed_text)
                 return str(output_file)
@@ -181,6 +202,9 @@ class DocumentParser:
         input_file: str | PathLike,
         parser: ParserLibrary,
         parse_method: Callable[[str | PathLike[Any], ParserLibrary], str],
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
         **kwargs,
     ) -> str:
         """
@@ -197,26 +221,37 @@ class DocumentParser:
             str: _description_
 
         """
-        return parse_method(input_file, parser)
+        if return_metadata and "json" not in parser.output_file_types:
+            metadata_not_allowed = (
+                f"metadata out not permitted for parser {parser.name}."
+            )
+            raise InvalidOutputFileTypeError(metadata_not_allowed)
+        if return_images and "png" not in parser.output_file_types:
+            images_not_allowed = f"images out not permitted for parser {parser.name}."
+            raise InvalidOutputFileTypeError(images_not_allowed)
 
-    @staticmethod
-    def write_to_file(parsed_text: str, output_file: str | PathLike) -> str:
-        """
-        Write parsed text to markdown file.
+        return parse_method(
+            input_file, parser, return_metadata, return_images, **kwargs
+        )
 
-        Args:
-            parsed_text (str): _description_
-            output_file (str | PathLike): _description_
+    # @staticmethod
+    # def write_to_markdown_file(parsed_text: str, output_file: str | PathLike) -> str:
+    #     """
+    #     Write parsed text to markdown file.
 
-        Returns:
-            str: _description_
+    #     Args:
+    #         parsed_text (str): _description_
+    #         output_file (str | PathLike): _description_
 
-        """
-        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"writing file {output_file}...")
-        Path(output_file).write_text(parsed_text, encoding="utf-8")
+    #     Returns:
+    #         str: _description_
 
-        return str(output_file)
+    #     """
+    #     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+    #     logger.debug(f"writing file {output_file}...")
+    #     Path(output_file).write_text(parsed_text, encoding="utf-8")
+
+    #     return str(output_file)
 
     @staticmethod
     def detect_filetype(file: str | PathLike) -> InputFileType:
@@ -241,7 +276,13 @@ class DocumentParser:
         return InputFileType(extension)
 
     @staticmethod
-    def parse_pdf(file: str | PathLike, parser: ParserLibrary) -> str:
+    def parse_pdf(
+        file: str | PathLike,
+        parser: ParserLibrary,
+        *,
+        return_images: bool = False,
+        return_metadata: bool = False,
+    ) -> str | tuple[str, Any, Any]:
         """
         Parse pdf file to string in md format.
 
@@ -257,15 +298,18 @@ class DocumentParser:
 
         """
         logger.debug(f"parsing file {file} using parser {parser}...")
-        if parser == ParserLibrary.MARKER:
+        if parser == MarkerParser:
             rendered = converter(file)
-            # right now we are discarding metadata and images.
             text, metadata, images = text_from_rendered(rendered)
             logger.debug("successfully parsed pdf.")
-            return text
-        # here, we could implement the other pdf parsers.
-        bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
-        raise FileParserMismatchError(bad_parser_file_combo)
+            out = text
+
+        if return_metadata:
+            out = out, metadata
+        if return_images:
+            out = out, images
+
+        return out
 
     @staticmethod
     def parse_epub(file: str | PathLike, parser: ParserLibrary) -> str:
