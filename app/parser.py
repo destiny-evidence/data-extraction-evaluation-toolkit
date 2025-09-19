@@ -54,7 +54,7 @@ class OutputFileType(StrEnum):
     JSON = auto()
 
 
-class ParserBase(BaseModel):
+class ParserLibrary(BaseModel):
     """Generic data model for a Parser."""
 
     name: str
@@ -65,25 +65,19 @@ class ParserBase(BaseModel):
         use_enum_values = True
 
 
-class MarkerParser(ParserBase):
-    """Data model for the marker parser."""
+MARKER_PARSER = ParserLibrary(
+    name="marker",
+    input_file_types=[InputFileType.PDF],
+    output_file_types=[OutputFileType.MD, OutputFileType.PNG, OutputFileType.JSON],
+)
 
-    name = "marker"
-    input_file_types = ["pdf"]
-    output_file_types = ["md", "png", "json"]
+PANDOC_PARSER = ParserLibrary(
+    name="pandoc",
+    input_file_types=[InputFileType.EPUB, InputFileType.HTML],
+    output_file_types=[OutputFileType.MD],
+)
 
-
-class PandocParser(ParserBase):
-    """Data model for the pandoc parser."""
-
-    name = "pandoc"
-    input_file_types = ["epub", "html"]
-    output_file_types = ["md"]
-
-
-ParserLibrary = Annotated[
-    MarkerParser | PandocParser, Field(discriminator="parser type")
-]
+# add more parsers here.
 
 
 class DocumentParser:
@@ -91,17 +85,17 @@ class DocumentParser:
 
     def __init__(
         self,
-        default_parser_pdf: ParserLibrary = MarkerParser,
-        default_parser_epub: ParserLibrary = PandocParser,
-        default_parser_html: ParserLibrary = PandocParser,
+        default_parser_pdf: ParserLibrary = MARKER_PARSER,
+        default_parser_epub: ParserLibrary = PANDOC_PARSER,
+        default_parser_html: ParserLibrary = PANDOC_PARSER,
     ) -> None:
         """
         Initialise instance of DocumentParser with default parsers.
 
         Args:
-            default_parser_pdf (ParserLibrary, optional): _description_. Defaults to 'marker'.
-            default_parser_epub (ParserLibrary, optional): _description_. Defaults to 'pandoc'.
-            default_parser_html (ParserLibrary, optional): _description_. Defaults to 'pandoc'.
+            default_parser_pdf (ParserLibrary, optional): _description_. Defaults to MARKER_PARSER.
+            default_parser_epub (ParserLibrary, optional): _description_. Defaults to PANDOC_PARSER.
+            default_parser_html (ParserLibrary, optional): _description_. Defaults to PANDOC_PARSER.
 
         """
         self.default_parser_epub = default_parser_epub
@@ -187,14 +181,13 @@ class DocumentParser:
             bad_english_error = f"{input_file} was not parsed with good English."
             raise BadEnglishError(bad_english_error)
 
-        if out_path:
-            Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-            if Path(out_path).is_file():
+        # if out_path:
+        #     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        #     if Path(out_path).is_file():
 
-
-            with Path(output_file).open("w") as outfile:
-                outfile.write(parsed_text)
-                return str(output_file)
+        #     with Path(output_file).open("w") as outfile:
+        #         outfile.write(parsed_text)
+        #         return str(output_file)
         return parsed_text
 
     def parse(
@@ -233,25 +226,6 @@ class DocumentParser:
         return parse_method(
             input_file, parser, return_metadata, return_images, **kwargs
         )
-
-    # @staticmethod
-    # def write_to_markdown_file(parsed_text: str, output_file: str | PathLike) -> str:
-    #     """
-    #     Write parsed text to markdown file.
-
-    #     Args:
-    #         parsed_text (str): _description_
-    #         output_file (str | PathLike): _description_
-
-    #     Returns:
-    #         str: _description_
-
-    #     """
-    #     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-    #     logger.debug(f"writing file {output_file}...")
-    #     Path(output_file).write_text(parsed_text, encoding="utf-8")
-
-    #     return str(output_file)
 
     @staticmethod
     def detect_filetype(file: str | PathLike) -> InputFileType:
@@ -298,7 +272,7 @@ class DocumentParser:
 
         """
         logger.debug(f"parsing file {file} using parser {parser}...")
-        if parser == MarkerParser:
+        if parser.name == "marker":
             rendered = converter(file)
             text, metadata, images = text_from_rendered(rendered)
             logger.debug("successfully parsed pdf.")
@@ -328,7 +302,7 @@ class DocumentParser:
 
         """
         logger.debug(f"parsing file {file} using parser {parser}...")
-        if parser == ParserLibrary.PANDOC:
+        if parser.name == "pandoc":
             logger.debug("successfully parsed epub.")
             return pypandoc.convert_file(file, to="md", format="epub")
         bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
@@ -351,7 +325,7 @@ class DocumentParser:
 
         """
         logger.debug(f"parsing file {file} using parser {parser}...")
-        if parser == ParserLibrary.PANDOC:
+        if parser.name == "pandoc":
             logger.debug("successfully parsed html.")
             return pypandoc.convert_file(file, to="md", format="html")
         bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
