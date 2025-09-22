@@ -242,10 +242,14 @@ class DocumentParser:
             bad_english_error = f"{input_file} was not parsed with good English."
             raise BadEnglishError(bad_english_error)
 
-        if out_path:
+        if out_path:  # NOTE: can we refactor this whole blocK??? seems v clunky.
             images = None
             metadata = None
-            text = parsed[0]
+            if isinstance(parsed, tuple):
+                text = parsed[0]
+            elif isinstance(parsed, str):
+                text = parsed
+
             if return_images and return_metadata:
                 metadata = parsed[1]
                 images = parsed[2]
@@ -367,6 +371,7 @@ class DocumentParser:
                 logger.warning(
                     "`write_metadata` set to True, but no metadata obj supplied."
                 )
+        logger.debug(f"required outfiles: {required_outfiles}")
 
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -398,6 +403,7 @@ class DocumentParser:
             out = dir_base / (filename_base + "." + ext)
             logger.debug(f"writing out {ext} to {out}.")
             if ext == "md":
+                logger.debug(f"text: {text}")
                 out.write_text(text)
             if ext == "json" and metadata is not None:
                 out.write_text(json.dumps(metadata))

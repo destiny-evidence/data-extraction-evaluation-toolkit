@@ -1,12 +1,14 @@
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
+from app.exceptions import InvalidInputFileTypeError, InvalidOutputFileTypeError
 from app.parser import (
     DocumentParser,
     InputFileType,
-    InvalidInputFileTypeError,
-    ParserLibrary,
+    MarkerParser,
+    PandocParser,
 )
 
 
@@ -19,7 +21,7 @@ def fake_converter(monkeypatch):
 
     # The real converter returns a dict; we only need the text part.
     class DummyRendered:
-        pass
+        metadata = {"author": "Nik", "year": 2025}
 
     dummy = DummyRendered()
     # `converter(file)` simply returns the dummy object
@@ -33,10 +35,24 @@ def fake_converter(monkeypatch):
 @pytest.fixture
 def mock_text_from_rendered(monkeypatch):
     """Stub `marker.output.text_from_rendered`."""
-    # It returns (text, metadata, images)
+    # It returns (text, extension, images)
     monkeypatch.setattr(
         "app.parser.text_from_rendered",
-        lambda _: ("dummy markdown text", {}, []),
+        lambda _: ("dummy markdown text", "md", []),
+    )
+
+
+@pytest.fixture
+def mock_text_from_rendered_img_meta(monkeypatch):
+    """Stub `marker.output.text_from_rendered`."""
+    dummy_img = Image.new("RGB", (10, 10))
+    monkeypatch.setattr(
+        "app.parser.text_from_rendered",
+        lambda _: (
+            "dummy markdown text",
+            "md",
+            {"img1.jpg": dummy_img, "img2.jpg": dummy_img},
+        ),
     )
 
 
@@ -106,43 +122,50 @@ def test_documentparser_parser_none_raises_value_error(mock_pypandoc, mock_is_en
     monkeypatch.undo()
 
 
-def test_parse_pdf_marker_success(
-    fake_converter, mock_text_from_rendered, mock_is_english
-):
+def test_markerparser_success(fake_converter, mock_text_from_rendered, mock_is_english):
     """When Marker is used for a PDF, the returned text matches the stub."""
-    txt = DocumentParser.parse_pdf("any.pdf", ParserLibrary.MARKER)
-    assert txt == "dummy markdown text"
+    parser = DocumentParser()
+    txt = parser("any.pdf", parser=MarkerParser)
+    assert isinstance(txt, tuple)
+    assert txt[0] == "dummy markdown text"
+    assert len(txt) == 1
 
 
-# def test_parse_pdf_bad_parser():
-#     """Using an unsupported parser for PDF raises FileParserMismatchError."""
-#     with pytest.raises(FileParserMismatchError):
-#         DocumentParser.parse_pdf("any.pdf", ParserLibrary.PANDOC)
+def test_markerparser_returns_metadata_and_images(
+    fake_converter, mock_text_from_rendered_img_meta, mock_is_english
+):
+    parser = DocumentParser()
+    result = parser(
+        "any.pdf", parser=MarkerParser, return_metadata=True, return_images=True
+    )
+    assert isinstance(result, tuple)
+    assert result[0] == "dummy markdown text"
+    # Metadata comes from rendered.metadata
+    assert result[1] == {"author": "Nik", "year": 2025}
+    assert isinstance(result[2], dict)  # images
+    for img in result[2].values():
+        assert isinstance(img, Image.Image)
 
 
 def test_parse_epub_success(mock_pypandoc, mock_is_english):
-    txt = DocumentParser.parse_epub("book.epub", ParserLibrary.PANDOC)
+    parser = DocumentParser()
+    txt = parser("book.epub", parser=PandocParser)
+    assert isinstance(txt, str)
     assert txt == "converted book.epub to md (epub)"
 
 
 def test_parse_html_success(mock_pypandoc, mock_is_english):
-    txt = DocumentParser.parse_html("page.html", ParserLibrary.PANDOC)
+    parser = DocumentParser()
+    txt = parser("page.html", parser=PandocParser)
     assert txt == "converted page.html to md (html)"
 
 
-# def test_parse_pdf_bad_parser_file_combo():
-#     with pytest.raises(FileParserMismatchError):
-#         DocumentParser.parse_pdf(file="test.pdf", parser=ParserLibrary.PANDOC)
-
-
-# def test_parse_epub_bad_parser_file_combo():
-#     with pytest.raises(FileParserMismatchError):
-#         DocumentParser.parse_epub(file="test.epub", parser=ParserLibrary.MARKER)
-
-
-# def test_parse_html_bad_parser_file_combo():
-#     with pytest.raises(FileParserMismatchError):
-#         DocumentParser.parse_html(file="test.html", parser=ParserLibrary.MARKER)
+def test_pandocparser_raises_on_metadata_or_images(mock_pypandoc, mock_is_english):
+    parser = DocumentParser()
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("book.epub", parser=PandocParser, return_metadata=True)
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("book.epub", parser=PandocParser, return_images=True)
 
 
 def test_documentparser_default_parsers(mock_pypandoc, mock_is_english):
@@ -164,20 +187,46 @@ def test_documentparser_missing_filetype_raises(tmp_txt_file):
 
 
 def test_documentparser_output_file(tmp_path, mock_pypandoc, mock_is_english):
-    """When an output_file is supplied, the parsed text is written and the path is returned."""
+    """When an out_path is supplied, the parsed text is written and the text is returned."""
     parser = DocumentParser()
     out = tmp_path / "out.md"
-    result = parser("book.epub", output_file=out)
-    assert result == str(out)
+    result = parser("book.epub", out_path=out)
+    assert result == "converted book.epub to md (epub)"
     assert out.read_text() == "converted book.epub to md (epub)"
 
 
-def test_write_to_file(tmp_path):
+def test_write_files(tmp_path):
+    parser = DocumentParser()
     out = tmp_path / "nested" / "file.md"
     txt = "Hello, world!"
-    res = DocumentParser.write_to_file(txt, out)
-    assert res == str(out)
+    parser.write_files(
+        out_path=out,
+        parser=PandocParser,
+        write_metadata=False,
+        write_images=False,
+        text=txt,
+    )
     assert out.read_text() == txt
+
+
+def test_write_files_with_metadata_and_images(tmp_path):
+    parser = DocumentParser()
+    out = tmp_path / "file.md"
+    text = "Hello, world!"
+    metadata = {"author": "Nik"}
+    images = {"img1.jpg": Image.new("RGB", (10, 10))}
+    parser.write_files(
+        out_path=out,
+        parser=MarkerParser,
+        write_metadata=True,
+        write_images=True,
+        text=text,
+        metadata=metadata,
+        images=images,
+    )
+    assert (tmp_path / "file.md").exists()
+    assert (tmp_path / "file.json").exists()
+    assert any(f.suffix == ".jpg" for f in tmp_path.iterdir())
 
 
 def test_check_text_is_english_success():
