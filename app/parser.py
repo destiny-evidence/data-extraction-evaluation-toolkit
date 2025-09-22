@@ -1,5 +1,6 @@
 """Utilities for parsing input files (e.g. pdf) for documents into output files (e.g. md)."""
 
+import json
 from collections.abc import Callable
 from enum import Enum, StrEnum, auto
 from os import PathLike
@@ -10,7 +11,8 @@ import pypandoc
 from loguru import logger
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
-from marker.output import text_from_rendered
+from marker.output import convert_if_not_rgb, text_from_rendered
+from PIL.Image import Image
 from pydantic import BaseModel, Field
 
 from app.assess_text_quality import is_english
@@ -50,7 +52,7 @@ class OutputFileType(StrEnum):
     """
 
     MD = auto()
-    PNG = auto()
+    JPEG = auto()
     JSON = auto()
 
 
@@ -94,7 +96,7 @@ class MarkerParser(ParserLibrary):
 
     name = "marker"
     input_file_types = [InputFileType.PDF]
-    output_file_types = [OutputFileType.MD, OutputFileType.PNG, OutputFileType.JSON]
+    output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
 
     @classmethod
     def parse(
@@ -107,20 +109,12 @@ class MarkerParser(ParserLibrary):
     ) -> str | tuple[str, Any, Any]:
         """Parse file using marker."""
         rendered = converter(input_file)
-        logger.debug("about to run text_from_rendered")
-        text, metadata, images = text_from_rendered(rendered)
-        logger.debug("finished")
-        # logger.debug(f"text: {text}")
-        logger.debug(f"metadata: {metadata}")
-        logger.debug(f"image: {images}")
-        logger.debug(f"return metadata : {return_metadata}")
-        logger.debug(f"return images: {return_images}")
+        text, extension, images = text_from_rendered(rendered)
         out = [text]
         if return_metadata:
-            out.append(metadata)
+            out.append(rendered.metadata)
         if return_images:
             out.append(images)
-        # logger.debug(f"out: {out}")
         return tuple(out)
 
 
@@ -142,6 +136,9 @@ class PandocParser(ParserLibrary):
     ) -> str:
         """Parse file using pandoc."""
         if True in [return_images, return_metadata]:
+            # NOTE: this is probably not the best method, as it doesn't
+            # reference input or output file types. can we think of a generic
+            # method for doing this via ParserLibrary, without using pydantic?
             image_meta_erro = "PandocParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(image_meta_erro)
         # detect input file type as explicitly supplying it would be
@@ -203,7 +200,7 @@ class DocumentParser:
                                                      uses the default parser.
             input_file_type (InputFileType | None, optional): _description_. Defaults to None.
                                                              If None, infers file type using `detect_filetype`.
-            return_images (bool): Defaults to False. Whether to write parsed images (png) to file, or not. `out_path`
+            return_images (bool): Defaults to False. Whether to write parsed images (JPEG) to file, or not. `out_path`
                                 can't be None.
             return_metadata (bool): Defaults to None. Whether to write parsed metadata (json).
 
@@ -225,7 +222,9 @@ class DocumentParser:
 
         if not parser:
             logger.debug("parser not supplied. selecting default parser for file_type.")
-            parser = self.__getattribute__(f"default_parser_{input_file_type.value}")
+            parser: ParserLibrary = self.__getattribute__(  # type: ignore[no-redef]
+                f"default_parser_{input_file_type.value}"
+            )
         if parser is None:  # for pedantic mypy
             missing_parser = "no parser supplied."
             raise ValueError(missing_parser)
@@ -238,7 +237,6 @@ class DocumentParser:
             return_metadata=return_metadata,
             **kwargs,
         )
-        logger.debug(f"managed to exit self.parse.")
 
         if check_language and (
             (isinstance(parsed, tuple) and not self.check_text_is_english(parsed[0]))
@@ -247,13 +245,27 @@ class DocumentParser:
             bad_english_error = f"{input_file} was not parsed with good English."
             raise BadEnglishError(bad_english_error)
 
-        # if out_path:
-        #     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-        #     if Path(out_path).is_file():
+        if out_path:
+            images = None
+            metadata = None
+            text = parsed[0]
+            if return_images and return_metadata:
+                metadata = parsed[1]
+                images = parsed[2]
+            if return_images and not return_metadata:
+                images = parsed[1]
+            if not return_images and return_metadata:
+                metadata = parsed[1]
 
-        #     with Path(output_file).open("w") as outfile:
-        #         outfile.write(parsed_text)
-        #         return str(output_file)
+            self.write_files(
+                out_path=out_path,
+                parser=parser,
+                write_metadata=return_metadata,
+                write_images=return_images,
+                text=text,
+                metadata=metadata,  # type: ignore[arg-type]
+                images=images,  # type: ignore[arg-type]
+            )
 
         return parsed
 
@@ -285,7 +297,7 @@ class DocumentParser:
                 f"metadata out not permitted for parser {parser.name}."
             )
             raise InvalidOutputFileTypeError(metadata_not_allowed)
-        if return_images and OutputFileType.PNG not in parser.output_file_types:
+        if return_images and OutputFileType.JPEG not in parser.output_file_types:
             images_not_allowed = f"images out not permitted for parser {parser.name}."
             raise InvalidOutputFileTypeError(images_not_allowed)
 
@@ -318,87 +330,84 @@ class DocumentParser:
         logger.debug(f"filetype is: {extension}.")
         return InputFileType(extension)
 
-    # @staticmethod
-    # def parse_pdf(
-    #     file: str | PathLike,
-    #     parser: ParserLibrary,
-    #     *,
-    #     return_images: bool = False,
-    #     return_metadata: bool = False,
-    # ) -> str | tuple[str, Any, Any]:
-    #     """
-    #     Parse pdf file to string in md format.
+    @staticmethod
+    def write_files(  # noqa: PLR0913
+        out_path: str | PathLike,
+        parser: type[ParserLibrary],
+        *,
+        write_metadata: bool,
+        write_images: bool,
+        text: str,
+        metadata: dict | None = None,
+        images: dict[str, Image] | None = None,
+    ) -> None:
+        """
+        Write parsed content to file(s).
 
-    #     Args:
-    #         file (str | PathLike): Path to pdf file.
-    #         parser (ParserLibrary): The Parser to use.
+        NOTE: we are taking existence of `out_path` as an intention to
+        write all requested objects to file. out_path can be a file or a dir.
+        if out_path is a file, we write remaining files to parent dir.
 
-    #     Raises:
-    #         FileParserMismatchError: If an illegal parser was selected.
+        Args:
+            out_path (str | PathLike): _description_
+            write_metadata (bool): _description_
+            write_images (bool): _description_
+            text (str): _description_
+            metadata (dict | None, optional): _description_. Defaults to None.
+            images (dict[str, Image] | None, optional): _description_. Defaults to None.
 
-    #     Returns:
-    #         str: The text, as str, formatted as markdown.
+        """
+        required_outfiles = ["md"]
+        if write_images:
+            required_outfiles.append("jpeg")
+            if images is None:  # or raise something?
+                logger.warning(
+                    "`write_images` set to True, but no images obj supplied."
+                )
+        if write_metadata:
+            required_outfiles.append("json")
+            if metadata is None:  # or raise something?
+                logger.warning(
+                    "`write_metadata` set to True, but no metadata obj supplied."
+                )
 
-    #     """
-    #     logger.debug(f"parsing file {file} using parser {parser}...")
-    #     if parser.name == "marker":
-    #         rendered = converter(file)
-    #         text, metadata, images = text_from_rendered(rendered)
-    #         logger.debug("successfully parsed pdf.")
-    #         out = text
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
 
-    #     if return_metadata:
-    #         out = out, metadata
-    #     if return_images:
-    #         out = out, images
+        if Path(out_path).is_file() or (
+            Path(out_path).name.split(".")[-1] in required_outfiles
+        ):
+            logger.debug(f"`out_path` {out_path} points to a file.")
 
-    #     return out
+            dir_base = Path(out_path).parent
+            filename_base = "".join(Path(out_path).name.split(".")[0:-1])
+            extension = Path(out_path).name.split(".")[-1]
+            if (extension not in parser.output_file_types) or (
+                extension not in required_outfiles
+            ):
+                bad_out_file_ext = (
+                    f"supplied out filetype {extension}",
+                    " is not permitted or not applicable ",
+                    "for parser {parser.name}",
+                )
+                raise InvalidOutputFileTypeError(bad_out_file_ext)
 
-    # @staticmethod
-    # def parse_epub(file: str | PathLike, parser: ParserLibrary) -> str:
-    #     """
-    #     Parse epub file to string in md format.
+        if Path(out_path).is_dir():
+            logger.debug(f"`out_path` {out_path} points to a dir.")
+            # we now have to get our filename base from somewhere...
+            dir_base = Path(out_path)
+            filename_base = text.split("\n")[0][:15].replace(" ", "_").lower()
 
-    #     Args:
-    #         file (str | PathLike): Path to epub file.
-    #         parser (ParserLibrary): The Parser to use.
-
-    #     Raises:
-    #         FileParserMismatchError: If an illegal parser was selected.
-
-    #     Returns:
-    #         str: The text, as str, formatted as markdown.
-
-    #     """
-    #     logger.debug(f"parsing file {file} using parser {parser}...")
-    #     if parser.name == "pandoc":
-    #         logger.debug("successfully parsed epub.")
-    #         return pypandoc.convert_file(file, to="md", format="epub")
-    #     bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
-    #     raise FileParserMismatchError(bad_parser_file_combo)
-
-    # @staticmethod
-    # def parse_html(file: str | PathLike, parser: ParserLibrary) -> str:
-    #     """
-    #     Parse html file to string in md format.
-
-    #     Args:
-    #         file (str | PathLike): Path to html file.
-    #         parser (ParserLibrary): The Parser to use.
-
-    #     Raises:
-    #         FileParserMismatchError: If an illegal parser was selected.
-
-    #     Returns:
-    #         str: The text, as str, formatted as markdown.
-
-    #     """
-    #     logger.debug(f"parsing file {file} using parser {parser}...")
-    #     if parser.name == "pandoc":
-    #         logger.debug("successfully parsed html.")
-    #         return pypandoc.convert_file(file, to="md", format="html")
-    #     bad_parser_file_combo = f"Unsupported parser {parser} for file {file}."
-    #     raise FileParserMismatchError(bad_parser_file_combo)
+        for ext in required_outfiles:
+            out = dir_base / (filename_base + "." + ext)
+            logger.debug(f"writing out {ext} to {out}.")
+            if ext == "md":
+                out.write_text(text)
+            if ext == "json" and metadata is not None:
+                out.write_text(json.dumps(metadata))
+            if ext == "jpeg" and images is not None:
+                for img_name, img in images.items():
+                    img_out = dir_base / (filename_base + "_" + img_name)
+                    img.save(img_out, ext)
 
     @staticmethod
     def check_text_is_english(parsed_text: str) -> bool:
