@@ -75,9 +75,9 @@ lint.ignore = [
     "ERA001", # allow commented code -- FOR NOW!
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
+    "RUF012", # where ruff wants type annotations using ClassVar for subclasses - mypy doesnt care, so why would we?
     "TD002", # name for TO DO
     "TD003", # pedantic issue number requester in to dos
-    "RUF012", # where ruff wants type annotations using ClassVar for subclasses - mypy doesnt care, so why would we?
 ]
 lint.per-file-ignores = {"tests*" = [
     "ANN001", # No return type annotation

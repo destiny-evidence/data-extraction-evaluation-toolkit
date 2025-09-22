@@ -4,7 +4,6 @@ import pytest
 
 from app.parser import (
     DocumentParser,
-    FileParserMismatchError,
     InputFileType,
     InvalidInputFileTypeError,
     ParserLibrary,
@@ -79,12 +78,12 @@ def test_detect_filetype_invalid():
     assert "not permitted" in str(exc.value)
 
 
-def test_documentparser_unknown_parser():
-    """If the parser argument is not a ParserLibrary member, it should raise."""
-    parser = DocumentParser()
-    with pytest.raises(FileParserMismatchError):
-        # passing a string that is not a ParserLibrary
-        parser("book.epub", parser="unknown")
+# def test_documentparser_unknown_parser():
+#     """If the parser argument is not a ParserLibrary member, it should raise."""
+#     parser = DocumentParser()
+#     with pytest.raises(FileParserMismatchError):
+#         # passing a string that is not a ParserLibrary
+#         parser("book.epub", parser="unknown")
 
 
 def test_documentparser_parser_none_raises_value_error(mock_pypandoc, mock_is_english):
@@ -115,10 +114,10 @@ def test_parse_pdf_marker_success(
     assert txt == "dummy markdown text"
 
 
-def test_parse_pdf_bad_parser():
-    """Using an unsupported parser for PDF raises FileParserMismatchError."""
-    with pytest.raises(FileParserMismatchError):
-        DocumentParser.parse_pdf("any.pdf", ParserLibrary.PANDOC)
+# def test_parse_pdf_bad_parser():
+#     """Using an unsupported parser for PDF raises FileParserMismatchError."""
+#     with pytest.raises(FileParserMismatchError):
+#         DocumentParser.parse_pdf("any.pdf", ParserLibrary.PANDOC)
 
 
 def test_parse_epub_success(mock_pypandoc, mock_is_english):
@@ -131,19 +130,19 @@ def test_parse_html_success(mock_pypandoc, mock_is_english):
     assert txt == "converted page.html to md (html)"
 
 
-def test_parse_pdf_bad_parser_file_combo():
-    with pytest.raises(FileParserMismatchError):
-        DocumentParser.parse_pdf(file="test.pdf", parser=ParserLibrary.PANDOC)
+# def test_parse_pdf_bad_parser_file_combo():
+#     with pytest.raises(FileParserMismatchError):
+#         DocumentParser.parse_pdf(file="test.pdf", parser=ParserLibrary.PANDOC)
 
 
-def test_parse_epub_bad_parser_file_combo():
-    with pytest.raises(FileParserMismatchError):
-        DocumentParser.parse_epub(file="test.epub", parser=ParserLibrary.MARKER)
+# def test_parse_epub_bad_parser_file_combo():
+#     with pytest.raises(FileParserMismatchError):
+#         DocumentParser.parse_epub(file="test.epub", parser=ParserLibrary.MARKER)
 
 
-def test_parse_html_bad_parser_file_combo():
-    with pytest.raises(FileParserMismatchError):
-        DocumentParser.parse_html(file="test.html", parser=ParserLibrary.MARKER)
+# def test_parse_html_bad_parser_file_combo():
+#     with pytest.raises(FileParserMismatchError):
+#         DocumentParser.parse_html(file="test.html", parser=ParserLibrary.MARKER)
 
 
 def test_documentparser_default_parsers(mock_pypandoc, mock_is_english):

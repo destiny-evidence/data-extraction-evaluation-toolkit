@@ -1,24 +1,21 @@
 """Utilities for parsing input files (e.g. pdf) for documents into output files (e.g. md)."""
 
 import json
-from collections.abc import Callable
-from enum import Enum, StrEnum, auto
+from enum import StrEnum, auto
 from os import PathLike
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
 import pypandoc
 from loguru import logger
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
-from marker.output import convert_if_not_rgb, text_from_rendered
+from marker.output import text_from_rendered
 from PIL.Image import Image
-from pydantic import BaseModel, Field
 
 from app.assess_text_quality import is_english
 from app.exceptions import (
     BadEnglishError,
-    FileParserMismatchError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
@@ -105,7 +102,7 @@ class MarkerParser(ParserLibrary):
         *,
         return_metadata: bool = False,
         return_images: bool = False,
-        **kwargs,
+        **kwargs,  # noqa: ARG003
     ) -> str | tuple[str, Any, Any]:
         """Parse file using marker."""
         rendered = converter(input_file)
@@ -132,7 +129,7 @@ class PandocParser(ParserLibrary):
         *,
         return_metadata: bool = False,
         return_images: bool = False,
-        **kwargs,
+        **kwargs,  # noqa: ARG003
     ) -> str:
         """Parse file using pandoc."""
         if True in [return_images, return_metadata]:

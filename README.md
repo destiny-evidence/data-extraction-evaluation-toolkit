@@ -21,7 +21,9 @@ brew install pandoc # mac
 apt install pandoc # ubuntu/debian
 choco install pandoc # windows
 ```
+
 ### Installing `uv`
+
 [uv](https://docs.astral.sh/uv) is used for dependency management and managing virtual environments. You can install uv either using pipx or the uv installer script:
 
 ```sh
