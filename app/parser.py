@@ -211,22 +211,6 @@ class DocumentParser:
             str: _description_
 
         """
-        if parser is not None and (
-            (not isinstance(parser, type)) or (not issubclass(parser, ParserLibrary))
-        ):
-            bad_parser_err = f"parser {parser} is not a valid ParserLibrary."
-            raise FileParserMismatchError(bad_parser_err)
-        if parser is None:
-            logger.debug("parser not supplied. selecting default parser for file_type.")
-            parser: type[ParserLibrary] = self.__getattribute__(  # type: ignore[no-redef]
-                f"default_parser_{input_file_type}"
-            )
-        if parser is None:  # for pedantic mypy
-            missing_parser = "no parser supplied."
-            raise ValueError(missing_parser)
-
-        logger.debug(f"parser: {parser}.")
-
         if input_file_type is None:
             logger.debug(
                 "no input file type provided. using `detect_filetype` to infer."
@@ -235,12 +219,29 @@ class DocumentParser:
                 input_file_type = InputFileType(
                     self.detect_filetype(
                         file=input_file,
-                        permitted_file_enum_list=parser.input_file_types,
+                        permitted_file_enum_list=list(InputFileType),
                     )
                 )
             except ValueError as ve:
                 raise InvalidInputFileTypeError(ve) from ve
         logger.debug(f"input file type: {input_file_type}.")
+
+        if parser is not None and (
+            (not isinstance(parser, type)) or (not issubclass(parser, ParserLibrary))
+        ):
+            bad_parser_err = f"parser {parser} is not a valid ParserLibrary."
+            raise FileParserMismatchError(bad_parser_err)
+        if parser is None and input_file_type is not None:
+            logger.debug("parser not supplied. selecting default parser for file_type.")
+            parser: type[ParserLibrary] = self.__getattribute__(  # type: ignore[no-redef]
+                f"default_parser_{input_file_type}"
+            )
+        if parser is None or (
+            parser is None and input_file_type is None
+        ):  # for pedantic mypy
+            missing_parser = "no parser supplied."
+            raise ValueError(missing_parser)
+        logger.debug(f"parser: {parser}.")
 
         parsed = self.parse(
             input_file=input_file,
