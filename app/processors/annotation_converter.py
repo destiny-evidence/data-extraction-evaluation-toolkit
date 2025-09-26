@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import uuid
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Any
 
 from destiny_sdk.references import Reference
 
+from app.logger import logger
 from app.models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -16,6 +18,9 @@ from app.models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
 )
+
+# Rebuild models to resolve forward references
+EppiDocument.model_rebuild()
 
 
 class AnnotationConverter:
@@ -422,7 +427,7 @@ class AnnotationConverter:
 
         """
         # Create the EPPI subdirectory
-        eppi_path = Path(output_dir) / "eppi"
+        eppi_path = Path(output_dir)
         eppi_path.mkdir(parents=True, exist_ok=True)
 
         saved_files = {}
@@ -474,3 +479,23 @@ class AnnotationConverter:
         saved_files["attribute_mapping"] = str(attribute_mapping_file)
 
         return saved_files
+
+
+def main() -> None:
+    """Run the annotation converter."""
+    parser = argparse.ArgumentParser(
+        description="Convert EPPI annotations to structured format"
+    )
+    parser.add_argument("input_file", help="Path to the raw EPPI JSON file")
+    parser.add_argument("output_dir", help="Directory to save processed files")
+    args = parser.parse_args()
+    converter = AnnotationConverter()
+    processed_data = converter.process_annotation_file(args.input_file)
+    saved_files = converter.save_processed_data(processed_data, args.output_dir)
+    logger.info("Conversion complete!")
+    for file_type, file_path in saved_files.items():
+        logger.info(f"  {file_type}: {file_path}")
+
+
+if __name__ == "__main__":
+    main()

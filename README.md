@@ -62,6 +62,18 @@ The first time you run anything from `app/parser.py`, you will likely have to wa
 
 Before running LLM evaluation, you need to process raw EPPI-Reviewer JSON annotations into structured format. The annotation converter is available in `app/processors/annotation_converter.py` and can be used to convert raw EPPI-Reviewer data into the structured format needed for LLM evaluation.
 
+**Usage:**
+
+```bash
+uv run python -m app.processors.annotation_converter <input_file> <output_dir>
+```
+
+**Example:**
+
+```bash
+uv run python -m app.processors.annotation_converter app/annotations/raw/eppi/SmokingCessation_Training_8April25.json app/annotations/processed/eppi/
+```
+
 This creates:
 
 - `annotated_documents.json` - Documents with their annotations
