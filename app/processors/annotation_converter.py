@@ -149,16 +149,16 @@ class AnnotationConverter:
                     for author in document_data.get("Authors", "").split(";")
                     if author.strip()
                 ],
-                year=int(document_data.get("Year"))
-                if document_data.get("Year")
+                year=int(document_data.get("Year", 0))
+                if document_data.get("Year") is not None
                 else None,
             ),
             context=document_data.get("Abstract", ""),
             document_id=str(document_data.get("ItemId", "")),
             filename=document_data.get("Title", "").replace(" ", "_") + ".pdf",
             # EPPI-specific fields
-            item_id=int(document_data.get("ItemId"))
-            if document_data.get("ItemId")
+            item_id=int(document_data.get("ItemId", 0))
+            if document_data.get("ItemId") is not None
             else None,
             title=document_data.get("Title", ""),
             parent_title=document_data.get("ParentTitle", ""),
@@ -251,21 +251,10 @@ class AnnotationConverter:
 
         return annotations
 
-    def process_annotation_file(self, file_path: str | Path) -> dict[str, Any]:
-        """
-        Process a complete annotation file and return structured data.
-
-        Args:
-            file_path: Path to the JSON annotation file
-
-        Returns:
-            Dictionary containing processed attributes, documents, and annotations
-
-        """
-        # Load the JSON data
-        data = self.load_json_annotations(file_path)
-
-        # Extract and flatten attributes from both CodeSets
+    def _extract_attributes_from_codesets(
+        self, data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Extract and flatten attributes from CodeSets."""
         all_attributes_raw = []
 
         # Process CodeSets[0] (first CodeSet) - usually contains basic attributes like "Arm name"
@@ -285,6 +274,71 @@ class AnnotationConverter:
                 all_attributes_raw.extend(
                     self.flatten_attributes_hierarchy(attributes_list1)
                 )
+
+        return all_attributes_raw
+
+    def _create_pdf_to_title_mapping(
+        self, references: list[dict[str, Any]]
+    ) -> dict[str, str]:
+        """Create mapping from PDF filenames to document titles."""
+        pdf_to_title_mapping = {}
+        for ref in references:
+            title = ref.get("Title", "")
+            # Create a potential PDF filename from the title
+            pdf_filename = title.replace(" ", "_") + ".pdf"
+            pdf_to_title_mapping[pdf_filename] = title
+
+            # Also try with year if available
+            year = ref.get("Year", "")
+            if year:
+                authors = (
+                    ref.get("Authors", "").split(";")[0].strip()
+                    if ref.get("Authors")
+                    else ""
+                )
+                if authors:
+                    # Try "Author Year.pdf" pattern
+                    author_year_pdf = f"{authors.split()[0]} {year}.pdf"
+                    pdf_to_title_mapping[author_year_pdf] = title
+
+        return pdf_to_title_mapping
+
+    def _find_document_annotations(
+        self,
+        all_annotations_raw: list[dict[str, Any]],
+        doc_title: str,
+        pdf_to_title_mapping: dict[str, str],
+    ) -> list[dict[str, Any]]:
+        """Find annotations for a specific document."""
+        doc_annotations = []
+        for ann in all_annotations_raw:
+            for text_detail in ann.get("ItemAttributeFullTextDetails", []):
+                doc_title_from_ann = text_detail.get("DocTitle", "")
+                # Direct title match
+                if doc_title_from_ann == doc_title or (
+                    doc_title_from_ann in pdf_to_title_mapping
+                    and pdf_to_title_mapping[doc_title_from_ann] == doc_title
+                ):
+                    doc_annotations.append(ann)
+                    break
+        return doc_annotations
+
+    def process_annotation_file(self, file_path: str | Path) -> dict[str, Any]:
+        """
+        Process a complete annotation file and return structured data.
+
+        Args:
+            file_path: Path to the JSON annotation file
+
+        Returns:
+            Dictionary containing processed attributes, documents, and annotations
+
+        """
+        # Load the JSON data
+        data = self.load_json_annotations(file_path)
+
+        # Extract and flatten attributes from both CodeSets
+        all_attributes_raw = self._extract_attributes_from_codesets(data)
 
         # Convert to Pydantic models
         attributes = self.convert_to_eppi_attributes(all_attributes_raw)
@@ -314,28 +368,9 @@ class AnnotationConverter:
                 documents_by_title[doc_title] = document
 
         # Create a mapping from PDF filenames to document titles
-        # The DocTitle in annotations is the PDF filename, while Title in references is the full title
-        pdf_to_title_mapping = {}
-        for ref in data.get("References", []):
-            title = ref.get("Title", "")
-            # Create a potential PDF filename from the title
-            # This is a heuristic - you might need to adjust based on your data
-            pdf_filename = title.replace(" ", "_") + ".pdf"
-            pdf_to_title_mapping[pdf_filename] = title
-
-            # Also try with year if available
-            year = ref.get("Year", "")
-            if year:
-                # Try different patterns
-                authors = (
-                    ref.get("Authors", "").split(";")[0].strip()
-                    if ref.get("Authors")
-                    else ""
-                )
-                if authors:
-                    # Try "Author Year.pdf" pattern
-                    author_year_pdf = f"{authors.split()[0]} {year}.pdf"
-                    pdf_to_title_mapping[author_year_pdf] = title
+        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
+            data.get("References", [])
+        )
 
         # Convert all annotations, linking them to their respective documents
         annotated_documents = []
@@ -343,20 +378,9 @@ class AnnotationConverter:
 
         for doc_title, document in documents_by_title.items():
             # Get annotations for this specific document
-            # Try to match by title first, then by PDF filename
-            doc_annotations = []
-
-            for ann in all_annotations_raw:
-                for text_detail in ann.get("ItemAttributeFullTextDetails", []):
-                    doc_title_from_ann = text_detail.get("DocTitle", "")
-
-                    # Direct title match
-                    if doc_title_from_ann == doc_title or (
-                        doc_title_from_ann in pdf_to_title_mapping
-                        and pdf_to_title_mapping[doc_title_from_ann] == doc_title
-                    ):
-                        doc_annotations.append(ann)
-                        break
+            doc_annotations = self._find_document_annotations(
+                all_annotations_raw, doc_title, pdf_to_title_mapping
+            )
 
             if (
                 doc_annotations
@@ -405,7 +429,7 @@ class AnnotationConverter:
 
         # Custom JSON encoder to handle UUIDs and other non-serializable objects
         class CustomJSONEncoder(json.JSONEncoder):
-            def default(self, obj: Any) -> str:
+            def default(self, obj: object) -> str:
                 if hasattr(obj, "__str__"):
                     return str(obj)
                 return super().default(obj)
