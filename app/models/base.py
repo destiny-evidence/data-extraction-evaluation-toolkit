@@ -1,0 +1,57 @@
+"""Core data models for document processing and annotation."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from destiny_sdk.references import Reference
+
+
+class Attribute(BaseModel):
+    """
+    Core attribute definition for data extraction tasks.
+
+    Represents a single piece of information to be extracted from documents.
+    """
+
+    question_target: str  # 'How many patients were recruited?' - the prompt/question
+    output_data_type: Any  # e.g. int, str, list, dict - expected data type
+    attribute_id: str  # unique identifier for the attribute
+    attribute_label: str  # human-readable way of identifying the attribute
+
+
+class AttributesList(BaseModel):
+    """Container for a list of attributes."""
+
+    attributes: list[Attribute]
+
+    def to_list(self) -> list[Attribute]:
+        """Convert to a simple list of attributes."""
+        return list(self.attributes)
+
+
+class Document(BaseModel):
+    """Represents a document in the dataset."""
+
+    name: str
+    citation: Reference
+    context: str | list[str]
+    document_id: str
+    filename: str | None = None
+
+
+class GoldStandardAnnotation(BaseModel):
+    """A single gold standard annotation for an attribute."""
+
+    attribute: Attribute
+    output_data: Any
+
+
+class GoldStandardAnnotatedDocument(BaseModel):
+    """A document with its gold standard annotations."""
+
+    document: Document
+    annotations: list[GoldStandardAnnotation]

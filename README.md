@@ -21,7 +21,9 @@ brew install pandoc # mac
 apt install pandoc # ubuntu/debian
 choco install pandoc # windows
 ```
+
 ### Installing `uv`
+
 [uv](https://docs.astral.sh/uv) is used for dependency management and managing virtual environments. You can install uv either using pipx or the uv installer script:
 
 ```sh
@@ -53,6 +55,75 @@ pre-commit install
 ### Using the toolkit
 
 The first time you run anything from `app/parser.py`, you will likely have to wait for a considerable (5-15 minutes) amount of time, as dependencies will collect and install. These dependencies include machine learning libraries and pre-trained models.
+
+## Data Processing
+
+### Annotation Converter
+
+Before running LLM evaluation, you need to process raw EPPI-Reviewer JSON annotations into structured format. The annotation converter is available in `app/processors/annotation_converter.py` and can be used to convert raw EPPI-Reviewer data into the structured format needed for LLM evaluation.
+
+This creates:
+
+- `annotated_documents.json` - Documents with their annotations
+- `attributes.json` - All available attributes
+- `documents.json` - Document metadata
+- `attribute_id_to_label_mapping.json` - Attribute ID to label mapping
+
+## LLM Evaluation
+
+### Quick Start
+
+1. **Set up your LLM provider** in `.env`:
+
+   ```bash
+   # Copy example environment file
+   cp env.example .env
+
+   # Edit .env with your API keys
+   # For Azure OpenAI:
+   LLM_PROVIDER=azure
+   AZURE_API_KEY=your-azure-api-key
+   AZURE_API_BASE=https://your-resource.openai.azure.com/
+   AZURE_DEPLOYMENT=your-deployment-name
+
+   # For OpenAI:
+   LLM_PROVIDER=openai
+   OPENAI_API_KEY=your-openai-api-key
+   ```
+
+2. **Run LLM evaluation**:
+
+   ```bash
+   uv run python app/scripts/simple_llm_eval.py
+   ```
+
+This will:
+
+- Load the first document from `app/annotations/processed/eppi/annotated_documents.json`
+- Evaluate it against the first 2 attributes
+- Show detailed logs of the LLM request/response
+- Save results to `simple_evaluation_results.json`
+
+### Understanding the Output
+
+The LLM evaluation produces structured results:
+
+```json
+{
+  "answers": [
+    {
+      "attribute_name": "Arm name",
+      "Answer": "False",
+      "Reasoning": "The document does not specify any names or identifiers for the arms of the study...",
+      "Citation": "Participants in both conditions received an 8-week telephone-delivered..."
+    }
+  ]
+}
+```
+
+- **Answer**: "True" or "False" - whether the attribute is present
+- **Reasoning**: Detailed explanation of the decision
+- **Citation**: Supporting text from the document (if available)
 
 ## Contributing
 
