@@ -1,10 +1,11 @@
 """Utilities for parsing input files (e.g. pdf) for documents into output files (e.g. md)."""
 
 import json
+from abc import ABC, abstractmethod
 from enum import StrEnum, auto
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pypandoc
 from loguru import logger
@@ -16,6 +17,7 @@ from PIL.Image import Image
 from app.assess_text_quality import is_english
 from app.exceptions import (
     BadEnglishError,
+    InvalidFileTypeError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
@@ -53,7 +55,7 @@ class OutputFileType(StrEnum):
     JSON = auto()
 
 
-class ParserLibrary:
+class ParserLibrary(ABC):
     """Base parser class."""
 
     name: str
@@ -61,6 +63,7 @@ class ParserLibrary:
     output_file_types: list[OutputFileType]
 
     @classmethod
+    @abstractmethod
     def parse(
         cls,
         input_file: str | PathLike,
@@ -140,12 +143,14 @@ class PandocParser(ParserLibrary):
             raise InvalidOutputFileTypeError(image_meta_erro)
         # detect input file type as explicitly supplying it would be
         # cumbersome
-        input_file_type = DocumentParser.detect_filetype(input_file)
+        input_file_type = DocumentParser.detect_filetype(
+            input_file, cls.input_file_types
+        )
         # currently only markdown output
         return pypandoc.convert_file(
             input_file,
             to="md",
-            format=input_file_type.value,
+            format=input_file_type,
         )
 
 
@@ -205,22 +210,20 @@ class DocumentParser:
             str: _description_
 
         """
-        if not input_file_type:
+        if input_file_type is None:
             logger.debug(
                 "no input file type provided. using `detect_filetype` to infer."
             )
-            input_file_type = self.detect_filetype(input_file)
-        if input_file_type not in InputFileType:
-            input_file_type_not_permitted = (
-                f"input_file_type {input_file_type} is not permitted."
-            )
-            raise InvalidInputFileTypeError(input_file_type_not_permitted)
+            try:
+                input_file_type = InputFileType(self.detect_filetype(file=input_file))
+            except ValueError as ve:
+                raise InvalidInputFileTypeError(ve) from ve
         logger.debug(f"input file type: {input_file_type}.")
 
         if not parser:
             logger.debug("parser not supplied. selecting default parser for file_type.")
             parser: ParserLibrary = self.__getattribute__(  # type: ignore[no-redef]
-                f"default_parser_{input_file_type.value}"
+                f"default_parser_{input_file_type}"
             )
         if parser is None:  # for pedantic mypy
             missing_parser = "no parser supplied."
@@ -310,7 +313,12 @@ class DocumentParser:
         )
 
     @staticmethod
-    def detect_filetype(file: str | PathLike) -> InputFileType:
+    def detect_filetype(
+        file: str | PathLike,
+        permitted_file_enum_list: list[InputFileType]
+        | list[OutputFileType]
+        | None = None,
+    ) -> str:
         """
         Detect file type from a file_path.
 
@@ -324,12 +332,31 @@ class DocumentParser:
             InputFileType: _description_
 
         """
+        if permitted_file_enum_list is None:
+            permitted_file_enum_list = list(InputFileType) + list(OutputFileType)
+        permitted_extensions = {x.value for x in permitted_file_enum_list}
+
         extension = str(file).split(".")[-1]
-        if extension not in InputFileType:
-            forbidden_file_type = f"file type {extension} is not permitted. Use one of {list(InputFileType)}."
-            raise InvalidInputFileTypeError(forbidden_file_type)
+        if extension not in permitted_extensions:
+            has_input = any(
+                isinstance(ft, InputFileType) for ft in permitted_file_enum_list
+            )
+            has_output = any(
+                isinstance(ft, OutputFileType) for ft in permitted_file_enum_list
+            )
+            target_error: type[Exception]
+            if has_input and not has_output:
+                target_error = InvalidInputFileTypeError
+            elif not has_input and has_output:
+                target_error = InvalidOutputFileTypeError
+            else:
+                target_error = InvalidFileTypeError
+
+            forbidden_file_type = f"file type {extension} is not permitted. Use one of {permitted_extensions}."
+            raise target_error(forbidden_file_type)
+
         logger.debug(f"filetype is: {extension}.")
-        return InputFileType(extension)
+        return extension
 
     @staticmethod
     def write_files(  # noqa: PLR0913
@@ -358,6 +385,12 @@ class DocumentParser:
             images (dict[str, Image] | None, optional): _description_. Defaults to None.
 
         """
+        extension = (
+            DocumentParser.detect_filetype(  # should raise error if not permitted
+                out_path, permitted_file_enum_list=parser.output_file_types
+            )
+        )
+
         required_outfiles = ["md"]
         if write_images:
             required_outfiles.append("jpeg")
@@ -372,26 +405,16 @@ class DocumentParser:
                     "`write_metadata` set to True, but no metadata obj supplied."
                 )
         logger.debug(f"required outfiles: {required_outfiles}")
+        if False in [ft in parser.output_file_types for ft in required_outfiles]:
+            raise InvalidOutputFileTypeError
 
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
 
-        if Path(out_path).is_file() or (
-            Path(out_path).name.split(".")[-1] in required_outfiles
-        ):
+        if Path(out_path).is_file() or (extension in required_outfiles):
             logger.debug(f"`out_path` {out_path} points to a file.")
 
             dir_base = Path(out_path).parent
             filename_base = "".join(Path(out_path).name.split(".")[0:-1])
-            extension = Path(out_path).name.split(".")[-1]
-            if (extension not in parser.output_file_types) or (
-                extension not in required_outfiles
-            ):
-                bad_out_file_ext = (
-                    f"supplied out filetype {extension}",
-                    " is not permitted or not applicable ",
-                    "for parser {parser.name}",
-                )
-                raise InvalidOutputFileTypeError(bad_out_file_ext)
 
         if Path(out_path).is_dir():
             logger.debug(f"`out_path` {out_path} points to a dir.")
@@ -403,7 +426,6 @@ class DocumentParser:
             out = dir_base / (filename_base + "." + ext)
             logger.debug(f"writing out {ext} to {out}.")
             if ext == "md":
-                logger.debug(f"text: {text}")
                 out.write_text(text)
             if ext == "json" and metadata is not None:
                 out.write_text(json.dumps(metadata))

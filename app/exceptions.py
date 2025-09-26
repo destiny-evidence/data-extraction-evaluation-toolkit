@@ -21,6 +21,16 @@ class InvalidOutputFileTypeError(Exception):
     """
 
 
+class InvalidFileTypeError(Exception):
+    """
+    Riase when user supplies a not permitted file.
+
+    Args:
+        Exception (_type_):
+
+    """
+
+
 class FileParserMismatchError(Exception):
     """
     Raise when we have an input-file <> parser mismatch.
