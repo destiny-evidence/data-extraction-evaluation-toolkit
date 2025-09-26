@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from enum import StrEnum, auto
 from os import PathLike
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import pypandoc
 from loguru import logger
@@ -17,6 +17,7 @@ from PIL.Image import Image
 from app.assess_text_quality import is_english
 from app.exceptions import (
     BadEnglishError,
+    FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
@@ -106,7 +107,7 @@ class MarkerParser(ParserLibrary):
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,  # noqa: ARG003
-    ) -> str | tuple[str, Any, Any]:
+    ) -> tuple[str, Any, Any]:
         """Parse file using marker."""
         rendered = converter(input_file)
         text, extension, images = text_from_rendered(rendered)
@@ -210,25 +211,36 @@ class DocumentParser:
             str: _description_
 
         """
-        if input_file_type is None:
-            logger.debug(
-                "no input file type provided. using `detect_filetype` to infer."
-            )
-            try:
-                input_file_type = InputFileType(self.detect_filetype(file=input_file))
-            except ValueError as ve:
-                raise InvalidInputFileTypeError(ve) from ve
-        logger.debug(f"input file type: {input_file_type}.")
-
-        if not parser:
+        if parser is not None and (
+            (not isinstance(parser, type)) or (not issubclass(parser, ParserLibrary))
+        ):
+            bad_parser_err = f"parser {parser} is not a valid ParserLibrary."
+            raise FileParserMismatchError(bad_parser_err)
+        if parser is None:
             logger.debug("parser not supplied. selecting default parser for file_type.")
-            parser: ParserLibrary = self.__getattribute__(  # type: ignore[no-redef]
+            parser: type[ParserLibrary] = self.__getattribute__(  # type: ignore[no-redef]
                 f"default_parser_{input_file_type}"
             )
         if parser is None:  # for pedantic mypy
             missing_parser = "no parser supplied."
             raise ValueError(missing_parser)
+
         logger.debug(f"parser: {parser}.")
+
+        if input_file_type is None:
+            logger.debug(
+                "no input file type provided. using `detect_filetype` to infer."
+            )
+            try:
+                input_file_type = InputFileType(
+                    self.detect_filetype(
+                        file=input_file,
+                        permitted_file_enum_list=parser.input_file_types,
+                    )
+                )
+            except ValueError as ve:
+                raise InvalidInputFileTypeError(ve) from ve
+        logger.debug(f"input file type: {input_file_type}.")
 
         parsed = self.parse(
             input_file=input_file,
@@ -317,6 +329,7 @@ class DocumentParser:
         file: str | PathLike,
         permitted_file_enum_list: list[InputFileType]
         | list[OutputFileType]
+        | list[str]
         | None = None,
     ) -> str:
         """
@@ -334,10 +347,14 @@ class DocumentParser:
         """
         if permitted_file_enum_list is None:
             permitted_file_enum_list = list(InputFileType) + list(OutputFileType)
-        permitted_extensions = {x.value for x in permitted_file_enum_list}
+        permitted_extensions_str = {
+            x.value
+            for x in permitted_file_enum_list
+            if isinstance(x, (InputFileType | OutputFileType))
+        }
 
         extension = str(file).split(".")[-1]
-        if extension not in permitted_extensions:
+        if extension not in permitted_extensions_str:
             has_input = any(
                 isinstance(ft, InputFileType) for ft in permitted_file_enum_list
             )
@@ -352,7 +369,7 @@ class DocumentParser:
             else:
                 target_error = InvalidFileTypeError
 
-            forbidden_file_type = f"file type {extension} is not permitted. Use one of {permitted_extensions}."
+            forbidden_file_type = f"file type {extension} is not permitted. Use one of {permitted_extensions_str}."
             raise target_error(forbidden_file_type)
 
         logger.debug(f"filetype is: {extension}.")
