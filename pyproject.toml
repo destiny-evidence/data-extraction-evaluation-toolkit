@@ -18,6 +18,7 @@ dependencies = [
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",
+    "pillow>=10.4.0",
     "pydantic-extra-types>=2.10.5",
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
@@ -28,10 +29,6 @@ name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11"
 version = "0.1.0"
-
-[tool.mypy]
-explicit_package_bases = true
-plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -74,6 +71,7 @@ lint.ignore = [
     "ERA001", # allow commented code -- FOR NOW!
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
+    "RUF012", # where ruff wants type annotations using ClassVar for subclasses - mypy doesnt care, so why would we?
     "TD002", # name for TO DO
     "TD003", # pedantic issue number requester in to dos
 ]

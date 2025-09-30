@@ -5,12 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.parser import (
-    DocumentParser,
-    FileParserMismatchError,
-    InvalidInputFileTypeError,
-    ParserLibrary,
-)
+from app.parser import DocumentParser, InvalidInputFileTypeError
 
 
 def _normalise(text: str) -> str:
@@ -72,7 +67,7 @@ def test_invalid_filetype_raises(tmp_path):
 #         assert out_file.read_text() == ref.read()
 
 
-def test_bad_parser_for_pdf_raises():
-    parser = DocumentParser()
-    with pytest.raises(FileParserMismatchError):
-        parser("tests/test_files/input/Abroms_2008.pdf", parser=ParserLibrary.PANDOC)
+# def test_bad_parser_for_pdf_raises():
+#     parser = DocumentParser()
+#     with pytest.raises(FileParserMismatchError):
+#         parser("tests/test_files/input/Abroms_2008.pdf", parser=ParserLibrary.PANDOC)

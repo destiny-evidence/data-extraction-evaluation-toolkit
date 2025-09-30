@@ -1,10 +1,18 @@
-"""Naive Function for inspecting the quality of parsed text."""
+"""Tools for text quality assessments."""
 
 import re
+from enum import Enum
 
 from nltk import download
 from nltk.corpus import brown
 from nltk.data import find
+
+
+class Language(Enum):
+    """Enum of languages for quality-checking."""
+
+    ENGLISH = "en"
+
 
 try:
     find("corpora/brown")
@@ -27,19 +35,22 @@ class EmptyTextError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-def is_english(text: str, threshold: float = 0.2) -> bool:
+def check_language(
+    text: str, lang: Language = Language.ENGLISH, threshold: float = 0.2
+) -> bool:
     """
-    Assess if text is English.
+    Assess if text is in the specified language.
 
     Args:
-        text (str): _description_
-        threshold (float, optional): _description_. Defaults to 0.2.
+        text (str): Text to assess.
+        lang (Language): Language to check against.
+        threshold (float): Threshold for word overlap.
 
     Raises:
-        EmptyTextError: _description_
+        EmptyTextError: If text is empty.
 
     Returns:
-        bool: True if english (above threshold), False otherwise.
+        bool: True if text matches language, False otherwise.
 
     """
     if text is None or text == "":
@@ -49,4 +60,26 @@ def is_english(text: str, threshold: float = 0.2) -> bool:
     if len(tok) <= 0:
         raise EmptyTextError
 
-    return len(tok & bc_brown) / len(tok) > threshold
+    if isinstance(lang, str):
+        lang = Language(lang)
+
+    if lang == Language.ENGLISH:
+        return len(tok & bc_brown) / len(tok) > threshold
+    missing_lang = f"Language '{lang.value}' not supported yet."
+    raise NotImplementedError(missing_lang)
+
+
+#  backward compatibility
+def is_english(text: str, threshold: float = 0.2) -> bool:
+    """
+    Check if text meets minimum English quality.
+
+    Args:
+        text (str): the text to check.
+        threshold (float, optional): Defaults to 0.2.
+
+    Returns:
+        bool: True if 'English', false if not.
+
+    """
+    return check_language(text, lang=Language.ENGLISH, threshold=threshold)
