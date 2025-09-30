@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from enum import StrEnum, auto
 from os import PathLike
 from pathlib import Path
-from typing import Any
 
 import pypandoc
 from loguru import logger
@@ -13,10 +12,10 @@ from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
 from PIL.Image import Image
+from pydantic import BaseModel, field_validator
 
-from app.assess_text_quality import is_english
+from app.assess_text_quality import check_language
 from app.exceptions import (
-    BadEnglishError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
@@ -56,6 +55,46 @@ class OutputFileType(StrEnum):
     JSON = auto()
 
 
+class ParsedOutput(BaseModel):
+    """
+    Output returned from the `parser()` method of subclasses of ParserLibrary.
+
+    Contains:
+        text, str: md-formatted parsed text (required)
+        images, pillow.img: pillow-formatted image(s) (optional)
+        metadata, dict: metadata json (optional)
+    """
+
+    text: str
+    images: dict[str, Image] | None = None
+    metadata: dict | None = None
+
+    class Config:  # noqa: D106
+        arbitrary_types_allowed = True
+
+    @field_validator("text", mode="after")
+    @classmethod
+    def assess_language_quality(cls, value: str) -> str:
+        """
+        Assess language quality.
+
+        Args:
+            text (str): Parsed text.
+
+        Raises:
+            MalformedLanguageError: If threshold not met.
+
+        Returns:
+            str: parsed text.
+
+        """
+        if not check_language(value):
+            logger.debug("check lang failed")
+            bad_language = "Supplied text didn't pass quality check."
+            raise ValueError(bad_language)
+        return value
+
+
 class ParserLibrary(ABC):
     """Base parser class."""
 
@@ -72,7 +111,7 @@ class ParserLibrary(ABC):
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,
-    ) -> str | tuple[str, Any, Any]:
+    ) -> ParsedOutput:
         """
         Parse a document.
         Intentionelly left blank as this should be populated in sub-classes.
@@ -107,16 +146,16 @@ class MarkerParser(ParserLibrary):
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,  # noqa: ARG003
-    ) -> tuple[str, Any, Any]:
+    ) -> ParsedOutput:
         """Parse file using marker."""
         rendered = converter(input_file)
         text, extension, images = text_from_rendered(rendered)
-        out = [text]
+        out = {"text": text}
         if return_metadata:
-            out.append(rendered.metadata)
+            out["metadata"] = rendered.metadata
         if return_images:
-            out.append(images)
-        return tuple(out)
+            out["images"] = images
+        return ParsedOutput(**out)
 
 
 class PandocParser(ParserLibrary):
@@ -130,39 +169,43 @@ class PandocParser(ParserLibrary):
     def parse(
         cls,
         input_file: str | PathLike,
+        input_file_type: InputFileType | str | None = None,
         *,
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,  # noqa: ARG003
-    ) -> str:
+    ) -> ParsedOutput:
         """Parse file using pandoc."""
         if True in [return_images, return_metadata]:
-            # NOTE: this is probably not the best method, as it doesn't
-            # reference input or output file types. can we think of a generic
-            # method for doing this via ParserLibrary, without using pydantic?
             image_meta_erro = "PandocParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(image_meta_erro)
-        # detect input file type as explicitly supplying it would be
-        # cumbersome
-        input_file_type = DocumentParser.detect_filetype(
-            input_file, cls.input_file_types
-        )
+        if not input_file_type:
+            input_file_type = DocumentParser.detect_filetype(
+                input_file, cls.input_file_types
+            )
+
         # currently only markdown output
-        return pypandoc.convert_file(
-            input_file,
-            to="md",
-            format=input_file_type,
-        )
+        out = {
+            "text": pypandoc.convert_file(
+                input_file,
+                to="md",
+                format=input_file_type,
+            )
+        }
+        return ParsedOutput(**out)
 
 
 class DocumentParser:
     """Parse documents from target format to other target format."""
 
+    DEFAULT_PARSERS: dict[str, type[ParserLibrary]] = {
+        "pdf": MarkerParser,
+        "epub": PandocParser,
+        "html": PandocParser,
+    }
+
     def __init__(
-        self,
-        default_parser_pdf: type[ParserLibrary] = MarkerParser,
-        default_parser_epub: type[ParserLibrary] = PandocParser,
-        default_parser_html: type[ParserLibrary] = PandocParser,
+        self, parsers: dict[str, type[ParserLibrary]] = DEFAULT_PARSERS
     ) -> None:
         """
         Initialise instance of DocumentParser with default parsers.
@@ -173,13 +216,11 @@ class DocumentParser:
             default_parser_html (ParserLibrary, optional): _description_. Defaults to PANDOC_PARSER.
 
         """
-        self.default_parser_epub = default_parser_epub
-        self.default_parser_html = default_parser_html
-        self.default_parser_pdf = default_parser_pdf
+        self.parsers = parsers
 
-        logger.debug(f"default epub parser: {self.default_parser_epub}")
-        logger.debug(f"default html parser: {self.default_parser_html}")
-        logger.debug(f"default pdf parser: {self.default_parser_pdf}")
+        if self.parsers is not None and isinstance(self.parsers, dict):
+            for parser_name, parser in self.parsers.items():
+                logger.debug(f"default {parser_name} parser: {parser.name}")
 
     def __call__(  # noqa: PLR0913 - img/meta needs to be explicit (non-kwargs) here.
         self,
@@ -190,9 +231,8 @@ class DocumentParser:
         *,
         return_images: bool = False,
         return_metadata: bool = False,
-        check_language: bool = False,
         **kwargs,
-    ) -> str | tuple[str, Any, Any]:
+    ) -> ParsedOutput:
         """
         Run the parser on one input_file.
 
@@ -233,9 +273,10 @@ class DocumentParser:
             raise FileParserMismatchError(bad_parser_err)
         if parser is None and input_file_type is not None:
             logger.debug("parser not supplied. selecting default parser for file_type.")
-            parser: type[ParserLibrary] = self.__getattribute__(  # type: ignore[no-redef]
-                f"default_parser_{input_file_type}"
-            )
+            if self.parsers is None or input_file_type.value not in self.parsers:
+                missing_parser = "no parser supplied."
+                raise ValueError(missing_parser)
+            parser = self.parsers[input_file_type.value]
         if parser is None or (
             parser is None and input_file_type is None
         ):  # for pedantic mypy
@@ -251,37 +292,15 @@ class DocumentParser:
             **kwargs,
         )
 
-        if check_language and (
-            (isinstance(parsed, tuple) and not self.check_text_is_english(parsed[0]))
-            or (isinstance(parsed, str) and not self.check_text_is_english(parsed))
-        ):
-            bad_english_error = f"{input_file} was not parsed with good English."
-            raise BadEnglishError(bad_english_error)
-
-        if out_path:  # NOTE: can we refactor this whole blocK??? seems v clunky.
-            images = None
-            metadata = None
-            if isinstance(parsed, tuple):
-                text = parsed[0]
-            elif isinstance(parsed, str):
-                text = parsed
-
-            if return_images and return_metadata:
-                metadata = parsed[1]
-                images = parsed[2]
-            if return_images and not return_metadata:
-                images = parsed[1]
-            if not return_images and return_metadata:
-                metadata = parsed[1]
-
+        if out_path:
             self.write_files(
                 out_path=out_path,
                 parser=parser,
                 write_metadata=return_metadata,
                 write_images=return_images,
-                text=text,
-                metadata=metadata,  # type: ignore[arg-type]
-                images=images,  # type: ignore[arg-type]
+                text=parsed.text,
+                metadata=parsed.metadata,
+                images=parsed.images,
             )
 
         return parsed
@@ -294,7 +313,7 @@ class DocumentParser:
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,
-    ) -> str | tuple[str, Any, Any]:
+    ) -> ParsedOutput:
         """
         Parse target file.
         Wraps around specific parser methods.
@@ -451,17 +470,3 @@ class DocumentParser:
                 for img_name, img in images.items():
                     img_out = dir_base / (filename_base + "_" + img_name)
                     img.save(img_out, ext)
-
-    @staticmethod
-    def check_text_is_english(parsed_text: str) -> bool:
-        """
-        Check if parsed text is intelligible English.
-
-        Args:
-            parsed_text (str): the parsed text as string.
-
-        Returns:
-            bool: Indicating whether it's 'proper' English or not.
-
-        """
-        return is_english(parsed_text)

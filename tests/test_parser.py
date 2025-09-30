@@ -2,14 +2,22 @@ from pathlib import Path
 
 import pytest
 from PIL import Image
+from pydantic import ValidationError
 
+from app.assess_text_quality import check_language
 from app.exceptions import (
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
-from app.parser import DocumentParser, InputFileType, MarkerParser, PandocParser
+from app.parser import (
+    DocumentParser,
+    InputFileType,
+    MarkerParser,
+    PandocParser,
+    ParsedOutput,
+)
 
 
 @pytest.fixture
@@ -66,11 +74,11 @@ def mock_pypandoc(monkeypatch):
 
 
 @pytest.fixture
-def mock_is_english(monkeypatch):
-    """Stub the simple English checker."""
+def mock_check_language(monkeypatch):
+    """Stub the language checker."""
     monkeypatch.setattr(
-        "app.parser.is_english",
-        lambda txt: txt.strip() != "not english",
+        "app.parser.check_language",
+        lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
     )
 
 
@@ -116,10 +124,12 @@ def test_documentparser_unknown_parser():
         parser("book.epub", parser="unknown")
 
 
-def test_documentparser_parser_none_raises_value_error(mock_pypandoc, mock_is_english):
+def test_documentparser_parser_none_raises_value_error(
+    mock_pypandoc, mock_check_language
+):
     """If the default parser for a file type is None, __call__ should raise ValueError."""
     # create a parser that purposely sets default to None
-    p = DocumentParser(default_parser_pdf=None)
+    p = DocumentParser(parsers=None)
 
     # monkeypatch detect_filetype to return PDF
     monkeypatch = pytest.MonkeyPatch()
@@ -133,45 +143,54 @@ def test_documentparser_parser_none_raises_value_error(mock_pypandoc, mock_is_en
     monkeypatch.undo()
 
 
-def test_markerparser_success(fake_converter, mock_text_from_rendered, mock_is_english):
+def test_markerparser_success(
+    fake_converter, mock_text_from_rendered, mock_check_language
+):
     """When Marker is used for a PDF, the returned text matches the stub."""
     parser = DocumentParser()
-    txt = parser("any.pdf", parser=MarkerParser)
-    assert isinstance(txt, tuple)
-    assert txt[0] == "dummy markdown text"
-    assert len(txt) == 1
+    parsed_out = parser("any.pdf", parser=MarkerParser)
+    assert isinstance(parsed_out, ParsedOutput)
+    assert isinstance(parsed_out.text, str)
+    assert parsed_out.text == "dummy markdown text"
+    assert parsed_out.images is None
+    assert parsed_out.metadata is None
 
 
 def test_markerparser_returns_metadata_and_images(
-    fake_converter, mock_text_from_rendered_img_meta, mock_is_english
+    fake_converter, mock_text_from_rendered_img_meta, mock_check_language
 ):
     parser = DocumentParser()
     result = parser(
         "any.pdf", parser=MarkerParser, return_metadata=True, return_images=True
     )
-    assert isinstance(result, tuple)
-    assert result[0] == "dummy markdown text"
+    assert isinstance(result, ParsedOutput)
+    assert result.text == "dummy markdown text"
     # Metadata comes from rendered.metadata
-    assert result[1] == {"author": "Nik", "year": 2025}
-    assert isinstance(result[2], dict)  # images
-    for img in result[2].values():
+    assert result.metadata == {"author": "Nik", "year": 2025}
+    assert isinstance(result.images, dict)  # images
+    for img in result.images.values():
         assert isinstance(img, Image.Image)
 
 
-def test_parse_epub_success(mock_pypandoc, mock_is_english):
+def test_parse_epub_success(mock_pypandoc, mock_check_language):
     parser = DocumentParser()
-    txt = parser("book.epub", parser=PandocParser)
-    assert isinstance(txt, str)
-    assert txt == "converted book.epub to md (epub)"
+    parsed_out = parser("book.epub", parser=PandocParser)
+    assert isinstance(parsed_out, ParsedOutput)
+    assert parsed_out.text == "converted book.epub to md (epub)"
+    assert parsed_out.images is None
+    assert parsed_out.metadata is None
 
 
-def test_parse_html_success(mock_pypandoc, mock_is_english):
+def test_parse_html_success(mock_pypandoc, mock_check_language):
     parser = DocumentParser()
-    txt = parser("page.html", parser=PandocParser)
-    assert txt == "converted page.html to md (html)"
+    parsed_out = parser("page.html", parser=PandocParser)
+    assert isinstance(parsed_out, ParsedOutput)
+    assert parsed_out.text == "converted page.html to md (html)"
+    assert parsed_out.images is None
+    assert parsed_out.metadata is None
 
 
-def test_pandocparser_raises_on_metadata_or_images(mock_pypandoc, mock_is_english):
+def test_pandocparser_raises_on_metadata_or_images(mock_pypandoc, mock_check_language):
     parser = DocumentParser()
     with pytest.raises(InvalidOutputFileTypeError):
         parser("book.epub", parser=PandocParser, return_metadata=True)
@@ -179,15 +198,15 @@ def test_pandocparser_raises_on_metadata_or_images(mock_pypandoc, mock_is_englis
         parser("book.epub", parser=PandocParser, return_images=True)
 
 
-def test_documentparser_default_parsers(mock_pypandoc, mock_is_english):
+def test_documentparser_default_parsers(mock_pypandoc, mock_check_language):
     """When no parser is supplied, the default one for the file type is used."""
     parser = DocumentParser()
-    txt = parser("anything.epub")
+    parsed_out = parser("anything.epub")
     # default for epub is PANDOC
-    assert txt == "converted anything.epub to md (epub)"
+    assert parsed_out.text == "converted anything.epub to md (epub)"
 
-    txt2 = parser("page.html")
-    assert txt2 == "converted page.html to md (html)"
+    parsed_out2 = parser("page.html")
+    assert parsed_out2.text == "converted page.html to md (html)"
 
 
 def test_documentparser_missing_filetype_raises(tmp_txt_file):
@@ -197,13 +216,13 @@ def test_documentparser_missing_filetype_raises(tmp_txt_file):
         parser(tmp_txt_file)
 
 
-def test_documentparser_output_file(tmp_path, mock_pypandoc, mock_is_english):
+def test_documentparser_output_file(tmp_path, mock_pypandoc, mock_check_language):
     """When an out_path is supplied, the parsed text is written and the text is returned."""
     parser = DocumentParser()
-    out = tmp_path / "out.md"
-    result = parser("book.epub", out_path=out)
-    assert result == "converted book.epub to md (epub)"
-    assert out.read_text() == "converted book.epub to md (epub)"
+    out_path = tmp_path / "out.md"
+    result = parser("book.epub", out_path=out_path)
+    assert result.text == "converted book.epub to md (epub)"
+    assert out_path.read_text() == "converted book.epub to md (epub)"
 
 
 def test_write_files(tmp_path):
@@ -240,15 +259,33 @@ def test_write_files_with_metadata_and_images(tmp_path):
     assert any(f.suffix == ".jpg" for f in tmp_path.iterdir())
 
 
-def test_check_text_is_english_success():
+def test_check_language_quality_en_success():
     proper_english = """
         this is some proper english text. no bad grammar, no
         bad spelling either.
     """
-    assert DocumentParser.check_text_is_english(proper_english)
+    assert check_language(proper_english, lang="en")
 
 
-def test_check_text_is_english_fail():
+def test_check_language_quality_en_fail():
     bad_english = """hufdshuifhureahuifr."""
 
-    assert not DocumentParser.check_text_is_english(bad_english)
+    assert not check_language(bad_english, lang="en")
+
+
+def test_check_language_unimplemented_lang():
+    gutes_deutsch = "dies ist ein deutscher satz."
+    with pytest.raises(ValueError, match="'de' is not a valid Language"):
+        check_language(gutes_deutsch, lang="de")
+
+
+def test_language_quality_in_pydantic_model():
+    parsed_data = ParsedOutput(text="this is an english sentence.")
+
+    assert isinstance(parsed_data, ParsedOutput)
+    assert isinstance(parsed_data.text, str)
+
+
+def test_language_quality_in_pydantic_model_fails():
+    with pytest.raises(ValidationError):
+        ParsedOutput(text="hufdshuifhureahuifr")

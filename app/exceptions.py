@@ -41,9 +41,9 @@ class FileParserMismatchError(Exception):
     """
 
 
-class BadEnglishError(Exception):
+class MalformedLanguageError(Exception):
     """
-    Raise when our rudimentary English checker fails.
+    Raise when language checker fails.
 
     Args:
         Exception (_type_): _description_
