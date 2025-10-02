@@ -71,7 +71,7 @@ uv run python app/scripts/annotation_converter.py <input_file> <output_dir>
 **Example:**
 
 ```bash
-uv run python app/scripts/annotation_converter.py input.json app/annotations/processed/eppi/
+uv run python app/scripts/annotation_converter.py input_path output_path
 ```
 
 This creates:
