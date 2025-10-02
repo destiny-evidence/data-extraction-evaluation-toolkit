@@ -26,9 +26,14 @@ class AttributesList(BaseModel):
 
     attributes: list[Attribute]
 
+    def __iter__(self):
+        """Make AttributesList iterable over its attributes."""
+        for att in self.attributes:
+            yield att
+
     def to_list(self) -> list[Attribute]:
         """Convert to a simple list of attributes."""
-        return list(self.attributes)
+        return list(self)
 
 
 class Document(BaseModel):
