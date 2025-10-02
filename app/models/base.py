@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from destiny_sdk.references import Reference
 from pydantic import BaseModel
-
-if TYPE_CHECKING:
-    from destiny_sdk.references import Reference
 
 
 class Attribute(BaseModel):
