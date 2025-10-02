@@ -42,7 +42,8 @@ class Document(BaseModel):
     name: str
     citation: Reference
     context: str | list[str]
-    document_id: str
+    document_id: str  # unique identifier for the document
+    document_label: str  # human-readable way of identifying the document
     filename: str | None = None
 
 
