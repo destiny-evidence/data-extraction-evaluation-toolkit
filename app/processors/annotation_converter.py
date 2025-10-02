@@ -158,7 +158,6 @@ class AnnotationConverter:
             ),
             context=document_data.get("Abstract", ""),
             document_id=str(document_data.get("ItemId", "")),
-            document_label=document_data.get("Title", ""),
             filename=document_data.get("Title", "").replace(" ", "_") + ".pdf",
             # EPPI-specific fields
             item_id=int(document_data.get("ItemId", 0))
