@@ -6,9 +6,7 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 
 A key innovation the Destiny project seeks to deliver is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
 
-This software enables this end-to-end process, through leveraging LLMs (Large Language Models) for extraction, benchmarking and classification of such data extraction tasks. `data-extraction-evaluation-toolkit` is conveived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more LLM-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
-
-In addition to offering an end-to-end workflow for data extraction, this software also provides tools for tweaking, benchmarking and configuring the LLM backend for a given data extraction workflow. Given the non-deterministic way LLMs produce output to user prompts, it may prove useful to modify small sections of said prompts, and record the difference in output.
+This software enables this end-to-end process for data extraction and evaluation tasks. `data-extraction-evaluation-toolkit` is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
 
 ## Installation
 
@@ -60,7 +58,7 @@ The first time you run anything from `app/parser.py`, you will likely have to wa
 
 ### Annotation Converter
 
-Before running LLM evaluation, you need to process raw EPPI-Reviewer JSON annotations into structured format. The annotation converter script is available at `app/scripts/annotation_converter.py` and can be used to convert raw EPPI-Reviewer data into the structured format needed for LLM evaluation.
+The annotation converter script is available at `app/scripts/annotation_converter.py` and can be used to convert raw EPPI-Reviewer data into structured format.
 
 **Usage:**
 
@@ -81,61 +79,6 @@ This creates:
 - `documents.json` - Document metadata
 - `attribute_id_to_label_mapping.json` - Attribute ID to label mapping
 
-## LLM Evaluation
-
-### Quick Start
-
-1. **Set up your LLM provider** in `.env`:
-
-   ```bash
-   # Copy example environment file
-   cp env.example .env
-
-   # Edit .env with your API keys
-   # For Azure OpenAI:
-   LLM_PROVIDER=azure
-   AZURE_API_KEY=your-azure-api-key
-   AZURE_API_BASE=https://your-resource.openai.azure.com/
-   AZURE_DEPLOYMENT=your-deployment-name
-
-   # For OpenAI:
-   LLM_PROVIDER=openai
-   OPENAI_API_KEY=your-openai-api-key
-   ```
-
-2. **Run LLM evaluation**:
-
-   ```bash
-   uv run python app/scripts/simple_llm_eval.py
-   ```
-
-This will:
-
-- Load the first document from `app/annotations/processed/eppi/annotated_documents.json`
-- Evaluate it against the first 2 attributes
-- Show detailed logs of the LLM request/response
-- Save results to `simple_evaluation_results.json`
-
-### Understanding the Output
-
-The LLM evaluation produces structured results:
-
-```json
-{
-  "answers": [
-    {
-      "attribute_name": "Arm name",
-      "Answer": "False",
-      "Reasoning": "The document does not specify any names or identifiers for the arms of the study...",
-      "Citation": "Participants in both conditions received an 8-week telephone-delivered..."
-    }
-  ]
-}
-```
-
-- **Answer**: "True" or "False" - whether the attribute is present
-- **Reasoning**: Detailed explanation of the decision
-- **Citation**: Supporting text from the document (if available)
 
 ## Contributing
 
