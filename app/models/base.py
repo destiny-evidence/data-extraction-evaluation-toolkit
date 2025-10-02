@@ -1,7 +1,5 @@
 """Core data models for document processing and annotation."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from destiny_sdk.references import Reference
@@ -49,12 +47,12 @@ class Document(BaseModel):
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
 
-    attribute: Attribute
+    attribute: "Attribute"
     output_data: Any
 
 
 class GoldStandardAnnotatedDocument(BaseModel):
     """A document with its gold standard annotations."""
 
-    document: Document
-    annotations: list[GoldStandardAnnotation]
+    document: "Document"
+    annotations: list["GoldStandardAnnotation"]
