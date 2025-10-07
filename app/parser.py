@@ -39,6 +39,7 @@ class InputFileType(StrEnum):
     PDF = auto()
     EPUB = auto()
     HTML = auto()
+    XML = auto()  # NOTE - this only covers JATS xml.
 
 
 class OutputFileType(StrEnum):
@@ -162,7 +163,7 @@ class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
     name = "pandoc"
-    input_file_types = [InputFileType.EPUB, InputFileType.HTML]
+    input_file_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
     output_file_types = [OutputFileType.MD]
 
     @classmethod
@@ -171,6 +172,7 @@ class PandocParser(ParserLibrary):
         input_file: str | PathLike,
         input_file_type: InputFileType | str | None = None,
         *,
+        input_is_string: bool = False,
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,  # noqa: ARG003
@@ -179,14 +181,27 @@ class PandocParser(ParserLibrary):
         if True in [return_images, return_metadata]:
             image_meta_erro = "PandocParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(image_meta_erro)
+        if input_is_string and not input_file_type:
+            missing_filetype = (
+                "if input is str in memory, provide format as `input_file_type`."
+            )
+            raise InvalidInputFileTypeError(missing_filetype)
         if not input_file_type:
             input_file_type = DocumentParser.detect_filetype(
                 input_file, cls.input_file_types
             )
+        if isinstance(input_file_type, InputFileType):
+            input_file_type = input_file_type.value
+        if input_file_type == "xml":
+            input_file_type = "jats"
 
-        # currently only markdown output
+        if input_is_string:
+            parse_method = pypandoc.convert_text
+        else:
+            parse_method = pypandoc.convert_file
+
         out = {
-            "text": pypandoc.convert_file(
+            "text": parse_method(
                 input_file,
                 to="md",
                 format=input_file_type,
@@ -202,6 +217,7 @@ class DocumentParser:
         "pdf": MarkerParser,
         "epub": PandocParser,
         "html": PandocParser,
+        "xml": PandocParser,
     }
 
     def __init__(
@@ -227,7 +243,7 @@ class DocumentParser:
         input_file: str | PathLike,
         out_path: str | PathLike | None = None,
         parser: type[ParserLibrary] | None = None,
-        input_file_type: InputFileType | None = None,
+        input_file_type: InputFileType | str | None = None,
         *,
         return_images: bool = False,
         return_metadata: bool = False,
@@ -251,6 +267,7 @@ class DocumentParser:
             str: _description_
 
         """
+        logger.debug(f"kwargs: {kwargs}")
         if input_file_type is None:
             logger.debug(
                 "no input file type provided. using `detect_filetype` to infer."
@@ -273,6 +290,8 @@ class DocumentParser:
             raise FileParserMismatchError(bad_parser_err)
         if parser is None and input_file_type is not None:
             logger.debug("parser not supplied. selecting default parser for file_type.")
+            if isinstance(input_file_type, str):
+                input_file_type = InputFileType(input_file_type)
             if self.parsers is None or input_file_type.value not in self.parsers:
                 missing_parser = "no parser supplied."
                 raise ValueError(missing_parser)
@@ -283,6 +302,7 @@ class DocumentParser:
             missing_parser = "no parser supplied."
             raise ValueError(missing_parser)
         logger.debug(f"parser: {parser}.")
+        kwargs["input_file_type"] = input_file_type
 
         parsed = self.parse(
             input_file=input_file,
@@ -328,6 +348,7 @@ class DocumentParser:
             str: _description_
 
         """
+        logger.debug(f"kwargs: {kwargs}")
         if return_metadata and OutputFileType.JSON not in parser.output_file_types:
             metadata_not_allowed = (
                 f"metadata out not permitted for parser {parser.name}."
