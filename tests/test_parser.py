@@ -105,7 +105,7 @@ def test_detect_filetype_invalid_input_output():
 def test_detect_filetype_invalid_input():
     with pytest.raises(InvalidInputFileTypeError) as exc:
         DocumentParser.detect_filetype(
-            file="badfile.exe", permitted_file_enum_list=MarkerParser.input_file_types
+            file="badfile.exe", permitted_file_enum_list=MarkerParser.input_types
         )
     assert "not permitted" in str(exc.value)
 
@@ -303,9 +303,7 @@ def test_explicit_filetype_for_file(mock_pypandoc, mock_check_language):
 def test_parse_jats_xml_file(mock_pypandoc, mock_check_language):
     parser = DocumentParser()
     # simulate parsing a JATS/XML file
-    result = parser(
-        "article.xml", parser=PandocParser, input_file_type=InputFileType.XML
-    )
+    result = parser("article.xml", parser=PandocParser, input_type=InputFileType.XML)
     assert result.text == "converted article.xml to md (jats)"
 
 
@@ -320,7 +318,7 @@ def test_parse_jats_xml_string(monkeypatch, mock_check_language):
     result = parser(
         jats_string,
         parser=PandocParser,
-        input_file_type=InputFileType.XML,
+        input_type=InputFileType.XML,
         input_is_string=True,
     )
     assert result.text == "converted string to md (jats)"

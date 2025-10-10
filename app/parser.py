@@ -100,14 +100,14 @@ class ParserLibrary(ABC):
     """Base parser class."""
 
     name: str
-    input_file_types: list[InputFileType]
+    input_types: list[InputFileType]
     output_file_types: list[OutputFileType]
 
     @classmethod
     @abstractmethod
     def parse(
         cls,
-        input_file: str | PathLike,
+        input_: str | PathLike,
         *,
         return_metadata: bool = False,
         return_images: bool = False,
@@ -118,7 +118,7 @@ class ParserLibrary(ABC):
         Intentionelly left blank as this should be populated in sub-classes.
 
         Args:
-            input_file (str | PathLike): Path to input file.
+            input_ (str | PathLike): Path to input file or string of input string.
             return_metadata (bool, optional): Return json metadata. Defaults to False.
             return_images (bool, optional): Return images in document. Defaults to False.
 
@@ -136,20 +136,20 @@ class MarkerParser(ParserLibrary):
     """Parser with `marker` backend."""
 
     name = "marker"
-    input_file_types = [InputFileType.PDF]
+    input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
 
     @classmethod
     def parse(
         cls,
-        input_file: str | PathLike,
+        input_: str | PathLike,
         *,
         return_metadata: bool = False,
         return_images: bool = False,
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using marker."""
-        rendered = converter(input_file)
+        rendered = converter(input_)
         text, extension, images = text_from_rendered(rendered)
         out = {"text": text}
         if return_metadata:
@@ -163,14 +163,14 @@ class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
     name = "pandoc"
-    input_file_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
+    input_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
     output_file_types = [OutputFileType.MD]
 
     @classmethod
     def parse(
         cls,
-        input_file: str | PathLike,
-        input_file_type: InputFileType | str | None = None,
+        input_: str | PathLike,
+        input_type: InputFileType | str | None = None,
         *,
         input_is_string: bool = False,
         return_metadata: bool = False,
@@ -181,19 +181,17 @@ class PandocParser(ParserLibrary):
         if True in [return_images, return_metadata]:
             image_meta_erro = "PandocParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(image_meta_erro)
-        if input_is_string and not input_file_type:
+        if input_is_string and not input_type:
             missing_filetype = (
-                "if input is str in memory, provide format as `input_file_type`."
+                "if input is str in memory, provide format as `input_type`."
             )
             raise InvalidInputFileTypeError(missing_filetype)
-        if not input_file_type:
-            input_file_type = DocumentParser.detect_filetype(
-                input_file, cls.input_file_types
-            )
-        if isinstance(input_file_type, InputFileType):
-            input_file_type = input_file_type.value
-        if input_file_type == "xml":
-            input_file_type = "jats"
+        if not input_type:
+            input_type = DocumentParser.detect_filetype(input_, cls.input_types)
+        if isinstance(input_type, InputFileType):
+            input_type = input_type.value
+        if input_type == "xml":
+            input_type = "jats"
 
         if input_is_string:
             parse_method = pypandoc.convert_text
@@ -202,9 +200,9 @@ class PandocParser(ParserLibrary):
 
         out = {
             "text": parse_method(
-                input_file,
+                input_,
                 to="md",
-                format=input_file_type,
+                format=input_type,
             )
         }
         return ParsedOutput(**out)
@@ -225,11 +223,7 @@ class DocumentParser:
     ) -> None:
         """
         Initialise instance of DocumentParser with default parsers.
-
-        Args:
-            default_parser_pdf (ParserLibrary, optional): _description_. Defaults to MARKER_PARSER.
-            default_parser_epub (ParserLibrary, optional): _description_. Defaults to PANDOC_PARSER.
-            default_parser_html (ParserLibrary, optional): _description_. Defaults to PANDOC_PARSER.
+        Default parsers are in dict.
 
         """
         self.parsers = parsers
@@ -240,24 +234,24 @@ class DocumentParser:
 
     def __call__(  # noqa: PLR0913 - img/meta needs to be explicit (non-kwargs) here.
         self,
-        input_file: str | PathLike,
+        input_: str | PathLike,
         out_path: str | PathLike | None = None,
         parser: type[ParserLibrary] | None = None,
-        input_file_type: InputFileType | str | None = None,
+        input_type: InputFileType | str | None = None,
         *,
         return_images: bool = False,
         return_metadata: bool = False,
         **kwargs,
     ) -> ParsedOutput:
         """
-        Run the parser on one input_file.
+        Run the parser on one input_.
 
         Args:
-            input_file (str | PathLike): _description_
+            input_ (str | PathLike): File(path) or str of input_.
             output_file (str | PathLike | None): If None, return parsed content as str.
             parser (ParserLibrary | None, optional): _description_. Defaults to None. If None,
                                                      uses the default parser.
-            input_file_type (InputFileType | None, optional): _description_. Defaults to None.
+            input_type (InputFileType | None, optional): _description_. Defaults to None.
                                                              If None, infers file type using `detect_filetype`.
             return_images (bool): Defaults to False. Whether to write parsed images (JPEG) to file, or not. `out_path`
                                 can't be None.
@@ -268,44 +262,57 @@ class DocumentParser:
 
         """
         logger.debug(f"kwargs: {kwargs}")
-        if input_file_type is None:
+        if input_type is None:
             logger.debug(
                 "no input file type provided. using `detect_filetype` to infer."
             )
             try:
-                input_file_type = InputFileType(
+                input_type = InputFileType(
                     self.detect_filetype(
-                        file=input_file,
+                        file=input_,
                         permitted_file_enum_list=list(InputFileType),
                     )
                 )
             except ValueError as ve:
                 raise InvalidInputFileTypeError(ve) from ve
-        logger.debug(f"input file type: {input_file_type}.")
+        logger.debug(f"input file type: {input_type}.")
 
         if parser is not None and (
             (not isinstance(parser, type)) or (not issubclass(parser, ParserLibrary))
         ):
             bad_parser_err = f"parser {parser} is not a valid ParserLibrary."
             raise FileParserMismatchError(bad_parser_err)
-        if parser is None and input_file_type is not None:
+        if parser is None and input_type is not None:
             logger.debug("parser not supplied. selecting default parser for file_type.")
-            if isinstance(input_file_type, str):
-                input_file_type = InputFileType(input_file_type)
-            if self.parsers is None or input_file_type.value not in self.parsers:
+            if isinstance(input_type, str):
+                try:
+                    input_type = InputFileType(input_type)
+                except ValueError as ve:
+                    if "is not a valid InputFileType" in str(ve):
+                        invalid_input_ft = f"{input_type} is not a valid InputFileType"
+                        raise InvalidInputFileTypeError(invalid_input_ft) from ve
+            if (
+                self.parsers is None
+                or (isinstance(input_type, str) and input_type not in self.parsers)
+                or (
+                    isinstance(input_type, InputFileType)
+                    and input_type.value not in self.parsers
+                )
+            ):
                 missing_parser = "no parser supplied."
                 raise ValueError(missing_parser)
-            parser = self.parsers[input_file_type.value]
-        if parser is None or (
-            parser is None and input_file_type is None
-        ):  # for pedantic mypy
-            missing_parser = "no parser supplied."
-            raise ValueError(missing_parser)
+            if isinstance(input_type, InputFileType):
+                parser = self.parsers[input_type.value]
+            elif isinstance(input_type, str):
+                parser = self.parsers[input_type]
+            else:
+                missing_parser = "no parser supplied."
+                raise ValueError(missing_parser)
         logger.debug(f"parser: {parser}.")
-        kwargs["input_file_type"] = input_file_type
+        kwargs["input_type"] = input_type
 
         parsed = self.parse(
-            input_file=input_file,
+            input_=input_,
             parser=parser,
             return_images=return_images,
             return_metadata=return_metadata,
@@ -327,7 +334,7 @@ class DocumentParser:
 
     def parse(
         self,
-        input_file: str | PathLike,
+        input_: str | PathLike,
         parser: type[ParserLibrary],
         *,
         return_metadata: bool = False,
@@ -339,8 +346,8 @@ class DocumentParser:
         Wraps around specific parser methods.
 
         Args:
-            input_file (str | PathLike): _description_
-            input_file_type (InputFileType): _description_
+            input_ (str | PathLike): _description_
+            input_type (InputFileType): _description_
             parser (ParserLibrary): _description_
             parse_method (Callable[[str  |  PathLike, ParserLibrary], str]): _description_
 
@@ -359,7 +366,7 @@ class DocumentParser:
             raise InvalidOutputFileTypeError(images_not_allowed)
 
         return parser.parse(
-            input_file=input_file,
+            input_=input_,
             return_metadata=return_metadata,
             return_images=return_images,
             **kwargs,
