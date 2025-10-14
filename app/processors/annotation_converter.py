@@ -1,6 +1,5 @@
 """Convert annotation JSON files to Pydantic models."""
 
-import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -483,6 +482,7 @@ class AnnotationConverter:
         self,
         processed_data: ProcessedAnnotationData,
         output_dir: str | Path,
+        input_filename: str | None = None,
     ) -> dict[str, str]:
         """
         Save processed data to structured files using Pydantic model serialization.
@@ -490,13 +490,25 @@ class AnnotationConverter:
         Args:
             processed_data: The processed data from process_annotation_file
             output_dir: Directory to save the processed files (required - no default to prevent accidental commits)
+            input_filename: Optional filename to create a subdirectory (if not provided, saves directly to output_dir)
 
         Returns:
             Dictionary mapping data types to saved file paths
 
         """
-        # Create the EPPI subdirectory
-        eppi_path = Path(output_dir)
+        # Create the output directory structure
+        base_path = Path(output_dir)
+
+        # Always create an 'eppi' subdirectory
+        eppi_base_path = base_path / "eppi"
+
+        # If input_filename is provided, create a subdirectory with the filename (without extension)
+        if input_filename:
+            filename_without_ext = Path(input_filename).stem
+            eppi_path = eppi_base_path / filename_without_ext
+        else:
+            eppi_path = eppi_base_path
+
         eppi_path.mkdir(parents=True, exist_ok=True)
 
         saved_files = {}
@@ -527,36 +539,3 @@ class AnnotationConverter:
         saved_files["attribute_mapping"] = str(mapping_file)
 
         return saved_files
-
-
-def main() -> None:
-    """Run the annotation converter CLI."""
-    parser = argparse.ArgumentParser(
-        description="Convert EPPI annotations to structured format"
-    )
-    parser.add_argument("input_file", help="Path to the raw EPPI JSON file")
-    parser.add_argument("output_dir", help="Directory to save processed files")
-    args = parser.parse_args()
-
-    # Validate input file exists
-    input_path = Path(args.input_file)
-    if not input_path.exists():
-        logger.error(f"Input file does not exist: {input_path}")
-        return
-
-    # Create output directory if it doesn't exist
-    output_path = Path(args.output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    # Process the annotation file
-    converter = AnnotationConverter()
-    processed_data = converter.process_annotation_file(str(input_path))
-    saved_files = converter.save_processed_data(processed_data, str(output_path))
-
-    logger.info("Conversion complete!")
-    for file_type, file_path in saved_files.items():
-        logger.info(f"  {file_type}: {file_path}")
-
-
-if __name__ == "__main__":
-    main()

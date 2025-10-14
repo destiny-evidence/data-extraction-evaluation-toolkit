@@ -153,9 +153,7 @@ class EppiCodeSet(BaseModel):
     CodeSets contain hierarchical attribute definitions used in EPPI-Reviewer.
     """
 
-    model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
-
-    attributes: dict[str, Any] | None = None
+    attributes: dict[str, Any] | None = Field(alias="Attributes", default=None)
 
     def get_attributes_list(self) -> list[dict[str, Any]]:
         """Extract AttributesList from the CodeSet."""
@@ -172,10 +170,8 @@ class EppiRawData(BaseModel):
     making it easier to work with and validate.
     """
 
-    model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
-
-    code_sets: list[EppiCodeSet] = []
-    references: list[dict[str, Any]] = []
+    code_sets: list[EppiCodeSet] = Field(alias="CodeSets", default=[])
+    references: list[dict[str, Any]] = Field(alias="References", default=[])
 
     def extract_all_attributes(
         self, flatten_hierarchy_func: Callable[[list], list]
