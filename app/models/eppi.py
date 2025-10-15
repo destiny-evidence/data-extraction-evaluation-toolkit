@@ -7,7 +7,7 @@ from destiny_sdk.references import Reference
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
-from app.models.base import AnnotationType, Attribute, DataType, Document, GoldStandardAnnotation
+from app.models.base import AnnotationType, Attribute, Document, GoldStandardAnnotation
 
 
 class EppiAttribute(Attribute):
@@ -22,7 +22,9 @@ class EppiAttribute(Attribute):
 
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: DataType = DataType.BOOLEAN  # Always boolean for EPPI
+    output_data_type: (
+        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
+    ) = bool  # Always boolean for EPPI
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(
@@ -95,15 +97,14 @@ class EppiItemAttributeFullTextDetails(BaseModel):
     text: str | None = None
     item_arm: str | None = None
 
-    @model_validator(mode="after")
-    def validate_at_least_one_field(self) -> "EppiItemAttributeFullTextDetails":
+    @model_validator(mode="before")
+    @classmethod
+    def validate_at_least_one_field(cls, data: dict) -> dict:
         """Ensure at least one field is not None."""
-        if all(
-            field is None for field in [self.item_document_id, self.text, self.item_arm]
-        ):
+        if all(v is None for k, v in data.items()):
             msg = "At least one field must be provided (item_document_id, text, or item_arm)"
             raise ValueError(msg)
-        return self
+        return data
 
 
 class EppiGoldStandardAnnotation(GoldStandardAnnotation):

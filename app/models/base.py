@@ -14,17 +14,6 @@ class AnnotationType(str, Enum):
     LLM = "llm"
 
 
-class DataType(str, Enum):
-    """Enumeration of supported data types for attributes."""
-
-    BOOLEAN = "bool"
-    INTEGER = "int"
-    STRING = "str"
-    LIST = "list"
-    DICT = "dict"
-    FLOAT = "float"
-
-
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.
@@ -33,7 +22,9 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: DataType  # Expected data type for the attribute
+    output_data_type: (
+        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
+    )  # Expected data type for the attribute
     attribute_id: str  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 

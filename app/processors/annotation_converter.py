@@ -9,7 +9,7 @@ from destiny_sdk.enhancements import Visibility
 from destiny_sdk.references import Reference
 
 from app.logger import logger
-from app.models.base import AnnotationType, DataType
+from app.models.base import AnnotationType
 from app.models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -47,7 +47,7 @@ class AnnotationConverter:
         return {
             # Core fields that need manual processing
             "question_target": "",  # Always empty for EPPI
-            "output_data_type": DataType.BOOLEAN,  # Always boolean for EPPI
+            "output_data_type": bool,  # Always boolean for EPPI
             "attribute_id": str(attr_data.get("AttributeId", "")),  # Convert int to str
             "attribute_label": attr_data.get("AttributeName", ""),
             # Note: All other fields (attribute_set_description, hierarchy_path, etc.)
@@ -91,15 +91,15 @@ class AnnotationConverter:
             visibility=Visibility.PUBLIC,
         )
 
-    def load_json_annotations(self, file_path: str | Path) -> dict[str, Any]:
+    def load_eppi_json_annotations(self, file_path: str | Path) -> dict[str, Any]:
         """
-        Load JSON annotations from a file.
+        Load EPPI-Reviewer JSON annotations from a file.
 
         Args:
-            file_path: Path to the JSON annotation file
+            file_path: Path to the EPPI JSON annotation file
 
         Returns:
-            Dictionary containing the loaded annotations
+            Dictionary containing the loaded EPPI annotations
 
         """
         with Path(file_path).open("r", encoding="utf-8") as f:
@@ -401,7 +401,7 @@ class AnnotationConverter:
         logger.info(f"Processing annotation file: {file_path}")
 
         # Load and validate raw data
-        data = self.load_json_annotations(file_path)
+        data = self.load_eppi_json_annotations(file_path)
         raw_data = EppiRawData.model_validate(data)
 
         # Extract and flatten attributes from both CodeSets using structured approach
