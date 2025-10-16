@@ -2,7 +2,6 @@
 
 from uuid import uuid4
 
-import pytest
 from destiny_sdk.references import Reference
 
 from app.models.base import (
