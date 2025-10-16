@@ -14,11 +14,6 @@ class TestAnnotationConverter:
     """Test AnnotationConverter with real EPPI data."""
 
     @pytest.fixture
-    def converter(self) -> AnnotationConverter:
-        """Create AnnotationConverter instance for testing."""
-        return AnnotationConverter()
-
-    @pytest.fixture
     def sample_eppi_data(self) -> dict:
         """Load real EPPI data from test file."""
         sample_file = Path("tests/test_files/input/sample_eppi.json")
@@ -26,9 +21,10 @@ class TestAnnotationConverter:
             return json.load(f)
 
     def test_load_eppi_json_annotations_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test loading EPPI JSON annotations with real data."""
+        converter = AnnotationConverter()
         with patch(
             "pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))
         ):
@@ -39,20 +35,18 @@ class TestAnnotationConverter:
             assert len(result["CodeSets"]) == 2
             assert len(result["References"]) > 0
 
-    def test_load_eppi_json_annotations_file_not_found(
-        self, converter: AnnotationConverter
-    ) -> None:
+    def test_load_eppi_json_annotations_file_not_found(self) -> None:
         """Test loading EPPI JSON annotations when file doesn't exist."""
+        converter = AnnotationConverter()
         with (
             patch("pathlib.Path.open", side_effect=FileNotFoundError("File not found")),
             pytest.raises(FileNotFoundError),
         ):
             converter.load_eppi_json_annotations("nonexistent.json")
 
-    def test_load_eppi_json_annotations_invalid_json(
-        self, converter: AnnotationConverter
-    ) -> None:
+    def test_load_eppi_json_annotations_invalid_json(self) -> None:
         """Test loading EPPI JSON annotations with invalid JSON."""
+        converter = AnnotationConverter()
         with (
             patch("pathlib.Path.open", mock_open(read_data="invalid json")),
             pytest.raises(json.JSONDecodeError),
@@ -60,9 +54,10 @@ class TestAnnotationConverter:
             converter.load_eppi_json_annotations("invalid.json")
 
     def test_process_annotation_file_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test processing annotation file with real EPPI data."""
+        converter = AnnotationConverter()
         with patch(
             "pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))
         ):
@@ -79,9 +74,10 @@ class TestAnnotationConverter:
             assert len(result.documents) > 0
 
     def test_convert_to_eppi_attributes_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test converting to EPPI attributes with real data."""
+        converter = AnnotationConverter()
         # Create EppiRawData from real data
         raw_data = EppiRawData.model_validate(sample_eppi_data)
 
@@ -103,9 +99,10 @@ class TestAnnotationConverter:
         assert first_attr.question_target == ""  # Should be empty for EPPI
 
     def test_extract_attributes_from_codesets_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test extracting attributes from CodeSets with real data."""
+        converter = AnnotationConverter()
         raw_data = EppiRawData.model_validate(sample_eppi_data)
         attributes_raw = converter._extract_attributes_from_codesets(raw_data)  # noqa: SLF001
 
@@ -120,9 +117,10 @@ class TestAnnotationConverter:
         assert "hierarchy_level" in first_attr
 
     def test_flatten_attributes_hierarchy_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test flattening attributes hierarchy with real data."""
+        converter = AnnotationConverter()
         raw_data = EppiRawData.model_validate(sample_eppi_data)
         all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)  # noqa: SLF001
 
@@ -137,9 +135,7 @@ class TestAnnotationConverter:
             assert "hierarchy_path" in attr
             assert "hierarchy_level" in attr
 
-    def test_validate_eppi_data_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
-    ) -> None:
+    def test_validate_eppi_data_with_real_data(self, sample_eppi_data: dict) -> None:
         """Test validating EPPI data with real data."""
         raw_data = EppiRawData.model_validate(sample_eppi_data)
 
@@ -149,9 +145,7 @@ class TestAnnotationConverter:
         assert len(raw_data.code_sets) == 2
         assert len(raw_data.references) > 0
 
-    def test_validate_eppi_data_invalid_structure(
-        self, converter: AnnotationConverter
-    ) -> None:
+    def test_validate_eppi_data_invalid_structure(self) -> None:
         """Test validating EPPI data with invalid structure."""
         # EppiRawData has default values, so invalid data just gets defaults
         invalid_data = {"invalid": "structure"}
@@ -163,9 +157,10 @@ class TestAnnotationConverter:
         assert result.references == []
 
     def test_process_document_data_for_validation_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test processing document data with real data."""
+        converter = AnnotationConverter()
         # Get first reference from real data
         first_ref = sample_eppi_data["References"][0]
 
@@ -178,9 +173,10 @@ class TestAnnotationConverter:
         assert "document_id" in processed
 
     def test_process_attribute_data_for_validation_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test processing attribute data with real data."""
+        converter = AnnotationConverter()
         # Get first attribute from real data
         first_attr = sample_eppi_data["CodeSets"][0]["Attributes"]["AttributesList"][0]
 
@@ -195,9 +191,10 @@ class TestAnnotationConverter:
         assert processed["output_data_type"] is bool  # Should be bool for EPPI
 
     def test_create_reference_from_document_data_with_real_data(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
+        self, sample_eppi_data: dict
     ) -> None:
         """Test creating reference from document data with real data."""
+        converter = AnnotationConverter()
         # Get first reference from real data
         first_ref = sample_eppi_data["References"][0]
 
@@ -209,10 +206,9 @@ class TestAnnotationConverter:
         # Reference object has different structure than expected
         assert reference.id is not None
 
-    def test_integration_full_workflow(
-        self, converter: AnnotationConverter, sample_eppi_data: dict
-    ) -> None:
+    def test_integration_full_workflow(self, sample_eppi_data: dict) -> None:
         """Test full integration workflow with real data."""
+        converter = AnnotationConverter()
         with patch(
             "pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))
         ):
@@ -240,10 +236,9 @@ class TestAnnotationConverter:
             assert hasattr(first_doc, "document_id")
             assert hasattr(first_doc, "citation")
 
-    def test_error_handling_malformed_data(
-        self, converter: AnnotationConverter
-    ) -> None:
+    def test_error_handling_malformed_data(self) -> None:
         """Test error handling with malformed data."""
+        converter = AnnotationConverter()
         malformed_data = {
             "CodeSets": "not_a_list",  # Should be a list
             "References": [],
@@ -255,8 +250,9 @@ class TestAnnotationConverter:
         ):
             converter.process_annotation_file("malformed.json")
 
-    def test_empty_data_handling(self, converter: AnnotationConverter) -> None:
+    def test_empty_data_handling(self) -> None:
         """Test handling of empty data."""
+        converter = AnnotationConverter()
         empty_data: dict = {
             "CodeSets": [],
             "References": [],
