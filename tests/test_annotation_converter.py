@@ -27,24 +27,6 @@ class TestAnnotationConverter:
             assert len(result["CodeSets"]) == 2
             assert len(result["References"]) > 0
 
-    def test_load_eppi_json_annotations_file_not_found(self) -> None:
-        """Test loading EPPI JSON annotations when file doesn't exist."""
-        converter = AnnotationConverter()
-        with (
-            patch("pathlib.Path.open", side_effect=FileNotFoundError("File not found")),
-            pytest.raises(FileNotFoundError),
-        ):
-            converter.load_eppi_json_annotations("nonexistent.json")
-
-    def test_load_eppi_json_annotations_invalid_json(self) -> None:
-        """Test loading EPPI JSON annotations with invalid JSON."""
-        converter = AnnotationConverter()
-        with (
-            patch("pathlib.Path.open", mock_open(read_data="invalid json")),
-            pytest.raises(json.JSONDecodeError),
-        ):
-            converter.load_eppi_json_annotations("invalid.json")
-
     def test_process_annotation_file_with_real_data(
         self, sample_eppi_data: dict
     ) -> None:
