@@ -9,12 +9,13 @@ import argparse
 import sys
 from pathlib import Path
 
+from loguru import logger
+
 # Add the project root to Python path so we can import app modules
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Import app modules after path setup
-from loguru import logger
 from app.processors.annotation_converter import AnnotationConverter  # noqa: E402
 
 
