@@ -1,7 +1,6 @@
 """Tests for annotation converter using real EPPI data."""
 
 import json
-from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -12,13 +11,6 @@ from app.processors.annotation_converter import AnnotationConverter
 
 class TestAnnotationConverter:
     """Test AnnotationConverter with real EPPI data."""
-
-    @pytest.fixture
-    def sample_eppi_data(self) -> dict:
-        """Load real EPPI data from test file."""
-        sample_file = Path("tests/test_files/input/sample_eppi.json")
-        with sample_file.open() as f:
-            return json.load(f)
 
     def test_load_eppi_json_annotations_with_real_data(
         self, sample_eppi_data: dict
