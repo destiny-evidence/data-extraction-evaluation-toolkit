@@ -20,8 +20,8 @@ class TestAnnotationConverter:
 
     @pytest.fixture
     def sample_eppi_data(self) -> dict:
-        """Load real EPPI data from sample file."""
-        sample_file = Path("app/annotations/raw/eppi/sample_eppi.json")
+        """Load real EPPI data from test file."""
+        sample_file = Path("tests/test_files/input/sample_eppi.json")
         with sample_file.open() as f:
             return json.load(f)
 
