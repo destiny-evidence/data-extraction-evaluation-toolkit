@@ -264,9 +264,9 @@ class AttributeAnswerCoT(BaseModel):
     attribute_name: str = Field(
         description="The name of the attribute being asked about"
     )
-    Answer: str = Field(description="The answer to the question, 'True' or 'False'")
-    Reasoning: str = Field(description="The reasoning behind the answer")
-    Citation: str | None = Field(
+    answer: str = Field(description="The answer to the question, 'True' or 'False'")
+    reasoning: str = Field(description="The reasoning behind the answer")
+    citation: str | None = Field(
         description="The citation from the Research Information to support the answer"
     )
 
