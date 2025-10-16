@@ -14,7 +14,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Import app modules after path setup
-from app.logger import logger  # noqa: E402
+from loguru import logger
 from app.processors.annotation_converter import AnnotationConverter  # noqa: E402
 
 
