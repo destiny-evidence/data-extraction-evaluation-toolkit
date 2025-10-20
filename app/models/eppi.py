@@ -124,6 +124,10 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
         description="Notes provided by the annotator - usually the citation from the paper containing the context window where the attribute is found",
         default=None,
     )
+    reasoning: str | None = Field(
+        description="Reasoning or explanation for the annotation decision - particularly useful for LLM annotations",
+        default=None,
+    )
     arm_id: int | None = Field(
         description="ID of the study arm this annotation relates to", default=None
     )
