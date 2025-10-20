@@ -260,24 +260,3 @@ class ProcessedAnnotationData(BaseModel):
             if attr.attribute_id == attribute_id:
                 return attr
         return None
-
-
-class AttributeAnswerCoT(BaseModel):
-    """Detailed answer format for a single attribute with reasoning."""
-
-    attribute_name: str = Field(
-        description="The name of the attribute being asked about"
-    )
-    answer: str = Field(description="The answer to the question, 'True' or 'False'")
-    reasoning: str = Field(description="The reasoning behind the answer")
-    citation: str | None = Field(
-        description="The citation from the Research Information to support the answer"
-    )
-
-
-class BatchAnswerFormatCoT(BaseModel):
-    """Batch answers for all attributes with reasoning."""
-
-    answers: list[AttributeAnswerCoT] = Field(
-        description="List of answers for each attribute"
-    )

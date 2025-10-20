@@ -3,47 +3,26 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
 
 import litellm
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
 
 from app.logger import logger
+from app.models.base import AnnotationType
+from app.models.eppi import EppiAttribute, EppiGoldStandardAnnotation
 
 # Load environment variables
 load_dotenv(override=True)
 
 
-class AttributeAnswerCoT(BaseModel):
-    """Detailed answer format for a single attribute with reasoning."""
-
-    attribute_name: str = Field(
-        description="The name of the attribute being asked about"
-    )
-    Answer: str = Field(description="The answer to the question, 'True' or 'False'")
-    Reasoning: str = Field(description="The reasoning behind the answer")
-    Citation: str | None = Field(
-        description="The citation from the Research Information to support the answer"
-    )
-
-
-class BatchAnswerFormatCoT(BaseModel):
-    """Batch answers for all attributes with reasoning."""
-
-    answers: list[AttributeAnswerCoT] = Field(
-        description="List of answers for each attribute"
-    )
-
-
 def call_llm(
-    document_context: str, attributes: list[dict[str, Any]]
-) -> BatchAnswerFormatCoT:
+    document_context: str, attributes: list[EppiAttribute]
+) -> list[EppiGoldStandardAnnotation]:
     """Call LLM to evaluate document against attributes."""
     # Create prompt
     attributes_text = "\n".join(
         [
-            f"- {attr['attribute_label']} (ID: {attr['attribute_id']}): {attr['attribute_set_description']}"
+            f"- {attr.attribute_label} (ID: {attr.attribute_id}): {attr.attribute_set_description or 'No description'}"
             for attr in attributes
         ]
     )
@@ -63,12 +42,13 @@ Attributes:
 
 Respond in JSON format:
 {{
-    "answers": [
+    "annotations": [
         {{
-            "attribute_name": "Attribute Name",
-            "Answer": "True" or "False",
-            "Reasoning": "Your reasoning",
-            "Citation": "Supporting text from document (or null)"
+            "attribute_id": "attribute_id",
+            "output_data": true or false,
+            "annotation_type": "llm",
+            "additional_text": "Supporting text from document (or null)",
+            "reasoning": "Your reasoning for the decision"
         }}
     ]
 }}
@@ -125,7 +105,27 @@ Respond in JSON format:
 
     # Parse response
     result = json.loads(response_content)
-    return BatchAnswerFormatCoT(**result)
+
+    # Create EppiGoldStandardAnnotation objects
+    annotations = []
+    for annotation_data in result.get("annotations", []):
+        # Find the corresponding attribute
+        attribute_id = annotation_data.get("attribute_id")
+        attribute = next(
+            (attr for attr in attributes if attr.attribute_id == attribute_id), None
+        )
+
+        if attribute:
+            annotation = EppiGoldStandardAnnotation(
+                attribute=attribute,
+                output_data=annotation_data.get("output_data", False),
+                annotation_type=AnnotationType.LLM,
+                additional_text=annotation_data.get("additional_text"),
+                reasoning=annotation_data.get("reasoning"),
+            )
+            annotations.append(annotation)
+
+    return annotations
 
 
 def main() -> None:
@@ -146,29 +146,34 @@ def main() -> None:
         annotated_docs = json.load(f)
 
     with attributes_file.open() as f:
-        attributes = json.load(f)
+        attributes_data = json.load(f)
 
     # Get first document and first 2 attributes
     sample_doc = annotated_docs[0]
-    sample_attributes = attributes[:2]
+    sample_attributes_data = attributes_data[:2]
 
     # Extract document context
-    document_context = sample_doc.get("document", {}).get("abstract", "")
+    document_context = sample_doc.get("context", "")
     if not document_context:
-        document_context = sample_doc.get("document", {}).get("title", "")
+        document_context = sample_doc.get("name", "")
 
-    # Prepare attributes for LLM
-    attrs = [
-        {
-            "attribute_id": attr["attribute_id"],
-            "attribute_label": attr["attribute_label"],
-            "attribute_set_description": attr["attribute_set_description"],
+    # Convert attributes data to EppiAttribute objects
+    attributes = []
+    for attr_data in sample_attributes_data:
+        # Convert the JSON data to EppiAttribute format
+        processed_attr_data = {
+            "question_target": "",
+            "output_data_type": bool,
+            "attribute_id": str(attr_data.get("attribute_id", "")),
+            "attribute_label": attr_data.get("attribute_label", ""),
+            "attribute_set_description": attr_data.get("attribute_set_description"),
+            "attribute_type": attr_data.get("attribute_type"),
         }
-        for attr in sample_attributes
-    ]
+        attribute = EppiAttribute.model_validate(processed_attr_data)
+        attributes.append(attribute)
 
     logger.info("Calling LLM...")
-    result = call_llm(document_context, attrs)
+    annotations = call_llm(document_context, attributes)
 
     # Display results
     logger.info("")
@@ -176,19 +181,21 @@ def main() -> None:
     logger.info("RESULTS")
     logger.info("=" * 60)
 
-    for answer in result.answers:
+    for annotation in annotations:
         logger.info("")
-        logger.info(answer.attribute_name)
-        logger.info(f"Answer: {answer.Answer}")
-        logger.info(f"Reasoning: {answer.Reasoning}")
-        if answer.Citation:
-            logger.info(f"Citation: {answer.Citation}")
+        logger.info(annotation.attribute.attribute_label)
+        logger.info(f"Output Data: {annotation.output_data}")
+        logger.info(f"Reasoning: {annotation.reasoning}")
+        if annotation.additional_text:
+            logger.info(f"Additional Text: {annotation.additional_text}")
         logger.info("-" * 40)
 
     # Save results
     output_file = base_dir / "simple_evaluation_results.json"
     with output_file.open("w") as f:
-        json.dump(result.model_dump(), f, indent=2)
+        # Convert annotations to dict for JSON serialization
+        annotations_data = [annotation.model_dump() for annotation in annotations]
+        json.dump({"annotations": annotations_data}, f, indent=2)
 
     logger.info("")
     logger.info(f"Results saved to: {output_file}")
