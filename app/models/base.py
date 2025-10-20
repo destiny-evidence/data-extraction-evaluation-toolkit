@@ -1,13 +1,17 @@
 """Core data models for document processing and annotation."""
 
-from __future__ import annotations
+from enum import Enum
+from typing import Any
 
-from typing import TYPE_CHECKING, Any
-
+from destiny_sdk.references import Reference
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    from destiny_sdk.references import Reference
+
+class AnnotationType(str, Enum):
+    """Enumeration of annotation types."""
+
+    HUMAN = "human"
+    LLM = "llm"
 
 
 class Attribute(BaseModel):
@@ -18,7 +22,9 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: Any  # e.g. int, str, list, dict - expected data type
+    output_data_type: (
+        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
+    )  # Expected data type for the attribute
     attribute_id: str  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 
@@ -28,9 +34,13 @@ class AttributesList(BaseModel):
 
     attributes: list[Attribute]
 
+    def __iter__(self):  # noqa: ANN204
+        """Make AttributesList iterable over its attributes."""
+        yield from self.attributes
+
     def to_list(self) -> list[Attribute]:
         """Convert to a simple list of attributes."""
-        return list(self.attributes)
+        return list(self)
 
 
 class Document(BaseModel):
@@ -48,10 +58,10 @@ class GoldStandardAnnotation(BaseModel):
 
     attribute: Attribute
     output_data: Any
+    annotation_type: AnnotationType
 
 
-class GoldStandardAnnotatedDocument(BaseModel):
+class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
 
-    document: Document
     annotations: list[GoldStandardAnnotation]

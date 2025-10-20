@@ -58,26 +58,31 @@ The first time you run anything from `app/parser.py`, you will likely have to wa
 
 ### Annotation Converter
 
-Before running LLM evaluation, you need to process raw EPPI-Reviewer JSON annotations into structured format. The annotation converter script is available at `app/scripts/annotation_converter.py` and can be used to convert raw EPPI-Reviewer data into the structured format needed for LLM evaluation.
+Before running LLM evaluation, you need to process raw EPPI-Reviewer JSON annotations into structured format. The annotation converter script is available at `app/scripts/annotation_converter_cli.py` and can be used to convert raw EPPI-Reviewer data into the structured format needed for LLM evaluation.
 
 **Usage:**
 
 ```bash
-uv run python app/scripts/annotation_converter.py <input_file> <output_dir>
+uv run python app/scripts/annotation_converter_cli.py <input_file> <output_dir>
 ```
 
 **Example:**
 
 ```bash
-uv run python app/scripts/annotation_converter.py input_path output_path
+uv run python app/scripts/annotation_converter_cli.py app/annotations/raw/eppi/sample_eppi.json output/processed
 ```
 
-This creates:
+This creates an organized directory structure:
 
-- `annotated_documents.json` - Documents with their annotations
-- `attributes.json` - All available attributes
-- `documents.json` - Document metadata
-- `attribute_id_to_label_mapping.json` - Attribute ID to label mapping
+```text
+output/processed/eppi/{filename_without_extension}/
+├── attributes.json
+├── documents.json
+├── annotated_documents.json
+└── attribute_id_to_label_mapping.json
+```
+
+For example, processing `sample_eppi.json` creates `output/processed/eppi/sample_eppi/` with the JSON files inside.
 
 ## LLM Evaluation
 

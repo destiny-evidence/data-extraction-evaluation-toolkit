@@ -1,24 +1,24 @@
 """Convert annotation JSON files to Pydantic models."""
 
-from __future__ import annotations
-
 import json
-import uuid
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
+from destiny_sdk.enhancements import Visibility
 from destiny_sdk.references import Reference
 
+from app.logger import logger
+from app.models.base import AnnotationType
 from app.models.eppi import (
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotatedDocument,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
+    EppiRawData,
+    ProcessedAnnotationData,
 )
-
-# Rebuild models to resolve forward references
-EppiDocument.model_rebuild()
 
 
 class AnnotationConverter:
@@ -29,15 +29,77 @@ class AnnotationConverter:
     them while preserving parent-child relationships through path information.
     """
 
-    def load_json_annotations(self, file_path: str | Path) -> dict[str, Any]:
+    def process_attribute_data_for_validation(
+        self, attr_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
-        Load JSON annotations from a file.
+        Process raw attribute data for EppiAttribute validation.
+
+        Only handles fields that need manual processing - alias generators handle the rest.
 
         Args:
-            file_path: Path to the JSON annotation file
+            attr_data: Raw attribute data from EPPI JSON
 
         Returns:
-            Dictionary containing the loaded annotations
+            Dictionary with only the fields that need manual processing
+
+        """
+        return {
+            # Core fields that need manual processing
+            "question_target": "",  # Always empty for EPPI
+            "output_data_type": bool,  # Always boolean for EPPI
+            "attribute_id": str(attr_data.get("AttributeId", "")),  # Convert int to str
+            "attribute_label": attr_data.get("AttributeName", ""),
+            # Note: All other fields (attribute_set_description, hierarchy_path, etc.)
+            # are automatically mapped by alias generators from camelCase JSON
+        }
+
+    def process_document_data_for_validation(
+        self, document_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Process raw document data for EppiDocument validation.
+
+        Only handles fields that need manual processing - alias generators handle the rest.
+
+        Args:
+            document_data: Raw document data from EPPI JSON
+
+        Returns:
+            Dictionary with only the fields that need manual processing
+
+        """
+        return {
+            # Core fields that need manual processing
+            "name": document_data.get("Title"),  # Maps from "Title"
+            "citation": self._create_reference(
+                document_data
+            ),  # Complex object creation
+            "context": document_data.get("Abstract"),  # Maps from "Abstract"
+            "document_id": str(document_data.get("ItemId", "")),  # Convert int to str
+            "filename": document_data.get("Title", "").replace(" ", "_") + ".pdf"
+            if document_data.get("Title")
+            else None,
+            # Note: All EPPI-specific fields (item_id, title, parent_title, etc.)
+            # are automatically mapped by alias generators from camelCase JSON
+        }
+
+    def _create_reference(self, document_data: dict[str, Any]) -> Reference:
+        """Create a Reference object from document data."""
+        return Reference(
+            id=uuid4(),
+            visibility=Visibility.PUBLIC,
+        )
+
+    def load_eppi_json_annotations(self, file_path: str | Path) -> dict[str, Any]:
+        """
+        Load EPPI-Reviewer JSON annotations from a file.
+
+        Args:
+            file_path: Path to the EPPI JSON annotation file
+
+        Returns:
+            Dictionary containing the loaded EPPI annotations
 
         """
         with Path(file_path).open("r", encoding="utf-8") as f:
@@ -64,14 +126,14 @@ class AnnotationConverter:
             flattened_attr = {
                 "AttributeId": attr.get("AttributeId"),
                 "AttributeName": attr.get("AttributeName"),
-                "AttributeDescription": attr.get("AttributeDescription", ""),
-                "AttributeSetDescription": attr.get("AttributeSetDescription", ""),
-                "AttributeType": attr.get("AttributeType", ""),
+                "AttributeDescription": attr.get("AttributeDescription"),
+                "AttributeSetDescription": attr.get("AttributeSetDescription"),
+                "AttributeType": attr.get("AttributeType"),
                 "AttributeTypeId": attr.get("AttributeTypeId"),
                 "AttributeSetId": attr.get("AttributeSetId"),
                 "OriginalAttributeID": attr.get("OriginalAttributeID"),
-                "ExtURL": attr.get("ExtURL", ""),
-                "ExtType": attr.get("ExtType", ""),
+                "ExtURL": attr.get("ExtURL"),
+                "ExtType": attr.get("ExtType"),
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
                 "is_leaf": "Attributes" not in attr
@@ -112,21 +174,14 @@ class AnnotationConverter:
         attributes = []
 
         for attr_data in flattened_attributes:
-            # Create the attribute with proper mapping
-            attribute = EppiAttribute(
-                question_target="",  # Leave empty as requested
-                output_data_type="bool",  # All EPPI attributes are boolean as requested
-                attribute_id=str(attr_data.get("AttributeId", "")),
-                attribute_label=attr_data.get("AttributeName", ""),
-                attribute_set_description=attr_data.get("AttributeSetDescription", ""),
-                # Additional hierarchy information
-                hierarchy_path=attr_data.get("hierarchy_path", ""),
-                hierarchy_level=attr_data.get("hierarchy_level", 0),
-                is_leaf=attr_data.get("is_leaf", True),
-                parent_attribute_id=str(attr_data.get("AttributeSetId", "")),
-                attribute_type=attr_data.get("AttributeType", ""),
-                attribute_description=attr_data.get("AttributeDescription", ""),
-            )
+            # Get fields that need manual processing
+            manual_fields = self.process_attribute_data_for_validation(attr_data)
+
+            # Merge manual fields with raw data (alias generators handle the rest)
+            combined_data = {**attr_data, **manual_fields}
+
+            # Create the model - alias generators automatically map camelCase fields
+            attribute = EppiAttribute.model_validate(combined_data)
             attributes.append(attribute)
 
         return attributes
@@ -142,38 +197,115 @@ class AnnotationConverter:
             EppiDocument model
 
         """
-        return EppiDocument(
-            name=document_data.get("Title", ""),
-            citation=Reference(
-                id=str(uuid.uuid4()),
-                title=document_data.get("Title", ""),
-                authors=[
-                    {"full_name": author.strip()}
-                    for author in document_data.get("Authors", "").split(";")
-                    if author.strip()
-                ],
-                year=int(document_data.get("Year", 0))
-                if document_data.get("Year") is not None
-                else None,
-            ),
-            context=document_data.get("Abstract", ""),
-            document_id=str(document_data.get("ItemId", "")),
-            filename=document_data.get("Title", "").replace(" ", "_") + ".pdf",
-            # EPPI-specific fields
-            item_id=int(document_data.get("ItemId", 0))
-            if document_data.get("ItemId") is not None
-            else None,
-            title=document_data.get("Title", ""),
-            parent_title=document_data.get("ParentTitle", ""),
-            short_title=document_data.get("ShortTitle", ""),
-            date_created=document_data.get("DateCreated", ""),
-            edited_by=document_data.get("EditedBy", ""),
-            year=document_data.get("Year", ""),
-            month=document_data.get("Month", ""),
-            abstract=document_data.get("Abstract", ""),
-            authors=document_data.get("Authors", ""),
-            keywords=document_data.get("Keywords", ""),
-            doi=document_data.get("DOI", ""),
+        # Get fields that need manual processing
+        manual_fields = self.process_document_data_for_validation(document_data)
+
+        # Merge manual fields with raw data (alias generators handle the rest)
+        combined_data = {**document_data, **manual_fields}
+
+        # Create the model - alias generators automatically map camelCase fields
+        return EppiDocument.model_validate(combined_data)
+
+    def _process_text_details(
+        self, text_details: list[dict[str, Any]]
+    ) -> tuple[list[str], list[EppiItemAttributeFullTextDetails]]:
+        """
+        Process ItemAttributeFullTextDetails to extract texts and create detail objects.
+
+        Args:
+            text_details: List of text detail dictionaries from EPPI JSON
+
+        Returns:
+            Tuple of (extracted_texts, item_attribute_details)
+
+        """
+        extracted_texts = []
+        item_attribute_details = []
+
+        for text_detail in text_details:
+            text = text_detail.get("Text", "")
+            if text:
+                extracted_texts.append(text)
+
+            # Create EppiItemAttributeFullTextDetails object
+            detail = EppiItemAttributeFullTextDetails(
+                item_document_id=text_detail.get("ItemDocumentId"),
+                text=text,
+                item_arm=text_detail.get("ItemArm", ""),
+            )
+            item_attribute_details.append(detail)
+
+        return extracted_texts, item_attribute_details
+
+    def _convert_single_annotation(
+        self,
+        annotation: dict[str, Any],
+        attributes_lookup: dict[str, EppiAttribute] | None = None,
+        attribute_id_to_label: dict[str, str] | None = None,
+    ) -> EppiGoldStandardAnnotation:
+        """
+        Convert a single annotation dictionary to EppiGoldStandardAnnotation.
+
+        Args:
+            annotation: Single annotation dictionary from EPPI JSON
+            attributes_lookup: Lookup dictionary for attributes
+            attribute_id_to_label: Mapping from attribute ID to label
+
+        Returns:
+            EppiGoldStandardAnnotation model
+
+        """
+        # Process text details
+        text_details = annotation.get("ItemAttributeFullTextDetails", [])
+        extracted_texts, item_attribute_details = self._process_text_details(
+            text_details
+        )
+
+        # Join all extracted texts
+        output_data = " | ".join(extracted_texts) if extracted_texts else ""
+
+        # Look up the attribute from the attributes list
+        attribute_id = str(annotation.get("AttributeId", ""))
+        attribute = attributes_lookup.get(attribute_id) if attributes_lookup else None
+
+        if not attribute:
+            # Create a basic attribute if not found in lookup
+            # Use the mapping to get the correct label
+            attribute_label = (
+                attribute_id_to_label.get(attribute_id, f"Attribute {attribute_id}")
+                if attribute_id_to_label
+                else f"Attribute {attribute_id}"
+            )
+            # Create minimal attribute data and process it
+            minimal_attr_data = {
+                "AttributeId": attribute_id,
+                "AttributeName": attribute_label,
+            }
+            # Get fields that need manual processing
+            manual_fields = self.process_attribute_data_for_validation(
+                minimal_attr_data
+            )
+
+            # Merge manual fields with raw data (alias generators handle the rest)
+            combined_data = {**minimal_attr_data, **manual_fields}
+
+            # Create the model - alias generators automatically map camelCase fields
+            attribute = EppiAttribute.model_validate(combined_data)
+        # Ensure the attribute has the correct label from the mapping
+        elif attribute_id_to_label and attribute_id in attribute_id_to_label:
+            attribute.attribute_label = attribute_id_to_label[attribute_id]
+
+        return EppiGoldStandardAnnotation(
+            attribute=attribute,
+            additional_text=annotation.get("AdditionalText", ""),
+            arm_id=annotation.get("ArmId"),
+            arm_title=annotation.get("ArmTitle", ""),
+            arm_description=annotation.get("ArmDescription", ""),
+            output_data=bool(
+                output_data
+            ),  # Convert to boolean which is the output data type for EPPI
+            annotation_type=AnnotationType.HUMAN,  # All annotations from JSON are human annotations
+            item_attribute_full_text_details=item_attribute_details,
         )
 
     def convert_to_eppi_annotations(
@@ -189,96 +321,25 @@ class AnnotationConverter:
         Args:
             annotations_data: List of annotation objects from EPPI JSON
             document: The document these annotations belong to
+            attributes_lookup: Lookup dictionary for attributes
+            attribute_id_to_label: Mapping from attribute ID to label
 
         Returns:
             List of EppiGoldStandardAnnotation models
 
         """
-        annotations = []
-
-        for annotation in annotations_data:
-            # Extract text from ItemAttributeFullTextDetails
-            extracted_texts = []
-            item_attribute_details = []
-
-            for text_detail in annotation.get("ItemAttributeFullTextDetails", []):
-                text = text_detail.get("Text", "")
-                if text:
-                    extracted_texts.append(text)
-
-                # Create EppiItemAttributeFullTextDetails object
-                detail = EppiItemAttributeFullTextDetails(
-                    item_document_id=text_detail.get("ItemDocumentId"),
-                    text=text,
-                    item_arm=text_detail.get("ItemArm", ""),
-                )
-                item_attribute_details.append(detail)
-
-            # Join all extracted texts
-            output_data = " | ".join(extracted_texts) if extracted_texts else ""
-
-            # Look up the attribute from the attributes list
-            attribute_id = str(annotation.get("AttributeId", ""))
-            attribute = (
-                attributes_lookup.get(attribute_id) if attributes_lookup else None
+        return [
+            self._convert_single_annotation(
+                annotation, attributes_lookup, attribute_id_to_label
             )
-
-            if not attribute:
-                # Create a basic attribute if not found in lookup
-                # Use the mapping to get the correct label
-                attribute_label = (
-                    attribute_id_to_label.get(attribute_id, f"Attribute {attribute_id}")
-                    if attribute_id_to_label
-                    else f"Attribute {attribute_id}"
-                )
-                attribute = EppiAttribute(
-                    question_target="",
-                    output_data_type="bool",
-                    attribute_id=attribute_id,
-                    attribute_label=attribute_label,
-                )
-            # Ensure the attribute has the correct label from the mapping
-            elif attribute_id_to_label and attribute_id in attribute_id_to_label:
-                attribute.attribute_label = attribute_id_to_label[attribute_id]
-
-            annotation_model = EppiGoldStandardAnnotation(
-                attribute=attribute,
-                additional_text=annotation.get("AdditionalText", ""),
-                arm_id=annotation.get("ArmId"),
-                arm_title=annotation.get("ArmTitle", ""),
-                arm_description=annotation.get("ArmDescription", ""),
-                output_data=bool(output_data),  # Convert to boolean as requested
-                item_attribute_full_text_details=item_attribute_details,
-            )
-            annotations.append(annotation_model)
-
-        return annotations
+            for annotation in annotations_data
+        ]
 
     def _extract_attributes_from_codesets(
-        self, data: dict[str, Any]
+        self, raw_data: EppiRawData
     ) -> list[dict[str, Any]]:
-        """Extract and flatten attributes from CodeSets."""
-        all_attributes_raw = []
-
-        # Process CodeSets[0] (first CodeSet) - usually contains basic attributes like "Arm name"
-        if len(data.get("CodeSets", [])) > 0:
-            codeset0 = data["CodeSets"][0]
-            if "Attributes" in codeset0 and "AttributesList" in codeset0["Attributes"]:
-                attributes_list0 = codeset0["Attributes"]["AttributesList"]
-                all_attributes_raw.extend(
-                    self.flatten_attributes_hierarchy(attributes_list0)
-                )
-
-        # Process CodeSets[1] (second CodeSet) - contains the main hierarchical attributes
-        if len(data.get("CodeSets", [])) > 1:
-            codeset1 = data["CodeSets"][1]
-            if "Attributes" in codeset1 and "AttributesList" in codeset1["Attributes"]:
-                attributes_list1 = codeset1["Attributes"]["AttributesList"]
-                all_attributes_raw.extend(
-                    self.flatten_attributes_hierarchy(attributes_list1)
-                )
-
-        return all_attributes_raw
+        """Extract and flatten attributes from CodeSets using structured models."""
+        return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
 
     def _create_pdf_to_title_mapping(
         self, references: list[dict[str, Any]]
@@ -326,7 +387,7 @@ class AnnotationConverter:
                     break
         return doc_annotations
 
-    def process_annotation_file(self, file_path: str | Path) -> dict[str, Any]:
+    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
 
@@ -334,14 +395,17 @@ class AnnotationConverter:
             file_path: Path to the JSON annotation file
 
         Returns:
-            Dictionary containing processed attributes, documents, and annotations
+            ProcessedAnnotationData containing all processed data
 
         """
-        # Load the JSON data
-        data = self.load_json_annotations(file_path)
+        logger.info(f"Processing annotation file: {file_path}")
 
-        # Extract and flatten attributes from both CodeSets
-        all_attributes_raw = self._extract_attributes_from_codesets(data)
+        # Load and validate raw data
+        data = self.load_eppi_json_annotations(file_path)
+        raw_data = EppiRawData.model_validate(data)
+
+        # Extract and flatten attributes from both CodeSets using structured approach
+        all_attributes_raw = self._extract_attributes_from_codesets(raw_data)
 
         # Convert to Pydantic models
         attributes = self.convert_to_eppi_attributes(all_attributes_raw)
@@ -393,89 +457,85 @@ class AnnotationConverter:
                 )
 
                 # Create EppiGoldStandardAnnotatedDocument
+                # Since it inherits from EppiDocument, we need to pass all document fields
                 annotated_doc = EppiGoldStandardAnnotatedDocument(
-                    document=document, annotations=annotations
+                    **document.model_dump(), annotations=annotations
                 )
                 annotated_documents.append(annotated_doc)
                 all_annotations.extend(annotations)
 
-        return {
-            "attributes": attributes,
-            "documents": list(documents_by_title.values()),
-            "annotations": all_annotations,
-            "annotated_documents": annotated_documents,
-            "attribute_id_to_label": attribute_id_to_label,
-            "raw_data": data,
-        }
+        logger.info(
+            f"Processed {len(attributes)} attributes, {len(documents_by_title)} documents, "
+            f"{len(all_annotations)} annotations, {len(annotated_documents)} annotated documents"
+        )
+
+        return ProcessedAnnotationData(
+            attributes=attributes,
+            documents=list(documents_by_title.values()),
+            annotations=all_annotations,
+            annotated_documents=annotated_documents,
+            attribute_id_to_label=attribute_id_to_label,
+            raw_data=raw_data,
+        )
 
     def save_processed_data(
         self,
-        processed_data: dict[str, Any],
-        output_dir: str | Path = "app/annotations/processed",
+        processed_data: ProcessedAnnotationData,
+        output_dir: str | Path,
+        input_filename: str | None = None,
     ) -> dict[str, str]:
         """
-        Save processed data to structured files.
+        Save processed data to structured files using Pydantic model serialization.
 
         Args:
             processed_data: The processed data from process_annotation_file
-            output_dir: Directory to save the processed files
+            output_dir: Directory to save the processed files (required - no default to prevent accidental commits)
+            input_filename: Optional filename to create a subdirectory (if not provided, saves directly to output_dir)
 
         Returns:
             Dictionary mapping data types to saved file paths
 
         """
-        # Create the EPPI subdirectory
-        eppi_path = Path(output_dir)
+        # Create the output directory structure
+        base_path = Path(output_dir)
+
+        # Always create an 'eppi' subdirectory
+        eppi_base_path = base_path / "eppi"
+
+        # If input_filename is provided, create a subdirectory with the filename (without extension)
+        if input_filename:
+            filename_without_ext = Path(input_filename).stem
+            eppi_path = eppi_base_path / filename_without_ext
+        else:
+            eppi_path = eppi_base_path
+
         eppi_path.mkdir(parents=True, exist_ok=True)
 
         saved_files = {}
 
-        # Custom JSON encoder to handle UUIDs and other non-serializable objects
-        class CustomJSONEncoder(json.JSONEncoder):
-            def default(self, obj: object) -> str:
-                if hasattr(obj, "__str__"):
-                    return str(obj)
-                return super().default(obj)
+        # Save each collection as JSON using Pydantic's model_dump_json() - one-liner approach
+        file_mappings = [
+            ("attributes", processed_data.attributes),
+            ("documents", processed_data.documents),
+            ("annotated_documents", processed_data.annotated_documents),
+        ]
 
-        # Save attributes
-        attributes_file = eppi_path / "attributes.json"
-        with attributes_file.open("w", encoding="utf-8") as f:
-            json.dump(
-                [attr.model_dump() for attr in processed_data["attributes"]],
-                f,
-                indent=2,
-                cls=CustomJSONEncoder,
+        for file_type, data_list in file_mappings:
+            file_path = eppi_path / f"{file_type}.json"
+            # One-liner: Path.write_text() + Pydantic's JSON serialization (handles UUIDs)
+            file_path.write_text(
+                json.dumps(
+                    [item.model_dump(mode="json") for item in data_list],  # type: ignore[attr-defined]
+                    indent=2,
+                )
             )
-        saved_files["attributes"] = str(attributes_file)
+            saved_files[file_type] = str(file_path)
 
-        # Save documents
-        documents_file = eppi_path / "documents.json"
-        with documents_file.open("w", encoding="utf-8") as f:
-            json.dump(
-                [doc.model_dump() for doc in processed_data["documents"]],
-                f,
-                indent=2,
-                cls=CustomJSONEncoder,
-            )
-        saved_files["documents"] = str(documents_file)
-
-        # Save annotated documents (documents with their annotations) - this is the main file
-        annotated_docs_file = eppi_path / "annotated_documents.json"
-        with annotated_docs_file.open("w", encoding="utf-8") as f:
-            json.dump(
-                [doc.model_dump() for doc in processed_data["annotated_documents"]],
-                f,
-                indent=2,
-                cls=CustomJSONEncoder,
-            )
-        saved_files["annotated_documents"] = str(annotated_docs_file)
-
-        # Save attribute ID to label mapping
-        attribute_mapping_file = eppi_path / "attribute_id_to_label_mapping.json"
-        with attribute_mapping_file.open("w", encoding="utf-8") as f:
-            json.dump(processed_data["attribute_id_to_label"], f, indent=2)
-        saved_files["attribute_mapping"] = str(attribute_mapping_file)
+        # Save attribute mapping as simple JSON
+        mapping_file = eppi_path / "attribute_id_to_label_mapping.json"
+        mapping_file.write_text(
+            json.dumps(processed_data.attribute_id_to_label, indent=2)
+        )
+        saved_files["attribute_mapping"] = str(mapping_file)
 
         return saved_files
-
-
