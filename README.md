@@ -6,9 +6,7 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 
 A key innovation the Destiny project seeks to deliver is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
 
-This software enables this end-to-end process, through leveraging LLMs (Large Language Models) for extraction, benchmarking and classification of such data extraction tasks. `data-extraction-evaluation-toolkit` is conveived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more LLM-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
-
-In addition to offering an end-to-end workflow for data extraction, this software also provides tools for tweaking, benchmarking and configuring the LLM backend for a given data extraction workflow. Given the non-deterministic way LLMs produce output to user prompts, it may prove useful to modify small sections of said prompts, and record the difference in output.
+This software enables this end-to-end process for data extraction and evaluation tasks. `data-extraction-evaluation-toolkit` is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
 
 ## Installation
 
@@ -55,6 +53,36 @@ pre-commit install
 ### Using the toolkit
 
 The first time you run anything from `app/parser.py`, you will likely have to wait for a considerable (5-15 minutes) amount of time, as dependencies will collect and install. These dependencies include machine learning libraries and pre-trained models.
+
+## Data Processing
+
+### Annotation Converter
+
+The annotation converter can be used to convert raw EPPI-Reviewer data into structured format.
+
+**Usage:**
+
+```bash
+uv run python app/scripts/annotation_converter_cli.py <input_file> <output_dir>
+```
+
+**Example:**
+
+```bash
+uv run python app/scripts/annotation_converter_cli.py app/annotations/raw/eppi/sample_eppi.json output/processed
+```
+
+This creates an organized directory structure:
+
+```text
+output/processed/eppi/{filename_without_extension}/
+├── attributes.json
+├── documents.json
+├── annotated_documents.json
+└── attribute_id_to_label_mapping.json
+```
+
+For example, processing `sample_eppi.json` creates `output/processed/eppi/sample_eppi/` with the JSON files inside.
 
 ## Contributing
 

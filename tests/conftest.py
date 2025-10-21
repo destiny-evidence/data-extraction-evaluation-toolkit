@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture
 def valid_parsed_pdf():
-    with Path.open("tests/test_files/output/vieira_2008.md") as infile:
+    with Path.open("tests/test_files/output/test_file_for_parser.md") as infile:
         return infile.read().lower()
 
 

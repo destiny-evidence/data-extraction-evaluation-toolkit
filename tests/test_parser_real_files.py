@@ -18,26 +18,31 @@ def _normalise(text: str) -> str:
 
 def test_real_pdf_parses_correctly(valid_parsed_pdf):
     parser = DocumentParser()
-    parsed = parser(input_file="tests/test_files/input/vieira_2008.pdf").lower()
+    parsed = parser(
+        input_file="tests/test_files/input/test_file_for_parser.pdf"
+    ).text.lower()
     assert _normalise(parsed) == _normalise(valid_parsed_pdf)
 
 
 def test_real_epub_parses_correctly(valid_parsed_epub):
     parser = DocumentParser()
     parsed = parser("tests/test_files/input/conrad.epub")
-    assert parsed.strip() == valid_parsed_epub.strip()
+    assert parsed.text.strip() == valid_parsed_epub.strip()
 
 
 def test_real_html_parses_correctly(valid_parsed_html):
     parser = DocumentParser()
     parsed = parser("tests/test_files/input/conrad.html")
-    assert parsed.strip() == valid_parsed_html.strip()
+    assert parsed.text.strip() == valid_parsed_html.strip()
 
 
 def test_output_file_is_written(tmp_path, valid_parsed_pdf):
     parser = DocumentParser()
     out = tmp_path / "out.md"
-    parser("tests/test_files/input/vieira_2008.pdf", output_file=out)
+    parser(
+        "tests/test_files/input/test_file_for_parser.pdf",
+        output_file=out,
+    )
     assert Path(out).is_file()
 
 

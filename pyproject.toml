@@ -12,6 +12,7 @@ dev = [
 [project]
 authors = [
     "Nik Loynes <n.loynes@ucl.ac.uk>",
+    "Sagar Uprety <s.uprety@ucl.ac.uk>",
 ]
 dependencies = [
     "destiny-sdk>=0.3.0",
