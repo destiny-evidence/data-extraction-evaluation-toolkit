@@ -194,7 +194,18 @@ def main() -> None:
     output_file = base_dir / "simple_evaluation_results.json"
     with output_file.open("w") as f:
         # Convert annotations to dict for JSON serialization
-        annotations_data = [annotation.model_dump() for annotation in annotations]
+        annotations_data = []
+        for annotation in annotations:
+            annotation_dict = annotation.model_dump()
+            # Convert type objects to strings for JSON serialization
+            if (
+                "attribute" in annotation_dict
+                and "output_data_type" in annotation_dict["attribute"]
+            ):
+                annotation_dict["attribute"]["output_data_type"] = str(
+                    annotation_dict["attribute"]["output_data_type"]
+                )
+            annotations_data.append(annotation_dict)
         json.dump({"annotations": annotations_data}, f, indent=2)
 
     logger.info("")

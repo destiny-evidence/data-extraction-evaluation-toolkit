@@ -189,11 +189,7 @@ class DataExtractionModule:
         llm_response = self._call_llm(prompt)
 
         # Parse response and create annotations
-        annotations = self._parse_llm_response(
-            llm_response, selected_attributes, document
-        )
-
-        return annotations
+        return self._parse_llm_response(llm_response, selected_attributes, document)
 
     def _filter_attributes(
         self, attributes: list[EppiAttribute]
@@ -267,7 +263,7 @@ class DataExtractionModule:
 
         # Truncate if too long
         if len(context) > self.config.max_context_length:
-            context = context[:self.config.max_context_length] + "..."
+            context = context[: self.config.max_context_length] + "..."
 
         return context
 
@@ -292,7 +288,7 @@ class DataExtractionModule:
             prompt = prompt_template + f"\n\nAttributes:\n{attributes_text}"
 
         # Add document context
-        full_prompt = f"""
+        return f"""
 {prompt}
 
 Document:
@@ -313,7 +309,6 @@ Respond in JSON format:
     ]
 }}
 """
-        return full_prompt
 
     def _call_llm(self, prompt: str) -> str:
         """Call the LLM with the given prompt."""
