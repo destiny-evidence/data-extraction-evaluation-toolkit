@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.parser import DocumentParser, InvalidInputFileTypeError
+from app.processors.parser import DocumentParser, InvalidInputFileTypeError
 
 
 def _normalise(text: str) -> str:

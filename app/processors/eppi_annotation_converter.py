@@ -8,9 +8,8 @@ from uuid import uuid4
 from destiny_sdk.enhancements import Visibility
 from destiny_sdk.references import Reference
 
-from app.logger import logger
-from app.models.base import AnnotationType
-from app.models.eppi import (
+from app.data_models.base import AnnotationType
+from app.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotatedDocument,
@@ -19,9 +18,10 @@ from app.models.eppi import (
     EppiRawData,
     ProcessedAnnotationData,
 )
+from app.logger import logger
 
 
-class AnnotationConverter:
+class EppiAnnotationConverter:
     """
     A class to convert raw EPPI-Reviewer JSON annotations into structured Pydantic models.
 
@@ -489,8 +489,10 @@ class AnnotationConverter:
 
         Args:
             processed_data: The processed data from process_annotation_file
-            output_dir: Directory to save the processed files (required - no default to prevent accidental commits)
-            input_filename: Optional filename to create a subdirectory (if not provided, saves directly to output_dir)
+            output_dir: Directory to save the processed files
+                        (required - no default to prevent accidental commits)
+            input_filename: Optional filename to create a subdirectory
+                            (if not provided, saves directly to output_dir)
 
         Returns:
             Dictionary mapping data types to saved file paths

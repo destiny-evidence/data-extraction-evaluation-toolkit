@@ -7,7 +7,12 @@ from destiny_sdk.references import Reference
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
-from app.models.base import AnnotationType, Attribute, Document, GoldStandardAnnotation
+from app.data_models.base import (
+    AnnotationType,
+    Attribute,
+    Document,
+    GoldStandardAnnotation,
+)
 
 
 class EppiAttribute(Attribute):

@@ -4,20 +4,20 @@ import pytest
 from PIL import Image
 from pydantic import ValidationError
 
-from app.assess_text_quality import check_language
 from app.exceptions import (
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
-from app.parser import (
+from app.processors.parser import (
     DocumentParser,
     InputFileType,
     MarkerParser,
     PandocParser,
     ParsedOutput,
 )
+from app.utils.assess_text_quality import check_language
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def fake_converter(monkeypatch):
     dummy = DummyRendered()
     # `converter(file)` simply returns the dummy object
     monkeypatch.setattr(
-        "app.parser.converter",
+        "app.processors.parser.converter",
         lambda _: dummy,
     )
     return dummy
@@ -45,7 +45,7 @@ def mock_text_from_rendered(monkeypatch):
     """Stub `marker.output.text_from_rendered`."""
     # It returns (text, extension, images)
     monkeypatch.setattr(
-        "app.parser.text_from_rendered",
+        "app.processors.parser.text_from_rendered",
         lambda _: ("dummy markdown text", "md", []),
     )
 
@@ -55,7 +55,7 @@ def mock_text_from_rendered_img_meta(monkeypatch):
     """Stub `marker.output.text_from_rendered`."""
     dummy_img = Image.new("RGB", (10, 10))
     monkeypatch.setattr(
-        "app.parser.text_from_rendered",
+        "app.processors.parser.text_from_rendered",
         lambda _: (
             "dummy markdown text",
             "md",
@@ -68,7 +68,7 @@ def mock_text_from_rendered_img_meta(monkeypatch):
 def mock_pypandoc(monkeypatch):
     """Stub `pypandoc.convert_file`."""
     monkeypatch.setattr(
-        "app.parser.pypandoc.convert_file",
+        "app.processors.parser.pypandoc.convert_file",
         lambda file, to, format: f"converted {file} to {to} ({format})",
     )
 
@@ -77,7 +77,7 @@ def mock_pypandoc(monkeypatch):
 def mock_check_language(monkeypatch):
     """Stub the language checker."""
     monkeypatch.setattr(
-        "app.parser.check_language",
+        "app.processors.parser.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
     )
 
@@ -310,7 +310,7 @@ def test_parse_jats_xml_file(mock_pypandoc, mock_check_language):
 def test_parse_jats_xml_string(monkeypatch, mock_check_language):
     # simulate xml/jats as str in memory
     monkeypatch.setattr(
-        "app.parser.pypandoc.convert_text",
+        "app.processors.parser.pypandoc.convert_text",
         lambda text, to, format: f"converted string to {to} ({format})",  # noqa: ARG005
     )
     parser = DocumentParser()
@@ -326,7 +326,7 @@ def test_parse_jats_xml_string(monkeypatch, mock_check_language):
 
 def test_parse_jats_xml_string_missing_filetype(monkeypatch, mock_check_language):
     monkeypatch.setattr(
-        "app.parser.pypandoc.convert_text",
+        "app.processors.parser.pypandoc.convert_text",
         lambda text, to, format: f"converted string to {to} ({format})",  # noqa: ARG005
     )
     parser = DocumentParser()
