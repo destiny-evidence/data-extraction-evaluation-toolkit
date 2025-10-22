@@ -23,10 +23,13 @@ from app.logger import logger
 
 class EppiAnnotationConverter:
     """
-    A class to convert raw EPPI-Reviewer JSON annotations into structured Pydantic models.
+    A class to convert raw EPPI-Reviewer JSON annotations
+    into structured Pydantic models.
 
-    This converter handles the complex hierarchical structure of EPPI attributes by flattening
-    them while preserving parent-child relationships through path information.
+    This converter handles the complex hierarchical
+    structure of EPPI attributes by flattening
+    them while preserving parent-child relationships
+    through path information.
     """
 
     def process_attribute_data_for_validation(
@@ -35,7 +38,8 @@ class EppiAnnotationConverter:
         """
         Process raw attribute data for EppiAttribute validation.
 
-        Only handles fields that need manual processing - alias generators handle the rest.
+        Only handles fields that need manual processing -
+        alias generators handle the rest.
 
         Args:
             attr_data: Raw attribute data from EPPI JSON
@@ -60,7 +64,8 @@ class EppiAnnotationConverter:
         """
         Process raw document data for EppiDocument validation.
 
-        Only handles fields that need manual processing - alias generators handle the rest.
+        Only handles fields that need manual processing -
+        alias generators handle the rest.
 
         Args:
             document_data: Raw document data from EPPI JSON
@@ -304,7 +309,7 @@ class EppiAnnotationConverter:
             output_data=bool(
                 output_data
             ),  # Convert to boolean which is the output data type for EPPI
-            annotation_type=AnnotationType.HUMAN,  # All annotations from JSON are human annotations
+            annotation_type=AnnotationType.HUMAN,  # All annotations from JSON are human
             item_attribute_full_text_details=item_attribute_details,
         )
 
@@ -457,7 +462,7 @@ class EppiAnnotationConverter:
                 )
 
                 # Create EppiGoldStandardAnnotatedDocument
-                # Since it inherits from EppiDocument, we need to pass all document fields
+                # Since it inherits from EppiDocument, we pass all document fields
                 annotated_doc = EppiGoldStandardAnnotatedDocument(
                     **document.model_dump(), annotations=annotations
                 )
@@ -465,8 +470,10 @@ class EppiAnnotationConverter:
                 all_annotations.extend(annotations)
 
         logger.info(
-            f"Processed {len(attributes)} attributes, {len(documents_by_title)} documents, "
-            f"{len(all_annotations)} annotations, {len(annotated_documents)} annotated documents"
+            f"Processed {len(attributes)} attributes,"
+            " {len(documents_by_title)} documents, "
+            f"{len(all_annotations)} annotations,"
+            " {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(
@@ -504,7 +511,7 @@ class EppiAnnotationConverter:
         # Always create an 'eppi' subdirectory
         eppi_base_path = base_path / "eppi"
 
-        # If input_filename is provided, create a subdirectory with the filename (without extension)
+        # If input_filename, create sub-dir with the filename (without extension)
         if input_filename:
             filename_without_ext = Path(input_filename).stem
             eppi_path = eppi_base_path / filename_without_ext
@@ -515,7 +522,7 @@ class EppiAnnotationConverter:
 
         saved_files = {}
 
-        # Save each collection as JSON using Pydantic's model_dump_json() - one-liner approach
+        # Save each collection as JSON model_dump_json()
         file_mappings = [
             ("attributes", processed_data.attributes),
             ("documents", processed_data.documents),
@@ -524,7 +531,6 @@ class EppiAnnotationConverter:
 
         for file_type, data_list in file_mappings:
             file_path = eppi_path / f"{file_type}.json"
-            # One-liner: Path.write_text() + Pydantic's JSON serialization (handles UUIDs)
             file_path.write_text(
                 json.dumps(
                     [item.model_dump(mode="json") for item in data_list],  # type: ignore[attr-defined]
