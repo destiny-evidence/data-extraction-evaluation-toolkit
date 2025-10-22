@@ -47,7 +47,7 @@ class AnnotationConverter:
         return {
             # Core fields that need manual processing
             "question_target": "",  # Always empty for EPPI
-            "output_data_type": bool,  # Always boolean for EPPI
+            "output_data_type": "bool",  # Always boolean for EPPI
             "attribute_id": str(attr_data.get("AttributeId", "")),  # Convert int to str
             "attribute_label": attr_data.get("AttributeName", ""),
             # Note: All other fields (attribute_set_description, hierarchy_path, etc.)

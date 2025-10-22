@@ -22,9 +22,7 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: (
-        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
-    )  # Expected data type for the attribute
+    output_data_type: str  # Expected data type for the attribute (e.g., "bool", "int", "str")
     attribute_id: str  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 
