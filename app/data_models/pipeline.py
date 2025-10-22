@@ -49,8 +49,9 @@ class PipelineStage(BaseModel):
     data: Any | None
 
     @classmethod
-    @field_validator()
-    def read_if_file(cls, v) -> None
+    @field_validator
+    def read_if_file(cls, v) -> None:
+        return
 
 
 class Pipeline(BaseModel):
