@@ -22,9 +22,7 @@ class EppiAttribute(Attribute):
 
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: (
-        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
-    ) = bool  # Always boolean for EPPI
+    output_data_type: str = "bool"  # Always boolean for EPPI
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(

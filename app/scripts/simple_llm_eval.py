@@ -163,7 +163,7 @@ def main() -> None:
         # Convert the JSON data to EppiAttribute format
         processed_attr_data = {
             "question_target": "",
-            "output_data_type": bool,
+            "output_data_type": "bool",
             "attribute_id": str(attr_data.get("attribute_id", "")),
             "attribute_label": attr_data.get("attribute_label", ""),
             "attribute_set_description": attr_data.get("attribute_set_description"),
