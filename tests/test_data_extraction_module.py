@@ -91,7 +91,7 @@ def test_filter_attributes_all_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -99,7 +99,7 @@ def test_filter_attributes_all_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
             }
@@ -120,7 +120,7 @@ def test_filter_attributes_single_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -128,7 +128,7 @@ def test_filter_attributes_single_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
             }
@@ -152,7 +152,7 @@ def test_filter_attributes_by_ids_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -160,7 +160,7 @@ def test_filter_attributes_by_ids_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
             }
@@ -168,7 +168,7 @@ def test_filter_attributes_by_ids_mode() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "3",
                 "attribute_label": "Attr3",
             }
@@ -250,7 +250,7 @@ def test_generate_prompt_single_attribute() -> None:
     attribute = EppiAttribute.model_validate(
         {
             "question_target": "",
-            "output_data_type": bool,
+            "output_data_type": "bool",
             "attribute_id": "1",
             "attribute_label": "Test Attribute",
             "attribute_set_description": "Test description",
@@ -264,7 +264,7 @@ def test_generate_prompt_single_attribute() -> None:
 
     prompt = module._generate_prompt("Test context", [attribute])
 
-    assert "Test Attribute" in prompt
+    assert "Test description" in prompt
     assert "Test context" in prompt
     assert "output_data" in prompt
     assert "reasoning" in prompt
@@ -276,7 +276,7 @@ def test_generate_prompt_batch_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
                 "attribute_set_description": "Desc1",
@@ -285,7 +285,7 @@ def test_generate_prompt_batch_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
                 "attribute_set_description": "Desc2",
@@ -311,7 +311,7 @@ def test_parse_llm_response() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -319,7 +319,7 @@ def test_parse_llm_response() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
             }
@@ -408,7 +408,7 @@ def test_extract_from_document_with_mock() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -466,7 +466,7 @@ def test_convenience_function_extract_single_attribute() -> None:
     attribute = EppiAttribute.model_validate(
         {
             "question_target": "",
-            "output_data_type": bool,
+            "output_data_type": "bool",
             "attribute_id": "1",
             "attribute_label": "Attr1",
         }
@@ -521,7 +521,7 @@ def test_convenience_function_extract_all_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -529,7 +529,7 @@ def test_convenience_function_extract_all_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
             }
@@ -592,7 +592,7 @@ def test_convenience_function_extract_batch_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "1",
                 "attribute_label": "Attr1",
             }
@@ -600,7 +600,7 @@ def test_convenience_function_extract_batch_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "2",
                 "attribute_label": "Attr2",
             }
@@ -608,7 +608,7 @@ def test_convenience_function_extract_batch_attributes() -> None:
         EppiAttribute.model_validate(
             {
                 "question_target": "",
-                "output_data_type": bool,
+                "output_data_type": "bool",
                 "attribute_id": "3",
                 "attribute_label": "Attr3",
             }
