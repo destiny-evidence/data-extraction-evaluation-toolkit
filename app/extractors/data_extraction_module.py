@@ -71,7 +71,7 @@ class DataExtractionConfig(BaseModel):
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
     max_context_length: int = Field(
-        default=4000, description="Maximum context length for LLM"
+        default=40000, description="Maximum context length for LLM"
     )
 
     # Attribute Selection
@@ -267,34 +267,48 @@ class DataExtractionModule:
 
         return context
 
+    def _load_system_prompt(self) -> str:
+        """Load system prompt from file."""
+        prompt_file = Path(__file__).parent.parent / "prompts" / "system_prompt_v0.txt"
+        try:
+            return prompt_file.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            logger.warning(
+                f"System prompt file not found at {prompt_file}, using default"
+            )
+            return self.config.prompt_config.system_prompt
+
     def _generate_prompt(self, context: str, attributes: list[EppiAttribute]) -> str:
         """Generate prompt based on attribute selection mode."""
+        # Load system prompt from file
+        system_prompt_template = self._load_system_prompt()
+
         if self.config.attribute_selection_mode == AttributeSelectionMode.SINGLE:
             attribute = attributes[0]
-            prompt_template = self.config.prompt_config.single_attribute_prompt
-            prompt = prompt_template.format(
-                attribute_label=attribute.attribute_label,
-                attribute_description=attribute.attribute_set_description
-                or "No description",
+            # Use attribute_set_description as the question
+            question = attribute.attribute_set_description or "No description available"
+
+            # Format the system prompt with context and question
+            formatted_prompt = system_prompt_template.format(
+                context=context, question=question
             )
         else:
-            prompt_template = self.config.prompt_config.batch_attribute_prompt
-            attributes_text = "\n".join(
-                [
-                    f"- {attr.attribute_label} (ID: {attr.attribute_id}): {attr.attribute_set_description or 'No description'}"
-                    for attr in attributes
-                ]
+            # For batch mode, create a list of questions from attribute descriptions
+            questions = []
+            for attr in attributes:
+                question_text = f"- {attr.attribute_label} (ID: {attr.attribute_id}): {attr.attribute_set_description or 'No description'}"
+                questions.append(question_text)
+
+            question = "\n".join(questions)
+
+            # Format the system prompt with context and questions
+            formatted_prompt = system_prompt_template.format(
+                context=context, question=question
             )
-            prompt = prompt_template + f"\n\nAttributes:\n{attributes_text}"
 
-        # Add document context
+        # Add JSON response format instructions
         return f"""
-{prompt}
-
-Document:
-Title: {context.split('.')[0] if '.' in context else 'Research Document'}
-
-Context: {context}
+{formatted_prompt}
 
 Respond in JSON format:
 {{
@@ -312,8 +326,11 @@ Respond in JSON format:
 
     def _call_llm(self, prompt: str) -> str:
         """Call the LLM with the given prompt."""
+        # Load system prompt from file
+        system_prompt = self._load_system_prompt()
+
         messages = [
-            {"role": "system", "content": self.config.prompt_config.system_prompt},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
 
