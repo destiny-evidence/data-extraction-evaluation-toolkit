@@ -314,6 +314,9 @@ def run_extraction(
         "annotations": [ann.model_dump() for ann in all_annotations],
     }
 
+    # Create output directory if it doesn't exist
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    
     with output_file.open("w") as f:
         json.dump(results_data, f, indent=2)
 
@@ -594,7 +597,11 @@ Examples:
             }
 
             assert config.output_file is not None
-            with Path(config.output_file).open("w") as f:
+            output_path = Path(config.output_file)
+            # Create output directory if it doesn't exist
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with output_path.open("w") as f:
                 json.dump(results_data, f, indent=2)
 
             logger.info("=" * 60)
