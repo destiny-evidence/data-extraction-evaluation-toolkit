@@ -1,4 +1,4 @@
-"""Utilities for parsing input files (e.g. pdf) for documents into output files (e.g. md)."""
+"""Utilities for parsing input files (e.g. pdf) into output files (e.g. md)."""
 
 import json
 from abc import ABC, abstractmethod
@@ -120,7 +120,7 @@ class ParserLibrary(ABC):
         Args:
             input_ (str | PathLike): Path to input file or string of input string.
             return_metadata (bool, optional): Return json metadata. Defaults to False.
-            return_images (bool, optional): Return images in document. Defaults to False.
+            return_images (bool, optional): Return images in doc. Defaults to False.
 
         Raises:
             NotImplementedError: The default, should never actually come.
@@ -249,16 +249,17 @@ class DocumentParser:
         Args:
             input_ (str | PathLike): File(path) or str of input_.
             output_file (str | PathLike | None): If None, return parsed content as str.
-            parser (ParserLibrary | None, optional): _description_. Defaults to None. If None,
-                                                     uses the default parser.
-            input_type (InputFileType | None, optional): _description_. Defaults to None.
-                                                             If None, infers file type using `detect_filetype`.
-            return_images (bool): Defaults to False. Whether to write parsed images (JPEG) to file, or not. `out_path`
-                                can't be None.
-            return_metadata (bool): Defaults to None. Whether to write parsed metadata (json).
+            parser (ParserLibrary | None, optional): Defaults to None.
+                If None, uses the default parser.
+            input_type (InputFileType | None, optional): Defaults to None.
+                If None, infers file type using `detect_filetype`.
+            return_images (bool): Defaults to False. Whether to write
+                parsed images (JPEG) to file, or not. `out_path`. can't be None.
+            return_metadata (bool): Defaults to None. Whether to write
+                parsed metadata (json).
 
         Returns:
-            str: _description_
+            str: ParsedOutput object.
 
         """
         logger.debug(f"kwargs: {kwargs}")
@@ -346,10 +347,10 @@ class DocumentParser:
         Wraps around specific parser methods.
 
         Args:
-            input_ (str | PathLike): _description_
-            input_type (InputFileType): _description_
-            parser (ParserLibrary): _description_
-            parse_method (Callable[[str  |  PathLike, ParserLibrary], str]): _description_
+            input_ (str | PathLike):
+            input_type (InputFileType):
+            parser (ParserLibrary):
+            parse_method (Callable[[str  |  PathLike, ParserLibrary], str]):
 
         Returns:
             str: _description_
@@ -417,7 +418,10 @@ class DocumentParser:
             else:
                 target_error = InvalidFileTypeError
 
-            forbidden_file_type = f"file type {extension} is not permitted. Use one of {permitted_extensions_str}."
+            forbidden_file_type = (
+                f"file type {extension} is not permitted. "
+                f" Use one of {permitted_extensions_str}."
+            )
             raise target_error(forbidden_file_type)
 
         logger.debug(f"filetype is: {extension}.")
