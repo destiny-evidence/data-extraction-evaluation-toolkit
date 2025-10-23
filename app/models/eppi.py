@@ -48,10 +48,6 @@ class EppiAttribute(Attribute):
         description="Whether the attribute is Selectable in the EPPI-Reviewer interface or not",
         default=None,
     )
-    attribute_description: str | None = Field(
-        description="Detailed description explaining what this attribute represents",
-        default=None,
-    )
 
 
 class EppiDocument(Document):

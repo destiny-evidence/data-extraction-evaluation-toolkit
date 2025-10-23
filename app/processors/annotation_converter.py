@@ -47,9 +47,14 @@ class AnnotationConverter:
         return {
             # Core fields that need manual processing
             "question_target": "",  # Always empty for EPPI
-            "output_data_type": bool,  # Always boolean for EPPI
+            "output_data_type": "bool",  # Always boolean for EPPI
             "attribute_id": str(attr_data.get("AttributeId", "")),  # Convert int to str
             "attribute_label": attr_data.get("AttributeName", ""),
+            "attribute_set_description": attr_data.get("AttributeSetDescription", ""),
+            "parent_attribute_id": str(attr_data.get("parent_attribute_id", ""))
+            if attr_data.get("parent_attribute_id")
+            else None,
+            "attribute_type": attr_data.get("AttributeType", ""),
             # Note: All other fields (attribute_set_description, hierarchy_path, etc.)
             # are automatically mapped by alias generators from camelCase JSON
         }
@@ -106,7 +111,10 @@ class AnnotationConverter:
             return json.load(f)
 
     def flatten_attributes_hierarchy(
-        self, attributes_list: list[dict[str, Any]], parent_path: str = ""
+        self,
+        attributes_list: list[dict[str, Any]],
+        parent_path: str = "",
+        parent_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """
         Recursively flatten the hierarchical attributes structure.
@@ -114,6 +122,7 @@ class AnnotationConverter:
         Args:
             attributes_list: List of attribute dictionaries from the JSON
             parent_path: Path to the parent attribute (for hierarchy tracking)
+            parent_id: ID of the parent attribute (for parent-child relationships)
 
         Returns:
             List of flattened attribute dictionaries with hierarchy information
@@ -126,7 +135,6 @@ class AnnotationConverter:
             flattened_attr = {
                 "AttributeId": attr.get("AttributeId"),
                 "AttributeName": attr.get("AttributeName"),
-                "AttributeDescription": attr.get("AttributeDescription"),
                 "AttributeSetDescription": attr.get("AttributeSetDescription"),
                 "AttributeType": attr.get("AttributeType"),
                 "AttributeTypeId": attr.get("AttributeTypeId"),
@@ -136,6 +144,7 @@ class AnnotationConverter:
                 "ExtType": attr.get("ExtType"),
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
+                "parent_attribute_id": parent_id,
                 "is_leaf": "Attributes" not in attr
                 or not attr["Attributes"].get("AttributesList"),
             }
@@ -151,8 +160,9 @@ class AnnotationConverter:
                     if parent_path
                     else attr.get("AttributeName", "")
                 )
+                current_id = str(attr.get("AttributeId", ""))
                 child_flattened = self.flatten_attributes_hierarchy(
-                    child_attributes, current_path
+                    child_attributes, current_path, current_id
                 )
                 flattened.extend(child_flattened)
 

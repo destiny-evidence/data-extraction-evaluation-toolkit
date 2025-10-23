@@ -108,15 +108,21 @@ class DataExtractionModule:
     customizable prompts.
     """
 
-    def __init__(self, config: DataExtractionConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: DataExtractionConfig | None = None,
+        custom_system_prompt_file: Path | None = None,
+    ) -> None:
         """
         Initialize the data extraction module.
 
         Args:
             config: Configuration for the extraction module. If None, uses default config.
+            custom_system_prompt_file: Optional custom system prompt file path
 
         """
         self.config = config or DataExtractionConfig()
+        self.custom_system_prompt_file = custom_system_prompt_file
         load_dotenv(override=True)
 
         # Set up LLM model
@@ -269,7 +275,14 @@ class DataExtractionModule:
 
     def _load_system_prompt(self) -> str:
         """Load system prompt from file."""
-        prompt_file = Path(__file__).parent.parent / "prompts" / "system_prompt_v0.txt"
+        # Use custom prompt file if provided
+        if self.custom_system_prompt_file:
+            prompt_file = self.custom_system_prompt_file
+        else:
+            prompt_file = (
+                Path(__file__).parent.parent / "prompts" / "system_prompt_v0.txt"
+            )
+
         try:
             return prompt_file.read_text(encoding="utf-8")
         except FileNotFoundError:

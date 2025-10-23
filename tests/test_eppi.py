@@ -24,7 +24,6 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     attr_data = {
         "AttributeId": 5730447,  # Integer ID from JSON
         "AttributeName": "Test EPPI Attribute",
-        "AttributeDescription": "Test description",
         "AttributeSetDescription": "Test set description",
         "AttributeType": "Selectable (show checkbox)",
         "AttributeTypeId": 2,
@@ -34,7 +33,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
         "ExtType": "",
         # These fields are added by the annotation converter
         "question_target": "",  # Always empty for EPPI
-        "output_data_type": bool,  # Always boolean for EPPI
+        "output_data_type": "bool",  # Always boolean for EPPI
         "attribute_id": "5730447",  # Converted to string
         "attribute_label": "Test EPPI Attribute",
         # Use snake_case field names directly since alias generator is not working
@@ -45,7 +44,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     assert attr.attribute_id == "5730447"
     assert attr.attribute_label == "Test EPPI Attribute"
     assert attr.question_target == ""  # Default empty for EPPI
-    assert attr.output_data_type is bool  # Default boolean for EPPI
+    assert attr.output_data_type == "bool"  # Default boolean for EPPI
     # Test the EPPI-specific fields
     assert attr.attribute_set_description == "Test set description"
     assert attr.attribute_type == "Selectable (show checkbox)"
@@ -77,17 +76,17 @@ def test_eppi_attribute_with_different_output_types() -> None:
     attr_str = EppiAttribute(
         attribute_id="eppi3",
         attribute_label="String Attribute",
-        output_data_type=str,
+        output_data_type="str",
     )
-    assert attr_str.output_data_type is str
+    assert attr_str.output_data_type == "str"
 
     # Test with int type
     attr_int = EppiAttribute(
         attribute_id="eppi4",
         attribute_label="Integer Attribute",
-        output_data_type=int,
+        output_data_type="int",
     )
-    assert attr_int.output_data_type is int
+    assert attr_int.output_data_type == "int"
 
 
 def test_eppi_attribute_camel_case_mapping() -> None:
@@ -207,7 +206,7 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
         "AttributeId": 5730447,
         "AttributeName": "Test EPPI Attribute",
         "question_target": "",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "5730447",
         "attribute_label": "Test EPPI Attribute",
     }
@@ -312,7 +311,6 @@ def test_eppi_raw_data_with_codesets() -> None:
                             "AttributeSetId": 1,
                             "AttributeSetDescription": "Test description",
                             "AttributeTypeId": 2,
-                            "AttributeDescription": "",
                             "ExtURL": "",
                             "ExtType": "",
                             "OriginalAttributeID": 0,

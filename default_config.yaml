@@ -1,0 +1,28 @@
+# Default Data Extraction Configuration
+# Ready-to-use configuration for EPPI smoking cessation dataset
+
+# Model Configuration
+model: "gpt-4o-mini"  # Using Azure GPT-4o-mini
+temperature: 0.1  # Low temperature for consistent results
+max_tokens: null  # No limit on response length
+max_context_length: 40000  # max tokens for input to the model context window
+
+# Extraction Configuration
+context_type: "full_document"  # Use full document context
+include_reasoning: true  # Include reasoning in output
+include_additional_text: true  # Include supporting text
+
+# File Paths - EPPI Dataset (default paths)
+annotations_file: "tests/test_files/output/eppi/SmokingCessation_Training_8April25/annotated_documents.json"
+attributes_file: "tests/test_files/output/eppi/SmokingCessation_Training_8April25/attributes.json"
+documents_file: "tests/test_files/output/eppi/SmokingCessation_Training_8April25/documents.json"
+system_prompt_file: "app/prompts/system_prompt_v0.txt"  # Use our custom prompt
+output_file: "eppi_extraction_results.json"
+
+# Data Filtering (null = process all)
+attribute_ids_file: "tests/test_files/input/annotation/processed/SmokingCessation_Training_8April25/attribute_ids.txt"  # Process all attributes
+document_ids_file: "tests/test_files/input/annotation/processed/SmokingCessation_Training_8April25/document_ids.txt"  # Process all documents
+
+# Logging Configuration
+verbose: false  # Enable verbose logging
+log_file: "extraction.log"  # Save logs to file
