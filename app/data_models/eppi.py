@@ -3,13 +3,13 @@
 from collections.abc import Callable
 from typing import Any
 
-from destiny_sdk.references import Reference
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
 from app.data_models.base import (
     AnnotationType,
     Attribute,
+    AttributeType,
     Document,
     GoldStandardAnnotation,
 )
@@ -19,17 +19,18 @@ class EppiAttribute(Attribute):
     """
     EPPI-specific attribute with additional fields.
 
-    Extends the core Attribute class with EPPI-specific metadata and hierarchy information.
-    Uses alias generators to automatically map camelCase EPPI JSON fields to snake_case Python fields.
+    Extends the core Attribute class with EPPI-specific
+    metadata and hierarchy information.
+
+    Uses alias generators to automatically map
+    camelCase EPPI JSON fields to snake_case Python fields.
     """
 
     model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
 
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: (
-        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
-    ) = bool  # Always boolean for EPPI
+    output_data_type: AttributeType = AttributeType.BOOL
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(
@@ -37,22 +38,25 @@ class EppiAttribute(Attribute):
         default=None,
     )
     hierarchy_path: str | None = Field(
-        description="Dot-separated path showing the hierarchical position of this attribute",
+        description="Dot-separated path showing the hierarchical "
+        " position of this attribute",
         default=None,
     )
     hierarchy_level: int = Field(
-        description="Numeric level indicating depth in the attribute hierarchy (0 = root level)",
+        description="Numeric level indicating depth in "
+        " the attribute hierarchy (0 = root level)",
         default=0,
     )
     is_leaf: bool = Field(
-        description="Whether this attribute is a leaf node (has no child attributes)",
+        description="Whether this attribute is a leaf node  (has no child attributes)",
         default=True,
     )
     parent_attribute_id: str | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
     attribute_type: str | None = Field(
-        description="Whether the attribute is Selectable in the EPPI-Reviewer interface or not",
+        description="Whether the attribute is Selectable in the "
+        " EPPI-Reviewer interface or not",
         default=None,
     )
     attribute_description: str | None = Field(
@@ -65,16 +69,11 @@ class EppiDocument(Document):
     """
     EPPI-specific document.
 
-    Uses alias generators to automatically map camelCase EPPI JSON fields to snake_case Python fields.
+    Uses alias generators to automatically map
+    camelCase EPPI JSON fields to snake_case Python fields.
     """
 
     model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
-
-    # Core fields (inherited from Document) - these need manual processing
-    name: str  # Maps from "Title" but needs processing
-    citation: Reference  # Complex object creation needed
-    context: str | list[str]  # Maps from "Abstract" but needs processing
-    document_id: str  # Maps from "ItemId" but needs type conversion
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     item_id: int | None = None
@@ -213,7 +212,7 @@ class ProcessedAnnotationData(BaseModel):
     documents: list[EppiDocument]
     annotations: list[EppiGoldStandardAnnotation]
     annotated_documents: list[EppiGoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[str, str]
+    attribute_id_to_label: dict[int, str]
     raw_data: EppiRawData
 
     @property

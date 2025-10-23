@@ -8,7 +8,7 @@ from uuid import uuid4
 from destiny_sdk.enhancements import Visibility
 from destiny_sdk.references import Reference
 
-from app.data_models.base import AnnotationType
+from app.data_models.base import AnnotationType, AttributeType
 from app.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -51,8 +51,8 @@ class EppiAnnotationConverter:
         return {
             # Core fields that need manual processing
             "question_target": "",  # Always empty for EPPI
-            "output_data_type": bool,  # Always boolean for EPPI
-            "attribute_id": str(attr_data.get("AttributeId", "")),  # Convert int to str
+            "output_data_type": AttributeType.BOOL,  # Always boolean for EPPI
+            "attribute_id": attr_data.get("AttributeId", 0),  # Convert int to str
             "attribute_label": attr_data.get("AttributeName", ""),
             # Note: All other fields (attribute_set_description, hierarchy_path, etc.)
             # are automatically mapped by alias generators from camelCase JSON
@@ -186,7 +186,9 @@ class EppiAnnotationConverter:
             combined_data = {**attr_data, **manual_fields}
 
             # Create the model - alias generators automatically map camelCase fields
-            attribute = EppiAttribute.model_validate(combined_data)
+            logger.debug(combined_data)
+            # attribute = EppiAttribute.model_validate(combined_data)
+            attribute = EppiAttribute(**combined_data)
             attributes.append(attribute)
 
         return attributes
@@ -530,6 +532,14 @@ class EppiAnnotationConverter:
         ]
 
         for file_type, data_list in file_mappings:
+            # logger.debug(file_type)
+            # logger.debug(data_list)
+            for item in data_list:
+                item: EppiAttribute
+                logger.debug(item)
+                logger.debug(type(item))
+                logger.debug(item.output_data_type)
+                logger.debug(item.model_dump_json())
             file_path = eppi_path / f"{file_type}.json"
             file_path.write_text(
                 json.dumps(

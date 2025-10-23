@@ -66,6 +66,9 @@ class JobExecutor:
     def __init__(self, language: Language, job_format: JobFormat):
         pass
 
+    # def execute_python():
+    #     subprocess.run('python', my_script)
+
 
 class DataFormat(BaseModel):
     """
@@ -82,6 +85,7 @@ class DataFormat(BaseModel):
 
     data_type: type
     name: str | None
+    # json schema, markdown,
 
 
 class Job(BaseModel):
@@ -93,6 +97,8 @@ class Job(BaseModel):
     language: Language
     ingress_method: IngressMethod | None  # we may have a job that starts with no data
     egress_method: EgressMethod
+    job: #code? script
+    fallback: # TRue ? something like that
 
 
 class PipelineStage(BaseModel):
@@ -100,11 +106,10 @@ class PipelineStage(BaseModel):
 
     name: str
     skip_if_failed: bool = True
-    permitted_ingress_methods = list[IngressMethod]
-    permitted_egress_methods = list[EgressMethod]
     input_file: Path | None
     data: Any | None
     jobs: Job | list[Job]
+
 
     @classmethod
     @field_validator("jobs", mode="before")

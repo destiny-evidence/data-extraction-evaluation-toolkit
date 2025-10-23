@@ -1,17 +1,27 @@
 """Core data models for document processing and annotation."""
 
-from enum import Enum
+from enum import StrEnum, auto
 from typing import Any
 
 from destiny_sdk.references import Reference
 from pydantic import BaseModel
 
 
-class AnnotationType(str, Enum):
+class AnnotationType(StrEnum):
     """Enumeration of annotation types."""
 
-    HUMAN = "human"
-    LLM = "llm"
+    HUMAN = auto()
+    LLM = auto()
+
+
+class AttributeType(StrEnum):
+    """Enum for permitted attribute data types."""
+
+    BOOL = auto()
+    INT = auto()
+    LIST = auto()
+    DICT = auto()
+    FLOAT = auto()
 
 
 class Attribute(BaseModel):
@@ -22,10 +32,8 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: (
-        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
-    )  # Expected data type for the attribute
-    attribute_id: str  # unique identifier for the attribute
+    output_data_type: AttributeType
+    attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 
 
