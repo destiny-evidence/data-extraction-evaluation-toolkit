@@ -5,7 +5,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from app.models.base import OutputDataType
+from app.models.base import AttributeType
 from app.models.eppi import EppiRawData
 from app.processors.annotation_converter import AnnotationConverter
 
@@ -60,7 +60,7 @@ def test_convert_to_eppi_attributes_with_real_data(sample_eppi_data: dict) -> No
     assert hasattr(first_attr, "attribute_label")
     assert hasattr(first_attr, "output_data_type")
     assert (
-        first_attr.output_data_type == OutputDataType.BOOLEAN.value
+        first_attr.output_data_type == AttributeType.BOOL.value
     ), "Should be bool for EPPI"
     assert first_attr.question_target == "", "Should be empty for EPPI"
 
@@ -159,7 +159,7 @@ def test_process_attribute_data_for_validation_with_real_data(
     assert "attribute_label" in processed
     assert processed["question_target"] == ""  # Should be empty for EPPI
     assert (
-        processed["output_data_type"] == OutputDataType.BOOLEAN.value
+        processed["output_data_type"] == AttributeType.BOOL.value
     )  # Should be bool for EPPI
 
 
@@ -200,7 +200,7 @@ def test_integration_full_workflow(sample_eppi_data: dict) -> None:
         assert hasattr(first_attr, "attribute_id")
         assert hasattr(first_attr, "attribute_label")
         assert hasattr(first_attr, "output_data_type")
-        assert first_attr.output_data_type == OutputDataType.BOOLEAN.value
+        assert first_attr.output_data_type == AttributeType.BOOL.value
 
         # Verify document structure
         first_doc = result.documents[0]

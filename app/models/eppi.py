@@ -10,9 +10,9 @@ from pydantic.alias_generators import to_camel
 from app.models.base import (
     AnnotationType,
     Attribute,
+    AttributeType,
     Document,
     GoldStandardAnnotation,
-    OutputDataType,
 )
 
 
@@ -28,7 +28,7 @@ class EppiAttribute(Attribute):
 
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: OutputDataType = OutputDataType.BOOLEAN  # Always boolean for EPPI
+    output_data_type: AttributeType = AttributeType.BOOL  # Always boolean for EPPI
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(

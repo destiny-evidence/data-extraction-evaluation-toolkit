@@ -1,42 +1,42 @@
 """Core data models for document processing and annotation."""
 
-from enum import Enum
+from enum import StrEnum, auto
 from typing import Any
 
 from destiny_sdk.references import Reference
 from pydantic import BaseModel
 
 
-class AnnotationType(str, Enum):
+class AnnotationType(StrEnum):
     """Enumeration of annotation types."""
 
-    HUMAN = "human"
-    LLM = "llm"
+    HUMAN = auto()
+    LLM = auto()
 
 
-class OutputDataType(str, Enum):
-    """Enumeration of output data types for attributes."""
+class AttributeType(StrEnum):
+    """Enum of permitted attribute data types."""
 
-    STRING = "str"
-    INTEGER = "int"
-    FLOAT = "float"
-    BOOLEAN = "bool"
-    LIST = "list"
-    DICT = "dict"
+    STRING = auto()
+    INTEGER = auto()
+    FLOAT = auto()
+    BOOL = auto()
+    LIST = auto()
+    DICT = auto()
 
     def __str__(self) -> str:
         """Return the string value for JSON serialization."""
         return self.value
 
     def to_python_type(self) -> type:
-        """Map OutputDataType to actual Python types."""
+        """Map AttributeType to actual Python types."""
         mapping = {
-            OutputDataType.STRING: str,
-            OutputDataType.INTEGER: int,
-            OutputDataType.FLOAT: float,
-            OutputDataType.BOOLEAN: bool,
-            OutputDataType.LIST: list,
-            OutputDataType.DICT: dict,
+            AttributeType.STRING: str,
+            AttributeType.INTEGER: int,
+            AttributeType.FLOAT: float,
+            AttributeType.BOOL: bool,
+            AttributeType.LIST: list,
+            AttributeType.DICT: dict,
         }
         return mapping[self]
 
@@ -49,7 +49,7 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: OutputDataType  # One of the defined output data types
+    output_data_type: AttributeType  # One of the defined output data types
     attribute_id: str  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 
