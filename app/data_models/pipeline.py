@@ -1,10 +1,43 @@
 """Models to employ for implementing DEET jobd in sequential, harmonised _pipelines_."""
 
+import os
+import shutil
+import subprocess
+from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, field_validator
+
+# restrict env vars to limit risk of unvalidated scripts.
+# for script execution from within pipeline.
+restricted_env = {
+    "PATH": "/usr/bin:/bin",  # limited PATH - no non-standard executables
+    "HOME": str(Path.home()),
+    "LANG": os.getenv("LANG", "en_GB.UTF-8"),
+}
+
+
+class WrongFiletypeError(Exception):
+    """Raise for wrong filetype."""
+
+    def __init__(
+        self,
+        msg: str = "Supplied filetype is not correct.",
+        *args,  # noqa: ANN002
+        **kwargs,
+    ) -> None:
+        """Init the exception with default message."""
+        super().__init__(msg, *args, **kwargs)
+
+
+class MissingBinaryError(Exception):
+    """To raise when we're missing a binary required to run a script."""
+
+
+class JobExecutionError(Exception):
+    """To raise when a job hits a generic error."""
 
 
 class IngressMethod(StrEnum):
@@ -60,16 +93,6 @@ class Language(StrEnum):
     LLM_PROMPT = auto()
 
 
-class JobExecutor:
-    """A wrapper around various tools for executing a job given job configuration."""
-
-    def __init__(self, language: Language, job_format: JobFormat):
-        pass
-
-    # def execute_python():
-    #     subprocess.run('python', my_script)
-
-
 class DataFormat(BaseModel):
     """
     The format data at a given stage of a job (ingress or egress).
@@ -88,6 +111,153 @@ class DataFormat(BaseModel):
     # json schema, markdown,
 
 
+class ScriptExecutor:
+    """An executor class for different kinds of scripts."""
+
+    def __init__(
+        self,
+        python_path: Path | None,
+        r_path: Path | None,
+        bash_path: Path = Path("/bin/bash"),
+    ) -> None:
+        """Create ScriptExecutor instance."""
+        self.python_path = python_path if python_path else Path(shutil.which("python"))
+        self.r_path = r_path if r_path else Path(shutil.which("R"))
+        self.bash_path = bash_path
+
+    @staticmethod
+    def verify_filetype(filename: str, filetype: Literal[".py", ".R", ".sh"]) -> bool:
+        """
+        Verify a given file is of a given filetype via checking the ending.
+
+        Args:
+            filename (str): Name of file.
+            filetype (Literal[&quot;.py&quot;, &quot;.R&quot;, &quot;.sh&quot;]): file ending.
+
+        Raises:
+            WrongFiletypeError: When ending doesnt match the input.
+
+        Returns:
+            bool: True if OK.
+
+        """
+        if not filename[-len(filetype) :] == filetype:
+            raise WrongFiletypeError
+        return True
+
+    def python_executor(
+        self, script_path: Path, args: list[str] | None, *, capture_output: bool = True
+    ) -> None | str:
+        """
+        Execute a python script.
+
+        Args:
+            script_path (Path): file path to script.
+            args (list[str]): args to run with script.
+            capture_output (bool, optional): Defaults to True.
+
+        Returns:
+            None | str: output from stdout or None.
+
+        """
+        self.verify_filetype(script_path.name, ".py")
+        if self.python_path is None:
+            python_missing = "can't find python binary. please find it/install."
+            raise MissingBinaryError(python_missing)
+
+        cmd = [self.python_path, str(script_path)]
+        if args:
+            cmd.extend(args)
+
+        output = subprocess.run(  # noqa: S603
+            cmd,
+            check=True,
+            capture_output=capture_output,
+            text=True,
+            env=restricted_env.copy().update({"PYTHONPATH": ""}),
+        )
+        if capture_output:
+            return output.stdout
+        return None
+
+    def r_executor(
+        self, script_path: Path, args: list[str], *, capture_output: bool = True
+    ) -> None | str:
+        """Execute an R script."""
+        self.verify_filetype(script_path.name, ".R")
+        if self.r_path is None:
+            r_missing = "can't find r binary. please find it/install."
+            raise MissingBinaryError(r_missing)
+
+        cmd = [self.r_path, str(script_path)]
+        if args:
+            cmd.extend(args)
+
+        output = subprocess.run(  # noqa: S603
+            cmd,
+            check=True,
+            capture_output=capture_output,
+            text=True,
+            env=restricted_env.copy().update(
+                {
+                    "R_LIBS_USER": "",  # prevent loading from user library paths
+                    "R_PROFILE_USER": "",  # disable user profile scripts
+                    "R_ENVIRON_USER": "",  # disable user environment files
+                    "R_HISTFILE": "",  # disable history file
+                }
+            ),
+        )
+        if capture_output:
+            return output.stdout
+        return None
+
+    def bash_executor(
+        self, script_path: Path, args: list[str], *, capture_output: bool = True
+    ) -> None | str:
+        """Execute a bash script."""
+        self.verify_filetype(script_path.name, ".sh")
+        if self.r_path is None:
+            r_missing = "can't find bash binary. please find it/install."
+            raise MissingBinaryError(r_missing)
+
+        cmd = [self.bash_path, str(script_path)]
+        if args:
+            cmd.extend(args)
+
+        output = subprocess.run(  # noqa: S603
+            cmd,
+            check=True,
+            capture_output=capture_output,
+            text=True,
+            env=restricted_env.copy().update(
+                {
+                    "SHELL": str(self.bash_path),
+                    "IFS": " \t\n",  # safe input field separator
+                    "ENV": "",  # disable shell startup file
+                    "BASH_ENV": "",  # disable bash startup file
+                }
+            ),
+        )
+        if capture_output:
+            return output.stdout
+        return None
+
+
+class CodeExecutor:
+    pass
+    # do we even need to implement this, or can
+    # we simply run the callable? if we just want
+    # to run the callable from here, how do we do that?
+
+
+class Executor:
+    def __init__(self, executor: ScriptExecutor | CodeExecutor):
+        self.executor = executor
+
+    # need to implement generic execution function here,
+    # for scripts and callables.
+
+
 class Job(BaseModel):
     """The attributes describing a specific job."""
 
@@ -97,8 +267,14 @@ class Job(BaseModel):
     language: Language
     ingress_method: IngressMethod | None  # we may have a job that starts with no data
     egress_method: EgressMethod
-    job: #code? script
-    fallback: # TRue ? something like that
+    job: Callable | Path
+    capture_output: bool = True
+    executor: Executor
+    fallback: True  # TRue ? something like that
+
+    def run_job(self) -> None | str:
+        """Run the job defined in this model instance."""
+        # try:
 
 
 class PipelineStage(BaseModel):
@@ -109,7 +285,8 @@ class PipelineStage(BaseModel):
     input_file: Path | None
     data: Any | None
     jobs: Job | list[Job]
-
+    logfile: Path | None
+    executor: Executor
 
     @classmethod
     @field_validator("jobs", mode="before")
@@ -123,6 +300,9 @@ class PipelineStage(BaseModel):
     @field_validator
     def read_if_file(cls, v) -> None:
         return
+
+    def run_jobs(self):
+        pass
 
 
 class Pipeline(BaseModel):

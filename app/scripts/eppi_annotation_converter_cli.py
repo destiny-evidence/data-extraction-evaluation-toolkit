@@ -21,7 +21,7 @@ def main() -> None:
             "Creates organized directory structure: output_dir/eppi/{filename}/"
         ),
         epilog=(
-            "Example: python annotation_converter_cli.py input.json output/ "
+            "Example: python annotation_converter_cli.py -i input.json -o output/ "
             "creates output/eppi/input/ with JSON files"
         ),
     )

@@ -538,7 +538,6 @@ class EppiAnnotationConverter:
                 item: EppiAttribute
                 logger.debug(item)
                 logger.debug(type(item))
-                logger.debug(item.output_data_type)
                 logger.debug(item.model_dump_json())
             file_path = eppi_path / f"{file_type}.json"
             file_path.write_text(
