@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
@@ -111,7 +112,20 @@ class DataFormat(BaseModel):
     # json schema, markdown,
 
 
-class ScriptExecutor:
+class BaseExecutor(ABC):
+    """Abstract base class for all executors."""
+
+    @abstractmethod
+    def _execute(
+        self,
+        job: "Job",
+        args: list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any:  # noqa: ANN401
+        pass
+
+
+class ScriptExecutor(BaseExecutor):
     """An executor class for different kinds of scripts."""
 
     def __init__(
@@ -124,6 +138,30 @@ class ScriptExecutor:
         self.python_path = python_path if python_path else Path(shutil.which("python"))
         self.r_path = r_path if r_path else Path(shutil.which("R"))
         self.bash_path = bash_path
+
+    def _execute(
+        self,
+        job: "Job",
+        args: list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any:  # noqa: ANN401
+        if job.language == Language.PYTHON:
+            return self.python_executor(
+                job.job, args=args, capture_output=job.capture_output
+            )
+        elif job.language == Language.R:
+            return self.r_executor(
+                job.job, args=args, capture_output=job.capture_output
+            )
+        elif job.language == Language.SHELL:
+            return self.bash_executor(
+                job.job, args=args, capture_output=job.capture_output
+            )
+        else:
+            missing_language = (
+                f"Script execution not implemented for language: {job.language}"
+            )
+            raise NotImplementedError(missing_language)
 
     @staticmethod
     def verify_filetype(filename: str, filetype: Literal[".py", ".R", ".sh"]) -> bool:
@@ -244,18 +282,66 @@ class ScriptExecutor:
 
 
 class CodeExecutor:
-    pass
-    # do we even need to implement this, or can
-    # we simply run the callable? if we just want
-    # to run the callable from here, how do we do that?
+    """Executor for Python callable."""
+
+    def _execute(
+        self,
+        job: "Job",
+        args: list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any:  # noqa: ANN401
+        args = args or []
+        kwargs = kwargs or {}
+        result = job.job(*args, **kwargs)
+        if job.capture_output:
+            return result
+        return None
 
 
 class Executor:
-    def __init__(self, executor: ScriptExecutor | CodeExecutor):
+    """A wrapper for all kinds of executors."""
+
+    def __init__(self, executor: BaseExecutor) -> None:
+        """Init new executor instance."""
         self.executor = executor
 
-    # need to implement generic execution function here,
-    # for scripts and callables.
+    def execute(
+        self,
+        job: "Job",
+        args: list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any:
+        """Execute a job."""
+        return self.executor._execute(job, args=args, kwargs=kwargs)
+
+
+def jobify(
+    name: str,
+    job_type: JobType | list[JobType] = JobType.DATA_PROCESSING,
+    ingress_method: IngressMethod | None = None,
+    egress_method: EgressMethod = EgressMethod.MEMORY,
+    *,
+    capture_output: bool = True,
+    fallback: bool = True,
+):
+    """Decorate to wrap a function as a Job instance."""
+
+    def decorator(func: Callable):
+        """Wrap around target callable."""
+        return Job(
+            name=name,
+            job_format=JobFormat.CODE,
+            job_type=job_type,
+            language=Language.PYTHON,
+            ingress_method=ingress_method,
+            egress_method=egress_method,
+            job=func,
+            capture_output=capture_output,
+            executor=Executor(executor=CodeExecutor()),
+            fallback=fallback,
+        )
+
+    return decorator
 
 
 class Job(BaseModel):
