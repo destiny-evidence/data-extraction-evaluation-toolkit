@@ -1,4 +1,4 @@
-"""Generalizable data extraction module for LLM-based document analysis."""
+"""Generalisable data extraction module for LLM-based document analysis."""
 
 import json
 import os
@@ -6,12 +6,20 @@ from enum import Enum
 from pathlib import Path
 
 import litellm
-from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.logger import logger
 from app.models.base import AnnotationType
-from app.models.eppi import EppiAttribute, EppiDocument, EppiGoldStandardAnnotation
+from app.models.eppi import (
+    EppiAttribute,
+    EppiDocument,
+    EppiGoldStandardAnnotation,
+    LLMResponseSchema,
+)  # type: ignore[attr-defined]
+from app.settings import get_settings
+
+# Load centralized settings once for module-level defaults
+settings = get_settings()
 
 
 class ContextType(str, Enum):
@@ -23,34 +31,39 @@ class ContextType(str, Enum):
     CUSTOM = "custom"
 
 
-class AttributeSelectionMode(str, Enum):
-    """Modes for selecting attributes to extract."""
-
-    ALL = "all"
-    SINGLE = "single"
-    BATCH = "batch"
-    BY_NAMES = "by_names"
-    BY_IDS = "by_ids"
-
-
 class PromptConfig(BaseModel):
     """Configuration for prompts used in data extraction."""
 
     system_prompt: str = Field(
         description="System prompt that defines the task and role",
-        default="You are an expert research analyst. Provide detailed, accurate analysis.",
+        default=(
+            "You are an expert research analyst. Provide detailed, "
+            "accurate analysis."
+        ),
     )
     attribute_specific_prompt: str = Field(
         description="Prompt template for attribute-specific extraction",
-        default="Analyze this research document and answer questions about specific attributes. For each attribute, determine if it's present (True/False), provide reasoning, and include citations.",
+        default=(
+            "Analyze this research document and answer questions about "
+            "specific attributes. For each attribute, determine if it's "
+            "present (True/False), provide reasoning, and include citations."
+        ),
     )
     single_attribute_prompt: str = Field(
         description="Prompt template for single attribute extraction",
-        default="Analyze this research document for the following attribute: {attribute_label}. Determine if it's present (True/False), provide reasoning, and include citations.",
+        default=(
+            "Analyze this research document for the following attribute: "
+            "{attribute_label}. Determine if it's present (True/False), "
+            "provide reasoning, and include citations."
+        ),
     )
     batch_attribute_prompt: str = Field(
         description="Prompt template for batch attribute extraction",
-        default="Analyze this research document and answer questions about the following attributes. For each attribute, determine if it's present (True/False), provide reasoning, and include citations.",
+        default=(
+            "Analyze this research document and answer questions about the "
+            "following attributes. For each attribute, determine if it's "
+            "present (True/False), provide reasoning, and include citations."
+        ),
     )
 
 
@@ -74,15 +87,8 @@ class DataExtractionConfig(BaseModel):
         default=40000, description="Maximum context length for LLM"
     )
 
-    # Attribute Selection
-    attribute_selection_mode: AttributeSelectionMode = Field(
-        default=AttributeSelectionMode.ALL, description="Mode for selecting attributes"
-    )
     selected_attribute_ids: list[str] = Field(
         default=[], description="Specific attribute IDs to extract"
-    )
-    selected_attribute_names: list[str] = Field(
-        default=[], description="Specific attribute names to extract"
     )
 
     # Prompt Configuration
@@ -101,10 +107,10 @@ class DataExtractionConfig(BaseModel):
 
 class DataExtractionModule:
     """
-    Generalizable module for LLM-based data extraction from documents.
+    Generalisable module for LLM-based data extraction from documents.
 
-    This module provides a flexible interface for extracting structured data from documents
-    using LLMs, with support for different context types, attribute selection modes, and
+    This module provides a flexible interface for extracting structured data
+    from documents using LLMs, with support for different context types and
     customizable prompts.
     """
 
@@ -117,17 +123,45 @@ class DataExtractionModule:
         Initialize the data extraction module.
 
         Args:
-            config: Configuration for the extraction module. If None, uses default config.
+            config: Configuration for the extraction module.
+                If None, uses default config.
             custom_system_prompt_file: Optional custom system prompt file path
 
         """
-        self.config = config or DataExtractionConfig()
-        self.custom_system_prompt_file = custom_system_prompt_file
-        load_dotenv(override=True)
+        # If not provided, hydrate configuration from centralized settings
+        if config is None:
+            # Map string context_type from settings to local enum
+            try:
+                context_enum = ContextType(settings.context_type)
+            except ValueError:
+                context_enum = ContextType.FULL_DOCUMENT
 
-        # Set up LLM model
-        if os.getenv("AZURE_API_KEY"):
-            deployment = os.getenv("AZURE_DEPLOYMENT", self.config.model)
+            config = DataExtractionConfig(
+                model=settings.model,
+                temperature=settings.temperature,
+                max_tokens=settings.max_tokens,
+                context_type=context_enum,
+                max_context_length=settings.max_context_length,
+                selected_attribute_ids=list(settings.selected_attribute_ids),
+                prompt_config=PromptConfig(),
+                include_reasoning=settings.include_reasoning,
+                include_additional_text=settings.include_additional_text,
+            )
+
+        self.config = config
+        self.custom_system_prompt_file = custom_system_prompt_file
+
+        # Set up LLM model; prefer centralized settings, preserve env fallback
+        azure_api_key_present = (
+            settings.azure_api_key.get_secret_value()
+            if settings.azure_api_key
+            else None
+        ) or os.getenv("AZURE_API_KEY")
+
+        if azure_api_key_present:
+            deployment = settings.azure_deployment or os.getenv(
+                "AZURE_DEPLOYMENT", self.config.model
+            )
             self.model = f"azure/{deployment}"
         else:
             self.model = self.config.model
@@ -154,8 +188,16 @@ class DataExtractionModule:
 
         for document in documents:
             logger.info(f"Processing document: {document.name}")
-            document_annotations = self.extract_from_document(document, attributes)
-            all_annotations.extend(document_annotations)
+            try:
+                document_annotations = self.extract_from_document(document, attributes)
+                all_annotations.extend(document_annotations)
+            except (ValidationError, ValueError) as e:
+                logger.error(
+                    f"Failed to extract from document {document.document_id}: {e}"
+                )
+                logger.debug(f"Document: {document.name}")
+                # Continue processing other documents
+                continue
 
         if output_file:
             self._save_results(all_annotations, output_file)
@@ -200,54 +242,13 @@ class DataExtractionModule:
     def _filter_attributes(
         self, attributes: list[EppiAttribute]
     ) -> list[EppiAttribute]:
-        """Filter attributes based on selection mode."""
-        if self.config.attribute_selection_mode == AttributeSelectionMode.ALL:
-            return attributes
-
-        if self.config.attribute_selection_mode == AttributeSelectionMode.SINGLE:
-            if self.config.selected_attribute_ids:
-                return [
-                    attr
-                    for attr in attributes
-                    if attr.attribute_id == self.config.selected_attribute_ids[0]
-                ]
-            if self.config.selected_attribute_names:
-                return [
-                    attr
-                    for attr in attributes
-                    if attr.attribute_label == self.config.selected_attribute_names[0]
-                ]
-            return attributes[:1]  # Default to first attribute
-
-        if self.config.attribute_selection_mode == AttributeSelectionMode.BATCH:
-            if self.config.selected_attribute_ids:
-                return [
-                    attr
-                    for attr in attributes
-                    if attr.attribute_id in self.config.selected_attribute_ids
-                ]
-            if self.config.selected_attribute_names:
-                return [
-                    attr
-                    for attr in attributes
-                    if attr.attribute_label in self.config.selected_attribute_names
-                ]
-            return attributes[:5]  # Default to first 5 attributes
-
-        if self.config.attribute_selection_mode == AttributeSelectionMode.BY_IDS:
+        """Filter attributes using selected_attribute_ids if provided."""
+        if self.config.selected_attribute_ids:
             return [
                 attr
                 for attr in attributes
                 if attr.attribute_id in self.config.selected_attribute_ids
             ]
-
-        if self.config.attribute_selection_mode == AttributeSelectionMode.BY_NAMES:
-            return [
-                attr
-                for attr in attributes
-                if attr.attribute_label in self.config.selected_attribute_names
-            ]
-
         return attributes
 
     def _prepare_context(self, document: EppiDocument) -> str:
@@ -292,50 +293,43 @@ class DataExtractionModule:
             return self.config.prompt_config.system_prompt
 
     def _generate_prompt(self, context: str, attributes: list[EppiAttribute]) -> str:
-        """Generate prompt based on attribute selection mode."""
-        # Load system prompt from file
-        system_prompt_template = self._load_system_prompt()
+        """
+        Generate structured JSON input for the LLM user message.
 
-        if self.config.attribute_selection_mode == AttributeSelectionMode.SINGLE:
-            attribute = attributes[0]
-            # Use attribute_set_description as the question
-            question = attribute.attribute_set_description or "No description available"
+        The payload contains the prepared document context and an array of
+        attributes shaped like `EppiAttribute`, where `question_target` is set
+        from `attribute_set_description` by default. This function returns a
+        JSON string to be used as the user message content.
 
-            # Format the system prompt with context and question
-            formatted_prompt = system_prompt_template.format(
-                context=context, question=question
-            )
-        else:
-            # For batch mode, create a list of questions from attribute descriptions
-            questions = []
-            for attr in attributes:
-                question_text = f"- {attr.attribute_label} (ID: {attr.attribute_id}): {attr.attribute_set_description or 'No description'}"
-                questions.append(question_text)
+        Args:
+            context: Prepared document context string.
+            attributes: List of EPPI attributes to evaluate.
 
-            question = "\n".join(questions)
+        Returns:
+            JSON string containing `context` and `attributes`.
 
-            # Format the system prompt with context and questions
-            formatted_prompt = system_prompt_template.format(
-                context=context, question=question
-            )
+        """
+        # Build attribute dictionaries ensuring keys align with EppiAttribute schema
+        attributes_payload: list[dict[str, object]] = [
+            {
+                "attribute_id": attr.attribute_id,
+                "attribute_label": attr.attribute_label,
+                # EPPI uses boolean output
+                "output_data_type": attr.output_data_type,
+                # Use attribute_set_description as default question target
+                "question_target": attr.attribute_set_description
+                or "No description available",
+                "attribute_set_description": attr.attribute_set_description,
+            }
+            for attr in attributes
+        ]
 
-        # Add JSON response format instructions
-        return f"""
-{formatted_prompt}
+        payload = {
+            "context": context,
+            "attributes": attributes_payload,
+        }
 
-Respond in JSON format:
-{{
-    "annotations": [
-        {{
-            "attribute_id": "attribute_id",
-            "output_data": true or false,
-            "annotation_type": "llm",
-            "additional_text": "Supporting text from document (or null)",
-            "reasoning": "Your reasoning for the decision"
-        }}
-    ]
-}}
-"""
+        return json.dumps(payload, ensure_ascii=False)
 
     def _call_llm(self, prompt: str) -> str:
         """Call the LLM with the given prompt."""
@@ -347,7 +341,6 @@ Respond in JSON format:
             {"role": "user", "content": prompt},
         ]
 
-        logger.info("=" * 60)
         logger.info("LLM REQUEST")
         logger.info("=" * 60)
         logger.info(f"Model: {self.model}")
@@ -365,7 +358,14 @@ Respond in JSON format:
             model=self.model,
             messages=messages,
             temperature=self.config.temperature,
-            response_format={"type": "json_object"},
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "llm_annotation_response",
+                    "schema": LLMResponseSchema.model_json_schema(),
+                    "strict": True,
+                },
+            },
             max_tokens=self.config.max_tokens,
         )
 
@@ -385,33 +385,65 @@ Respond in JSON format:
         attributes: list[EppiAttribute],
         document: EppiDocument,
     ) -> list[EppiGoldStandardAnnotation]:
-        """Parse LLM response and create annotations."""
+        """
+        Parse and validate LLM response against EppiGoldStandardAnnotation structure.
+
+        Args:
+            response_content: Raw JSON string response from LLM
+            attributes: List of attributes to match against
+            document: Document being processed
+
+        Returns:
+            List of EppiGoldStandardAnnotation objects
+
+        Raises:
+            ValidationError: If response fails schema validation.
+            ValueError: If JSON parsing fails.
+
+        """
         try:
-            result = json.loads(response_content)
+            # Validate against LLMResponseSchema
+            validated_response = LLMResponseSchema.model_validate_json(response_content)
+        except ValidationError as e:
+            logger.error(f"LLM response failed schema validation: {e}")
+            logger.debug(f"Response content: {response_content}")
+            raise
         except json.JSONDecodeError as e:
+            error_msg = f"Invalid JSON in LLM response: {e}"
             logger.error(f"Failed to parse LLM response as JSON: {e}")
-            return []
+            raise ValueError(error_msg) from e
 
         annotations = []
-        for annotation_data in result.get("annotations", []):
-            attribute_id = annotation_data.get("attribute_id")
+        for llm_annotation in validated_response.annotations:
+            # Resolve attribute_id to full EppiAttribute
             attribute = next(
-                (attr for attr in attributes if attr.attribute_id == attribute_id), None
+                (
+                    attr
+                    for attr in attributes
+                    if attr.attribute_id == llm_annotation.attribute_id
+                ),
+                None,
             )
 
-            if attribute:
-                annotation = EppiGoldStandardAnnotation(
-                    attribute=attribute,
-                    output_data=annotation_data.get("output_data", False),
-                    annotation_type=AnnotationType.LLM,
-                    additional_text=annotation_data.get("additional_text")
-                    if self.config.include_additional_text
-                    else None,
-                    reasoning=annotation_data.get("reasoning")
-                    if self.config.include_reasoning
-                    else None,
+            if not attribute:
+                logger.warning(
+                    f"No attribute found for ID: {llm_annotation.attribute_id}"
                 )
-                annotations.append(annotation)
+                continue
+
+            # Convert to full EppiGoldStandardAnnotation
+            annotation = EppiGoldStandardAnnotation(
+                attribute=attribute,
+                output_data=llm_annotation.output_data,
+                annotation_type=AnnotationType.LLM,
+                additional_text=llm_annotation.additional_text
+                if self.config.include_additional_text
+                else None,
+                reasoning=llm_annotation.reasoning
+                if self.config.include_reasoning
+                else None,
+            )
+            annotations.append(annotation)
 
         return annotations
 
@@ -466,12 +498,9 @@ def extract_batch_attributes(
     attribute_ids: list[str],
     config: DataExtractionConfig | None = None,
 ) -> list[EppiGoldStandardAnnotation]:
-    """Extract a batch of specific attributes from a document."""
+    """Extract a batch of specific attributes from a document by IDs."""
     if config is None:
         config = DataExtractionConfig()
-
-    config.attribute_selection_mode = AttributeSelectionMode.BY_IDS
     config.selected_attribute_ids = attribute_ids
-
     module = DataExtractionModule(config)
     return module.extract_from_document(document, attributes)

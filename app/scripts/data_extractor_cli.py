@@ -3,15 +3,14 @@
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
-from dotenv import load_dotenv
+import yaml  # type: ignore[import-untyped]
 
 from app.extractors.data_extraction_module import (
-    AttributeSelectionMode,
     ContextType,
     DataExtractionConfig,
     DataExtractionModule,
@@ -19,8 +18,7 @@ from app.extractors.data_extraction_module import (
 from app.logger import logger
 from app.models.eppi import EppiAttribute, EppiDocument, EppiGoldStandardAnnotation
 
-# Load environment variables
-load_dotenv(override=True)
+# No dotenv usage; configuration comes from a single YAML file
 
 
 class SimpleConfig:
@@ -259,7 +257,7 @@ def convert_to_models(
     return attributes, documents
 
 
-def run_extraction(
+def run_extraction(  # noqa: PLR0913
     documents: list[EppiDocument],
     attributes: list[EppiAttribute],
     config: DataExtractionConfig,
@@ -316,7 +314,7 @@ def run_extraction(
 
     # Create output directory if it doesn't exist
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with output_file.open("w") as f:
         json.dump(results_data, f, indent=2)
 
@@ -325,7 +323,7 @@ def run_extraction(
     return all_annotations
 
 
-def main() -> None:
+def main() -> None:  # noqa: C901, PLR0912, PLR0915
     """Run the main CLI function."""
     parser = argparse.ArgumentParser(
         description="Run data extraction using the DataExtractionModule",
@@ -388,12 +386,7 @@ Examples:
         type=Path,
         help="Path to custom system prompt file (default: app/prompts/system_prompt_v0.txt)",
     )
-    parser.add_argument(
-        "--mode",
-        choices=["all", "single", "batch", "by_names", "by_ids"],
-        default="all",
-        help="Attribute selection mode (default: all)",
-    )
+    # selection mode removed; selection is based only on provided attribute IDs
     parser.add_argument(
         "--context-type",
         choices=["full_document", "abstract", "custom"],
@@ -462,6 +455,8 @@ Examples:
         and not args.documents_file
     ):
         config_file = args.config or Path("default_config.yaml")
+        # Expose the config path to the centralized settings (single source of truth)
+        os.environ["DATA_EXTRACTION_CONFIG_FILE"] = str(config_file)
         try:
             config = SimpleConfig.from_yaml(config_file)
 
@@ -483,12 +478,13 @@ Examples:
             if not all(
                 [config.annotations_file, config.attributes_file, config.documents_file]
             ):
-                raise ValueError("Missing required file paths in configuration")
+                msg = "Missing required file paths in configuration"
+                raise ValueError(msg)  # noqa: TRY301
 
             # Type assertions for mypy
-            assert config.annotations_file is not None
-            assert config.attributes_file is not None
-            assert config.documents_file is not None
+            assert config.annotations_file is not None  # noqa: S101
+            assert config.attributes_file is not None  # noqa: S101
+            assert config.documents_file is not None  # noqa: S101
 
             annotations_data, attributes_data, documents_data = load_processed_data(
                 Path(config.annotations_file),
@@ -523,7 +519,6 @@ Examples:
                 max_tokens=config.max_tokens,
                 context_type=ContextType(config.context_type),
                 max_context_length=config.max_context_length,
-                attribute_selection_mode=AttributeSelectionMode.BATCH,  # Always batch mode
                 selected_attribute_ids=selected_attribute_ids,
                 include_reasoning=config.include_reasoning,
                 include_additional_text=config.include_additional_text,
@@ -596,11 +591,11 @@ Examples:
                 "annotations": [ann.model_dump() for ann in all_annotations],
             }
 
-            assert config.output_file is not None
+            assert config.output_file is not None  # noqa: S101
             output_path = Path(config.output_file)
             # Create output directory if it doesn't exist
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             with output_path.open("w") as f:
                 json.dump(results_data, f, indent=2)
 
@@ -636,19 +631,19 @@ Examples:
             sys.exit(1)
 
     # Parse attribute and document IDs
-    selected_attribute_ids: list[str] | None = None
+    legacy_selected_attribute_ids: list[str] | None = None
     if args.attribute_ids:
-        selected_attribute_ids = [
+        legacy_selected_attribute_ids = [
             attr_id.strip() for attr_id in args.attribute_ids.split(",")
         ]
-        logger.info(f"Selected attribute IDs: {selected_attribute_ids}")
+        logger.info(f"Selected attribute IDs: {legacy_selected_attribute_ids}")
 
-    selected_document_ids: list[str] | None = None
+    legacy_selected_document_ids: list[str] | None = None
     if args.document_ids:
-        selected_document_ids = [
+        legacy_selected_document_ids = [
             doc_id.strip() for doc_id in args.document_ids.split(",")
         ]
-        logger.info(f"Selected document IDs: {selected_document_ids}")
+        logger.info(f"Selected document IDs: {legacy_selected_document_ids}")
 
     # Set up output file
     if not args.output_file:
@@ -664,8 +659,8 @@ Examples:
         attributes, documents = convert_to_models(
             attributes_data,
             documents_data,
-            selected_attribute_ids,
-            selected_document_ids,
+            legacy_selected_attribute_ids,
+            legacy_selected_document_ids,
         )
 
         if not attributes:
@@ -677,14 +672,13 @@ Examples:
             sys.exit(1)
 
         # Set up configuration
-        config = DataExtractionConfig(
+        extraction_config = DataExtractionConfig(
             model=args.model,
             temperature=args.temperature,
             max_tokens=args.max_tokens,
             context_type=ContextType(args.context_type),
             max_context_length=args.max_context_length,
-            attribute_selection_mode=AttributeSelectionMode(args.mode),
-            selected_attribute_ids=selected_attribute_ids or [],
+            selected_attribute_ids=legacy_selected_attribute_ids or [],
             include_reasoning=args.include_reasoning,
             include_additional_text=args.include_additional_text,
         )
@@ -706,7 +700,7 @@ Examples:
         annotations = run_extraction(
             documents,
             attributes,
-            config,
+            extraction_config,
             args.output_file,
             args.batch_size,
             custom_system_prompt_file,

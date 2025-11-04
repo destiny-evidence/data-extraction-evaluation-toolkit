@@ -1,7 +1,6 @@
 """Data extraction modules for LLM-based document analysis."""
 
-from app.extractors.data_extraction_module import (
-    AttributeSelectionMode,
+from app.extractors.data_extraction_module import (  # type: ignore[attr-defined]
     ContextType,
     DataExtractionConfig,
     DataExtractionModule,
@@ -12,7 +11,6 @@ from app.extractors.data_extraction_module import (
 )
 
 __all__ = [
-    "AttributeSelectionMode",
     "ContextType",
     "DataExtractionConfig",
     "DataExtractionModule",
