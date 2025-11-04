@@ -133,10 +133,15 @@ class DataExtractionModule:
         """
         # If not provided, hydrate configuration from centralized settings
         if config is None:
+            logger.debug("No config provided, loading from centralized settings")
             # Map string context_type from settings to local enum
             try:
                 context_enum = ContextType(settings.context_type)
             except ValueError:
+                logger.warning(
+                    f"Invalid context_type '{settings.context_type}' in settings, "
+                    "defaulting to FULL_DOCUMENT"
+                )
                 context_enum = ContextType.FULL_DOCUMENT
 
             config = DataExtractionConfig(
@@ -149,6 +154,11 @@ class DataExtractionModule:
                 prompt_config=PromptConfig(),
                 include_reasoning=settings.include_reasoning,
                 include_additional_text=settings.include_additional_text,
+            )
+            logger.debug(
+                f"Loaded config from settings: model={config.model}, "
+                f"context_type={config.context_type}, "
+                f"selected_attributes={len(config.selected_attribute_ids)}"
             )
 
         self.config = config
@@ -237,8 +247,8 @@ class DataExtractionModule:
         # Prepare context
         context = self._prepare_context(document)
 
-        # Generate prompt
-        prompt = self._generate_prompt(context, selected_attributes)
+        # Generate user message JSON payload
+        prompt = self._generate_user_message_json(context, selected_attributes)
 
         # Call LLM
         llm_response = self._call_llm(prompt)
@@ -251,32 +261,61 @@ class DataExtractionModule:
     ) -> list[EppiAttribute]:
         """Filter attributes using selected_attribute_ids if provided."""
         if self.config.selected_attribute_ids:
-            return [
+            filtered = [
                 attr
                 for attr in attributes
                 if attr.attribute_id in self.config.selected_attribute_ids
             ]
+            logger.debug(
+                f"Filtered {len(attributes)} attributes to {len(filtered)} "
+                f"using selected_attribute_ids: {self.config.selected_attribute_ids}"
+            )
+            return filtered
+        logger.debug(
+            f"No attribute filtering applied, using all {len(attributes)} attributes"
+        )
         return attributes
 
     def _prepare_context(self, document: EppiDocument) -> str:
         """Prepare context based on context type."""
         if self.config.context_type == ContextType.FULL_DOCUMENT:
             context = document.context
+            logger.debug(f"Using full document context (length: {len(str(context))})")
         elif self.config.context_type == ContextType.ABSTRACT_ONLY:
             context = document.abstract or document.context
+            logger.debug(f"Using abstract-only context (length: {len(str(context))})")
         elif self.config.context_type == ContextType.RAG_SNIPPETS:
             # For now, use abstract as RAG snippets placeholder
             # In the future, this could be replaced with actual RAG snippets
+            logger.warning(
+                "RAG_SNIPPETS context type is using abstract as placeholder. "
+                "This may not be the intended behavior. Actual RAG snippets "
+                "should be implemented in the future."
+            )
             context = document.abstract or document.context
-        else:  # CUSTOM
+            logger.debug(
+                f"Using RAG snippets placeholder (abstract) "
+                f"(length: {len(str(context))})"
+            )
+        elif self.config.context_type == ContextType.CUSTOM:
             context = document.context
+            logger.debug(f"Using custom context (length: {len(str(context))})")
+        else:
+            msg = f"Unexpected context type: {self.config.context_type}"
+            raise ValueError(msg)
 
         # Ensure context is a string
         if isinstance(context, list):
+            logger.debug(f"Converting list context to string (items: {len(context)})")
             context = " ".join(context)
 
         # Truncate if too long
-        if len(context) > self.config.max_context_length:
+        original_length = len(context)
+        if original_length > self.config.max_context_length:
+            logger.debug(
+                f"Truncating context from {original_length} to "
+                f"{self.config.max_context_length} characters"
+            )
             context = context[: self.config.max_context_length] + "..."
 
         return context
@@ -286,20 +325,26 @@ class DataExtractionModule:
         # Use custom prompt file if provided
         if self.custom_system_prompt_file:
             prompt_file = self.custom_system_prompt_file
+            logger.debug(f"Loading custom system prompt from {prompt_file}")
         else:
             prompt_file = (
                 Path(__file__).parent.parent / "prompts" / "system_prompt_v0.txt"
             )
+            logger.debug(f"Loading default system prompt from {prompt_file}")
 
         try:
-            return prompt_file.read_text(encoding="utf-8")
+            prompt_content = prompt_file.read_text(encoding="utf-8")
+            logger.debug(f"Loaded system prompt ({len(prompt_content)} characters)")
+            return prompt_content  # noqa: TRY300
         except FileNotFoundError:
             logger.warning(
                 f"System prompt file not found at {prompt_file}, using default"
             )
             return self.config.prompt_config.system_prompt
 
-    def _generate_prompt(self, context: str, attributes: list[EppiAttribute]) -> str:
+    def _generate_user_message_json(
+        self, context: str, attributes: list[EppiAttribute]
+    ) -> str:
         """
         Generate structured JSON input for the LLM user message.
 
@@ -316,6 +361,7 @@ class DataExtractionModule:
             JSON string containing `context` and `attributes`.
 
         """
+        logger.debug(f"Generating prompt for {len(attributes)} attributes")
         # Build attribute dictionaries ensuring keys align with EppiAttribute schema
         attributes_payload: list[dict[str, object]] = [
             {
@@ -336,7 +382,9 @@ class DataExtractionModule:
             "attributes": attributes_payload,
         }
 
-        return json.dumps(payload, ensure_ascii=False)
+        prompt_json = json.dumps(payload, ensure_ascii=False)
+        logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
+        return prompt_json
 
     def _call_llm(self, prompt: str) -> str:
         """Call the LLM with the given prompt."""
@@ -421,6 +469,10 @@ class DataExtractionModule:
             raise ValueError(error_msg) from e
 
         annotations = []
+        logger.debug(
+            f"Parsing LLM response with {len(validated_response.annotations)} "
+            f"annotations"
+        )
         for llm_annotation in validated_response.annotations:
             # Resolve attribute_id to full EppiAttribute
             attribute = next(
@@ -451,7 +503,12 @@ class DataExtractionModule:
                 else None,
             )
             annotations.append(annotation)
+            logger.debug(
+                f"Created annotation for attribute {attribute.attribute_id}: "
+                f"output_data={llm_annotation.output_data}"
+            )
 
+        logger.debug(f"Successfully parsed {len(annotations)} annotations")
         return annotations
 
     def _save_results(
