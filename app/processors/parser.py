@@ -71,7 +71,7 @@ class ParsedOutput(BaseModel):
     metadata: dict | None = None
 
     class Config:  # noqa: D106
-        arbitrary_types_allowed = True
+        arbitrary_types_allowed = True  # this is to allow our Executor class as a type.
 
     @field_validator("text", mode="after")
     @classmethod
@@ -149,7 +149,7 @@ class MarkerParser(ParserLibrary):
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using marker."""
-        rendered = converter(input_)
+        rendered = converter(str(input_))
         text, extension, images = text_from_rendered(rendered)
         out = {"text": text}
         if return_metadata:
@@ -248,7 +248,7 @@ class DocumentParser:
 
         Args:
             input_ (str | PathLike): File(path) or str of input_.
-            output_file (str | PathLike | None): If None, return parsed content as str.
+            out_path (str | PathLike | None): If None, return parsed content as str.
             parser (ParserLibrary | None, optional): Defaults to None.
                 If None, uses the default parser.
             input_type (InputFileType | None, optional): Defaults to None.
