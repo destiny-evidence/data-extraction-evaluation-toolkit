@@ -222,6 +222,9 @@ class DataExtractionModule:
         Returns:
             List of annotations for the document
 
+        Raises:
+            ValueError: If no attributes are selected for extraction after filtering.
+
         """
         # Filter attributes based on selection mode
         selected_attributes = self._filter_attributes(attributes)
