@@ -124,8 +124,11 @@ class DataExtractionModule:
 
         Args:
             config: Configuration for the extraction module.
-                If None, uses default config.
-            custom_system_prompt_file: Optional custom system prompt file path
+                If None, uses default config from centralized settings.
+            custom_system_prompt_file: Optional custom system prompt file path.
+                If None, defaults to `app/prompts/system_prompt_v0.txt`.
+                If that file doesn't exist, falls back to the prompt
+                from `config.prompt_config.system_prompt`.
 
         """
         # If not provided, hydrate configuration from centralized settings
@@ -224,8 +227,9 @@ class DataExtractionModule:
         selected_attributes = self._filter_attributes(attributes)
 
         if not selected_attributes:
-            logger.warning("No attributes selected for extraction")
-            return []
+            msg = "No attributes selected for extraction"
+            logger.warning(msg)
+            raise ValueError(msg)
 
         # Prepare context
         context = self._prepare_context(document)
