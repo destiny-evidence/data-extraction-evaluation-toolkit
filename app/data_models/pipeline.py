@@ -7,9 +7,13 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar, overload
 
-from pydantic import BaseModel, field_validator
+from loguru import logger
+from pydantic import BaseModel, field_validator, model_validator
+
+F = TypeVar("F", bound=Callable[..., Any])
+
 
 # restrict env vars to limit risk of unvalidated scripts.
 # for script execution from within pipeline.
@@ -94,24 +98,6 @@ class Language(StrEnum):
     LLM_PROMPT = auto()
 
 
-class DataFormat(BaseModel):
-    """
-    The format data at a given stage of a job (ingress or egress).
-
-    This is regardless of whether it is passed
-    along from a previous stage in memory, or
-    read from a file.
-
-    This shouldn't represent a basic built-in
-    like `str`, but rather reflect a specific str
-    format like markdown.
-    """
-
-    data_type: type
-    name: str | None
-    # json schema, markdown,
-
-
 class BaseExecutor(ABC):
     """Abstract base class for all executors."""
 
@@ -130,8 +116,8 @@ class ScriptExecutor(BaseExecutor):
 
     def __init__(
         self,
-        python_path: Path | None,
-        r_path: Path | None,
+        python_path: Path | None = None,
+        r_path: Path | None = None,
         bash_path: Path = Path("/bin/bash"),
     ) -> None:
         """Create ScriptExecutor instance."""
@@ -142,26 +128,25 @@ class ScriptExecutor(BaseExecutor):
     def _execute(
         self,
         job: "Job",
-        args: list[Any] | None = None,
+        args: list[str] | None = None,
         kwargs: dict[str, Any] | None = None,
     ) -> Any:  # noqa: ANN401
         if job.language == Language.PYTHON:
             return self.python_executor(
                 job.job, args=args, capture_output=job.capture_output
             )
-        elif job.language == Language.R:
+        if job.language == Language.R:
             return self.r_executor(
                 job.job, args=args, capture_output=job.capture_output
             )
-        elif job.language == Language.SHELL:
+        if job.language == Language.SHELL:
             return self.bash_executor(
                 job.job, args=args, capture_output=job.capture_output
             )
-        else:
-            missing_language = (
-                f"Script execution not implemented for language: {job.language}"
-            )
-            raise NotImplementedError(missing_language)
+        missing_language = (
+            f"Script execution not implemented for language: {job.language}"
+        )
+        raise NotImplementedError(missing_language)
 
     @staticmethod
     def verify_filetype(filename: str, filetype: Literal[".py", ".R", ".sh"]) -> bool:
@@ -207,15 +192,21 @@ class ScriptExecutor(BaseExecutor):
         if args:
             cmd.extend(args)
 
+        env = restricted_env.copy()
+        env.update({"PYTHONPATH": ""})
+
         output = subprocess.run(  # noqa: S603
             cmd,
             check=True,
             capture_output=capture_output,
             text=True,
-            env=restricted_env.copy().update({"PYTHONPATH": ""}),
+            env=env,
         )
         if capture_output:
-            return output.stdout
+            return (
+                output.stderr
+            )  # loguru writes to stderr; we're using loguru for messages.
+        # if you want to capture `print`-ed messages, capture stdout.
         return None
 
     def r_executor(
@@ -281,7 +272,7 @@ class ScriptExecutor(BaseExecutor):
         return None
 
 
-class CodeExecutor:
+class CodeExecutor(BaseExecutor):
     """Executor for Python callable."""
 
     def _execute(
@@ -292,6 +283,9 @@ class CodeExecutor:
     ) -> Any:  # noqa: ANN401
         args = args or []
         kwargs = kwargs or {}
+        if isinstance(job.job, Path):
+            malspecified_job = "job has to be a callable, not a path to a script."
+            raise JobExecutionError(malspecified_job)
         result = job.job(*args, **kwargs)
         if job.capture_output:
             return result
@@ -310,38 +304,9 @@ class Executor:
         job: "Job",
         args: list[Any] | None = None,
         kwargs: dict[str, Any] | None = None,
-    ) -> Any:
+    ) -> Any:  # noqa: ANN401
         """Execute a job."""
-        return self.executor._execute(job, args=args, kwargs=kwargs)
-
-
-def jobify(
-    name: str,
-    job_type: JobType | list[JobType] = JobType.DATA_PROCESSING,
-    ingress_method: IngressMethod | None = None,
-    egress_method: EgressMethod = EgressMethod.MEMORY,
-    *,
-    capture_output: bool = True,
-    fallback: bool = True,
-):
-    """Decorate to wrap a function as a Job instance."""
-
-    def decorator(func: Callable):
-        """Wrap around target callable."""
-        return Job(
-            name=name,
-            job_format=JobFormat.CODE,
-            job_type=job_type,
-            language=Language.PYTHON,
-            ingress_method=ingress_method,
-            egress_method=egress_method,
-            job=func,
-            capture_output=capture_output,
-            executor=Executor(executor=CodeExecutor()),
-            fallback=fallback,
-        )
-
-    return decorator
+        return self.executor._execute(job, args=args, kwargs=kwargs)  # noqa: SLF001
 
 
 class Job(BaseModel):
@@ -354,25 +319,45 @@ class Job(BaseModel):
     ingress_method: IngressMethod | None  # we may have a job that starts with no data
     egress_method: EgressMethod
     job: Callable | Path
+    script_args: list[str] | None
     capture_output: bool = True
     executor: Executor
-    fallback: True  # TRue ? something like that
+
+    class Config:  # noqa: D106
+        arbitrary_types_allowed = True
+
+    # @model_validator(mode="before")
+    # @classmethod
+    # def populate_executor(cls, data: Any) -> Any:
+    #     """Populate the executor field in accordance with the job_type."""
+    #     if "executor" not in data or data.get('executor') is None:
+    #         if data.get('job_format') == JobFormat.SCRIPT:
+    #             data.get('executor') = Executor(executor=ScriptExecutor())
+
+    #         if data.getjob_format == JobFormat.CODE:
+    #             data.executor = Executor(executor=CodeExecutor())
+    #     return data
 
     def run_job(self) -> None | str:
         """Run the job defined in this model instance."""
-        # try:
+        logger.debug(f"Running job {self.name}")
+        output = self.executor.execute(job=self, args=self.script_args)
+        if self.capture_output:
+            logger.debug(output)
+        return output  # if it saves to a file; that's fine and this'll be None.
 
 
 class PipelineStage(BaseModel):
     """A stage in a DEET pipeline."""
 
     name: str
-    skip_if_failed: bool = True
-    input_file: Path | None
-    data: Any | None
+    skip_jobs_if_failed: bool = True
+    input_file: Path | None  # we're not using this either -- it's handled via jobs.
+    data: (
+        Any | None
+    )  # currently we're not really using this; but it might become relevant?
     jobs: Job | list[Job]
     logfile: Path | None
-    executor: Executor
 
     @classmethod
     @field_validator("jobs", mode="before")
@@ -382,13 +367,37 @@ class PipelineStage(BaseModel):
             v = [v]
         return v
 
-    @classmethod
-    @field_validator
-    def read_if_file(cls, v) -> None:
-        return
+    @staticmethod
+    def write_stage_logfile(payload: str, filepath: Path) -> None:
+        """Write logfile for a specific stage."""
+        filepath.write_text(payload)
 
-    def run_jobs(self):
-        pass
+    def run_jobs(self) -> None:
+        """Run all jobs in a pipeline stage."""
+        if isinstance(
+            self.jobs, Job
+        ):  # for mypy -- can we remove this given field_validator?
+            self.jobs = [self.jobs]
+        logger.info(f"Pipeline stage {self.name} has {len(self.jobs)} stages.")
+        for i, job in enumerate(self.jobs):
+            logger.info(f"Running job number: {i}, name: {job.name}.")
+            try:
+                job_output = job.run_job()
+                if (
+                    job.capture_output
+                    and job_output is not None
+                    and self.logfile is not None
+                ):
+                    self.write_stage_logfile(payload=job_output, filepath=self.logfile)
+                # should we `yield` the job_output here?
+            except Exception as e:
+                if not self.skip_jobs_if_failed:
+                    raise
+                logger.error(
+                    f"Encountered error {e} on job {i}, {job.name}"
+                    f" in pipeline stage {self.name}, moving to next job..."
+                )
+                continue
 
 
 class Pipeline(BaseModel):
@@ -396,3 +405,162 @@ class Pipeline(BaseModel):
 
     name: str
     stages: list[PipelineStage]
+
+    def run(self) -> None:
+        """Run all pipeline stages."""
+        logger.info(f"Pipeline {self.name} has {len(self.stages)} stages.")
+        for stage in self.stages:
+            stage.run_jobs()
+
+
+def jobify(
+    name: str,
+    job_type: JobType | list[JobType] = JobType.DATA_PROCESSING,
+    ingress_method: IngressMethod | None = None,
+    *,
+    capture_output: bool = True,
+) -> Callable[[F], Job]:
+    """Decorate to wrap a function as a Job instance."""
+
+    def decorator(func: F) -> Job:
+        """Wrap around target callable."""
+        return Job(
+            name=name,
+            job_format=JobFormat.CODE,
+            job_type=job_type,
+            language=Language.PYTHON,
+            ingress_method=ingress_method,
+            egress_method=EgressMethod.MEMORY,
+            job=func,
+            script_args=None,
+            capture_output=capture_output,
+            executor=Executor(executor=CodeExecutor()),
+        )
+
+    return decorator
+
+
+@overload
+def stage_from_job(
+    job: Job,
+    stage_name: str | None = None,
+    input_file: Path | None = None,
+    logfile: Path | None = None,
+    skip_jobs_if_failed: bool = True,
+) -> PipelineStage: ...
+
+
+@overload
+def stage_from_job(
+    job: None = None,
+    stage_name: str | None = None,
+    input_file: Path | None = None,
+    logfile: Path | None = None,
+    skip_jobs_if_failed: bool = True,
+) -> Callable[[Job], PipelineStage]: ...
+
+
+def stage_from_job(
+    job: Job | None = None,
+    stage_name: str | None = None,
+    input_file: Path | None = None,
+    logfile: Path | None = None,
+    skip_jobs_if_failed: bool = True,
+) -> PipelineStage | Callable[[Job], PipelineStage]:
+    """
+    Create a PipelineStage from a single Job.
+
+    Can be used as a function or as a decorator.
+
+    Args:
+        job: The Job to wrap in a PipelineStage. If None, returns a decorator.
+        stage_name: Name for the stage. Defaults to job name if not provided.
+        input_file: Optional input file for the stage.
+        logfile: Optional logfile for the stage.
+        skip_jobs_if_failed: Whether to skip remaining jobs if one fails.
+
+    Returns:
+        PipelineStage or decorator function.
+
+    Examples:
+        As a function:
+        >>> stage = stage_from_job(my_job, stage_name="my_stage")
+
+        As a decorator:
+        >>> @stage_from_job(stage_name="my_stage")
+        ... @jobify(name="my_job")
+        ... def my_function():
+        ...     pass
+
+    """
+
+    def _create_stage(j: Job) -> PipelineStage:
+        return PipelineStage(
+            name=stage_name or j.name,
+            skip_jobs_if_failed=skip_jobs_if_failed,
+            input_file=input_file,
+            data=None,
+            jobs=j,
+            logfile=logfile,
+        )
+
+    # If job is provided, return the stage directly
+    if job is not None:
+        return _create_stage(job)
+
+    # Otherwise, return a decorator
+    return _create_stage
+
+
+# @overload
+# def stage_from_job(
+#     job: Job | None = None,
+#     stage_name: str | None = None,
+#     input_file: Path | None = None,
+#     logfile: Path | None = None,
+#     *,
+#     skip_jobs_if_failed: bool = True,
+# ) -> PipelineStage | Callable[[Job], PipelineStage]:
+#     """
+#     Create a PipelineStage from a single Job.
+
+#     Can be used as a function or as a decorator.
+
+#     Args:
+#         job: The Job to wrap in a PipelineStage. If None, returns a decorator.
+#         stage_name: Name for the stage. Defaults to job name if not provided.
+#         input_file: Optional input file for the stage.
+#         logfile: Optional logfile for the stage.
+#         skip_jobs_if_failed: Whether to skip remaining jobs if one fails.
+
+#     Returns:
+#         PipelineStage or decorator function.
+
+#     Examples:
+#         As a function:
+#         >>> stage = stage_from_job(my_job, stage_name="my_stage")
+
+#         As a decorator:
+#         >>> @stage_from_job(stage_name="my_stage")
+#         ... @jobify(name="my_job")
+#         ... def my_function():
+#         ...     pass
+
+#     """
+
+#     def _create_stage(j: Job) -> PipelineStage:
+#         return PipelineStage(
+#             name=stage_name or j.name,
+#             skip_jobs_if_failed=skip_jobs_if_failed,
+#             input_file=input_file,
+#             data=None,
+#             jobs=j,
+#             logfile=logfile,
+#         )
+
+#     # If job is provided, return the stage directly
+#     if job is not None:
+#         return _create_stage(job)
+
+#     # Otherwise, return a decorator
+#     return _create_stage
