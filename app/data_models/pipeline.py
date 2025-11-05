@@ -1,4 +1,4 @@
-"""Models to employ for implementing DEET jobd in sequential, harmonised _pipelines_."""
+"""Models to employ for implementing DEET jobs in sequential, harmonised _pipelines_."""
 
 import os
 import shutil
@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Literal, TypeVar, overload
 
 from loguru import logger
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -22,6 +22,8 @@ restricted_env = {
     "HOME": str(Path.home()),
     "LANG": os.getenv("LANG", "en_GB.UTF-8"),
 }
+
+# below: custom exceptions, enums and helper classes
 
 
 class WrongFiletypeError(Exception):
@@ -121,8 +123,15 @@ class ScriptExecutor(BaseExecutor):
         bash_path: Path = Path("/bin/bash"),
     ) -> None:
         """Create ScriptExecutor instance."""
-        self.python_path = python_path if python_path else Path(shutil.which("python"))
-        self.r_path = r_path if r_path else Path(shutil.which("R"))
+        python_which = shutil.which("python")
+        r_which = shutil.which("R")
+
+        self.python_path = (
+            python_path
+            if python_path
+            else (Path(python_which) if python_which else None)
+        )
+        self.r_path = r_path if r_path else (Path(r_which) if r_which else None)
         self.bash_path = bash_path
 
     def _execute(
@@ -131,6 +140,12 @@ class ScriptExecutor(BaseExecutor):
         args: list[str] | None = None,
         kwargs: dict[str, Any] | None = None,
     ) -> Any:  # noqa: ANN401
+        if not isinstance(job.job, Path):
+            malspecified_job = (
+                "ScriptExecutor requires job.job to be a Path, not a Callable."
+            )
+            raise JobExecutionError(malspecified_job)
+
         if job.language == Language.PYTHON:
             return self.python_executor(
                 job.job, args=args, capture_output=job.capture_output
@@ -155,7 +170,8 @@ class ScriptExecutor(BaseExecutor):
 
         Args:
             filename (str): Name of file.
-            filetype (Literal[&quot;.py&quot;, &quot;.R&quot;, &quot;.sh&quot;]): file ending.
+            filetype (Literal[&quot;.py&quot;, &quot;.R&quot;, &quot;.sh&quot;]):
+                    file ending.
 
         Raises:
             WrongFiletypeError: When ending doesnt match the input.
@@ -188,7 +204,7 @@ class ScriptExecutor(BaseExecutor):
             python_missing = "can't find python binary. please find it/install."
             raise MissingBinaryError(python_missing)
 
-        cmd = [self.python_path, str(script_path)]
+        cmd: list[str] = [str(self.python_path), str(script_path)]
         if args:
             cmd.extend(args)
 
@@ -210,7 +226,7 @@ class ScriptExecutor(BaseExecutor):
         return None
 
     def r_executor(
-        self, script_path: Path, args: list[str], *, capture_output: bool = True
+        self, script_path: Path, args: list[str] | None, *, capture_output: bool = True
     ) -> None | str:
         """Execute an R script."""
         self.verify_filetype(script_path.name, ".R")
@@ -218,7 +234,7 @@ class ScriptExecutor(BaseExecutor):
             r_missing = "can't find r binary. please find it/install."
             raise MissingBinaryError(r_missing)
 
-        cmd = [self.r_path, str(script_path)]
+        cmd: list[str] = [str(self.r_path), str(script_path)]
         if args:
             cmd.extend(args)
 
@@ -241,7 +257,7 @@ class ScriptExecutor(BaseExecutor):
         return None
 
     def bash_executor(
-        self, script_path: Path, args: list[str], *, capture_output: bool = True
+        self, script_path: Path, args: list[str] | None, *, capture_output: bool = True
     ) -> None | str:
         """Execute a bash script."""
         self.verify_filetype(script_path.name, ".sh")
@@ -249,7 +265,7 @@ class ScriptExecutor(BaseExecutor):
             r_missing = "can't find bash binary. please find it/install."
             raise MissingBinaryError(r_missing)
 
-        cmd = [self.bash_path, str(script_path)]
+        cmd: list[str] = [str(self.bash_path), str(script_path)]
         if args:
             cmd.extend(args)
 
@@ -309,6 +325,9 @@ class Executor:
         return self.executor._execute(job, args=args, kwargs=kwargs)  # noqa: SLF001
 
 
+# below: core data models: Pipeline>PipelineStage>Job
+
+
 class Job(BaseModel):
     """The attributes describing a specific job."""
 
@@ -320,31 +339,29 @@ class Job(BaseModel):
     egress_method: EgressMethod
     job: Callable | Path
     script_args: list[str] | None
+    func_args: list[Any] | None = None
+    func_kwargs: dict[str, Any] | None = None
     capture_output: bool = True
     executor: Executor
 
     class Config:  # noqa: D106
         arbitrary_types_allowed = True
 
-    # @model_validator(mode="before")
-    # @classmethod
-    # def populate_executor(cls, data: Any) -> Any:
-    #     """Populate the executor field in accordance with the job_type."""
-    #     if "executor" not in data or data.get('executor') is None:
-    #         if data.get('job_format') == JobFormat.SCRIPT:
-    #             data.get('executor') = Executor(executor=ScriptExecutor())
-
-    #         if data.getjob_format == JobFormat.CODE:
-    #             data.executor = Executor(executor=CodeExecutor())
-    #     return data
-
     def run_job(self) -> None | str:
         """Run the job defined in this model instance."""
         logger.debug(f"Running job {self.name}")
-        output = self.executor.execute(job=self, args=self.script_args)
+
+        # Use func_args/func_kwargs for CODE jobs, script_args for SCRIPT jobs
+        if self.job_format == JobFormat.CODE:
+            output = self.executor.execute(
+                job=self, args=self.func_args, kwargs=self.func_kwargs
+            )
+        elif self.job_format == JobFormat.SCRIPT:
+            output = self.executor.execute(job=self, args=self.script_args)
+
         if self.capture_output:
             logger.debug(output)
-        return output  # if it saves to a file; that's fine and this'll be None.
+        return output
 
 
 class PipelineStage(BaseModel):
@@ -358,6 +375,8 @@ class PipelineStage(BaseModel):
     )  # currently we're not really using this; but it might become relevant?
     jobs: Job | list[Job]
     logfile: Path | None
+    default_func_args: list[Any] | None = None
+    default_func_kwargs: dict[str, Any] | None = None
 
     @classmethod
     @field_validator("jobs", mode="before")
@@ -372,16 +391,29 @@ class PipelineStage(BaseModel):
         """Write logfile for a specific stage."""
         filepath.write_text(payload)
 
-    def run_jobs(self) -> None:
+    def run_jobs(
+        self,
+        func_args: list[Any] | None = None,
+        func_kwargs: dict[str, Any] | None = None,
+    ) -> None:
         """Run all jobs in a pipeline stage."""
         if isinstance(
             self.jobs, Job
         ):  # for mypy -- can we remove this given field_validator?
             self.jobs = [self.jobs]
+
+        args_to_use = func_args or self.default_func_args
+        kwargs_to_use = func_kwargs or self.default_func_kwargs
+
         logger.info(f"Pipeline stage {self.name} has {len(self.jobs)} stages.")
         for i, job in enumerate(self.jobs):
             logger.info(f"Running job number: {i}, name: {job.name}.")
             try:
+                # override job's func_args/func_kwargs if provided
+                if job.job_format == JobFormat.CODE:
+                    job.func_args = args_to_use
+                    job.func_kwargs = kwargs_to_use
+
                 job_output = job.run_job()
                 if (
                     job.capture_output
@@ -413,10 +445,14 @@ class Pipeline(BaseModel):
             stage.run_jobs()
 
 
+# below: utilities; converters & decorators
+
+
 def jobify(
     name: str,
     job_type: JobType | list[JobType] = JobType.DATA_PROCESSING,
-    ingress_method: IngressMethod | None = None,
+    func_args: list[Any] | None = None,
+    func_kwargs: dict[str, Any] | None = None,
     *,
     capture_output: bool = True,
 ) -> Callable[[F], Job]:
@@ -429,10 +465,12 @@ def jobify(
             job_format=JobFormat.CODE,
             job_type=job_type,
             language=Language.PYTHON,
-            ingress_method=ingress_method,
+            ingress_method=None,
             egress_method=EgressMethod.MEMORY,
             job=func,
             script_args=None,
+            func_args=func_args,
+            func_kwargs=func_kwargs,
             capture_output=capture_output,
             executor=Executor(executor=CodeExecutor()),
         )
@@ -441,21 +479,23 @@ def jobify(
 
 
 @overload
-def stage_from_job(
+def stage_from_job(  # the function version type hints
     job: Job,
     stage_name: str | None = None,
     input_file: Path | None = None,
     logfile: Path | None = None,
+    *,
     skip_jobs_if_failed: bool = True,
 ) -> PipelineStage: ...
 
 
 @overload
-def stage_from_job(
+def stage_from_job(  # the decorator version type hints
     job: None = None,
     stage_name: str | None = None,
     input_file: Path | None = None,
     logfile: Path | None = None,
+    *,
     skip_jobs_if_failed: bool = True,
 ) -> Callable[[Job], PipelineStage]: ...
 
@@ -465,6 +505,7 @@ def stage_from_job(
     stage_name: str | None = None,
     input_file: Path | None = None,
     logfile: Path | None = None,
+    *,
     skip_jobs_if_failed: bool = True,
 ) -> PipelineStage | Callable[[Job], PipelineStage]:
     """
@@ -504,63 +545,9 @@ def stage_from_job(
             logfile=logfile,
         )
 
-    # If job is provided, return the stage directly
+    # ff job is provided, return the stage directly
     if job is not None:
         return _create_stage(job)
 
-    # Otherwise, return a decorator
+    # otherwise, return a decorator
     return _create_stage
-
-
-# @overload
-# def stage_from_job(
-#     job: Job | None = None,
-#     stage_name: str | None = None,
-#     input_file: Path | None = None,
-#     logfile: Path | None = None,
-#     *,
-#     skip_jobs_if_failed: bool = True,
-# ) -> PipelineStage | Callable[[Job], PipelineStage]:
-#     """
-#     Create a PipelineStage from a single Job.
-
-#     Can be used as a function or as a decorator.
-
-#     Args:
-#         job: The Job to wrap in a PipelineStage. If None, returns a decorator.
-#         stage_name: Name for the stage. Defaults to job name if not provided.
-#         input_file: Optional input file for the stage.
-#         logfile: Optional logfile for the stage.
-#         skip_jobs_if_failed: Whether to skip remaining jobs if one fails.
-
-#     Returns:
-#         PipelineStage or decorator function.
-
-#     Examples:
-#         As a function:
-#         >>> stage = stage_from_job(my_job, stage_name="my_stage")
-
-#         As a decorator:
-#         >>> @stage_from_job(stage_name="my_stage")
-#         ... @jobify(name="my_job")
-#         ... def my_function():
-#         ...     pass
-
-#     """
-
-#     def _create_stage(j: Job) -> PipelineStage:
-#         return PipelineStage(
-#             name=stage_name or j.name,
-#             skip_jobs_if_failed=skip_jobs_if_failed,
-#             input_file=input_file,
-#             data=None,
-#             jobs=j,
-#             logfile=logfile,
-#         )
-
-#     # If job is provided, return the stage directly
-#     if job is not None:
-#         return _create_stage(job)
-
-#     # Otherwise, return a decorator
-#     return _create_stage

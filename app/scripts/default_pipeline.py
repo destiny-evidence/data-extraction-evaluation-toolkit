@@ -2,20 +2,26 @@
 
 from pathlib import Path
 
-from loguru import logger
-
 from app.data_models.pipeline import (
+    EgressMethod,
     Executor,
+    IngressMethod,
     Job,
     JobFormat,
     JobType,
     Language,
     ScriptExecutor,
     jobify,
+    stage_from_job,
+)
+from app.processors.eppi_annotation_converter import (
+    EppiAnnotationConverter,
+    ProcessedAnnotationData,
 )
 from app.processors.parser import DocumentParser
 
 parser = DocumentParser()
+converter = EppiAnnotationConverter()
 
 
 # stage 1 -- parse pdf
@@ -38,8 +44,8 @@ ingest_gold_standard = Job(
     job_format=JobFormat.SCRIPT,
     job_type=JobType.DATA_PROCESSING,
     language=Language.PYTHON,
-    ingress_method="file",
-    egress_method="file",
+    ingress_method=IngressMethod.FILE,
+    egress_method=EgressMethod.FILE,
     job=gold_standard_script_path,
     script_args=[
         "-i",
@@ -49,64 +55,19 @@ ingest_gold_standard = Job(
     ],
     executor=Executor(executor=ScriptExecutor()),
 )
+ingest_gold_standard_stage = stage_from_job(ingest_gold_standard)
 
 
 # alternative version for stage 2
+@stage_from_job  # converts a `Job` to a `PipelineStage`
+@jobify(
+    name="ingest_gs_func",
+    func_kwargs={"eppi_json_path": Path("misc/test_data/Abrantes_2014.json")},
+)
+def ingest_gold_standard_func(eppi_json_path: Path) -> ProcessedAnnotationData:
+    """Convert EPPI JSON to DEET data models."""
+    return converter.process_annotation_file(eppi_json_path)
 
 
-# default_pipeline = Pipeline(stages=[parse, translate_eppi, extract, write_stats])
-
-# default_pipeline.execute()
-
-
-# default_pipeline.extend(
-#     PipelineStage("my_script.R"), job_type="validation"
-# )  # add at the end
-# default_pipeline.insert(PipelineStage(type="CODE"), index=1)
-
-# default_pipeline.analyse()  # benchmarking, performance analysis
-
-# # default_pipeline.replace(index=0, my_new_parser)
-
-# # class Job(BaseModel):
-# #     """The attributes describing a specific job."""
-
-# #     name: str
-# #     job_format: JobFormat
-# #     job_type: JobType | list[JobType]
-# #     language: Language
-# #     ingress_method: IngressMethod | None  # we may have a job that starts with no data
-# #     egress_method: EgressMethod
-
-
-# my_new_parser = ParserLibrary()
-
-
-# new_parser_job = Job(
-#     name="parse_txt",
-#     job_format="code",
-#     job_type="data_processing",
-#     language="python",
-#     job=my_new_parser,
-# )
-
-# new_pipeline = Pipeline(PipelineStage(new))
-# new_pipeline.execute()
-# new_pipeline.execute()
-# new_pipeline.execute()
-#     language="python",
-#     job=my_new_parser,
-# )
-
-# new_pipeline = Pipeline(PipelineStage(new))
-# new_pipeline.execute()
-# new_pipeline.execute()
-# new_pipeline.execute()
-#     language="python",
-#     job=my_new_parser,
-# )
-
-# new_pipeline = Pipeline(PipelineStage(new))
-# new_pipeline.execute()
-# new_pipeline.execute()
-# new_pipeline.execute()
+# we can now run this using
+# >>> ingest_gold_standard_func.run_jobs()
