@@ -36,7 +36,7 @@ class DataExtractionSettings(BaseSettings):
 
     # General
     env: Runtime = Field(
-        default=Runtime.STAGING,
+        default=Runtime.LOCAL,
         description="Runtime environment.",
     )
 
@@ -68,6 +68,7 @@ class DataExtractionSettings(BaseSettings):
     max_context_length: int = Field(
         default=40000,
         description="Maximum length of prepared context (characters).",
+        # TO DO: turn this into tokens; not characters
         ge=1,
     )
     selected_attribute_ids: list[str] = Field(
