@@ -9,7 +9,7 @@ from destiny_sdk.enhancements import Visibility
 from destiny_sdk.references import Reference
 
 from app.logger import logger
-from app.models.base import AnnotationType
+from app.models.base import AnnotationType, AttributeType
 from app.models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -47,7 +47,7 @@ class AnnotationConverter:
         return {
             # Core fields that need manual processing
             "question_target": "",  # Always empty for EPPI
-            "output_data_type": bool,  # Always boolean for EPPI
+            "output_data_type": AttributeType.BOOL.value,  # Always boolean for EPPI
             "attribute_id": str(attr_data.get("AttributeId", "")),  # Convert int to str
             "attribute_label": attr_data.get("AttributeName", ""),
             # Note: All other fields (attribute_set_description, hierarchy_path, etc.)
@@ -126,14 +126,14 @@ class AnnotationConverter:
             flattened_attr = {
                 "AttributeId": attr.get("AttributeId"),
                 "AttributeName": attr.get("AttributeName"),
-                "AttributeDescription": attr.get("AttributeDescription", ""),
-                "AttributeSetDescription": attr.get("AttributeSetDescription", ""),
-                "AttributeType": attr.get("AttributeType", ""),
+                "AttributeDescription": attr.get("AttributeDescription"),
+                "AttributeSetDescription": attr.get("AttributeSetDescription"),
+                "AttributeType": attr.get("AttributeType"),
                 "AttributeTypeId": attr.get("AttributeTypeId"),
                 "AttributeSetId": attr.get("AttributeSetId"),
                 "OriginalAttributeID": attr.get("OriginalAttributeID"),
-                "ExtURL": attr.get("ExtURL", ""),
-                "ExtType": attr.get("ExtType", ""),
+                "ExtURL": attr.get("ExtURL"),
+                "ExtType": attr.get("ExtType"),
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
                 "is_leaf": "Attributes" not in attr

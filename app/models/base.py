@@ -1,17 +1,44 @@
 """Core data models for document processing and annotation."""
 
-from enum import Enum
+from enum import StrEnum, auto
 from typing import Any
 
 from destiny_sdk.references import Reference
 from pydantic import BaseModel
 
 
-class AnnotationType(str, Enum):
+class AnnotationType(StrEnum):
     """Enumeration of annotation types."""
 
-    HUMAN = "human"
-    LLM = "llm"
+    HUMAN = auto()
+    LLM = auto()
+
+
+class AttributeType(StrEnum):
+    """Enum of permitted attribute data types."""
+
+    STRING = auto()
+    INTEGER = auto()
+    FLOAT = auto()
+    BOOL = auto()
+    LIST = auto()
+    DICT = auto()
+
+    def __str__(self) -> str:
+        """Return the string value for JSON serialization."""
+        return self.value
+
+    def to_python_type(self) -> type:
+        """Map AttributeType to actual Python types."""
+        mapping = {
+            AttributeType.STRING: str,
+            AttributeType.INTEGER: int,
+            AttributeType.FLOAT: float,
+            AttributeType.BOOL: bool,
+            AttributeType.LIST: list,
+            AttributeType.DICT: dict,
+        }
+        return mapping[self]
 
 
 class Attribute(BaseModel):
@@ -22,9 +49,7 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: (
-        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
-    )  # Expected data type for the attribute
+    output_data_type: AttributeType  # One of the defined output data types
     attribute_id: str  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 

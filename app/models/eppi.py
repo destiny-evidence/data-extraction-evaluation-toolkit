@@ -7,7 +7,13 @@ from destiny_sdk.references import Reference
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
-from app.models.base import AnnotationType, Attribute, Document, GoldStandardAnnotation
+from app.models.base import (
+    AnnotationType,
+    Attribute,
+    AttributeType,
+    Document,
+    GoldStandardAnnotation,
+)
 
 
 class EppiAttribute(Attribute):
@@ -22,9 +28,7 @@ class EppiAttribute(Attribute):
 
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: (
-        type[bool] | type[int] | type[str] | type[list] | type[dict] | type[float]
-    ) = bool  # Always boolean for EPPI
+    output_data_type: AttributeType = AttributeType.BOOL  # Always boolean for EPPI
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(
@@ -264,9 +268,9 @@ class AttributeAnswerCoT(BaseModel):
     attribute_name: str = Field(
         description="The name of the attribute being asked about"
     )
-    Answer: str = Field(description="The answer to the question, 'True' or 'False'")
-    Reasoning: str = Field(description="The reasoning behind the answer")
-    Citation: str | None = Field(
+    answer: str = Field(description="The answer to the question, 'True' or 'False'")
+    reasoning: str = Field(description="The reasoning behind the answer")
+    citation: str | None = Field(
         description="The citation from the Research Information to support the answer"
     )
 
