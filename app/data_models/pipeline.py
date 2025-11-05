@@ -431,6 +431,12 @@ class PipelineStage(BaseModel):
                 )
                 continue
 
+    # TO DO:
+    # - figure out how we can `yield` stuff in a stage, so that outputs
+    # from stage_a can be the inputs for stage_b. does this mean we can
+    # return in a Job, or do we need to yield here also? does this make
+    # the In/EgressMethod relevant again?
+
 
 class Pipeline(BaseModel):
     """A complete pipeline consisting of several `PipelineStage` objects."""
@@ -443,6 +449,10 @@ class Pipeline(BaseModel):
         logger.info(f"Pipeline {self.name} has {len(self.stages)} stages.")
         for stage in self.stages:
             stage.run_jobs()
+
+    # TO DO:
+    # - add dunder methods that allow us to do stuff like Pipeline.extend(),
+    # Pipeline.insert(), and so on.
 
 
 # below: utilities; converters & decorators
