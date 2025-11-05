@@ -10,6 +10,7 @@ from app.data_models.pipeline import (
     JobFormat,
     JobType,
     Language,
+    Pipeline,
     ScriptExecutor,
     jobify,
     stage_from_job,
@@ -71,3 +72,4 @@ def ingest_gold_standard_func(eppi_json_path: Path) -> ProcessedAnnotationData:
 
 # we can now run this using
 # >>> ingest_gold_standard_func.run_jobs()
+# my_pipeline = Pipeline(stages=[parse_pdf, ingest_gold_standard, run_llm_extraction])
