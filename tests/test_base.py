@@ -8,6 +8,7 @@ from app.models.base import (
     AnnotationType,
     Attribute,
     AttributesList,
+    AttributeType,
     Document,
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
@@ -19,13 +20,13 @@ def test_attribute_creation_from_dict() -> None:
     # This mimics how attributes are created from JSON data in the annotation converter
     attr_data = {
         "question_target": "Is this a test?",
-        "output_data_type": "bool",
+        "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "test1",
         "attribute_label": "Test Boolean Attribute",
     }
     attr = Attribute.model_validate(attr_data)
     assert attr.question_target == "Is this a test?"
-    assert attr.output_data_type is bool
+    assert attr.output_data_type.to_python_type() is bool
     assert attr.attribute_id == "test1"
     assert attr.attribute_label == "Test Boolean Attribute"
 
@@ -35,52 +36,52 @@ def test_attribute_creation_with_different_types() -> None:
     # Test with str type
     attr_data_str = {
         "question_target": "What is the name?",
-        "output_data_type": "str",
+        "output_data_type": AttributeType.STRING.value,
         "attribute_id": "test2",
         "attribute_label": "Test String Attribute",
     }
     attr_str = Attribute.model_validate(attr_data_str)
-    assert attr_str.output_data_type is str
+    assert attr_str.output_data_type.to_python_type() is str
 
     # Test with int type
     attr_data_int = {
         "question_target": "How many items?",
-        "output_data_type": int,
+        "output_data_type": AttributeType.INTEGER.value,
         "attribute_id": "test3",
         "attribute_label": "Test Integer Attribute",
     }
     attr_int = Attribute.model_validate(attr_data_int)
-    assert attr_int.output_data_type is int
+    assert attr_int.output_data_type.to_python_type() is int
 
     # Test with list type
     attr_data_list = {
         "question_target": "What are the items?",
-        "output_data_type": list,
+        "output_data_type": AttributeType.LIST.value,
         "attribute_id": "test4",
         "attribute_label": "Test List Attribute",
     }
     attr_list = Attribute.model_validate(attr_data_list)
-    assert attr_list.output_data_type is list
+    assert attr_list.output_data_type.to_python_type() is list
 
     # Test with dict type
     attr_data_dict = {
         "question_target": "What are the details?",
-        "output_data_type": dict,
+        "output_data_type": AttributeType.DICT.value,
         "attribute_id": "test5",
         "attribute_label": "Test Dictionary Attribute",
     }
     attr_dict = Attribute.model_validate(attr_data_dict)
-    assert attr_dict.output_data_type is dict
+    assert attr_dict.output_data_type.to_python_type() is dict
 
     # Test with float type
     attr_data_float = {
         "question_target": "What is the value?",
-        "output_data_type": float,
+        "output_data_type": AttributeType.FLOAT.value,
         "attribute_id": "test6",
         "attribute_label": "Test Float Attribute",
     }
     attr_float = Attribute.model_validate(attr_data_float)
-    assert attr_float.output_data_type is float
+    assert attr_float.output_data_type.to_python_type() is float
 
 
 def test_attribute_validation_required_fields() -> None:
@@ -88,7 +89,7 @@ def test_attribute_validation_required_fields() -> None:
     # Test that we can create attributes with valid data
     attr_data = {
         "question_target": "Test",
-        "output_data_type": "bool",
+        "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "test_id",
         "attribute_label": "Test Label",
     }
@@ -103,13 +104,13 @@ def test_attributes_list_creation() -> None:
     attrs = [
         Attribute(
             question_target="Question 1",
-            output_data_type="bool",
+            output_data_type=AttributeType.BOOL,
             attribute_id="attr1",
             attribute_label="Attribute 1",
         ),
         Attribute(
             question_target="Question 2",
-            output_data_type="str",
+            output_data_type=AttributeType.STRING,
             attribute_id="attr2",
             attribute_label="Attribute 2",
         ),
@@ -125,7 +126,7 @@ def test_attributes_list_iteration() -> None:
     attrs = [
         Attribute(
             question_target="Question 1",
-            output_data_type="bool",
+            output_data_type=AttributeType.BOOL,
             attribute_id="attr1",
             attribute_label="Attribute 1",
         ),
@@ -186,7 +187,7 @@ def test_gold_standard_annotation_creation_from_dict() -> None:
     # This mimics how annotations are created from JSON data
     attr_data = {
         "question_target": "Test question",
-        "output_data_type": "bool",
+        "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "attr1",
         "attribute_label": "Test Attribute",
     }
@@ -207,7 +208,7 @@ def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
     """Test creating annotation with LLM type from dictionary data."""
     attr_data = {
         "question_target": "Test question",
-        "output_data_type": "str",
+        "output_data_type": AttributeType.STRING.value,
         "attribute_id": "attr2",
         "attribute_label": "Test Attribute 2",
     }
@@ -232,7 +233,7 @@ def test_gold_standard_annotated_document_creation() -> None:
 
     attr = Attribute(
         question_target="Test question",
-        output_data_type=bool,
+        output_data_type=AttributeType.BOOL,
         attribute_id="attr3",
         attribute_label="Test Attribute 3",
     )
