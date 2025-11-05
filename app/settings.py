@@ -83,16 +83,15 @@ class DataExtractionSettings(BaseSettings):
     # )
 
     # Provider credentials / settings (secrets redacted)
-    openai_api_key: SecretStr | None = Field(
-        default=None,
-        description="OpenAI API key if using OpenAI provider.",
-    )
     azure_api_key: SecretStr | None = Field(
         default=None,
         description="Azure OpenAI API key if using Azure provider.",
     )
+    azure_api_base: SecretStr | None = Field(
+        default=None, description="Base URL for azure openAI."
+    )
     azure_deployment: str | None = Field(
-        default=None,
+        default="gpt-4o-mini",
         description="Azure deployment name to use when azure_api_key is provided.",
     )
 

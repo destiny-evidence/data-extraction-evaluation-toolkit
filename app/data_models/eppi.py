@@ -150,6 +150,11 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
         )
     )
 
+    # additional, optional llm-based fields
+    reasoning: str | None = Field(
+        description="Reasoning, taken from LLM response", default=None
+    )
+
 
 class EppiGoldStandardAnnotatedDocument(EppiDocument):
     """EPPI-specific gold standard annotated document."""
@@ -287,3 +292,52 @@ class BatchAnswerFormatCoT(BaseModel):
     answers: list[AttributeAnswerCoT] = Field(
         description="List of answers for each attribute"
     )
+
+
+class LLMAnnotationResponse(BaseModel):
+    """
+    LLM response model for a single annotation.
+
+    This mirrors EppiGoldStandardAnnotation structure but uses attribute_id
+    instead of full EppiAttribute object, as the LLM cannot provide the full
+    attribute object.
+    """
+
+    attribute_id: str = Field(
+        ..., description="The ID of the EPPI attribute being annotated"
+    )
+    output_data: bool = Field(
+        ..., description="Whether the attribute is present (True/False)"
+    )
+    additional_text: str | None = Field(
+        ...,
+        description=(
+            "Supporting text from document containing the context window "
+            "where the attribute is found"
+        ),
+    )
+    reasoning: str | None = Field(
+        ...,
+        description="Reasoning or explanation for the annotation decision",
+    )
+
+    # Note: arm_id, arm_title, arm_description, item_attribute_full_text_details
+    # are not included as they're EPPI-specific metadata the LLM cannot provide
+    class Config:  # noqa: D106
+        extra = "forbid"
+
+
+class LLMResponseSchema(BaseModel):
+    """
+    Root schema for LLM annotation extraction response.
+
+    This structure matches the expected format that can be converted
+    to list[EppiGoldStandardAnnotation] after attribute resolution.
+    """
+
+    annotations: list[LLMAnnotationResponse] = Field(
+        ..., description="List of annotations extracted from the document"
+    )
+
+    class Config:  # noqa: D106 # TO DO FIX THIS!
+        extra = "forbid"

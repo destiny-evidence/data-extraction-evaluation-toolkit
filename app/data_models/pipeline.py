@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import traceback
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import StrEnum, auto
@@ -350,6 +351,8 @@ class Job(BaseModel):
     def run_job(self) -> None | str:
         """Run the job defined in this model instance."""
         logger.debug(f"Running job {self.name}")
+        logger.debug(f"func args: {self.func_args}")
+        logger.debug(f"func kwargs: {self.func_kwargs}")
 
         # Use func_args/func_kwargs for CODE jobs, script_args for SCRIPT jobs
         if self.job_format == JobFormat.CODE:
@@ -409,10 +412,19 @@ class PipelineStage(BaseModel):
         for i, job in enumerate(self.jobs):
             logger.info(f"Running job number: {i}, name: {job.name}.")
             try:
-                # override job's func_args/func_kwargs if provided
+                # Use job's own args if they exist, otherwise fall
+                # back to stage/method args
                 if job.job_format == JobFormat.CODE:
-                    job.func_args = args_to_use
-                    job.func_kwargs = kwargs_to_use
+                    args_to_use = job.func_args or func_args or self.default_func_args
+                    kwargs_to_use = (
+                        job.func_kwargs or func_kwargs or self.default_func_kwargs
+                    )
+
+                    # Only override if the job doesn't have its own args
+                    if job.func_args is None:
+                        job.func_args = args_to_use
+                    if job.func_kwargs is None:
+                        job.func_kwargs = kwargs_to_use
 
                 job_output = job.run_job()
                 if (
@@ -429,6 +441,12 @@ class PipelineStage(BaseModel):
                     f"Encountered error {e} on job {i}, {job.name}"
                     f" in pipeline stage {self.name}, moving to next job..."
                 )
+                logger.error(f"Error type: {type(e).__name__}")
+                logger.error(f"Error message: {e}")
+                logger.error("Stack trace:")
+                logger.error(traceback.format_exc())
+                logger.info("Moving to next job...")
+
                 continue
 
     # TO DO:
