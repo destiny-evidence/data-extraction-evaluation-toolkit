@@ -9,7 +9,7 @@ def test_eppi_gold_standard_annotation_with_reasoning() -> None:
     # Create a test attribute
     attr_data = {
         "question_target": "",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "5730447",
         "attribute_label": "Test Attribute",
         "attribute_set_description": "Test set description",
@@ -48,7 +48,7 @@ def test_eppi_gold_standard_annotation_without_reasoning() -> None:
     # Create a test attribute
     attr_data = {
         "question_target": "",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "5730448",
         "attribute_label": "Test Attribute 2",
         "attribute_set_description": "Test set description 2",
@@ -83,7 +83,7 @@ def test_eppi_gold_standard_annotation_reasoning_optional() -> None:
     # Create a test attribute
     attr_data = {
         "question_target": "",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "5730449",
         "attribute_label": "Test Attribute 3",
         "attribute_set_description": "Test set description 3",
@@ -115,7 +115,7 @@ def test_eppi_gold_standard_annotation_serialization() -> None:
     # Create a test attribute
     attr_data = {
         "question_target": "",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "5730450",
         "attribute_label": "Test Attribute 4",
         "attribute_set_description": "Test set description 4",

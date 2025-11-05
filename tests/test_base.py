@@ -19,7 +19,7 @@ def test_attribute_creation_from_dict() -> None:
     # This mimics how attributes are created from JSON data in the annotation converter
     attr_data = {
         "question_target": "Is this a test?",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "test1",
         "attribute_label": "Test Boolean Attribute",
     }
@@ -35,7 +35,7 @@ def test_attribute_creation_with_different_types() -> None:
     # Test with str type
     attr_data_str = {
         "question_target": "What is the name?",
-        "output_data_type": str,
+        "output_data_type": "str",
         "attribute_id": "test2",
         "attribute_label": "Test String Attribute",
     }
@@ -88,7 +88,7 @@ def test_attribute_validation_required_fields() -> None:
     # Test that we can create attributes with valid data
     attr_data = {
         "question_target": "Test",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "test_id",
         "attribute_label": "Test Label",
     }
@@ -103,13 +103,13 @@ def test_attributes_list_creation() -> None:
     attrs = [
         Attribute(
             question_target="Question 1",
-            output_data_type=bool,
+            output_data_type="bool",
             attribute_id="attr1",
             attribute_label="Attribute 1",
         ),
         Attribute(
             question_target="Question 2",
-            output_data_type=str,
+            output_data_type="str",
             attribute_id="attr2",
             attribute_label="Attribute 2",
         ),
@@ -125,7 +125,7 @@ def test_attributes_list_iteration() -> None:
     attrs = [
         Attribute(
             question_target="Question 1",
-            output_data_type=bool,
+            output_data_type="bool",
             attribute_id="attr1",
             attribute_label="Attribute 1",
         ),
@@ -186,7 +186,7 @@ def test_gold_standard_annotation_creation_from_dict() -> None:
     # This mimics how annotations are created from JSON data
     attr_data = {
         "question_target": "Test question",
-        "output_data_type": bool,
+        "output_data_type": "bool",
         "attribute_id": "attr1",
         "attribute_label": "Test Attribute",
     }
@@ -207,7 +207,7 @@ def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
     """Test creating annotation with LLM type from dictionary data."""
     attr_data = {
         "question_target": "Test question",
-        "output_data_type": str,
+        "output_data_type": "str",
         "attribute_id": "attr2",
         "attribute_label": "Test Attribute 2",
     }

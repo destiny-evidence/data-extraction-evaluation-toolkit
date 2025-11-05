@@ -4,8 +4,9 @@ import json
 from unittest.mock import patch
 from uuid import uuid4
 
+import pytest
+
 from app.extractors.data_extraction_module import (
-    AttributeSelectionMode,
     ContextType,
     DataExtractionConfig,
     DataExtractionModule,
@@ -25,7 +26,6 @@ def test_data_extraction_config_defaults() -> None:
     assert config.model == "gpt-4o-mini"
     assert config.temperature == 0.1
     assert config.context_type == ContextType.FULL_DOCUMENT
-    assert config.attribute_selection_mode == AttributeSelectionMode.ALL
     assert config.include_reasoning is True
     assert config.include_additional_text is True
 
@@ -41,7 +41,6 @@ def test_data_extraction_config_custom() -> None:
         model="gpt-4",
         temperature=0.5,
         context_type=ContextType.ABSTRACT_ONLY,
-        attribute_selection_mode=AttributeSelectionMode.SINGLE,
         selected_attribute_ids=["123"],
         prompt_config=prompt_config,
         include_reasoning=False,
@@ -50,7 +49,6 @@ def test_data_extraction_config_custom() -> None:
     assert config.model == "gpt-4"
     assert config.temperature == 0.5
     assert config.context_type == ContextType.ABSTRACT_ONLY
-    assert config.attribute_selection_mode == AttributeSelectionMode.SINGLE
     assert config.selected_attribute_ids == ["123"]
     assert config.prompt_config.system_prompt == "Custom system prompt"
     assert config.include_reasoning is False
@@ -85,8 +83,8 @@ def test_data_extraction_module_azure_model() -> None:
         assert module.model == "azure/gpt-4"
 
 
-def test_filter_attributes_all_mode() -> None:
-    """Test attribute filtering in ALL mode."""
+def test_filter_attributes_no_ids_returns_all() -> None:
+    """When no selected_attribute_ids are set, return all attributes."""
     attributes = [
         EppiAttribute.model_validate(
             {
@@ -106,7 +104,7 @@ def test_filter_attributes_all_mode() -> None:
         ),
     ]
 
-    config = DataExtractionConfig(attribute_selection_mode=AttributeSelectionMode.ALL)
+    config = DataExtractionConfig()
     module = DataExtractionModule(config)
 
     filtered = module._filter_attributes(attributes)
@@ -114,8 +112,8 @@ def test_filter_attributes_all_mode() -> None:
     assert filtered == attributes
 
 
-def test_filter_attributes_single_mode() -> None:
-    """Test attribute filtering in SINGLE mode."""
+def test_filter_attributes_selected_ids() -> None:
+    """Filter attributes using selected_attribute_ids."""
     attributes = [
         EppiAttribute.model_validate(
             {
@@ -135,10 +133,7 @@ def test_filter_attributes_single_mode() -> None:
         ),
     ]
 
-    config = DataExtractionConfig(
-        attribute_selection_mode=AttributeSelectionMode.SINGLE,
-        selected_attribute_ids=["2"],
-    )
+    config = DataExtractionConfig(selected_attribute_ids=["2"])
     module = DataExtractionModule(config)
 
     filtered = module._filter_attributes(attributes)
@@ -146,8 +141,8 @@ def test_filter_attributes_single_mode() -> None:
     assert filtered[0].attribute_id == "2"
 
 
-def test_filter_attributes_by_ids_mode() -> None:
-    """Test attribute filtering in BY_IDS mode."""
+def test_filter_attributes_multiple_ids() -> None:
+    """Filter multiple attributes using selected_attribute_ids."""
     attributes = [
         EppiAttribute.model_validate(
             {
@@ -175,10 +170,7 @@ def test_filter_attributes_by_ids_mode() -> None:
         ),
     ]
 
-    config = DataExtractionConfig(
-        attribute_selection_mode=AttributeSelectionMode.BY_IDS,
-        selected_attribute_ids=["1", "3"],
-    )
+    config = DataExtractionConfig(selected_attribute_ids=["1", "3"])
     module = DataExtractionModule(config)
 
     filtered = module._filter_attributes(attributes)
@@ -246,7 +238,7 @@ def test_prepare_context_truncation() -> None:
 
 
 def test_generate_prompt_single_attribute() -> None:
-    """Test prompt generation for single attribute."""
+    """Test JSON input generation for single attribute."""
     attribute = EppiAttribute.model_validate(
         {
             "question_target": "",
@@ -257,21 +249,25 @@ def test_generate_prompt_single_attribute() -> None:
         }
     )
 
-    config = DataExtractionConfig(
-        attribute_selection_mode=AttributeSelectionMode.SINGLE
-    )
+    config = DataExtractionConfig()
     module = DataExtractionModule(config)
 
-    prompt = module._generate_prompt("Test context", [attribute])
+    payload_str = module._generate_user_message_json("Test context", [attribute])
+    payload = json.loads(payload_str)
 
-    assert "Test description" in prompt
-    assert "Test context" in prompt
-    assert "output_data" in prompt
-    assert "reasoning" in prompt
+    assert "context" in payload and payload["context"] == "Test context"
+    assert "attributes" in payload and isinstance(payload["attributes"], list)
+    assert len(payload["attributes"]) == 1
+    a0 = payload["attributes"][0]
+    assert a0["attribute_id"] == "1"
+    assert a0["attribute_label"] == "Test Attribute"
+    assert a0["output_data_type"] == "bool"
+    assert a0["question_target"] == "Test description"
+    assert a0["attribute_set_description"] == "Test description"
 
 
-def test_generate_prompt_batch_attributes() -> None:
-    """Test prompt generation for batch attributes."""
+def test_generate_prompt_multiple_attributes() -> None:
+    """Test JSON input generation for multiple attributes."""
     attributes = [
         EppiAttribute.model_validate(
             {
@@ -293,16 +289,19 @@ def test_generate_prompt_batch_attributes() -> None:
         ),
     ]
 
-    config = DataExtractionConfig(attribute_selection_mode=AttributeSelectionMode.BATCH)
+    config = DataExtractionConfig()
     module = DataExtractionModule(config)
 
-    prompt = module._generate_prompt("Test context", attributes)
-
-    assert "Attr1" in prompt
-    assert "Attr2" in prompt
-    assert "Desc1" in prompt
-    assert "Desc2" in prompt
-    assert "Test context" in prompt
+    payload_str = module._generate_prompt("Test context", attributes)
+    payload = json.loads(payload_str)
+    assert payload["context"] == "Test context"
+    assert len(payload["attributes"]) == 2
+    ids = [a["attribute_id"] for a in payload["attributes"]]
+    labels = [a["attribute_label"] for a in payload["attributes"]]
+    descs = [a["attribute_set_description"] for a in payload["attributes"]]
+    assert ids == ["1", "2"]
+    assert labels == ["Attr1", "Attr2"]
+    assert descs == ["Desc1", "Desc2"]
 
 
 def test_parse_llm_response() -> None:
@@ -334,21 +333,18 @@ def test_parse_llm_response() -> None:
             "document_id": "123",
         }
     )
-
     llm_response = json.dumps(
         {
             "annotations": [
                 {
                     "attribute_id": "1",
                     "output_data": True,
-                    "annotation_type": "llm",
                     "additional_text": "Found in document",
                     "reasoning": "Clear evidence",
                 },
                 {
                     "attribute_id": "2",
                     "output_data": False,
-                    "annotation_type": "llm",
                     "additional_text": None,
                     "reasoning": "Not found",
                 },
@@ -375,7 +371,7 @@ def test_parse_llm_response() -> None:
 
 
 def test_parse_llm_response_invalid_json() -> None:
-    """Test parsing invalid JSON response."""
+    """Test parsing invalid JSON response raises ValueError."""
     attributes: list[EppiAttribute] = []
     document = EppiDocument.model_validate(
         {
@@ -389,8 +385,32 @@ def test_parse_llm_response_invalid_json() -> None:
     config = DataExtractionConfig()
     module = DataExtractionModule(config)
 
-    annotations = module._parse_llm_response("invalid json", attributes, document)
-    assert len(annotations) == 0
+    with pytest.raises(ValueError, match="Invalid JSON"):
+        module._parse_llm_response("invalid json", attributes, document)
+
+
+def test_parse_llm_response_invalid_schema() -> None:
+    """Test parsing LLM response with invalid schema raises ValidationError."""
+    from pydantic import ValidationError
+
+    attributes: list[EppiAttribute] = []
+    document = EppiDocument.model_validate(
+        {
+            "name": "Test Document",
+            "citation": {"id": str(uuid4()), "visibility": "public"},
+            "context": "Test context",
+            "document_id": "123",
+        }
+    )
+
+    # Invalid response - missing required fields
+    invalid_response = json.dumps({"invalid": "structure"})
+
+    config = DataExtractionConfig()
+    module = DataExtractionModule(config)
+
+    with pytest.raises(ValidationError):
+        module._parse_llm_response(invalid_response, attributes, document)
 
 
 def test_extract_from_document_with_mock() -> None:
@@ -421,7 +441,6 @@ def test_extract_from_document_with_mock() -> None:
                 {
                     "attribute_id": "1",
                     "output_data": True,
-                    "annotation_type": "llm",
                     "additional_text": "Found",
                     "reasoning": "Evidence",
                 },
@@ -437,7 +456,6 @@ def test_extract_from_document_with_mock() -> None:
             (),
             {"message": type("MockMessage", (), {"content": mock_response})()},
         )()
-
         mock_completion.return_value = type(
             "MockResponse", (), {"choices": [mock_choice]}
         )()
@@ -478,7 +496,6 @@ def test_convenience_function_extract_single_attribute() -> None:
                 {
                     "attribute_id": "1",
                     "output_data": True,
-                    "annotation_type": "llm",
                     "additional_text": "Found",
                     "reasoning": "Evidence",
                 },
@@ -494,7 +511,6 @@ def test_convenience_function_extract_single_attribute() -> None:
             (),
             {"message": type("MockMessage", (), {"content": mock_response})()},
         )()
-
         mock_completion.return_value = type(
             "MockResponse", (), {"choices": [mock_choice]}
         )()
@@ -542,14 +558,12 @@ def test_convenience_function_extract_all_attributes() -> None:
                 {
                     "attribute_id": "1",
                     "output_data": True,
-                    "annotation_type": "llm",
                     "additional_text": "Found",
                     "reasoning": "Evidence",
                 },
                 {
                     "attribute_id": "2",
                     "output_data": False,
-                    "annotation_type": "llm",
                     "additional_text": None,
                     "reasoning": "Not found",
                 },
@@ -565,7 +579,6 @@ def test_convenience_function_extract_all_attributes() -> None:
             (),
             {"message": type("MockMessage", (), {"content": mock_response})()},
         )()
-
         mock_completion.return_value = type(
             "MockResponse", (), {"choices": [mock_choice]}
         )()
@@ -621,14 +634,12 @@ def test_convenience_function_extract_batch_attributes() -> None:
                 {
                     "attribute_id": "1",
                     "output_data": True,
-                    "annotation_type": "llm",
                     "additional_text": "Found",
                     "reasoning": "Evidence",
                 },
                 {
                     "attribute_id": "3",
                     "output_data": False,
-                    "annotation_type": "llm",
                     "additional_text": None,
                     "reasoning": "Not found",
                 },

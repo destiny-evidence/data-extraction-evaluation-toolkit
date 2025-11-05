@@ -72,7 +72,6 @@ lint.ignore = [
     "D403", # forcing upper-case
     "D407", # removed dashes lines under sections
     "D417", # argument description in docstring (unreliable)
-    "E501", # let's keep this for now (long lines)
     "ERA001", # allow commented code -- FOR NOW!
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)

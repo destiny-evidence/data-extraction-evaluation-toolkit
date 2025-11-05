@@ -88,36 +88,35 @@ For example, processing `sample_eppi.json` creates `output/processed/eppi/sample
 
 ### Quick Start
 
-1. **Set up your LLM provider** in `.env`:
+1. **Set up your LLM provider** using environment variables:
 
    ```bash
-   # Copy example environment file
-   cp env.example .env
-
-   # Edit .env with your API keys
    # For Azure OpenAI:
-   LLM_PROVIDER=azure
-   AZURE_API_KEY=your-azure-api-key
-   AZURE_API_BASE=https://your-resource.openai.azure.com/
-   AZURE_DEPLOYMENT=your-deployment-name
+   export AZURE_API_KEY=your-azure-api-key
+   export AZURE_DEPLOYMENT=your-deployment-name
 
    # For OpenAI:
-   LLM_PROVIDER=openai
-   OPENAI_API_KEY=your-openai-api-key
+   export OPENAI_API_KEY=your-openai-api-key
    ```
 
-2. **Run LLM evaluation**:
+2. **Run LLM evaluation** using the data extractor CLI:
 
    ```bash
-   uv run python app/scripts/simple_llm_eval.py
+   uv run python app/scripts/data_extractor_cli.py
+   ```
+
+   Or with a custom config file:
+
+   ```bash
+   uv run python app/scripts/data_extractor_cli.py --config my_config.yaml
    ```
 
 This will:
 
-- Load the first document from `app/annotations/processed/eppi/annotated_documents.json`
-- Evaluate it against the first 2 attributes
+- Load documents, attributes, and annotations from the configured paths
+- Extract data using the configured LLM model
 - Show detailed logs of the LLM request/response
-- Save results to `simple_evaluation_results.json`
+- Save results to the configured output file
 
 ### Understanding the Output
 
