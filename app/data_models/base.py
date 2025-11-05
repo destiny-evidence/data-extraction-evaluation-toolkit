@@ -15,13 +15,30 @@ class AnnotationType(StrEnum):
 
 
 class AttributeType(StrEnum):
-    """Enum for permitted attribute data types."""
+    """Enum of permitted attribute data types."""
 
+    STRING = auto()
+    INTEGER = auto()
+    FLOAT = auto()
     BOOL = auto()
-    INT = auto()
     LIST = auto()
     DICT = auto()
-    FLOAT = auto()
+
+    def __str__(self) -> str:
+        """Return the string value for JSON serialization."""
+        return self.value
+
+    def to_python_type(self) -> type:
+        """Map AttributeType to actual Python types."""
+        mapping = {
+            AttributeType.STRING: str,
+            AttributeType.INTEGER: int,
+            AttributeType.FLOAT: float,
+            AttributeType.BOOL: bool,
+            AttributeType.LIST: list,
+            AttributeType.DICT: dict,
+        }
+        return mapping[self]
 
 
 class Attribute(BaseModel):
@@ -32,7 +49,7 @@ class Attribute(BaseModel):
     """
 
     question_target: str  # 'How many patients were recruited?' - the prompt/question
-    output_data_type: AttributeType
+    output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 

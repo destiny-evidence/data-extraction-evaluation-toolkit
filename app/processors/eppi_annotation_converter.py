@@ -131,14 +131,14 @@ class EppiAnnotationConverter:
             flattened_attr = {
                 "AttributeId": attr.get("AttributeId"),
                 "AttributeName": attr.get("AttributeName"),
-                "AttributeDescription": attr.get("AttributeDescription", ""),
-                "AttributeSetDescription": attr.get("AttributeSetDescription", ""),
-                "AttributeType": attr.get("AttributeType", ""),
+                "AttributeDescription": attr.get("AttributeDescription"),
+                "AttributeSetDescription": attr.get("AttributeSetDescription"),
+                "AttributeType": attr.get("AttributeType"),
                 "AttributeTypeId": attr.get("AttributeTypeId"),
                 "AttributeSetId": attr.get("AttributeSetId"),
                 "OriginalAttributeID": attr.get("OriginalAttributeID"),
-                "ExtURL": attr.get("ExtURL", ""),
-                "ExtType": attr.get("ExtType", ""),
+                "ExtURL": attr.get("ExtURL"),
+                "ExtType": attr.get("ExtType"),
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
                 "is_leaf": "Attributes" not in attr
@@ -407,25 +407,20 @@ class EppiAnnotationConverter:
         """
         logger.info(f"Processing annotation file: {file_path}")
 
-        # Load and validate raw data
         data = self.load_eppi_json_annotations(file_path)
         raw_data = EppiRawData.model_validate(data)
 
-        # Extract and flatten attributes from both CodeSets using structured approach
         all_attributes_raw = self._extract_attributes_from_codesets(raw_data)
 
-        # Convert to Pydantic models
         attributes = self.convert_to_eppi_attributes(all_attributes_raw)
 
-        # Create attributes lookup for annotation processing
         attributes_lookup = {attr.attribute_id: attr for attr in attributes}
 
-        # Create attribute ID to label mapping
         attribute_id_to_label = {
-            attr.attribute_id: attr.attribute_label for attr in attributes
+            int(attr.attribute_id): attr.attribute_label for attr in attributes
         }
 
-        # Extract annotations from References
+        # extract annotations from References
         all_annotations_raw = []
         documents_by_title = {}
 
@@ -434,10 +429,8 @@ class EppiAnnotationConverter:
             reference_codes = reference.get("Codes", [])
             all_annotations_raw.extend(reference_codes)
 
-            # Extract document info from the reference itself
             doc_title = reference.get("Title", "")
             if doc_title and doc_title not in documents_by_title:
-                # Create a basic document entry
                 document = self.convert_to_eppi_document(reference)
                 documents_by_title[doc_title] = document
 
@@ -460,7 +453,10 @@ class EppiAnnotationConverter:
                 doc_annotations
             ):  # Only process if there are annotations for this document
                 annotations = self.convert_to_eppi_annotations(
-                    doc_annotations, document, attributes_lookup, attribute_id_to_label
+                    doc_annotations,
+                    document,
+                    attributes_lookup,  # type: ignore[arg-type]
+                    attribute_id_to_label,  # type: ignore[arg-type]
                 )
 
                 # Create EppiGoldStandardAnnotatedDocument
@@ -525,17 +521,20 @@ class EppiAnnotationConverter:
         saved_files = {}
 
         # Save each collection as JSON model_dump_json()
-        file_mappings = [
-            ("attributes", processed_data.attributes),
-            ("documents", processed_data.documents),
-            ("annotated_documents", processed_data.annotated_documents),
-        ]
+        # file_mappings = [
+        #     ("attributes", processed_data.attributes),
+        #     ("documents", processed_data.documents),
+        #     ("annotated_documents", processed_data.annotated_documents),
+        # ]
 
-        for file_type, data_list in file_mappings:
-            # logger.debug(file_type)
-            # logger.debug(data_list)
-            for item in data_list:
-                item: EppiAttribute
+        file_mappings = {
+            "attributes": processed_data.attributes,
+            "documents": processed_data.documents,
+            "annotated_documents": processed_data.annotated_documents,
+        }
+
+        for file_type, data_list in file_mappings.items():
+            for item in data_list:  # type: ignore[attr-defined]
                 logger.debug(item)
                 logger.debug(type(item))
                 logger.debug(item.model_dump_json())

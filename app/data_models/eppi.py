@@ -106,7 +106,10 @@ class EppiItemAttributeFullTextDetails(BaseModel):
     def validate_at_least_one_field(cls, data: dict) -> dict:
         """Ensure at least one field is not None."""
         if all(v is None for k, v in data.items()):
-            msg = "At least one field must be provided (item_document_id, text, or item_arm)"
+            msg = (
+                "At least one field must be provided "
+                "(item_document_id, text, or item_arm)"
+            )
             raise ValueError(msg)
         return data
 
@@ -122,10 +125,12 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     """
 
     attribute: EppiAttribute = Field(
-        description="The EPPI attribute being annotated with hierarchy and metadata information"
+        description="The EPPI attribute being annotated  "
+        "with hierarchy and metadata info."
     )
     additional_text: str | None = Field(
-        description="Notes provided by the annotator - usually the citation from the paper containing the context window where the attribute is found",
+        description="Notes provided by the annotator - usually the citation "
+        " from the paper containing the context window where the attribute is found",
         default=None,
     )
     arm_id: int | None = Field(
@@ -139,7 +144,8 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     )
     item_attribute_full_text_details: list[EppiItemAttributeFullTextDetails] | None = (
         Field(
-            description="List of detailed text extracts and arm-specific information for this annotation",
+            description="List of detailed text extracts and "
+            " arm-specific information for this annotation",
             default=None,
         )
     )
@@ -268,9 +274,9 @@ class AttributeAnswerCoT(BaseModel):
     attribute_name: str = Field(
         description="The name of the attribute being asked about"
     )
-    Answer: str = Field(description="The answer to the question, 'True' or 'False'")
-    Reasoning: str = Field(description="The reasoning behind the answer")
-    Citation: str | None = Field(
+    answer: str = Field(description="The answer to the question, 'True' or 'False'")
+    reasoning: str = Field(description="The reasoning behind the answer")
+    citation: str | None = Field(
         description="The citation from the Research Information to support the answer"
     )
 
