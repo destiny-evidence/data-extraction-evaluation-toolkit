@@ -214,4 +214,5 @@ output/
 app/annotations/processed/
 app/annotations/raw/
 .DS_Store
-.cursor/
+.cursor
+.keys
