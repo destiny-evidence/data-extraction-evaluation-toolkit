@@ -43,6 +43,7 @@ def llm_data_extraction(
     documents_file_path: Path,
     attributes_file_path: Path,
     output_path: Path,
+    **kwargs,
 ) -> list[EppiGoldStandardAnnotation]:
     """Run LLM data extraction."""
     full_text = full_text_path.read_text()
@@ -58,6 +59,7 @@ def llm_data_extraction(
         attributes=attributes,
         output_file=output_path,
         full_text=full_text,
+        **kwargs,
     )
 
 
@@ -113,6 +115,7 @@ def main() -> None:
                 "documents_file_path": eppi_out_path / "documents.json",
                 "attributes_file_path": eppi_out_path / "attributes.json",
                 "output_path": eppi_out_path / "llm_extractions.json",
+                "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction)
     )

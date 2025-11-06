@@ -19,6 +19,7 @@ from app.settings import get_settings
 
 # Load centralized settings once for module-level defaults
 settings = get_settings()
+litellm._turn_on_debug()  # noqa: SLF001
 
 
 class ContextType(StrEnum):
@@ -239,16 +240,14 @@ class DataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        # full_text = kwargs.get("full_text", "")
-
         # Prepare context
         context = self._prepare_context(document, **kwargs)
 
         # Generate user message JSON payload
         prompt = self._generate_user_message_json(context, selected_attributes)
 
-        # Call LLM
-        llm_response = self._call_llm(prompt)
+        # Call LLM - pass kwargs here to include prompt_outfile
+        llm_response = self._call_llm(prompt, **kwargs)
 
         # Parse response and create annotations
         return self._parse_llm_response(llm_response, selected_attributes, document)
@@ -377,7 +376,9 @@ class DataExtractor:
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
         return prompt_json
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(
+        self, prompt: str, prompt_outfile: Path | None = None, **kwargs
+    ) -> str:
         """Call the LLM with the given prompt."""
         # system_prompt = self._load_system_prompt()
 
@@ -391,6 +392,9 @@ class DataExtractor:
         logger.debug(f"Temperature: {self.config.temperature}")
         logger.debug(f" sys message: {messages[0]['content'][:1000]}")
         logger.debug(f"user msg{messages[1]['content'][:1000]}")
+
+        if prompt_outfile:
+            prompt_outfile.write_text(json.dumps(messages))
 
         response = litellm.completion(
             model=self.model,
