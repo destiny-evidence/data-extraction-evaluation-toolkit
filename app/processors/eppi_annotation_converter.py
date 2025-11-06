@@ -507,7 +507,7 @@ class EppiAnnotationConverter:
         base_path = Path(output_dir)
 
         # Always create an 'eppi' subdirectory
-        eppi_base_path = base_path / "eppi"
+        eppi_base_path = base_path  # / "eppi"
 
         # If input_filename, create sub-dir with the filename (without extension)
         if input_filename:
