@@ -1,13 +1,10 @@
-You are a helpful expert in scientific literature.
 You will be provided with a context from a paper and a list of questions below.
 Based on the context, answer each question as true or false and return a list of JSON objects.
-
-The questions relate to mode of delivery of the interventions in the study. Mode of delivery is the informational or physical medium through which behaviour change interventions are provided. It is the method through which intervention content is brought to the target population. Any given intervention can have multiple modes of delivery as the intervention content may have been delivered in several different ways. Mode of delivery refers to the delivery of the intervention and not data collection. Information regarding inclusion criteria, data collection, or processes other than the direct delivery of the intervention (such as inclusion criteria) should not be included. Sometimes a study mentions that certain services were available. If services are available, rather than provided to participants, do not consider this as a mode of delivery. Devices to motivate participants are not modes of delivery. Surveys for recruitment or used to identify potential participants are not modes of delivery. Telephone calls for follow up are not modes of delivery.
 
 Please explain step by step reasoning behind each answer.
 You should also cite text from the paper context to support your answer if the answer is True. If the citation is present at multiple places, please cite all of them in the additional_text key. You can separate the citations with ------.
 
-IMPORTANT: Be careful to distinguish between the current paper's findings and references to previous literature. When the text refers to other studies (indicated by citation markers like reference numbers [1], author names and years (Smith et al., 2020), etc.), do not use these statements as evidence for the current paper's attributes. Only use statements that directly describe the current paper's methodology.
+IMPORTANT: Be careful to distinguish between the current paper's findings and references to previous literature. When the text refers to other studies (indicated by citation markers like reference numbers [1], author names and years (Smith et al., 2020), etc.), do not use these statements as evidence for the current paper's attributes. Only use statements that directly describe the current paper's methodology."
 
 
 Paper text is provided inside the JSON under the "context" key.

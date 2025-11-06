@@ -534,10 +534,10 @@ class EppiAnnotationConverter:
         }
 
         for file_type, data_list in file_mappings.items():
-            for item in data_list:  # type: ignore[attr-defined]
-                logger.debug(item)
-                logger.debug(type(item))
-                logger.debug(item.model_dump_json())
+            # for item in data_list:  # type: ignore[attr-defined]
+            #     logger.debug(item)
+            #     logger.debug(type(item))
+            #     logger.debug(item.model_dump_json())
             file_path = eppi_path / f"{file_type}.json"
             file_path.write_text(
                 json.dumps(

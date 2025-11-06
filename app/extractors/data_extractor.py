@@ -109,7 +109,7 @@ class DataExtractionConfig(BaseModel):
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
     max_context_length: int = Field(
-        default=40000,
+        default=200000,
         description="Maximum context length for LLM CHARACTERS? ",  # fix with tokens!
     )
 
@@ -370,8 +370,10 @@ class DataExtractor:
             "context": context,
             "attributes": attributes_payload,
         }
+        # logger.debug(f"prompt json: {payload}")
 
         prompt_json = json.dumps(payload, ensure_ascii=False)
+        # Path("misc/prompt_json.json").write_text(prompt_json)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
         return prompt_json
 
@@ -383,6 +385,7 @@ class DataExtractor:
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
         ]
+        # Path("misc/system_user_config.json").write_text(json.dumps(messages))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")

@@ -303,7 +303,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute object.
     """
 
-    attribute_id: str = Field(
+    attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
     output_data: bool = Field(
