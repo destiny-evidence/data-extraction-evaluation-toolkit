@@ -30,6 +30,8 @@ class DataExtractionSettings(BaseSettings):
     )
 
     # General
+    log_level: str = Field(default="DEBUG", description="log level for the app logger.")
+
     runtime: Runtime = Field(
         default=Runtime.LOCAL,
         description="Runtime environment.",
