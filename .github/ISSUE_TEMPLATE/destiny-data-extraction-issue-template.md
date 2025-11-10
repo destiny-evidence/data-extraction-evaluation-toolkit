@@ -10,11 +10,13 @@ assignees: ''
 ### Description
 
 ### Definition of Done
+
 - [ ] ...
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
 
 ### Dependencies
-- #Issue 
+
+- #Issue
 
 ### Comments
