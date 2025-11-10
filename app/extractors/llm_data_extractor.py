@@ -19,7 +19,6 @@ from app.settings import get_settings
 
 # Load centralized settings once for module-level defaults
 settings = get_settings()
-litellm._turn_on_debug()  # noqa: SLF001
 
 
 class ContextType(StrEnum):
@@ -132,7 +131,7 @@ class DataExtractionConfig(BaseModel):
     )
 
 
-class DataExtractor:
+class LLMDataExtractor:
     """
     Generalisable module for LLM-based data extraction from documents.
 
@@ -145,17 +144,18 @@ class DataExtractor:
         self,
         config: DataExtractionConfig,
         custom_system_prompt_file: Path | None = None,
+        *,
+        show_litellm_debug_messages: bool = False,
     ) -> None:
         """
-        Initialize the data extraction module.
+        Initialise the data extraction module.
 
         Args:
-            config: Configuration for the extraction module.
-                If None, uses default config from centralized settings.
-            custom_system_prompt_file: Optional custom system prompt file path.
-                If None, defaults to `app/prompts/system_prompt_v0.txt`.
-                If that file doesn't exist, falls back to the prompt
-                from `config.prompt_config.system_prompt`.
+            config (DataExtractionConfig): config obj for data extraction run
+            custom_system_prompt_file (Path | None, optional): path to non-defualt
+            sys prompt file. Defaults to None.
+            show_litellm_debug_messages (bool, optional): show verbose litellm logs.
+            Defaults to False.
 
         """
         self.config = config
@@ -163,6 +163,8 @@ class DataExtractor:
         self.model = f"azure/{settings.azure_deployment}"
         self.azure_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
         self.azure_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+        if show_litellm_debug_messages:
+            litellm._turn_on_debug()  # noqa: SLF001
 
         if (
             self.custom_system_prompt_file
@@ -531,7 +533,7 @@ def extract_single_attribute(
     config: DataExtractionConfig,
 ) -> EppiGoldStandardAnnotation | None:
     """Extract a single attribute from a document."""
-    module = DataExtractor(config)
+    module = LLMDataExtractor(config)
     annotations = module.extract_from_document(document, [attribute])
     return annotations[0] if annotations else None
 
@@ -542,7 +544,7 @@ def extract_all_attributes(
     config: DataExtractionConfig,
 ) -> list[EppiGoldStandardAnnotation]:
     """Extract all attributes from a document."""
-    module = DataExtractor(config)
+    module = LLMDataExtractor(config)
     return module.extract_from_document(document, attributes)
 
 
@@ -554,5 +556,5 @@ def extract_batch_attributes(
 ) -> list[EppiGoldStandardAnnotation]:
     """Extract a batch of specific attributes from a document by IDs."""
     config.selected_attribute_ids = attribute_ids
-    module = DataExtractor(config)
+    module = LLMDataExtractor(config)
     return module.extract_from_document(document, attributes)

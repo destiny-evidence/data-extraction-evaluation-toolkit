@@ -8,7 +8,7 @@ from loguru import logger
 
 from app.data_models.eppi import EppiAttribute, EppiDocument
 from app.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
-from app.extractors.data_extractor import DataExtractionConfig, DataExtractor
+from app.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
 from app.processors.eppi_annotation_converter import (
     EppiAnnotationConverter,
     EppiGoldStandardAnnotation,
@@ -20,7 +20,7 @@ converter = EppiAnnotationConverter()
 
 config = DataExtractionConfig()
 
-data_extractor = DataExtractor(config=config)
+data_extractor = LLMDataExtractor(config=config)
 
 
 # the three functions we want to run
