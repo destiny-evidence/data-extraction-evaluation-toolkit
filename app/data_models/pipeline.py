@@ -410,7 +410,9 @@ class PipelineStage(BaseModel):
 
         logger.info(f"Pipeline stage {self.name} has {len(self.jobs)} stages.")
         for i, job in enumerate(self.jobs):
-            logger.info(f"Running job number: {i}, name: {job.name}.")
+            logger.info(
+                f"Running job {i + 1} out of {len(self.jobs)}, name: {job.name}."
+            )
             try:
                 # Use job's own args if they exist, otherwise fall
                 # back to stage/method args

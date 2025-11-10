@@ -42,7 +42,7 @@ def parse_pdf(
                                             file matches the pdf. Defaults to True.
 
     """
-    if skip_if_md_exists:
+    if skip_if_md_exists and out_path.exists() and out_path.is_file():
         logger.info(
             f"`skip_if_md_exists` has been set to True, and {str(out_path)}  exists. "  # noqa: RUF010
             "skipping parsing..."
@@ -62,10 +62,11 @@ def llm_data_extraction(
     documents_file_path: Path,
     attributes_file_path: Path,
     output_path: Path,
-    filter_by_attribute_ids: list[int] | None,
+    filter_by_attribute_ids: list[int] | None = None,
     **kwargs,
 ) -> list[EppiGoldStandardAnnotation]:
     """Run LLM data extraction."""
+    logger.debug(full_text_path)
     full_text = full_text_path.read_text()
 
     documents_raw = json.loads(documents_file_path.read_text())
@@ -95,10 +96,14 @@ def main() -> None:
         "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
     )
     parser.add_argument(
-        "-m", "--markdown_path", help="path to save markdown at", required=False
+        "-m",
+        "--markdown_path",
+        help="path to save markdown at",
+        type=Path,
+        required=False,
     )
     parser.add_argument(
-        "-e", "--eppi_json_path", help="path to eppi json", required=True
+        "-e", "--eppi_json_path", help="path to eppi json", type=Path, required=True
     )
 
     args = parser.parse_args()
@@ -114,10 +119,13 @@ def main() -> None:
 
     # Create stages by wrapping the jobified functions
     logger.debug("decorating our functions as Jobs and PipelineStages")
-    parse_pdf_stage = stage_from_job(  # noqa: F841
+    parse_pdf_stage = stage_from_job(
         jobify(
             name="parse_pdf",
-            func_kwargs={"pdf_path": args.pdf_path, "out_path": args.markdown_path},
+            func_kwargs={
+                "pdf_path": args.pdf_path,
+                "out_path": args.markdown_path,
+            },
         )(parse_pdf)  # Apply jobify decorator to function
     )
 
@@ -147,8 +155,8 @@ def main() -> None:
 
     my_beautiful_pipeline = Pipeline(
         name="test_pipeline",
-        # stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
-        stages=[ingest_gs_stage, llm_extraction_stage],
+        stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
+        # stages=[ingest_gs_stage, llm_extraction_stage],
     )
 
     my_beautiful_pipeline.run()
