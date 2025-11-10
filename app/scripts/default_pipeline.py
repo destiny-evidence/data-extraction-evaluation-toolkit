@@ -27,8 +27,27 @@ data_extractor = LLMDataExtractor(config=config)
 def parse_pdf(
     pdf_path: Path,
     out_path: Path,
+    *,
+    skip_if_md_exists: bool = True,
 ) -> None:
-    """Parse pdf to Markdown."""
+    """
+    Parse pdf to Markdown.
+
+    Args:
+        pdf_path (Path): location of input pdf.
+        out_path (Path): location to write markdown file to.
+        skip_if_md_exists (bool, optional): set to true if you want to skip this stage
+                                            if markdown already exists.
+                                            NOTE: you are responsible for ensuring md
+                                            file matches the pdf. Defaults to True.
+
+    """
+    if skip_if_md_exists:
+        logger.info(
+            f"`skip_if_md_exists` has been set to True, and {str(out_path)}  exists. "  # noqa: RUF010
+            "skipping parsing..."
+        )
+        return
     parser(input_=pdf_path, out_path=out_path)
 
 
@@ -43,6 +62,7 @@ def llm_data_extraction(
     documents_file_path: Path,
     attributes_file_path: Path,
     output_path: Path,
+    filter_by_attribute_ids: list[int] | None,
     **kwargs,
 ) -> list[EppiGoldStandardAnnotation]:
     """Run LLM data extraction."""
@@ -52,6 +72,11 @@ def llm_data_extraction(
     attributes_raw = json.loads(attributes_file_path.read_text())
 
     attributes = [EppiAttribute(**record) for record in attributes_raw]
+    if filter_by_attribute_ids:
+        attributes = [
+            a for a in attributes if a.attribute_id in filter_by_attribute_ids
+        ]
+
     documents = [EppiDocument(**record) for record in documents_raw]
 
     return data_extractor.extract_from_documents(
