@@ -135,6 +135,10 @@ class ScriptExecutor(BaseExecutor):
         self.r_path = r_path if r_path else (Path(r_which) if r_which else None)
         self.bash_path = bash_path
 
+        logger.debug(f"python path: {self.python_path}")
+        logger.debug(f"r path: {self.r_path}")
+        logger.debug(f"bash path: {self.bash_path}")
+
     def _execute(
         self,
         job: "Job",
@@ -239,19 +243,22 @@ class ScriptExecutor(BaseExecutor):
         if args:
             cmd.extend(args)
 
+        env = restricted_env.copy()
+        env.update(
+            {
+                "R_LIBS_USER": "",  # prevent loading from user library paths
+                "R_PROFILE_USER": "",  # disable user profile scripts
+                "R_ENVIRON_USER": "",  # disable user environment files
+                "R_HISTFILE": "",  # disable history file
+            }
+        )
+
         output = subprocess.run(  # noqa: S603
             cmd,
             check=True,
             capture_output=capture_output,
             text=True,
-            env=restricted_env.copy().update(
-                {
-                    "R_LIBS_USER": "",  # prevent loading from user library paths
-                    "R_PROFILE_USER": "",  # disable user profile scripts
-                    "R_ENVIRON_USER": "",  # disable user environment files
-                    "R_HISTFILE": "",  # disable history file
-                }
-            ),
+            env=env,
         )
         if capture_output:
             return output.stdout
@@ -270,19 +277,22 @@ class ScriptExecutor(BaseExecutor):
         if args:
             cmd.extend(args)
 
+        env = restricted_env.copy()
+        env.update(
+            {
+                "SHELL": str(self.bash_path),
+                "IFS": " \t\n",  # safe input field separator
+                "ENV": "",  # disable shell startup file
+                "BASH_ENV": "",  # disable bash startup file
+            }
+        )
+
         output = subprocess.run(  # noqa: S603
             cmd,
             check=True,
             capture_output=capture_output,
             text=True,
-            env=restricted_env.copy().update(
-                {
-                    "SHELL": str(self.bash_path),
-                    "IFS": " \t\n",  # safe input field separator
-                    "ENV": "",  # disable shell startup file
-                    "BASH_ENV": "",  # disable bash startup file
-                }
-            ),
+            env=env,
         )
         if capture_output:
             return output.stdout
@@ -336,7 +346,9 @@ class Job(BaseModel):
     job_format: JobFormat
     job_type: JobType | list[JobType]
     language: Language
-    ingress_method: IngressMethod | None  # we may have a job that starts with no data
+    ingress_method: IngressMethod | None = (
+        None  # we may have a job that starts with no data
+    )
     egress_method: EgressMethod
     job: Callable | Path
     script_args: list[str] | None
@@ -372,12 +384,10 @@ class PipelineStage(BaseModel):
 
     name: str
     skip_jobs_if_failed: bool = True
-    input_file: Path | None  # we're not using this either -- it's handled via jobs.
-    data: (
-        Any | None
-    )  # currently we're not really using this; but it might become relevant?
+    input_file: Path | None = None  # handled in job
+    data: Any | None = None  # handled in job
     jobs: Job | list[Job]
-    logfile: Path | None
+    logfile: Path | None = None
     default_func_args: list[Any] | None = None
     default_func_kwargs: dict[str, Any] | None = None
 
