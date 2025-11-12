@@ -1,4 +1,4 @@
-"""Tests for annotation converter using real EPPI data."""
+"""Tests for eppi_annotation_converter using real EPPI data."""
 
 import json
 from unittest.mock import mock_open, patch
@@ -9,9 +9,11 @@ from app.data_models.base import AttributeType
 from app.data_models.eppi import EppiRawData
 from app.processors.eppi_annotation_converter import EppiAnnotationConverter
 
+# from pytest_mock import mock_open, patch
 
-def test_load_eppi_json_annotations_with_real_data(sample_eppi_data: dict) -> None:
-    """Test loading EPPI JSON annotations with real data."""
+
+def test_load_eppi_json_annotations(sample_eppi_data: dict) -> None:
+    """Test loading EPPI JSON annotations."""
     converter = EppiAnnotationConverter()
     with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
         result = converter.load_eppi_json_annotations("fake_path.json")
@@ -28,33 +30,25 @@ def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
     with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
         result = converter.process_annotation_file("fake_path.json")
 
-        # Verify the result structure
         assert hasattr(result, "attributes")
         assert hasattr(result, "documents")
         assert hasattr(result, "annotations")
 
-        # Check that attributes were processed
         assert len(result.attributes) > 0
-        # Check that documents were processed
         assert len(result.documents) > 0
 
 
-def test_convert_to_eppi_attributes_with_real_data(sample_eppi_data: dict) -> None:
-    """Test converting to EPPI attributes with real data."""
+def test_convert_to_eppi_attributes(sample_eppi_data: dict) -> None:
+    """Test converting to EPPI attributes."""
     converter = EppiAnnotationConverter()
-    # Create EppiRawData from real data
     raw_data = EppiRawData.model_validate(sample_eppi_data)
 
-    # Extract attributes from real data
-    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)  # noqa: SLF001
+    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)
 
-    # Convert to EPPI attributes
     attributes = converter.convert_to_eppi_attributes(all_attributes_raw)
 
-    # Verify attributes were created
     assert len(attributes) > 0
 
-    # Check first attribute
     first_attr = attributes[0]
     assert hasattr(first_attr, "attribute_id")
     assert hasattr(first_attr, "attribute_label")
@@ -65,13 +59,13 @@ def test_convert_to_eppi_attributes_with_real_data(sample_eppi_data: dict) -> No
     assert first_attr.question_target == "", "Should be empty for EPPI"
 
 
-def test_extract_attributes_from_codesets_with_real_data(
+def test_extract_attributes_from_codesets(
     sample_eppi_data: dict,
 ) -> None:
-    """Test extracting attributes from CodeSets with real data."""
+    """Test extracting attributes from CodeSets."""
     converter = EppiAnnotationConverter()
     raw_data = EppiRawData.model_validate(sample_eppi_data)
-    attributes_raw = converter._extract_attributes_from_codesets(raw_data)  # noqa: SLF001
+    attributes_raw = converter._extract_attributes_from_codesets(raw_data)
 
     # Verify attributes were extracted
     assert len(attributes_raw) > 0
@@ -84,29 +78,25 @@ def test_extract_attributes_from_codesets_with_real_data(
     assert "hierarchy_level" in first_attr
 
 
-def test_flatten_attributes_hierarchy_with_real_data(sample_eppi_data: dict) -> None:
+def test_flatten_attributes_hierarchy(sample_eppi_data: dict) -> None:
     """Test flattening attributes hierarchy with real data."""
     converter = EppiAnnotationConverter()
     raw_data = EppiRawData.model_validate(sample_eppi_data)
-    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)  # noqa: SLF001
+    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)
 
-    # Test flattening
     flattened = converter.flatten_attributes_hierarchy(all_attributes_raw)
 
-    # Verify flattening worked
     assert len(flattened) > 0
 
-    # Check that hierarchy information is preserved
     for attr in flattened:
         assert "hierarchy_path" in attr
         assert "hierarchy_level" in attr
 
 
-def test_validate_eppi_data_with_real_data(sample_eppi_data: dict) -> None:
-    """Test validating EPPI data with real data."""
+def test_validate_eppi_data(sample_eppi_data: dict) -> None:
+    """Test validating EPPI data."""
     raw_data = EppiRawData.model_validate(sample_eppi_data)
 
-    # Verify validation worked
     assert hasattr(raw_data, "code_sets")
     assert hasattr(raw_data, "references")
     assert len(raw_data.code_sets) == 2
@@ -125,34 +115,31 @@ def test_validate_eppi_data_invalid_structure() -> None:
     assert result.references == []
 
 
-def test_process_document_data_for_validation_with_real_data(
+def test_process_document_data_for_validation(
     sample_eppi_data: dict,
 ) -> None:
-    """Test processing document data with real data."""
+    """Test processing document data."""
     converter = EppiAnnotationConverter()
-    # Get first reference from real data
     first_ref = sample_eppi_data["References"][0]
 
     processed = converter.process_document_data_for_validation(first_ref)
 
-    # Verify processing worked
     assert "name" in processed
     assert "citation" in processed
     assert "context" in processed
     assert "document_id" in processed
 
 
-def test_process_attribute_data_for_validation_with_real_data(
+def test_process_attribute_data_for_validation(
     sample_eppi_data: dict,
 ) -> None:
-    """Test processing attribute data with real data."""
+    """Test processing attribute data."""
     converter = EppiAnnotationConverter()
-    # Get first attribute from real data
+    # Get first attribute
     first_attr = sample_eppi_data["CodeSets"][0]["Attributes"]["AttributesList"][0]
 
     processed = converter.process_attribute_data_for_validation(first_attr)
 
-    # Verify processing worked
     assert "question_target" in processed
     assert "output_data_type" in processed
     assert "attribute_id" in processed
@@ -163,15 +150,14 @@ def test_process_attribute_data_for_validation_with_real_data(
     )  # Should be bool for EPPI
 
 
-def test_create_reference_from_document_data_with_real_data(
+def test_create_reference_from_document_data(
     sample_eppi_data: dict,
 ) -> None:
-    """Test creating reference from document data with real data."""
+    """Test creating reference from document data."""
     converter = EppiAnnotationConverter()
-    # Get first reference from real data
     first_ref = sample_eppi_data["References"][0]
 
-    reference = converter._create_reference(first_ref)  # noqa: SLF001
+    reference = converter._create_reference(first_ref)
 
     # Verify reference was created
     assert hasattr(reference, "id")
@@ -181,7 +167,7 @@ def test_create_reference_from_document_data_with_real_data(
 
 
 def test_integration_full_workflow(sample_eppi_data: dict) -> None:
-    """Test full integration workflow with real data."""
+    """Test full integration workflow."""
     converter = EppiAnnotationConverter()
     with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
         result = converter.process_annotation_file("fake_path.json")
@@ -239,5 +225,7 @@ def test_empty_data_handling() -> None:
         assert hasattr(result, "attributes")
         assert hasattr(result, "documents")
         assert hasattr(result, "annotations")
+        assert len(result.attributes) == 0
+        assert len(result.documents) == 0
         assert len(result.attributes) == 0
         assert len(result.documents) == 0
