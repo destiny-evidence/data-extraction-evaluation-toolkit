@@ -127,7 +127,7 @@ def test_documentparser_unknown_parser():
 def test_documentparser_parser_none_raises_value_error(
     mock_pypandoc, mock_check_language
 ):
-    """If the default parser for a file type is None, __call__ should raise ValueError."""
+    """If default parser for file type is None, __call__ should raise ValueError."""
     # create a parser that purposely sets default to None
     p = DocumentParser(parsers=None)
 
@@ -217,7 +217,7 @@ def test_documentparser_missing_filetype_raises(tmp_txt_file):
 
 
 def test_documentparser_output_file(tmp_path, mock_pypandoc, mock_check_language):
-    """When an out_path is supplied, the parsed text is written and the text is returned."""
+    """When out_path is supplied, parsed text is written & the text is returned."""
     parser = DocumentParser()
     out_path = tmp_path / "out.md"
     result = parser("book.epub", out_path=out_path)

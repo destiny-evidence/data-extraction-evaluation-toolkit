@@ -1,4 +1,7 @@
-"""NOTE: these take eons to run, and currently don't work for pdf, as the old .md file doesn't match the new one."""
+"""
+NOTE: these take eons to run, and currently don't work for pdf,
+as the old .md file doesn't match the new one.
+"""
 
 import re
 from pathlib import Path
@@ -67,7 +70,8 @@ def test_invalid_filetype_raises(tmp_path):
 #         output_file=out_file,
 #     )
 #     assert result == str(out_file)
-#     # The content should match the fixture (Marker produces the same output as the real parser)
+#     # The content should match the fixture (Marker
+# produces the same output as the real parser)
 #     with Path.open("tests/test_files/output/Abroms_2008.md") as ref:
 #         assert out_file.read_text() == ref.read()
 
@@ -75,4 +79,5 @@ def test_invalid_filetype_raises(tmp_path):
 # def test_bad_parser_for_pdf_raises():
 #     parser = DocumentParser()
 #     with pytest.raises(FileParserMismatchError):
-#         parser("tests/test_files/input/Abroms_2008.pdf", parser=ParserLibrary.PANDOC)
+#         parser("tests/test_files/input/Abroms_2008.pdf",
+# parser=ParserLibrary.PANDOC)
