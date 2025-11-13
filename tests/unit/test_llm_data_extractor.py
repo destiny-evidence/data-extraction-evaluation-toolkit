@@ -25,19 +25,23 @@ from app.extractors.llm_data_extractor import (
 )
 
 
-@pytest.fixture
-def mock_settings():
-    """Fixture to mock the settings object."""
-    with patch("app.extractors.llm_data_extractor.get_settings") as mock_get_settings:
-        settings = MagicMock()
-        settings.llm_model = "test-model"
-        settings.llm_temperature = 0.1
-        settings.llm_max_tokens = 1024
-        settings.azure_deployment = "test-deployment"
-        settings.azure_api_key.get_secret_value.return_value = "test-key"
-        settings.azure_api_base.get_secret_value.return_value = "test-base"
-        mock_get_settings.return_value = settings
-        yield settings
+@pytest.fixture(autouse=True)
+def mock_settings(monkeypatch):
+    """
+    Fixture to mock the module-level settings object in llm_data_extractor.
+    This is necessary because the module loads settings at import time.
+    `autouse=True` ensures it runs for every test in this file.
+    """
+    mock_settings_obj = MagicMock()
+    mock_settings_obj.llm_model = "test-model"
+    mock_settings_obj.llm_temperature = 0.1
+    mock_settings_obj.llm_max_tokens = 1024
+    mock_settings_obj.azure_deployment = "test-deployment"
+    mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
+    mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
+
+    monkeypatch.setattr("app.extractors.llm_data_extractor.settings", mock_settings_obj)
+    return mock_settings_obj
 
 
 @pytest.fixture
