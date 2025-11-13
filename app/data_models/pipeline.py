@@ -391,8 +391,8 @@ class PipelineStage(BaseModel):
     default_func_args: list[Any] | None = None
     default_func_kwargs: dict[str, Any] | None = None
 
-    @classmethod
     @field_validator("jobs", mode="before")
+    @classmethod
     def convert_jobs_to_list(cls, v: Job | list[Job]) -> list[Job]:
         """Convert jobs to list of jobs if just one job supplied."""
         if isinstance(v, Job):

@@ -63,7 +63,7 @@ def script_job(tmp_path: Path) -> Job:
 
 
 # jobs
-def test_job_run_code_job(code_job: Job, mock_job_func: MagicMock) -> None:
+def test_job_run_code_job(code_job: Job, mock_job_func: MagicMock):
     """Test running a job with a Python callable."""
     code_job.func_args = [1, 2]
     code_job.func_kwargs = {"test": True}
@@ -73,7 +73,7 @@ def test_job_run_code_job(code_job: Job, mock_job_func: MagicMock) -> None:
     assert output == "Job Done"
 
 
-def test_job_run_code_job_no_capture(code_job: Job) -> None:
+def test_job_run_code_job_no_capture(code_job: Job):
     """Test running a job with capture_output=False."""
     code_job.capture_output = False
     output = code_job.run_job()
@@ -81,7 +81,7 @@ def test_job_run_code_job_no_capture(code_job: Job) -> None:
 
 
 @patch("app.data_models.pipeline.Executor.execute")
-def test_job_run_script_job(mock_execute: MagicMock, script_job: Job) -> None:
+def test_job_run_script_job(mock_execute: MagicMock, script_job: Job):
     """Test running a job with a script Path."""
     mock_execute.return_value = "Script output"
     output = script_job.run_job()
@@ -91,7 +91,7 @@ def test_job_run_script_job(mock_execute: MagicMock, script_job: Job) -> None:
 
 
 # executors
-def test_executors_code_executor(mock_job_func: MagicMock) -> None:
+def test_executors_code_executor(mock_job_func: MagicMock):
     """Test the CodeExecutor executes a callable."""
     executor = CodeExecutor()
     job = MagicMock(spec=Job, job=mock_job_func, capture_output=True)
@@ -100,7 +100,7 @@ def test_executors_code_executor(mock_job_func: MagicMock) -> None:
     assert result == "Job Done"
 
 
-def test_executors_code_executor_with_path() -> None:
+def test_executors_code_executor_with_path():
     """Test CodeExecutor raises error if job is a Path."""
     executor = CodeExecutor()
     job = MagicMock(spec=Job, job=Path("script.py"))
@@ -109,7 +109,7 @@ def test_executors_code_executor_with_path() -> None:
 
 
 @patch("shutil.which", side_effect=["/usr/bin/python", "/usr/bin/r"])
-def test_executors_script_executor_init(mock_which: MagicMock) -> None:
+def test_executors_script_executor_init(mock_which: MagicMock):
     """Test ScriptExecutor initialization."""
     executor = ScriptExecutor()
     assert executor.python_path == Path("/usr/bin/python")
@@ -118,7 +118,7 @@ def test_executors_script_executor_init(mock_which: MagicMock) -> None:
     mock_which.assert_has_calls([call("python"), call("R")])
 
 
-def test_executors_verify_filetype() -> None:
+def test_executors_verify_filetype():
     """Test the filetype verification method."""
     executor = ScriptExecutor()
     assert executor.verify_filetype("script.py", ".py")
@@ -127,7 +127,7 @@ def test_executors_verify_filetype() -> None:
 
 
 @patch("subprocess.run")
-def test_executors_python_executor(mock_run: MagicMock, tmp_path: Path) -> None:
+def test_executors_python_executor(mock_run: MagicMock, tmp_path: Path):
     """Test the python_executor method."""
     mock_run.return_value = MagicMock(stderr="log message")
     executor = ScriptExecutor(python_path=Path("/bin/python"))
@@ -139,7 +139,10 @@ def test_executors_python_executor(mock_run: MagicMock, tmp_path: Path) -> None:
     assert "log message" in output
 
 
-def test_executors_python_executor_missing_binary(tmp_path: Path) -> None:
+@patch("shutil.which", return_value=None)
+def test_executors_python_executor_missing_binary(
+    mock_which: MagicMock, tmp_path: Path
+):
     """Test python_executor raises error if binary is missing."""
     executor = ScriptExecutor(python_path=None)
     script = tmp_path / "test.py"
@@ -149,9 +152,7 @@ def test_executors_python_executor_missing_binary(tmp_path: Path) -> None:
 
 
 @patch("subprocess.run")
-def test_executors_script_executor_dispatch(
-    mock_run: MagicMock, script_job: Job
-) -> None:
+def test_executors_script_executor_dispatch(mock_run: MagicMock, script_job: Job):
     """Test ScriptExecutor._execute dispatches to the correct method."""
     executor = ScriptExecutor(python_path=Path("/bin/python"))
     executor._execute(script_job, args=script_job.script_args)
@@ -163,7 +164,7 @@ def test_executors_script_executor_dispatch(
 
 
 # tests for stages
-def test_pipeline_stage_convert_jobs_to_list(code_job: Job) -> None:
+def test_pipeline_stage_convert_jobs_to_list(code_job: Job):
     """Test that a single job is converted to a list."""
     stage = PipelineStage(name="test_stage", jobs=code_job)
     assert isinstance(stage.jobs, list)
@@ -171,7 +172,7 @@ def test_pipeline_stage_convert_jobs_to_list(code_job: Job) -> None:
 
 
 @patch("app.data_models.pipeline.Job.run_job")
-def test_pipeline_stage_run_jobs(mock_run_job: MagicMock, code_job: Job) -> None:
+def test_pipeline_stage_run_jobs(mock_run_job: MagicMock, code_job: Job):
     """Test that run_jobs calls run_job on each job."""
     stage = PipelineStage(name="test_stage", jobs=[code_job, code_job])
     stage.run_jobs()
@@ -179,9 +180,7 @@ def test_pipeline_stage_run_jobs(mock_run_job: MagicMock, code_job: Job) -> None
 
 
 @patch("app.data_models.pipeline.Job.run_job")
-def test_pipeline_stage_run_jobs_failure_skip(
-    mock_run_job: MagicMock, code_job: Job
-) -> None:
+def test_pipeline_stage_run_jobs_failure_skip(mock_run_job: MagicMock, code_job: Job):
     """Test that stage continues on job failure if skip_jobs_if_failed is True."""
     mock_run_job.side_effect = [Exception("Job failed!"), "Success"]
     stage = PipelineStage(
@@ -194,8 +193,8 @@ def test_pipeline_stage_run_jobs_failure_skip(
 @patch("app.data_models.pipeline.Job.run_job")
 def test_pipeline_stage_run_jobs_failure_no_skip(
     mock_run_job: MagicMock, code_job: Job
-) -> None:
-    """Test that stage raises an exception on job failure if skip_jobs_if_failed is False."""
+):
+    """Raises an exception on job failure if skip_jobs_if_failed is False."""
     mock_run_job.side_effect = Exception("Job failed!")
     stage = PipelineStage(
         name="test_stage",
@@ -207,14 +206,14 @@ def test_pipeline_stage_run_jobs_failure_no_skip(
     mock_run_job.assert_called_once()
 
 
-def test_pipeline_stage_write_stage_logfile(tmp_path: Path) -> None:
+def test_pipeline_stage_write_stage_logfile(tmp_path: Path):
     """Test writing a stage logfile."""
     logfile = tmp_path / "stage.log"
     PipelineStage.write_stage_logfile("log content", logfile)
     assert logfile.read_text() == "log content"
 
 
-def test_pipeline_stage_arg_precedence(code_job: Job, mock_job_func: MagicMock) -> None:
+def test_pipeline_stage_arg_precedence(code_job: Job, mock_job_func: MagicMock):
     """Test argument precedence: job > stage > method."""
     code_job.func_args = ["job_arg"]
     stage = PipelineStage(
@@ -228,7 +227,7 @@ def test_pipeline_stage_arg_precedence(code_job: Job, mock_job_func: MagicMock) 
 
 # full pipeline
 @patch("app.data_models.pipeline.PipelineStage.run_jobs")
-def test_pipeline_run(mock_run_jobs: MagicMock) -> None:
+def test_pipeline_run(mock_run_jobs: MagicMock):
     """Test that Pipeline.run() calls run_jobs on each stage."""
     stage1 = PipelineStage(name="s1", jobs=[])
     stage2 = PipelineStage(name="s2", jobs=[])
@@ -238,7 +237,7 @@ def test_pipeline_run(mock_run_jobs: MagicMock) -> None:
 
 
 # helpers / utility functions
-def test_helpers_jobify() -> None:
+def test_helpers_jobify():
     """Test the @jobify decorator."""
 
     @jobify(name="decorated_job", job_type=JobType.CLASSIFICATION)
@@ -253,7 +252,7 @@ def test_helpers_jobify() -> None:
     assert my_func.job(1, 2) == 3
 
 
-def test_helpers_stage_from_job_function(code_job: Job) -> None:
+def test_helpers_stage_from_job_function(code_job: Job):
     """Test stage_from_job as a direct function."""
     stage = stage_from_job(code_job, stage_name="my_stage")
     assert isinstance(stage, PipelineStage)
@@ -261,7 +260,7 @@ def test_helpers_stage_from_job_function(code_job: Job) -> None:
     assert stage.jobs == [code_job]
 
 
-def test_helpers_stage_from_job_decorator() -> None:
+def test_helpers_stage_from_job_decorator():
     """Test @stage_from_job as a decorator."""
 
     @stage_from_job(stage_name="decorated_stage")
