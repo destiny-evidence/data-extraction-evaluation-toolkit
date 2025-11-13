@@ -63,26 +63,6 @@ class PromptConfig(BaseModel):
         ),
     )
 
-    # @field_validator("system_prompt", mode="after")
-    # @classmethod
-    # def load_system_prompt(cls, v: str | Path) -> str:
-    #     """Load system prompt from file if Path provided."""
-    #     # Handle None or missing value
-    #     if v is None:
-    #         v = Path(__file__).parent.parent / "prompts/system_prompt.txt"
-
-    #     if isinstance(v, Path):
-    #         if not v.exists():
-    #             sys_prompt_missing = f"sys prompt {v} not found."
-    #             raise ValueError(sys_prompt_missing)
-    #         logger.debug(f"Reading system prompt from {v}")
-    #         return v.read_text()
-
-    #     if isinstance(v, str):
-    #         return v
-
-    #     return str(v)
-
     @model_validator(mode="after")
     def load_system_prompt_file(self) -> "PromptConfig":
         """Load system prompt from file if Path provided."""
@@ -99,12 +79,12 @@ class PromptConfig(BaseModel):
 class DataExtractionConfig(BaseModel):
     """Configuration for data extraction tasks."""
 
-    # LLM Configuration
+    # LLM
     model: str = settings.llm_model
     temperature: float = settings.llm_temperature
     max_tokens: int | None = settings.llm_max_tokens
 
-    # Context Configuration
+    # Context
     context_type: ContextType = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
@@ -117,12 +97,12 @@ class DataExtractionConfig(BaseModel):
         default=[], description="Specific attribute IDs to extract"
     )
 
-    # Prompt Configuration
+    # Prompt
     prompt_config: PromptConfig = Field(
         default_factory=PromptConfig, description="Prompt configuration"
     )
 
-    # Output Configuration
+    # Output
     include_reasoning: bool = Field(
         default=True, description="Include reasoning in output"
     )
@@ -209,7 +189,6 @@ class LLMDataExtractor:
                     f"Failed to extract from document {document.document_id}: {e}"
                 )
                 logger.debug(f"Document: {document.name}")
-                # Continue processing other documents
                 continue
 
         if output_file:
@@ -234,7 +213,6 @@ class LLMDataExtractor:
             ValueError: If no attributes are selected for extraction after filtering.
 
         """
-        # Filter attributes based on selection mode
         selected_attributes = self._filter_attributes(attributes)
 
         if not selected_attributes:
@@ -242,16 +220,10 @@ class LLMDataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        # Prepare context
         context = self._prepare_context(document, **kwargs)
-
-        # Generate user message JSON payload
         prompt = self._generate_user_message_json(context, selected_attributes)
-
-        # Call LLM - pass kwargs here to include prompt_outfile
         llm_response = self._call_llm(prompt, **kwargs)
 
-        # Parse response and create annotations
         return self._parse_llm_response(llm_response, selected_attributes, document)
 
     def _filter_attributes(
@@ -294,7 +266,6 @@ class LLMDataExtractor:
             )
             raise ValueError(other_not_allowed)
 
-        # Ensure context is a string
         if isinstance(context, list):
             logger.debug(f"Converting list context to string (items: {len(context)})")
             context = " ".join(context)
@@ -309,28 +280,6 @@ class LLMDataExtractor:
             context = context[: self.config.max_context_length] + "..."
 
         return context
-
-    # def _load_system_prompt(self) -> str:
-    #     """Load system prompt from file."""
-    #     # Use custom prompt file if provided
-    #     if self.custom_system_prompt_file:
-    #         prompt_file = self.custom_system_prompt_file
-    #         logger.debug(f"Loading custom system prompt from {prompt_file}")
-    #     else:
-    #         prompt_file = (
-    #             Path(__file__).parent.parent / "prompts" / "system_prompt_v0.txt"
-    #         )
-    #         logger.debug(f"Loading default system prompt from {prompt_file}")
-
-    #     try:
-    #         prompt_content = prompt_file.read_text(encoding="utf-8")
-    #         logger.debug(f"Loaded system prompt ({len(prompt_content)} characters)")
-    #         return prompt_content
-    #     except FileNotFoundError:
-    #         logger.warning(
-    #             f"System prompt file not found at {prompt_file}, using default"
-    #         )
-    #         return self.config.prompt_config.system_prompt
 
     def _generate_user_message_json(
         self, context: str, attributes: list[EppiAttribute]
@@ -371,7 +320,6 @@ class LLMDataExtractor:
             "context": context,
             "attributes": attributes_payload,
         }
-        # logger.debug(f"prompt json: {payload}")
 
         prompt_json = json.dumps(payload, ensure_ascii=False)
         # Path("misc/prompt_json.json").write_text(prompt_json)
@@ -382,8 +330,6 @@ class LLMDataExtractor:
         self, prompt: str, prompt_outfile: Path | None = None, **kwargs
     ) -> str:
         """Call the LLM with the given prompt."""
-        # system_prompt = self._load_system_prompt()
-
         messages: list[dict] = [
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
@@ -508,20 +454,10 @@ class LLMDataExtractor:
         annotations_data = ""
         for annotation in annotations:
             annotation_json_str = annotation.model_dump_json()
-            #     # Convert type objects to strings for JSON serialization
-            #     if (
-            #         "attribute" in annotation_dict
-            #         and "output_data_type" in annotation_dict["attribute"]
-            #     ):
-            #         annotation_dict["attribute"]["output_data_type"] = str(
-            #             annotation_dict["attribute"]["output_data_type"]
-            #         )
             annotations_data += annotation_json_str
             annotations_data += "\n"
 
         output_file.write_text(annotations_data)
-        # with output_file.open("w") as f:
-        #     json.dump({"annotations": annotations_data}, f, indent=2)
 
         logger.info(f"Results saved to: {output_file}")
 
