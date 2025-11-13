@@ -64,10 +64,10 @@ jobs:
 
           if [ "$TARGET_BRANCH" = "main" ]; then
             echo "Running all tests (including real files)..."
-            uv run pytest --cov=app --cov-report=xml
+            uv run pytest --cov=app --cov-report=xml --cov-omit="app/scripts/*"
           else
             echo "Omitting real file parser tests..."
-            uv run pytest --ignore=tests/test_parser_real_files.py --cov=app --cov-report=xml
+            uv run pytest --ignore=tests/test_parser_real_files.py --cov=app --cov-report=xml --cov-omit="app/scripts/*"
           fi
 
       - name: Code coverage reporting
