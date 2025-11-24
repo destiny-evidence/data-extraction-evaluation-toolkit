@@ -18,6 +18,7 @@ from app.processors.parser import DocumentParser
 parser = DocumentParser()
 converter = EppiAnnotationConverter()
 
+# NOTE - define your LLM config stuff here. currently all values are default.
 config = DataExtractionConfig()
 
 data_extractor = LLMDataExtractor(config=config)

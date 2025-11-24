@@ -273,9 +273,11 @@ class LLMDataExtractor:
         # Truncate if too long
         original_length = len(context)
         if original_length > self.config.max_context_length:
-            logger.debug(
+            logger.info(
                 f"Truncating context from {original_length} to "
-                f"{self.config.max_context_length} characters"
+                f"{self.config.max_context_length} characters. "
+                "If you want to change the number of characters that get truncated, "
+                "edit `max_context_length` in your config."
             )
             context = context[: self.config.max_context_length] + "..."
 
