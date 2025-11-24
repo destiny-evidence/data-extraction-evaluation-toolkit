@@ -255,10 +255,10 @@ class LLMDataExtractor:
             context = document.context  # type: ignore[assignment]
             logger.debug(f"Using abstract context (length: {len(str(context))})")
         elif self.config.context_type == ContextType.RAG_SNIPPETS:
-            rag_not_impl = "abstract-only context type is not implemented."
+            rag_not_impl = "rag-snippets context type is not implemented."
             raise NotImplementedError(rag_not_impl)
         elif self.config.context_type == ContextType.CUSTOM:
-            custom_not_impl = "abstract-only context type is not implemented."
+            custom_not_impl = "custom context type is not implemented."
             raise NotImplementedError(custom_not_impl)
         else:
             other_not_allowed = (
