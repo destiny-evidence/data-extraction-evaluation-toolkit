@@ -50,7 +50,23 @@ Install `pre-commit` locally (in your activated `venv`) to aid code consistency 
 pre-commit install
 ```
 
-### Using the toolkit
+## Using `DEET`
+
+The `data-extraction-evaluation-toolkit` (`DEET`) contains mutliple modules which can be leveraged alone, or orchestrated together to form a `Pipeline`. The goal of `DEET` is to be modular and extensible, allowing users to customise a specific pipeline or workflow to their needs.
+
+Currently, the app covers the following tools:
+
+- **Document parsing** (from a range of formats; typically into `markdown`)
+- **Gold standard data ingestion and standardisation** (currently only `EPPI-json` datasets are supported)
+- **LLM-powered data extraction**
+- **Orchetration of tools into `Pipeline`s** (these tools can be existing `DEET` modules, custom python functions, or scripts (`R`, `python`, `bash` currently suppported.))
+
+Our roadmap for future development contains:
+
+- **Comparison & evaluation of LLM vs human annotations**
+- **Support for LLM prompts and SQL code**
+
+## Document parsing
 
 The first time you run anything from `app/parser.py`, you will likely have to wait for a considerable (5-15 minutes) amount of time, as dependencies will collect and install. These dependencies include machine learning libraries and pre-trained models.
 
@@ -83,6 +99,10 @@ output/processed/eppi/{filename_without_extension}/
 ```
 
 For example, processing `sample_eppi.json` creates `output/processed/eppi/sample_eppi/` with the JSON files inside.
+
+## LLM-powered data extraction
+
+## Orchastration into `Pipeline`s
 
 ## Contributing
 

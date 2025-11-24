@@ -4,6 +4,10 @@ import sys
 
 from loguru import logger
 
+from app.settings import get_settings
+
+settings = get_settings()
+
 logger.remove(0)
-logger.add("app.log", level="DEBUG", rotation="500 mb")
-logger.add(sys.stderr, level="DEBUG")
+logger.add("app.log", level=settings.log_level, rotation="500 mb")
+logger.add(sys.stderr, level=settings.log_level)

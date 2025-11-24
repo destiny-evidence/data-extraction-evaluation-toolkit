@@ -3,11 +3,10 @@
 from collections.abc import Callable
 from typing import Any
 
-from destiny_sdk.references import Reference
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
-from app.models.base import (
+from app.data_models.base import (
     AnnotationType,
     Attribute,
     AttributeType,
@@ -20,15 +19,18 @@ class EppiAttribute(Attribute):
     """
     EPPI-specific attribute with additional fields.
 
-    Extends the core Attribute class with EPPI-specific metadata and hierarchy information.
-    Uses alias generators to automatically map camelCase EPPI JSON fields to snake_case Python fields.
+    Extends the core Attribute class with EPPI-specific
+    metadata and hierarchy information.
+
+    Uses alias generators to automatically map
+    camelCase EPPI JSON fields to snake_case Python fields.
     """
 
     model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
 
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: AttributeType = AttributeType.BOOL  # Always boolean for EPPI
+    output_data_type: AttributeType = AttributeType.BOOL
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(
@@ -36,22 +38,25 @@ class EppiAttribute(Attribute):
         default=None,
     )
     hierarchy_path: str | None = Field(
-        description="Dot-separated path showing the hierarchical position of this attribute",
+        description="Dot-separated path showing the hierarchical "
+        " position of this attribute",
         default=None,
     )
     hierarchy_level: int = Field(
-        description="Numeric level indicating depth in the attribute hierarchy (0 = root level)",
+        description="Numeric level indicating depth in "
+        " the attribute hierarchy (0 = root level)",
         default=0,
     )
     is_leaf: bool = Field(
-        description="Whether this attribute is a leaf node (has no child attributes)",
+        description="Whether this attribute is a leaf node  (has no child attributes)",
         default=True,
     )
     parent_attribute_id: str | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
     attribute_type: str | None = Field(
-        description="Whether the attribute is Selectable in the EPPI-Reviewer interface or not",
+        description="Whether the attribute is Selectable in the "
+        " EPPI-Reviewer interface or not",
         default=None,
     )
     attribute_description: str | None = Field(
@@ -64,16 +69,11 @@ class EppiDocument(Document):
     """
     EPPI-specific document.
 
-    Uses alias generators to automatically map camelCase EPPI JSON fields to snake_case Python fields.
+    Uses alias generators to automatically map
+    camelCase EPPI JSON fields to snake_case Python fields.
     """
 
     model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
-
-    # Core fields (inherited from Document) - these need manual processing
-    name: str  # Maps from "Title" but needs processing
-    citation: Reference  # Complex object creation needed
-    context: str | list[str]  # Maps from "Abstract" but needs processing
-    document_id: str  # Maps from "ItemId" but needs type conversion
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     item_id: int | None = None
@@ -106,7 +106,10 @@ class EppiItemAttributeFullTextDetails(BaseModel):
     def validate_at_least_one_field(cls, data: dict) -> dict:
         """Ensure at least one field is not None."""
         if all(v is None for k, v in data.items()):
-            msg = "At least one field must be provided (item_document_id, text, or item_arm)"
+            msg = (
+                "At least one field must be provided "
+                "(item_document_id, text, or item_arm)"
+            )
             raise ValueError(msg)
         return data
 
@@ -122,10 +125,12 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     """
 
     attribute: EppiAttribute = Field(
-        description="The EPPI attribute being annotated with hierarchy and metadata information"
+        description="The EPPI attribute being annotated  "
+        "with hierarchy and metadata info."
     )
     additional_text: str | None = Field(
-        description="Notes provided by the annotator - usually the citation from the paper containing the context window where the attribute is found",
+        description="Notes provided by the annotator - usually the citation "
+        " from the paper containing the context window where the attribute is found",
         default=None,
     )
     arm_id: int | None = Field(
@@ -139,9 +144,15 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     )
     item_attribute_full_text_details: list[EppiItemAttributeFullTextDetails] | None = (
         Field(
-            description="List of detailed text extracts and arm-specific information for this annotation",
+            description="List of detailed text extracts and "
+            " arm-specific information for this annotation",
             default=None,
         )
+    )
+
+    # additional, optional llm-based fields
+    reasoning: str | None = Field(
+        description="Reasoning, taken from LLM response", default=None
     )
 
 
@@ -212,7 +223,7 @@ class ProcessedAnnotationData(BaseModel):
     documents: list[EppiDocument]
     annotations: list[EppiGoldStandardAnnotation]
     annotated_documents: list[EppiGoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[str, str]
+    attribute_id_to_label: dict[int, str]
     raw_data: EppiRawData
 
     @property
@@ -281,3 +292,52 @@ class BatchAnswerFormatCoT(BaseModel):
     answers: list[AttributeAnswerCoT] = Field(
         description="List of answers for each attribute"
     )
+
+
+class LLMAnnotationResponse(BaseModel):
+    """
+    LLM response model for a single annotation.
+
+    This mirrors EppiGoldStandardAnnotation structure but uses attribute_id
+    instead of full EppiAttribute object, as the LLM cannot provide the full
+    attribute object.
+    """
+
+    attribute_id: int = Field(
+        ..., description="The ID of the EPPI attribute being annotated"
+    )
+    output_data: bool = Field(
+        ..., description="Whether the attribute is present (True/False)"
+    )
+    additional_text: str | None = Field(
+        ...,
+        description=(
+            "Supporting text from document containing the context window "
+            "where the attribute is found"
+        ),
+    )
+    reasoning: str | None = Field(
+        ...,
+        description="Reasoning or explanation for the annotation decision",
+    )
+
+    # Note: arm_id, arm_title, arm_description, item_attribute_full_text_details
+    # are not included as they're EPPI-specific metadata the LLM cannot provide
+    class Config:  # noqa: D106
+        extra = "forbid"
+
+
+class LLMResponseSchema(BaseModel):
+    """
+    Root schema for LLM annotation extraction response.
+
+    This structure matches the expected format that can be converted
+    to list[EppiGoldStandardAnnotation] after attribute resolution.
+    """
+
+    annotations: list[LLMAnnotationResponse] = Field(
+        ..., description="List of annotations extracted from the document"
+    )
+
+    class Config:  # noqa: D106 # TO DO FIX THIS!
+        extra = "forbid"

@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -24,7 +23,71 @@ def valid_parsed_html():
 
 @pytest.fixture
 def sample_eppi_data() -> dict:
-    """Load real EPPI data from test file for integration tests."""
-    sample_file = Path("tests/test_files/input/sample_eppi.json")
-    with sample_file.open() as f:
-        return json.load(f)
+    """Sample EPPI-style data structure as a dict."""
+    return {
+        "CodeSets": [
+            {
+                "SetName": "Arms",
+                "SetId": 105797,
+                "Attributes": {
+                    "AttributesList": [
+                        {
+                            "AttributeId": 5730447,
+                            "AttributeName": "Arm name",
+                            "AttributeType": "Selectable (show checkbox)",
+                        }
+                    ]
+                },
+            },
+            {
+                "SetName": "New Prioritised Codeset",
+                "SetId": 111925,
+                "Attributes": {
+                    "AttributesList": [
+                        {
+                            "AttributeId": 6080465,
+                            "AttributeName": "Population",
+                            "AttributeType": "Selectable (show checkbox)",
+                            "Attributes": {
+                                "AttributesList": [
+                                    {
+                                        "AttributeId": 6080480,
+                                        "AttributeName": "Aggregate age",
+                                        "AttributeType": "Selectable (show checkbox)",
+                                    },
+                                    {
+                                        "AttributeId": 6080481,
+                                        "AttributeName": "Mean age",
+                                        "AttributeType": "Selectable (show checkbox)",
+                                    },
+                                ]
+                            },
+                        },
+                        {
+                            "AttributeId": 6080466,
+                            "AttributeName": "Setting",
+                            "AttributeType": "Selectable (show checkbox)",
+                        },
+                    ]
+                },
+            },
+        ],
+        "References": [
+            {
+                "ItemId": 28856292,
+                "Title": "A title",
+                "ShortTitle": "Smith (2014)",
+                "Year": "2014",
+                "Abstract": "Lorem ipsum",
+                "Authors": "Smith;",
+                "Codes": [
+                    {
+                        "AttributeId": 5730447,
+                        "AdditionalText": "Dolor si amet...",
+                        "ArmId": 3,
+                        "ArmTitle": "Lorem ipsum",
+                    }
+                ],
+            }
+        ],
+    }

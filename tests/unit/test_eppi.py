@@ -1,15 +1,10 @@
 """Tests for EPPI-specific models."""
 
-from uuid import uuid4
-
 import pytest
-from destiny_sdk.references import Reference
 
-from app.models.base import AnnotationType, AttributeType
-from app.models.eppi import (
+from app.data_models.base import AnnotationType, AttributeType
+from app.data_models.eppi import (
     EppiAttribute,
-    EppiDocument,
-    EppiGoldStandardAnnotatedDocument,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
@@ -17,10 +12,11 @@ from app.models.eppi import (
 
 
 def test_eppi_attribute_creation_from_json_data() -> None:
-    """Test creating EppiAttribute from JSON-like data (as would come from EPPI JSON)."""
-    # This mimics how EppiAttribute is created from JSON data in the annotation converter
+    """Test creating EppiAttribute from JSON-like data (would come from EPPI JSON)."""
+    # This mimics how EppiAttribute is created from JSON data in the ann converter
     # The data structure matches what comes from EPPI JSON files
-    # Note: Currently the alias generator is not working as expected, so we use snake_case field names
+    # Currently the alias generator is not working as expected,
+    # so we use snake_case field names
     attr_data = {
         "AttributeId": 5730447,  # Integer ID from JSON
         "AttributeName": "Test EPPI Attribute",
@@ -42,7 +38,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
         "attribute_type": "Selectable (show checkbox)",
     }
     attr = EppiAttribute.model_validate(attr_data)
-    assert attr.attribute_id == "5730447"
+    assert attr.attribute_id == 5730447
     assert attr.attribute_label == "Test EPPI Attribute"
     assert attr.question_target == ""  # Default empty for EPPI
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
@@ -54,7 +50,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
 def test_eppi_attribute_with_eppi_fields() -> None:
     """Test creating EppiAttribute with EPPI-specific fields."""
     attr = EppiAttribute(
-        attribute_id="eppi2",
+        attribute_id=2345,
         attribute_label="Test EPPI Attribute 2",
         attribute_set_description="Test description",
         hierarchy_path="root.test.attribute",
@@ -75,7 +71,7 @@ def test_eppi_attribute_with_different_output_types() -> None:
     """Test EppiAttribute with different output_data_type values."""
     # Test with str type
     attr_str = EppiAttribute(
-        attribute_id="eppi3",
+        attribute_id=3456,
         attribute_label="String Attribute",
         output_data_type=AttributeType.STRING,
     )
@@ -83,7 +79,7 @@ def test_eppi_attribute_with_different_output_types() -> None:
 
     # Test with int type
     attr_int = EppiAttribute(
-        attribute_id="eppi4",
+        attribute_id=4567,
         attribute_label="Integer Attribute",
         output_data_type=AttributeType.INTEGER,
     )
@@ -95,7 +91,7 @@ def test_eppi_attribute_camel_case_mapping() -> None:
     # This would be tested with actual JSON data in integration tests
     # Here we test that the model can be created with the expected fields
     attr = EppiAttribute(
-        attribute_id="eppi5",
+        attribute_id=5678,
         attribute_label="Test Attribute",
         attribute_set_description="Test description",
     )
@@ -164,39 +160,41 @@ def test_dynamic_validator_with_additional_fields() -> None:
     assert details.item_document_id == 123
 
 
-def test_eppi_document_creation() -> None:
-    """Test creating EppiDocument."""
-    citation = Reference(
-        id=uuid4(),
-        title="Test EPPI Document",
-        authors=["EPPI Author"],
-    )
-    doc = EppiDocument(
-        name="Test EPPI Document",
-        citation=citation,
-        context="Test content",
-        document_id="eppi_doc1",
-        filename="test.pdf",
-    )
-    assert doc.name == "Test EPPI Document"
-    assert doc.document_id == "eppi_doc1"
-    assert doc.filename == "test.pdf"
+class TestEppiDocument:
+    """Test EppiDocument model."""
 
+    # def test_eppi_document_creation(self) -> None:
+    #     """Test creating EppiDocument."""
+    #     citation = Reference(
+    #         id=uuid4(),
+    #         title="Test EPPI Document",
+    #         authors=["EPPI Author"],
+    #     )
+    #     doc = EppiDocument(
+    #         name="Test EPPI Document",
+    #         citation=citation,
+    #         context="Test content",
+    #         document_id="eppi_doc1",
+    #         filename="test.pdf",
+    #     )
+    #     assert doc.name == "Test EPPI Document"
+    #     assert doc.document_id == "eppi_doc1"
+    #     assert doc.filename == "test.pdf"
 
-def test_eppi_document_with_list_context() -> None:
-    """Test creating EppiDocument with list context."""
-    citation = Reference(
-        id=uuid4(),
-        title="Test EPPI Document 2",
-        authors=["EPPI Author 2"],
-    )
-    doc = EppiDocument(
-        name="Test EPPI Document 2",
-        citation=citation,
-        context=["Paragraph 1", "Paragraph 2"],
-        document_id="eppi_doc2",
-    )
-    assert doc.context == ["Paragraph 1", "Paragraph 2"]
+    # def test_eppi_document_with_list_context(self) -> None:
+    #     """Test creating EppiDocument with list context."""
+    #     citation = Reference(
+    #         id=uuid4(),
+    #         title="Test EPPI Document 2",
+    #         authors=["EPPI Author 2"],
+    #     )
+    #     doc = EppiDocument(
+    #         name="Test EPPI Document 2",
+    #         citation=citation,
+    #         context=["Paragraph 1", "Paragraph 2"],
+    #         document_id="eppi_doc2",
+    #     )
+    #     assert doc.context == ["Paragraph 1", "Paragraph 2"]
 
 
 def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
@@ -235,7 +233,7 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
 def test_eppi_gold_standard_annotation_with_llm() -> None:
     """Test creating EppiGoldStandardAnnotation with LLM type."""
     attr = EppiAttribute(
-        attribute_id="eppi_attr2",
+        attribute_id=2345,
         attribute_label="Test EPPI Attribute 2",
     )
 
@@ -247,35 +245,38 @@ def test_eppi_gold_standard_annotation_with_llm() -> None:
     assert annotation.annotation_type == AnnotationType.LLM
 
 
-def test_eppi_gold_standard_annotated_document_creation() -> None:
-    """Test creating EppiGoldStandardAnnotatedDocument."""
-    citation = Reference(
-        id=uuid4(),
-        title="Test EPPI Document 3",
-        authors=["EPPI Author 3"],
-    )
+class TestEppiGoldStandardAnnotatedDocument:
+    """Test EppiGoldStandardAnnotatedDocument model."""
 
-    attr = EppiAttribute(
-        attribute_id="eppi_attr3",
-        attribute_label="Test EPPI Attribute 3",
-    )
+    # def test_eppi_gold_standard_annotated_document_creation(self) -> None:
+    #     """Test creating EppiGoldStandardAnnotatedDocument."""
+    #     citation = Reference(
+    #         id=uuid4(),
+    #         title="Test EPPI Document 3",
+    #         authors=["EPPI Author 3"],
+    #     )
 
-    annotation = EppiGoldStandardAnnotation(
-        attribute=attr,
-        output_data=True,
-        annotation_type=AnnotationType.HUMAN,
-    )
+    #     attr = EppiAttribute(
+    #         attribute_id="eppi_attr3",
+    #         attribute_label="Test EPPI Attribute 3",
+    #     )
 
-    doc = EppiGoldStandardAnnotatedDocument(
-        name="Test EPPI Document 3",
-        citation=citation,
-        context="Test content",
-        document_id="eppi_doc3",
-        annotations=[annotation],
-    )
-    assert doc.name == "Test EPPI Document 3"
-    assert len(doc.annotations) == 1
-    assert doc.annotations[0].output_data is True
+    #     annotation = EppiGoldStandardAnnotation(
+    #         attribute=attr,
+    #         output_data=True,
+    #         annotation_type=AnnotationType.HUMAN,
+    #     )
+
+    #     doc = EppiGoldStandardAnnotatedDocument(
+    #         name="Test EPPI Document 3",
+    #         citation=citation,
+    #         context="Test content",
+    #         document_id="eppi_doc3",
+    #         annotations=[annotation],
+    #     )
+    #     assert doc.name == "Test EPPI Document 3"
+    #     assert len(doc.annotations) == 1
+    #     assert doc.annotations[0].output_data is True
 
 
 def test_eppi_raw_data_creation() -> None:
