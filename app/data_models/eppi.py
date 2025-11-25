@@ -249,7 +249,7 @@ class ProcessedAnnotationData(BaseModel):
 
 
         """
-        if filepath.suffix != "csv":
+        if filepath.suffix != ".csv":
             bad_filetype = "file ending must be .csv."
             raise ValueError(bad_filetype)
         for attribute in self.attributes:
@@ -324,7 +324,7 @@ class ProcessedAnnotationData(BaseModel):
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
 
     def populate_custom_prompts(
-        self, method: Literal["cli", "file"], filepath: Path | None, **kwargs
+        self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
     ) -> None:
         """
         Populate custom prompts.
@@ -344,6 +344,9 @@ class ProcessedAnnotationData(BaseModel):
                 missing_filepath = "please specify a filepath!"
                 raise FileNotFoundError(missing_filepath)
             self._import_prompts_csv_file(filepath=filepath, **kwargs)
+        else:
+            not_impl = f"method {method} is not implemented. use cli or file."
+            raise NotImplementedError(not_impl)
 
     @property
     def total_attributes(self) -> int:
