@@ -7,12 +7,17 @@ from pathlib import Path
 import litellm
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from app.data_models.base import AnnotationType
+from app.data_models.base import (
+    AnnotationType,
+    Attribute,
+    Document,
+    LLMInputSchema,
+    LLMResponseSchema,
+)
 from app.data_models.eppi import (  # type: ignore[attr-defined]
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotation,
-    LLMResponseSchema,
 )
 from app.logger import logger
 from app.settings import get_settings
@@ -158,8 +163,8 @@ class LLMDataExtractor:
 
     def extract_from_documents(
         self,
-        documents: list[EppiDocument],
-        attributes: list[EppiAttribute],
+        documents: list[Document],
+        attributes: list[Attribute],
         output_file: Path | None = None,
         **kwargs,
     ) -> list[EppiGoldStandardAnnotation]:
@@ -226,9 +231,7 @@ class LLMDataExtractor:
 
         return self._parse_llm_response(llm_response, selected_attributes, document)
 
-    def _filter_attributes(
-        self, attributes: list[EppiAttribute]
-    ) -> list[EppiAttribute]:
+    def _filter_attributes(self, attributes: list[Attribute]) -> list[Attribute]:
         """Filter attributes using selected_attribute_ids if provided."""
         if self.config.selected_attribute_ids:
             filtered = [
@@ -284,7 +287,7 @@ class LLMDataExtractor:
         return context
 
     def _generate_user_message_json(
-        self, context: str, attributes: list[EppiAttribute]
+        self, context: str, attributes: list[Attribute]
     ) -> str:
         """
         Generate structured JSON input for the LLM user message.
@@ -326,6 +329,7 @@ class LLMDataExtractor:
         prompt_json = json.dumps(payload, ensure_ascii=False)
         # Path("misc/prompt_json.json").write_text(prompt_json)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
+
         return prompt_json
 
     def _call_llm(

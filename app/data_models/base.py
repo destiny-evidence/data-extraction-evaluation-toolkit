@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from destiny_sdk.references import Reference
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from tabulate import tabulate
 
 # ruff: noqa: T201, FURB105
@@ -199,3 +199,66 @@ class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
 
     annotations: list[GoldStandardAnnotation]
+
+
+# models specifically for interfacing with the LLM.
+
+
+class LLMInputSchema(BaseModel):
+    """Schema for data going into the LLM."""
+
+    prompt: str
+    attribute_id: int
+    output_data_type: AttributeType
+
+    class Config:  # noqa: D106
+        extra = "ignore"
+
+
+class LLMAnnotationResponse(BaseModel):
+    """
+    LLM response model for a single annotation.
+
+    This mirrors EppiGoldStandardAnnotation structure but uses attribute_id
+    instead of full EppiAttribute object, as the LLM cannot provide the full
+    attribute object.
+    """
+
+    attribute_id: int = Field(
+        ..., description="The ID of the EPPI attribute being annotated"
+    )
+    output_data_present: bool = Field(
+        ..., description="Whether the attribute is present (True/False)"
+    )
+    additional_text: str | None = Field(
+        ...,
+        description=(
+            "Supporting text from document containing the context window "
+            "where the attribute is found"
+        ),
+    )
+    reasoning: str | None = Field(
+        ...,
+        description="Reasoning or explanation for the annotation decision",
+    )
+
+    # Note: arm_id, arm_title, arm_description, item_attribute_full_text_details
+    # are not included as they're EPPI-specific metadata the LLM cannot provide
+    class Config:  # noqa: D106
+        extra = "forbid"
+
+
+class LLMResponseSchema(BaseModel):
+    """
+    Root schema for LLM annotation extraction response.
+
+    This structure matches the expected format that can be converted
+    to list[EppiGoldStandardAnnotation] after attribute resolution.
+    """
+
+    annotations: list[LLMAnnotationResponse] = Field(
+        ..., description="List of annotations extracted from the document"
+    )
+
+    class Config:  # noqa: D106 # TO DO FIX THIS!
+        extra = "forbid"
