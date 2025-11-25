@@ -1,10 +1,16 @@
 """Core data models for document processing and annotation."""
 
+import csv
 from enum import StrEnum, auto
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 from destiny_sdk.references import Reference
+from loguru import logger
 from pydantic import BaseModel
+from tabulate import tabulate
+
+# ruff: noqa: T201, FURB105
 
 
 class AnnotationType(StrEnum):
@@ -48,10 +54,113 @@ class Attribute(BaseModel):
     Represents a single piece of information to be extracted from documents.
     """
 
+    prompt: str | None = None  # an optional prompt.
     question_target: str  # 'How many patients were recruited?' - the prompt/question
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
+
+    def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
+        """
+        Write an attribute as a line to a csv file - fields represent columns.
+
+        Args:
+            filepath (Path): outfile destination.
+            mode (Literal[&quot;a&quot;, &quot;w&quot;], optional): _w_rite or _a_ppend.
+            Defaults to "a" (append).
+
+        """
+        dictified = self.model_dump()
+
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        file_exists = filepath.exists() and filepath.stat().st_size > 0
+        write_header = not file_exists or mode == "w"
+
+        with filepath.open(mode=mode, newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=dictified.keys())
+
+            if write_header:
+                writer.writeheader()
+
+            writer.writerow(dictified)
+
+        logger.debug(f"Wrote attribute to {filepath}")
+
+    def populate_prompt_from_dict(
+        self, input_dict: dict[str, Any], *, overwrite: bool = True
+    ) -> None:
+        """
+        Populate the `prompt` field in an Attribute instance from a dict.
+
+        The dict must contain following fields:
+            - attribute_id
+            - prompt
+        and attribute_id(dict) must match self.attribute_id.
+
+        NOTE: this would typically be used in a loop to populate
+        prompts for a list of attributes from a csv file where every
+        row represents an attribute.
+
+        Args:
+            input_dict (dict[str, Any]): An input dict, typically a line in a csv file.
+            overwrite (bool, optional): Overwrite existing val in `self.prompt`.
+            Defaults to True.
+
+        """
+        for field in ["attribute_id", "prompt"]:
+            if field not in input_dict:
+                bad_dict = (
+                    "input dict must contain at least `attribute_id` and `prompt"
+                    " fields. currently, it only "
+                    f"contains: {', '.join(input_dict.keys())}"
+                )
+                raise ValueError(bad_dict)
+
+        if int(input_dict["attribute_id"]) != self.attribute_id:
+            bad_att_id = (
+                f"attribute_id mismatch: input: {input_dict['attribute_id']}. "
+                f" self: {self.attribute_id}"
+            )
+            raise ValueError(bad_att_id)
+
+        if overwrite or (not overwrite and self.prompt is None):
+            self.prompt = input_dict["prompt"]
+            logger.debug("added prompt  [...] to Attribute instance.")
+        else:
+            logger.info(
+                "overwrite is set to True, meaning we won't overwrite existing prompts."
+            )
+
+    def print_tabulated(self) -> None:
+        """Print tabulated version of the contents of this attribute."""
+        dictified = self.model_dump()
+        data = [[k, v] for k, v in dictified.items()]
+
+        print(tabulate(data, headers=["Field", "Value"], tablefmt="simple"))
+
+    def enter_custom_prompt(self, max_tries: int = 5) -> None:
+        """Use CLI to add a prompt."""
+        self.print_tabulated()
+        print("")
+        print("Do you want to add a new prompt? y/n. Use CTRL+C to cancel.")
+        tries = 0
+        while True:
+            user_input = input()
+            if user_input.lower().strip() not in ["y", "n"]:
+                print("Please answer either `y` or `n`...")
+                tries += 1
+                if tries >= max_tries:
+                    return
+                continue
+            break
+        if user_input == "n":
+            logger.debug("user chose not to write a prompt...")
+            return
+        print("Please enter your prompt: ")
+        # @harryjmoss @sagaruprety how can we validate this user input
+        # somewhat so as to avoid nastiness?
+        self.prompt = input()
+        logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
 
 
 class AttributesList(BaseModel):
