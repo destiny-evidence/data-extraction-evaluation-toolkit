@@ -127,15 +127,6 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     the extracted information relates to.
     """
 
-    attribute: EppiAttribute = Field(
-        description="The EPPI attribute being annotated  "
-        "with hierarchy and metadata info."
-    )
-    additional_text: str | None = Field(
-        description="Notes provided by the annotator - usually the citation "
-        " from the paper containing the context window where the attribute is found",
-        default=None,
-    )
     arm_id: int | None = Field(
         description="ID of the study arm this annotation relates to", default=None
     )
@@ -151,11 +142,6 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
             " arm-specific information for this annotation",
             default=None,
         )
-    )
-
-    # additional, optional llm-based fields
-    reasoning: str | None = Field(
-        description="Reasoning, taken from LLM response", default=None
     )
 
 

@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from destiny_sdk.references import Reference
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from tabulate import tabulate
 
 # ruff: noqa: T201, FURB105
@@ -193,6 +193,28 @@ class GoldStandardAnnotation(BaseModel):
     attribute: Attribute
     output_data: Any
     annotation_type: AnnotationType
+    additional_text: str | None = Field(
+        description="Notes provided by the annotator - usually the citation "
+        " from the paper containing the context window where the attribute is found",
+        default=None,
+    )
+    reasoning: str | None = Field(
+        description="Reasoning, taken from LLM response", default=None
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_correct_type(cls, data: dict) -> dict:
+        """Ensure output_data is of the type required by annotation_type."""
+        target_att_type: AttributeType = data["attribute"]["output_data_type"]
+        target_type: type = target_att_type.to_python_type()
+        if not isinstance(data["output_data"], target_type):
+            bad_type = (
+                f"field {data['output_data']} is of "
+                f" type {type(data['output_data'])}; should be {target_type}."
+            )
+            raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
+        return data
 
 
 class GoldStandardAnnotatedDocument(Document):
@@ -201,9 +223,7 @@ class GoldStandardAnnotatedDocument(Document):
     annotations: list[GoldStandardAnnotation]
 
 
-# models specifically for interfacing with the LLM.
-
-
+# models specifically for interfacing with the LLM below
 class LLMInputSchema(BaseModel):
     """Schema for data going into the LLM."""
 
@@ -213,6 +233,27 @@ class LLMInputSchema(BaseModel):
 
     class Config:  # noqa: D106
         extra = "ignore"
+
+    @model_validator(mode="before")
+    @classmethod
+    def fill_prompt(
+        cls, data: dict, fill_from_field: str = "attribute_set_description"
+    ) -> dict:
+        """
+        Fill `prompt` field if empty.
+
+        Args:
+            data (dict): the incoming data
+
+        Returns:
+            dict: the populated data.
+
+        """
+        if data["prompt"] is not None:
+            return data
+        data["prompt"] = data[fill_from_field]
+        logger.debug(f"filled `prompt` with {data['prompt']}.")
+        return data
 
 
 class LLMAnnotationResponse(BaseModel):
@@ -227,9 +268,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data_present: bool = Field(
-        ..., description="Whether the attribute is present (True/False)"
-    )
+    output_data: Any = Field(..., description="The LLM's annotation.")
     additional_text: str | None = Field(
         ...,
         description=(
@@ -244,6 +283,7 @@ class LLMAnnotationResponse(BaseModel):
 
     # Note: arm_id, arm_title, arm_description, item_attribute_full_text_details
     # are not included as they're EPPI-specific metadata the LLM cannot provide
+
     class Config:  # noqa: D106
         extra = "forbid"
 

@@ -11,18 +11,13 @@ from app.data_models.base import (
     AnnotationType,
     Attribute,
     Document,
+    GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
-)
-from app.data_models.eppi import (  # type: ignore[attr-defined]
-    EppiAttribute,
-    EppiDocument,
-    EppiGoldStandardAnnotation,
 )
 from app.logger import logger
 from app.settings import get_settings
 
-# Load centralized settings once for module-level defaults
 settings = get_settings()
 
 
@@ -161,13 +156,43 @@ class LLMDataExtractor:
                 self.custom_system_prompt_file.read_text()
             )
 
+    def extract_from_document(
+        self, document: Document, attributes: list[Attribute], **kwargs
+    ) -> list[GoldStandardAnnotation]:
+        """
+        Extract data from a single document.
+
+        Args:
+            document: Document to analyze
+            attributes: List of attributes to extract
+
+        Returns:
+            List of annotations for the document
+
+        Raises:
+            ValueError: If no attributes are selected for extraction after filtering.
+
+        """
+        selected_attributes = self._filter_attributes(attributes)
+
+        if not selected_attributes:
+            msg = "No attributes selected for extraction"
+            logger.warning(msg)
+            raise ValueError(msg)
+
+        context = self._prepare_context(document, **kwargs)
+        prompt = self._generate_user_message_json(context, selected_attributes)
+        llm_response = self._call_llm(prompt, **kwargs)
+
+        return self._parse_llm_response(llm_response, selected_attributes)
+
     def extract_from_documents(
         self,
         documents: list[Document],
         attributes: list[Attribute],
         output_file: Path | None = None,
         **kwargs,
-    ) -> list[EppiGoldStandardAnnotation]:
+    ) -> list[GoldStandardAnnotation]:
         """
         Extract data from multiple documents.
 
@@ -201,36 +226,6 @@ class LLMDataExtractor:
 
         return all_annotations
 
-    def extract_from_document(
-        self, document: EppiDocument, attributes: list[EppiAttribute], **kwargs
-    ) -> list[EppiGoldStandardAnnotation]:
-        """
-        Extract data from a single document.
-
-        Args:
-            document: Document to analyze
-            attributes: List of attributes to extract
-
-        Returns:
-            List of annotations for the document
-
-        Raises:
-            ValueError: If no attributes are selected for extraction after filtering.
-
-        """
-        selected_attributes = self._filter_attributes(attributes)
-
-        if not selected_attributes:
-            msg = "No attributes selected for extraction"
-            logger.warning(msg)
-            raise ValueError(msg)
-
-        context = self._prepare_context(document, **kwargs)
-        prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt, **kwargs)
-
-        return self._parse_llm_response(llm_response, selected_attributes, document)
-
     def _filter_attributes(self, attributes: list[Attribute]) -> list[Attribute]:
         """Filter attributes using selected_attribute_ids if provided."""
         if self.config.selected_attribute_ids:
@@ -249,7 +244,7 @@ class LLMDataExtractor:
         )
         return attributes
 
-    def _prepare_context(self, document: EppiDocument, full_text: str, **kwargs) -> str:
+    def _prepare_context(self, document: Document, full_text: str, **kwargs) -> str:
         """Prepare context based on context type."""
         if self.config.context_type == ContextType.FULL_DOCUMENT:
             context = full_text
@@ -276,7 +271,7 @@ class LLMDataExtractor:
         # Truncate if too long
         original_length = len(context)
         if original_length > self.config.max_context_length:
-            logger.info(
+            logger.warning(
                 f"Truncating context from {original_length} to "
                 f"{self.config.max_context_length} characters. "
                 "If you want to change the number of characters that get truncated, "
@@ -287,39 +282,40 @@ class LLMDataExtractor:
         return context
 
     def _generate_user_message_json(
-        self, context: str, attributes: list[Attribute]
+        self,
+        context: str,
+        attributes: list[Attribute],
     ) -> str:
         """
         Generate structured JSON input for the LLM user message.
 
-        The payload contains the prepared document context and an array of
-        attributes shaped like `EppiAttribute`, where `question_target` is set
-        from `attribute_set_description` by default. This function returns a
-        JSON string to be used as the user message content.
+        The payload contains the prepared document context and an array
+        `LLMInputSchema` objects, containing the attribute id, prompt and
+        target output data type.
+
+        NOTE: If `prompt` field is not populated in incoming data,
+        LLMInputSchema will populate from `attribute_set_description`
+        field, or fail.
 
         Args:
             context: Prepared document context string.
-            attributes: List of EPPI attributes to evaluate.
+            attributes: List of LLMInputSchema.
 
         Returns:
             JSON string containing `context` and `attributes`.
 
         """
         logger.debug(f"Generating prompt for {len(attributes)} attributes")
-        # Build attribute dictionaries ensuring keys align with EppiAttribute schema
-        attributes_payload: list[dict[str, object]] = [
-            {
-                "attribute_id": attr.attribute_id,
-                "attribute_label": attr.attribute_label,
-                # EPPI uses boolean output
-                "output_data_type": attr.output_data_type,
-                # Use attribute_set_description as default question target
-                "question_target": attr.attribute_set_description
-                or "No description available",
-                "attribute_set_description": attr.attribute_set_description,
-            }
-            for attr in attributes
-        ]
+        attributes_payload = []
+        for attr in attributes:
+            # validate schema & fill prompt if not yet filled
+            try:
+                llm_input_attr = LLMInputSchema(**attr.model_dump())
+            except ValidationError as e:
+                logger.error(e)
+                logger.error(f"validation error for {attr}. next...")
+                continue
+            attributes_payload.append(llm_input_attr.model_dump())
 
         payload = {
             "context": context,
@@ -327,7 +323,6 @@ class LLMDataExtractor:
         }
 
         prompt_json = json.dumps(payload, ensure_ascii=False)
-        # Path("misc/prompt_json.json").write_text(prompt_json)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
 
         return prompt_json
@@ -375,11 +370,10 @@ class LLMDataExtractor:
     def _parse_llm_response(
         self,
         response_content: str,
-        attributes: list[EppiAttribute],
-        document: EppiDocument,
-    ) -> list[EppiGoldStandardAnnotation]:
+        attributes: list[Attribute],
+    ) -> list[GoldStandardAnnotation]:
         """
-        Parse and validate LLM response against EppiGoldStandardAnnotation structure.
+        Parse and validate LLM response against GoldStandardAnnotation structure.
 
         Args:
             response_content: Raw JSON string response from LLM
@@ -387,7 +381,7 @@ class LLMDataExtractor:
             document: Document being processed
 
         Returns:
-            List of EppiGoldStandardAnnotation objects
+            List of GoldStandardAnnotation objects
 
         Raises:
             ValidationError: If response fails schema validation.
@@ -395,16 +389,15 @@ class LLMDataExtractor:
 
         """
         try:
-            # Validate against LLMResponseSchema
             validated_response = LLMResponseSchema.model_validate_json(response_content)
-        except ValidationError as e:
-            logger.error(f"LLM response failed schema validation: {e}")
+        except ValidationError as ve:
+            logger.error(f"LLM response failed schema validation: {ve}")
             logger.debug(f"Response content: {response_content}")
             raise
-        except json.JSONDecodeError as e:
-            error_msg = f"Invalid JSON in LLM response: {e}"
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            raise ValueError(error_msg) from e
+        except json.JSONDecodeError as je:
+            error_msg = f"Invalid JSON in LLM response: {je}"
+            logger.error(f"Failed to parse LLM response as JSON: {je}")
+            raise ValueError(error_msg) from je
 
         annotations = []
         logger.debug(
@@ -412,7 +405,7 @@ class LLMDataExtractor:
             f"annotations"
         )
         for llm_annotation in validated_response.annotations:
-            # Resolve attribute_id to full EppiAttribute
+            # Resolve attribute_id to full Attribute
             attribute = next(
                 (
                     attr
@@ -437,7 +430,7 @@ class LLMDataExtractor:
                 llm_annotation.reasoning if self.config.include_reasoning else None
             )
             # Convert to full EppiGoldStandardAnnotation
-            annotation = EppiGoldStandardAnnotation(
+            annotation = GoldStandardAnnotation(
                 attribute=attribute,
                 output_data=llm_annotation.output_data,
                 annotation_type=AnnotationType.LLM,
@@ -454,7 +447,7 @@ class LLMDataExtractor:
         return annotations
 
     def _save_results(
-        self, annotations: list[EppiGoldStandardAnnotation], output_file: Path
+        self, annotations: list[GoldStandardAnnotation], output_file: Path
     ) -> None:
         """Save results to file."""
         annotations_data = ""
@@ -466,37 +459,3 @@ class LLMDataExtractor:
         output_file.write_text(annotations_data)
 
         logger.info(f"Results saved to: {output_file}")
-
-
-# Convenience functions for common use cases
-def extract_single_attribute(
-    document: EppiDocument,
-    attribute: EppiAttribute,
-    config: DataExtractionConfig,
-) -> EppiGoldStandardAnnotation | None:
-    """Extract a single attribute from a document."""
-    module = LLMDataExtractor(config)
-    annotations = module.extract_from_document(document, [attribute])
-    return annotations[0] if annotations else None
-
-
-def extract_all_attributes(
-    document: EppiDocument,
-    attributes: list[EppiAttribute],
-    config: DataExtractionConfig,
-) -> list[EppiGoldStandardAnnotation]:
-    """Extract all attributes from a document."""
-    module = LLMDataExtractor(config)
-    return module.extract_from_document(document, attributes)
-
-
-def extract_batch_attributes(
-    document: EppiDocument,
-    attributes: list[EppiAttribute],
-    attribute_ids: list[str],
-    config: DataExtractionConfig,
-) -> list[EppiGoldStandardAnnotation]:
-    """Extract a batch of specific attributes from a document by IDs."""
-    config.selected_attribute_ids = attribute_ids
-    module = LLMDataExtractor(config)
-    return module.extract_from_document(document, attributes)
