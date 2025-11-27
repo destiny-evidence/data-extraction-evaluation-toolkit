@@ -309,12 +309,8 @@ class LLMDataExtractor:
         attributes_payload = []
         for attr in attributes:
             # validate schema & fill prompt if not yet filled
-            try:
-                llm_input_attr = LLMInputSchema(**attr.model_dump())
-            except ValidationError as e:
-                logger.error(e)
-                logger.error(f"validation error for {attr}. next...")
-                continue
+            logger.debug(attr)
+            llm_input_attr = LLMInputSchema(**attr.model_dump())
             attributes_payload.append(llm_input_attr.model_dump())
 
         payload = {
@@ -322,6 +318,7 @@ class LLMDataExtractor:
             "attributes": attributes_payload,
         }
 
+        logger.debug(f"attributes payload: {attributes_payload}")
         prompt_json = json.dumps(payload, ensure_ascii=False)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
 

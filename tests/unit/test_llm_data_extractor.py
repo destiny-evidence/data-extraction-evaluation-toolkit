@@ -21,7 +21,6 @@ from app.extractors.llm_data_extractor import (
     DataExtractionConfig,
     LLMDataExtractor,
     PromptConfig,
-    extract_all_attributes,
 )
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from loguru import logger
 
+from app.data_models.base import Attribute, Document, GoldStandardAnnotation
 from app.data_models.eppi import EppiAttribute, EppiDocument
 from app.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from app.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
@@ -65,7 +66,7 @@ def llm_data_extraction(
     output_path: Path,
     filter_by_attribute_ids: list[int] | None = None,
     **kwargs,
-) -> list[EppiGoldStandardAnnotation]:
+) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
     logger.debug(full_text_path)
     full_text = full_text_path.read_text()
@@ -73,13 +74,13 @@ def llm_data_extraction(
     documents_raw = json.loads(documents_file_path.read_text())
     attributes_raw = json.loads(attributes_file_path.read_text())
 
-    attributes = [EppiAttribute(**record) for record in attributes_raw]
+    attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
     if filter_by_attribute_ids:
         attributes = [
             a for a in attributes if a.attribute_id in filter_by_attribute_ids
         ]
 
-    documents = [EppiDocument(**record) for record in documents_raw]
+    documents: list[Document] = [EppiDocument(**record) for record in documents_raw]
 
     return data_extractor.extract_from_documents(
         documents=documents,

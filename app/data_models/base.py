@@ -236,9 +236,7 @@ class LLMInputSchema(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def fill_prompt(
-        cls, data: dict, fill_from_field: str = "attribute_set_description"
-    ) -> dict:
+    def fill_prompt(cls, data: dict, fill_from_field: str = "attribute_label") -> dict:
         """
         Fill `prompt` field if empty.
 
@@ -251,6 +249,7 @@ class LLMInputSchema(BaseModel):
         """
         if data["prompt"] is not None:
             return data
+        logger.debug(data)
         data["prompt"] = data[fill_from_field]
         logger.debug(f"filled `prompt` with {data['prompt']}.")
         return data
