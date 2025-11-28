@@ -309,7 +309,6 @@ class LLMDataExtractor:
         attributes_payload = []
         for attr in attributes:
             # validate schema & fill prompt if not yet filled
-            logger.debug(attr)
             llm_input_attr = LLMInputSchema(**attr.model_dump())
             attributes_payload.append(llm_input_attr.model_dump())
 

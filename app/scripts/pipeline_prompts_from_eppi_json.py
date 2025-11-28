@@ -1,4 +1,8 @@
-"""Exploration of what a pipeline might look like."""
+"""
+An example of a pipeline script which inherits prompts from the EPPI JSON,
+specifically `attribute_label`. This is defined in the LLMInputSchema class
+in base.py.
+"""
 
 import argparse
 import json

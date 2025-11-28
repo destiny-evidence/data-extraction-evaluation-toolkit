@@ -145,22 +145,25 @@ class Attribute(BaseModel):
         print("Do you want to add a new prompt? y/n. Use CTRL+C to cancel.")
         tries = 0
         while True:
-            user_input = input()
-            if user_input.lower().strip() not in ["y", "n"]:
-                print("Please answer either `y` or `n`...")
-                tries += 1
-                if tries >= max_tries:
-                    return
-                continue
-            break
-        if user_input == "n":
-            logger.debug("user chose not to write a prompt...")
-            return
+            user_input = input().strip().lower()
+
+            if user_input == "n":
+                logger.debug("user chose not to write a prompt...")
+                return
+
+            if user_input == "y":
+                break
+
+            print("Please answer either `y` or `n`...")
+            tries += 1
+            if tries >= max_tries:
+                return
         print("Please enter your prompt: ")
         # @harryjmoss @sagaruprety how can we validate this user input
         # somewhat so as to avoid nastiness?
         self.prompt = input()
         logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
+        return
 
 
 class AttributesList(BaseModel):

@@ -241,7 +241,7 @@ class ProcessedAnnotationData(BaseModel):
         for attribute in self.attributes:
             attribute.write_to_csv(filepath=filepath)
 
-        logger.debug(f"wrote attributes to file {filepath}.")
+        logger.info(f"wrote attributes to file {filepath}.")
 
     def _import_prompts_csv_file(
         self, filepath: Path, *, overwrite: bool = True
