@@ -1,5 +1,11 @@
 """Tests for core base models."""
 
+import csv
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
 from app.data_models.base import (
     AnnotationType,
     Attribute,
@@ -7,6 +13,16 @@ from app.data_models.base import (
     AttributeType,
     GoldStandardAnnotation,
 )
+
+
+def attribute_type_to_python_type_population() -> None:
+    """Test that the type conversion for Attribute type works."""
+    deet_type_str = AttributeType.STRING
+    deet_type_int = AttributeType.INTEGER
+    deet_type_bool = AttributeType.BOOL
+    assert isinstance(deet_type_str.to_python_type(), str)
+    assert isinstance(deet_type_int.to_python_type(), int)
+    assert isinstance(deet_type_bool.to_python_type(), bool)
 
 
 def test_attribute_creation_from_dict() -> None:
@@ -133,6 +149,545 @@ def test_attributes_list_iteration() -> None:
 
     # Test to_list method
     assert attr_list.to_list() == attrs
+
+
+def test_write_to_csv_creates_new_file(tmp_path) -> None:
+    """Test writing attribute to new CSV file."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Test prompt",
+    )
+
+    csv_file = tmp_path / "test.csv"
+    attr.write_to_csv(csv_file, mode="w")
+
+    assert csv_file.exists()
+
+    # read back and verify
+    with csv_file.open("r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        assert len(rows) == 1
+        assert rows[0]["attribute_id"] == "1234"
+        assert rows[0]["question_target"] == "Test question"
+        assert rows[0]["prompt"] == "Test prompt"
+
+
+def test_write_to_csv_appends_to_existing(tmp_path) -> None:
+    """Test appending attribute to existing CSV file."""
+    attr1 = Attribute(
+        question_target="Question 1",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Attribute 1",
+    )
+    attr2 = Attribute(
+        question_target="Question 2",
+        output_data_type=AttributeType.STRING,
+        attribute_id=2345,
+        attribute_label="Attribute 2",
+    )
+
+    csv_file = tmp_path / "test.csv"
+    attr1.write_to_csv(csv_file, mode="w")
+    attr2.write_to_csv(csv_file, mode="a")
+
+    # Read back and verify both rows
+    with csv_file.open("r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        assert len(rows) == 2
+        assert rows[0]["attribute_id"] == "1234"
+        assert rows[1]["attribute_id"] == "2345"
+
+
+def test_write_to_csv_creates_parent_directories(tmp_path: Path) -> None:
+    """Test that write_to_csv creates parent directories if they don't exist."""
+    csv_file = tmp_path / "subdir1" / "subdir2" / "test.csv"
+
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.write_to_csv(csv_file)
+    assert csv_file.exists()
+    assert csv_file.parent.exists()
+
+
+def test_write_to_csv_overwrites_with_w_mode(tmp_path: Path) -> None:
+    """Test that mode='w' overwrites existing file."""
+    csv_file = tmp_path / "test.csv"
+
+    attr1 = Attribute(
+        question_target="Question 1",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Attribute 1",
+    )
+    attr2 = Attribute(
+        question_target="Question 2",
+        output_data_type=AttributeType.STRING,
+        attribute_id=2345,
+        attribute_label="Attribute 2",
+    )
+
+    attr1.write_to_csv(csv_file, mode="w")
+    attr2.write_to_csv(csv_file, mode="w")
+
+    # Should only have one row (attr2)
+    with csv_file.open("r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        assert len(rows) == 1
+        assert rows[0]["attribute_id"] == "2345"
+
+
+def test_write_to_csv_with_none_prompt(tmp_path: Path) -> None:
+    """Test writing attribute with None prompt value."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt=None,
+    )
+
+    csv_file = tmp_path / "test.csv"
+    attr.write_to_csv(csv_file)
+
+    with csv_file.open("r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        assert len(rows) == 1
+        assert rows[0]["prompt"] == ""
+
+
+def test_write_to_csv_includes_all_fields(tmp_path: Path) -> None:
+    """Test that all attribute fields are written to CSV."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.INTEGER,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Test prompt",
+    )
+
+    csv_file = tmp_path / "test.csv"
+    attr.write_to_csv(csv_file)
+
+    with csv_file.open("r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        row = rows[0]
+
+        assert "prompt" in row
+        assert "question_target" in row
+        assert "output_data_type" in row
+        assert "attribute_id" in row
+        assert "attribute_label" in row
+
+
+def test_populate_prompt_from_dict_success() -> None:
+    """Test successfully populating prompt from dictionary."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+        "prompt": "This is a test prompt",
+    }
+
+    attr.populate_prompt_from_dict(input_dict)
+    assert attr.prompt == "This is a test prompt"
+
+
+def test_populate_prompt_from_dict_missing_attribute_id() -> None:
+    """Test that missing attribute_id raises ValueError."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "prompt": "This is a test prompt",
+    }
+
+    with pytest.raises(ValueError, match="input dict must contain"):
+        attr.populate_prompt_from_dict(input_dict)
+
+
+def test_populate_prompt_from_dict_missing_prompt() -> None:
+    """Test that missing prompt field raises ValueError."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+    }
+
+    with pytest.raises(ValueError, match="input dict must contain"):
+        attr.populate_prompt_from_dict(input_dict)
+
+
+def test_populate_prompt_from_dict_empty_dict() -> None:
+    """Test that empty dictionary raises ValueError."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict: dict = {}
+
+    with pytest.raises(ValueError, match="input dict must contain"):
+        attr.populate_prompt_from_dict(input_dict)
+
+
+def test_populate_prompt_from_dict_mismatched_id() -> None:
+    """Test that mismatched attribute_id raises ValueError."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "attribute_id": 9999,
+        "prompt": "This is a test prompt",
+    }
+
+    with pytest.raises(ValueError, match="attribute_id mismatch"):
+        attr.populate_prompt_from_dict(input_dict)
+
+
+def test_populate_prompt_from_dict_string_id() -> None:
+    """Test that string attribute_id is converted to int for comparison."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "attribute_id": "1234",
+        "prompt": "This is a test prompt",
+    }
+
+    attr.populate_prompt_from_dict(input_dict)
+    assert attr.prompt == "This is a test prompt"
+
+
+def test_populate_prompt_overwrites_by_default() -> None:
+    """Test that overwrite=True (default) overwrites existing prompt."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Original prompt",
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+        "prompt": "New prompt",
+    }
+
+    attr.populate_prompt_from_dict(input_dict, overwrite=True)
+    assert attr.prompt == "New prompt"
+
+
+def test_populate_prompt_no_overwrite_with_existing() -> None:
+    """Test that overwrite=False preserves existing prompt."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Original prompt",
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+        "prompt": "New prompt",
+    }
+
+    attr.populate_prompt_from_dict(input_dict, overwrite=False)
+    assert attr.prompt == "Original prompt"
+
+
+def test_populate_prompt_no_overwrite_with_none() -> None:
+    """Test that overwrite=False still populates if prompt is None."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt=None,
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+        "prompt": "New prompt",
+    }
+
+    attr.populate_prompt_from_dict(input_dict, overwrite=False)
+    assert attr.prompt == "New prompt"
+
+
+def test_populate_prompt_with_extra_fields() -> None:
+    """Test that extra fields in dict are ignored."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+        "prompt": "Test prompt",
+        "extra_field": "extra value",
+        "another_field": 999,
+    }
+
+    attr.populate_prompt_from_dict(input_dict)
+    assert attr.prompt == "Test prompt"
+    # extra fields should be ignored...
+    assert not hasattr(attr, "another_field")
+    assert not hasattr(attr, "extra_field")
+
+
+def test_populate_prompt_with_empty_string() -> None:
+    """Test populating prompt with empty string."""
+    # NOTE: maybe we should change the logic
+    # to throw an error rather than let the empty
+    # string pass...
+
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    input_dict = {
+        "attribute_id": 1234,
+        "prompt": "",
+    }
+
+    attr.populate_prompt_from_dict(input_dict)
+    assert attr.prompt == ""
+
+
+def test_print_tabulated_outputs_table(capsys) -> None:
+    """Test that print_tabulated outputs formatted table."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Test prompt",
+    )
+
+    attr.print_tabulated()
+    captured = capsys.readouterr()
+
+    # Check that output contains field names and values
+    assert "question_target" in captured.out
+    assert "Test question" in captured.out
+    assert "attribute_id" in captured.out
+    assert "1234" in captured.out
+
+
+def test_print_tabulated_with_none_prompt(capsys) -> None:
+    """Test print_tabulated with None prompt value."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt=None,
+    )
+
+    attr.print_tabulated()
+    captured = capsys.readouterr()
+
+    assert "prompt" in captured.out
+    # it will simply omit the space where 'None'
+    # might be...
+
+
+def test_print_tabulated_contains_all_fields(capsys) -> None:
+    """Test that print_tabulated includes all attribute fields."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.STRING,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Test prompt",
+    )
+
+    attr.print_tabulated()
+    captured = capsys.readouterr()
+
+    assert "prompt" in captured.out
+    assert "question_target" in captured.out
+    assert "output_data_type" in captured.out
+    assert "attribute_id" in captured.out
+    assert "attribute_label" in captured.out
+
+
+@patch("builtins.input", side_effect=["y", "This is my custom prompt"])
+def test_enter_custom_prompt_accepts_prompt(mock_input, capsys) -> None:
+    """Test entering a custom prompt successfully."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+
+    assert attr.prompt == "This is my custom prompt"
+    captured = capsys.readouterr()
+    assert "Do you want to add a new prompt?" in captured.out
+
+
+@patch("builtins.input", return_value="n")
+def test_enter_custom_prompt_declines(mock_input) -> None:
+    """Test declining to enter a custom prompt."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+    assert attr.prompt is None
+
+
+@patch("builtins.input", return_value="N")
+def test_enter_custom_prompt_declines_uppercase(mock_input) -> None:
+    """Test declining with uppercase N."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+    assert attr.prompt is None
+
+
+@patch("builtins.input", side_effect=["maybe", "perhaps", "dunno", "n"])
+def test_enter_custom_prompt_invalid_then_decline(mock_input, capsys) -> None:
+    """Test handling invalid input before declining."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+
+    assert attr.prompt is None
+    captured = capsys.readouterr()
+    assert "Please answer either `y` or `n`" in captured.out
+
+
+@patch("builtins.input", side_effect=["x", "x", "x", "x", "x", "x"])
+def test_enter_custom_prompt_max_tries(mock_input) -> None:
+    """Test that function returns after max_tries invalid inputs."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt(max_tries=5)
+    assert attr.prompt is None
+
+
+@patch("builtins.input", side_effect=["Y", "This is my custom prompt"])
+def test_enter_custom_prompt_case_insensitive(mock_input) -> None:
+    """Test that 'Y' (uppercase) is accepted."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+    assert attr.prompt == "This is my custom prompt"
+
+
+@patch("builtins.input", side_effect=["  y  ", "Prompt with whitespace handling"])
+def test_enter_custom_prompt_strips_whitespace(mock_input) -> None:
+    """Test that whitespace in y/n input is stripped."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+    assert attr.prompt == "Prompt with whitespace handling"
+
+
+@patch("builtins.input", side_effect=["y", ""])
+def test_enter_custom_prompt_empty_string(mock_input) -> None:
+    """Test entering an empty string as prompt."""
+    # NOTE: same as above. may want to
+    # raise an error if this occurs instead...
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+    assert attr.prompt == ""
+
+
+@patch("builtins.input", side_effect=["invalid", "y", "My prompt"])
+def test_enter_custom_prompt_recovers_from_invalid(mock_input) -> None:
+    """Test that function recovers from invalid input and accepts valid input."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+
+    attr.enter_custom_prompt()
+    assert attr.prompt == "My prompt"
 
 
 # class TestDocument:
