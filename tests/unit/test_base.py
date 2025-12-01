@@ -12,6 +12,7 @@ from app.data_models.base import (
     AttributesList,
     AttributeType,
     GoldStandardAnnotation,
+    LLMInputSchema,
 )
 
 
@@ -769,6 +770,23 @@ def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
     assert annotation.annotation_type == AnnotationType.LLM
 
 
+def test_gold_standard_annotation_bool_type_invalid() -> None:
+    """Test that wrong type for bool attribute raises ValueError."""
+    attr = Attribute(
+        question_target="Is this valid?",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Bool Attribute",
+    )
+
+    with pytest.raises(ValueError, match="should be"):
+        GoldStandardAnnotation(
+            attribute=attr,
+            output_data="not a bool",
+            annotation_type=AnnotationType.HUMAN,
+        )
+
+
 # class TestGoldStandardAnnotatedDocument:
 #     """Test GoldStandardAnnotatedDocument model."""
 
@@ -803,3 +821,55 @@ def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
 #         assert doc.name == "Test Document 3"
 #         assert len(doc.annotations) == 1
 #         assert doc.annotations[0].output_data is True
+
+
+def test_llm_input_schema_with_prompt() -> None:
+    """Test creating LLMInputSchema when prompt is provided."""
+    schema = LLMInputSchema(
+        prompt="Custom prompt",
+        attribute_id=1234,
+        output_data_type=AttributeType.STRING,
+    )
+
+    assert schema.prompt == "Custom prompt"
+
+
+def test_llm_input_schema_fills_from_attribute_label() -> None:
+    """Test that fill_prompt fills from attribute_label when prompt is None."""
+    data = {
+        "prompt": None,
+        "attribute_id": 1234,
+        "output_data_type": AttributeType.STRING,
+        "attribute_label": "Test Attribute Label",
+    }
+
+    schema = LLMInputSchema.model_validate(data)
+    assert schema.prompt == "Test Attribute Label"
+
+
+def test_llm_input_schema_preserves_existing_prompt() -> None:
+    """Test that fill_prompt doesn't overwrite existing prompt."""
+    data = {
+        "prompt": "Existing prompt",
+        "attribute_id": 1234,
+        "output_data_type": AttributeType.STRING,
+        "attribute_label": "Test Attribute Label",
+    }
+
+    schema = LLMInputSchema.model_validate(data)
+    assert schema.prompt == "Existing prompt"
+
+
+def test_llm_input_schema_ignores_extra_fields() -> None:
+    """Test that extra fields are ignored due to Config.extra='ignore'."""
+    data = {
+        "prompt": "Test prompt",
+        "attribute_id": 1234,
+        "output_data_type": AttributeType.STRING,
+        "extra_field": "should be ignored",
+        "another_extra": 999,
+    }
+
+    schema = LLMInputSchema.model_validate(data)
+    assert schema.prompt == "Test prompt"
+    assert not hasattr(schema, "extra_field")
