@@ -41,6 +41,9 @@ readme = "README.md"
 requires-python = ">=3.12.11"
 version = "0.1.0"
 
+[project.scripts]
+DEET-eppi-convert = "app.scripts.eppi_annotation_converter_cli:main"
+
 [tool.coverage.report]
 # This section is optional but good practice
 fail_under = 80
@@ -127,8 +130,8 @@ mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools]
-package-dir = {"" = "."}
-packages = ["app"]
+package-dir = {"data_extraction_evaluation_toolkit" = "app"}
+packages = ["data_extraction_evaluation_toolkit"]
 
 [tool.tomlsort]
 all = true
