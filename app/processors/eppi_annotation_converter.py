@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from destiny_sdk.enhancements import Visibility
+from destiny_sdk.visibility import Visibility
 from destiny_sdk.references import Reference
 
 from app.data_models.base import AnnotationType, AttributeType
@@ -141,7 +141,7 @@ class EppiAnnotationConverter:
                 "ExtType": attr.get("ExtType"),
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
-                "is_leaf": "Attributes" not in attr
+                "is_leaf": "Attributes" not in attr or attr["Attributes"] is None
                 or not attr["Attributes"].get("AttributesList"),
             }
 
@@ -149,7 +149,7 @@ class EppiAnnotationConverter:
             flattened.append(flattened_attr)
 
             # Recursively process children if they exist
-            if "Attributes" in attr and "AttributesList" in attr["Attributes"]:
+            if "Attributes" in attr and attr["Attributes"] is not None and "AttributesList" in attr["Attributes"]:
                 child_attributes = attr["Attributes"]["AttributesList"]
                 current_path = (
                     f"{parent_path} > {attr.get('AttributeName', '')}"
@@ -393,7 +393,7 @@ class EppiAnnotationConverter:
                     doc_annotations.append(ann)
                     break
         return doc_annotations
-
+    
     def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
@@ -423,10 +423,14 @@ class EppiAnnotationConverter:
         # extract annotations from References
         all_annotations_raw = []
         documents_by_title = {}
+        annotated_documents = []
+        all_annotations = []
 
         for reference in data.get("References", []):
+            document = self.convert_to_eppi_document(reference)
             # The actual annotations are in References[].Codes
             reference_codes = reference.get("Codes", [])
+            # Associate the reference ID with each code
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
@@ -434,26 +438,9 @@ class EppiAnnotationConverter:
                 document = self.convert_to_eppi_document(reference)
                 documents_by_title[doc_title] = document
 
-        # Create a mapping from PDF filenames to document titles
-        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
-            data.get("References", [])
-        )
-
-        # Convert all annotations, linking them to their respective documents
-        annotated_documents = []
-        all_annotations = []
-
-        for doc_title, document in documents_by_title.items():
-            # Get annotations for this specific document
-            doc_annotations = self._find_document_annotations(
-                all_annotations_raw, doc_title, pdf_to_title_mapping
-            )
-
-            if (
-                doc_annotations
-            ):  # Only process if there are annotations for this document
+            if reference_codes:
                 annotations = self.convert_to_eppi_annotations(
-                    doc_annotations,
+                    reference_codes,
                     document,
                     attributes_lookup,  # type: ignore[arg-type]
                     attribute_id_to_label,  # type: ignore[arg-type]
@@ -465,13 +452,13 @@ class EppiAnnotationConverter:
                     **document.model_dump(), annotations=annotations
                 )
                 annotated_documents.append(annotated_doc)
-                all_annotations.extend(annotations)
+                all_annotations.extend(annotations)                
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            " {len(documents_by_title)} documents, "
+            f" {len(documents_by_title)} documents, "
             f"{len(all_annotations)} annotations,"
-            " {len(annotated_documents)} annotated documents"
+            f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(
