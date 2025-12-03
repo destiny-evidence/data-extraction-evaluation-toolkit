@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from destiny_sdk.visibility import Visibility
 from destiny_sdk.references import Reference
+from destiny_sdk.visibility import Visibility
 
 from app.data_models.base import AnnotationType, AttributeType
 from app.data_models.eppi import (
@@ -141,7 +141,8 @@ class EppiAnnotationConverter:
                 "ExtType": attr.get("ExtType"),
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
-                "is_leaf": "Attributes" not in attr or attr["Attributes"] is None
+                "is_leaf": "Attributes" not in attr
+                or attr["Attributes"] is None
                 or not attr["Attributes"].get("AttributesList"),
             }
 
@@ -149,7 +150,11 @@ class EppiAnnotationConverter:
             flattened.append(flattened_attr)
 
             # Recursively process children if they exist
-            if "Attributes" in attr and attr["Attributes"] is not None and "AttributesList" in attr["Attributes"]:
+            if (
+                "Attributes" in attr
+                and attr["Attributes"] is not None
+                and "AttributesList" in attr["Attributes"]
+            ):
                 child_attributes = attr["Attributes"]["AttributesList"]
                 current_path = (
                     f"{parent_path} > {attr.get('AttributeName', '')}"
@@ -393,7 +398,7 @@ class EppiAnnotationConverter:
                     doc_annotations.append(ann)
                     break
         return doc_annotations
-    
+
     def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
@@ -452,7 +457,7 @@ class EppiAnnotationConverter:
                     **document.model_dump(), annotations=annotations
                 )
                 annotated_documents.append(annotated_doc)
-                all_annotations.extend(annotations)                
+                all_annotations.extend(annotations)
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
