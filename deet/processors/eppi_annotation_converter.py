@@ -142,11 +142,16 @@ class EppiAnnotationConverter:
                 "hierarchy_path": parent_path,
                 "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
 <<<<<<< HEAD
+<<<<<<< HEAD
                 "is_leaf": "Attributes" not in attr
                 or attr["Attributes"] is None
 =======
                 "is_leaf": "Attributes" not in attr or attr["Attributes"] is None
 >>>>>>> 2953f52 (simply converter)
+=======
+                "is_leaf": "Attributes" not in attr
+                or attr["Attributes"] is None
+>>>>>>> c4ab82d (fix long line)
                 or not attr["Attributes"].get("AttributesList"),
             }
 
@@ -154,15 +159,11 @@ class EppiAnnotationConverter:
             flattened.append(flattened_attr)
 
             # Recursively process children if they exist
-<<<<<<< HEAD
             if (
                 "Attributes" in attr
                 and attr["Attributes"] is not None
                 and "AttributesList" in attr["Attributes"]
             ):
-=======
-            if "Attributes" in attr and attr["Attributes"] is not None and "AttributesList" in attr["Attributes"]:
->>>>>>> 2953f52 (simply converter)
                 child_attributes = attr["Attributes"]["AttributesList"]
                 current_path = (
                     f"{parent_path} > {attr.get('AttributeName', '')}"
@@ -406,15 +407,8 @@ class EppiAnnotationConverter:
                     doc_annotations.append(ann)
                     break
         return doc_annotations
-<<<<<<< HEAD
 
-    def process_annotation_file(
-        self, file_path: str | Path
-    ) -> ProcessedEppiAnnotationData:
-=======
-    
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
->>>>>>> 2953f52 (simply converter)
+    def process_annotation_file(self, file_path: str | Path) -> ProcessedEppiAnnotationData:
         """
         Process a complete annotation file and return structured data.
 
@@ -472,7 +466,7 @@ class EppiAnnotationConverter:
                     **document.model_dump(), annotations=annotations
                 )
                 annotated_documents.append(annotated_doc)
-                all_annotations.extend(annotations)                
+                all_annotations.extend(annotations)
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
