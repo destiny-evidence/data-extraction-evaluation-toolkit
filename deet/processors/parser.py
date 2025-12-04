@@ -14,13 +14,13 @@ from marker.output import text_from_rendered
 from PIL.Image import Image
 from pydantic import BaseModel, field_validator
 
-from app.exceptions import (
+from deet.exceptions import (
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
-from app.utils.assess_text_quality import check_language
+from deet.utils.assess_text_quality import check_language
 
 # init marker converter
 artifact_dict = create_model_dict()

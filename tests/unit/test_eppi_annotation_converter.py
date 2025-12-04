@@ -5,9 +5,9 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from app.data_models.base import AttributeType
-from app.data_models.eppi import EppiRawData
-from app.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.data_models.base import AttributeType
+from deet.data_models.eppi import EppiRawData
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 # from pytest_mock import mock_open, patch
 

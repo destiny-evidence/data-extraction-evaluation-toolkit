@@ -68,7 +68,7 @@ Our roadmap for future development contains:
 
 ## Document parsing
 
-The first time you run anything from `app/parser.py`, you will likely have to wait for a considerable (5-15 minutes) amount of time, as dependencies will collect and install. These dependencies include machine learning libraries and pre-trained models.
+The first time you run anything from `deet/parser.py`, you will likely have to wait for a considerable (5-15 minutes) amount of time, as dependencies will collect and install. These dependencies include machine learning libraries and pre-trained models.
 
 ## Data Processing
 
@@ -79,13 +79,13 @@ The annotation converter can be used to convert raw EPPI-Reviewer data into stru
 **Usage:**
 
 ```bash
-uv run python app/scripts/annotation_converter_cli.py <input_file> <output_dir>
+uv run python deet/scripts/annotation_converter_cli.py <input_file> <output_dir>
 ```
 
 **Example:**
 
 ```bash
-uv run python app/scripts/annotation_converter_cli.py app/annotations/raw/eppi/sample_eppi.json output/processed
+uv run python deet/scripts/annotation_converter_cli.py deet/annotations/raw/eppi/sample_eppi.json output/processed
 ```
 
 This creates an organized directory structure:
