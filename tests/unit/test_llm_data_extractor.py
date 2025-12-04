@@ -356,3 +356,23 @@ def test_extract_from_documents_continues_on_error(
     )
     assert len(all_annotations) == 1  # Only one should not raise
     assert mock_litellm_completion.call_count == 2
+<<<<<<< HEAD
+=======
+
+
+# convenience funcs
+@patch("deet.extractors.llm_data_extractor.LLMDataExtractor")
+def test_convenience_function_extract_all(
+    mock_extractor_cls,
+    sample_eppi_document,
+    sample_eppi_attributes,
+    default_config,
+):
+    """Test the extract_all_attributes convenience function."""
+    mock_instance = mock_extractor_cls.return_value
+    extract_all_attributes(sample_eppi_document, sample_eppi_attributes, default_config)
+    mock_extractor_cls.assert_called_once_with(default_config)
+    mock_instance.extract_from_document.assert_called_once_with(
+        sample_eppi_document, sample_eppi_attributes
+    )
+>>>>>>> 5609d4f (Renamed app directory to deet, updated config)
