@@ -1,6 +1,6 @@
 """Tests for core base models."""
 
-from app.data_models.base import (
+from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributesList,

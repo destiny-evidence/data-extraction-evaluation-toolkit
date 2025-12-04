@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from app.data_models.pipeline import (
+from deet.data_models.pipeline import (
     CodeExecutor,
     EgressMethod,
     Executor,
@@ -80,7 +80,7 @@ def test_job_run_code_job_no_capture(code_job: Job):
     assert output is None
 
 
-@patch("app.data_models.pipeline.Executor.execute")
+@patch("deet.data_models.pipeline.Executor.execute")
 def test_job_run_script_job(mock_execute: MagicMock, script_job: Job):
     """Test running a job with a script Path."""
     mock_execute.return_value = "Script output"
@@ -171,7 +171,7 @@ def test_pipeline_stage_convert_jobs_to_list(code_job: Job):
     assert stage.jobs[0] == code_job
 
 
-@patch("app.data_models.pipeline.Job.run_job")
+@patch("deet.data_models.pipeline.Job.run_job")
 def test_pipeline_stage_run_jobs(mock_run_job: MagicMock, code_job: Job):
     """Test that run_jobs calls run_job on each job."""
     stage = PipelineStage(name="test_stage", jobs=[code_job, code_job])
@@ -179,7 +179,7 @@ def test_pipeline_stage_run_jobs(mock_run_job: MagicMock, code_job: Job):
     assert mock_run_job.call_count == 2
 
 
-@patch("app.data_models.pipeline.Job.run_job")
+@patch("deet.data_models.pipeline.Job.run_job")
 def test_pipeline_stage_run_jobs_failure_skip(mock_run_job: MagicMock, code_job: Job):
     """Test that stage continues on job failure if skip_jobs_if_failed is True."""
     mock_run_job.side_effect = [Exception("Job failed!"), "Success"]
@@ -190,7 +190,7 @@ def test_pipeline_stage_run_jobs_failure_skip(mock_run_job: MagicMock, code_job:
     assert mock_run_job.call_count == 2
 
 
-@patch("app.data_models.pipeline.Job.run_job")
+@patch("deet.data_models.pipeline.Job.run_job")
 def test_pipeline_stage_run_jobs_failure_no_skip(
     mock_run_job: MagicMock, code_job: Job
 ):
@@ -226,7 +226,7 @@ def test_pipeline_stage_arg_precedence(code_job: Job, mock_job_func: MagicMock):
 
 
 # full pipeline
-@patch("app.data_models.pipeline.PipelineStage.run_jobs")
+@patch("deet.data_models.pipeline.PipelineStage.run_jobs")
 def test_pipeline_run(mock_run_jobs: MagicMock):
     """Test that Pipeline.run() calls run_jobs on each stage."""
     stage1 = PipelineStage(name="s1", jobs=[])

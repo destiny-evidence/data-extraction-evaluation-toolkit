@@ -6,14 +6,14 @@ from pathlib import Path
 
 from loguru import logger
 
-from app.data_models.eppi import EppiAttribute, EppiDocument
-from app.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
-from app.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from app.processors.eppi_annotation_converter import (
+from deet.data_models.eppi import EppiAttribute, EppiDocument
+from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
+from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
+from deet.processors.eppi_annotation_converter import (
     EppiAnnotationConverter,
     EppiGoldStandardAnnotation,
 )
-from app.processors.parser import DocumentParser
+from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()
 converter = EppiAnnotationConverter()

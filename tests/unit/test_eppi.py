@@ -2,8 +2,8 @@
 
 import pytest
 
-from app.data_models.base import AnnotationType, AttributeType
-from app.data_models.eppi import (
+from deet.data_models.base import AnnotationType, AttributeType
+from deet.data_models.eppi import (
     EppiAttribute,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,

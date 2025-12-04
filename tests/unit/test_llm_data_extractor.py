@@ -9,14 +9,14 @@ import pytest
 from destiny_sdk.references import Reference
 from pydantic import ValidationError
 
-from app.data_models.base import AnnotationType
-from app.data_models.eppi import (
+from deet.data_models.base import AnnotationType
+from deet.data_models.eppi import (
     AttributeType,
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotation,
 )
-from app.extractors.llm_data_extractor import (
+from deet.extractors.llm_data_extractor import (
     ContextType,
     DataExtractionConfig,
     LLMDataExtractor,
@@ -40,7 +40,9 @@ def mock_settings(monkeypatch):
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
 
-    monkeypatch.setattr("app.extractors.llm_data_extractor.settings", mock_settings_obj)
+    monkeypatch.setattr(
+        "deet.extractors.llm_data_extractor.settings", mock_settings_obj
+    )
     return mock_settings_obj
 
 
@@ -346,7 +348,7 @@ def test_extract_from_documents_continues_on_error(
 
 
 # convenience funcs
-@patch("app.extractors.llm_data_extractor.LLMDataExtractor")
+@patch("deet.extractors.llm_data_extractor.LLMDataExtractor")
 def test_convenience_function_extract_all(
     mock_extractor_cls,
     sample_eppi_document,

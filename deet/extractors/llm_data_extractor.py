@@ -7,15 +7,15 @@ from pathlib import Path
 import litellm
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from app.data_models.base import AnnotationType
-from app.data_models.eppi import (  # type: ignore[attr-defined]
+from deet.data_models.base import AnnotationType
+from deet.data_models.eppi import (  # type: ignore[attr-defined]
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotation,
     LLMResponseSchema,
 )
-from app.logger import logger
-from app.settings import get_settings
+from deet.logger import logger
+from deet.settings import get_settings
 
 # Load centralized settings once for module-level defaults
 settings = get_settings()
