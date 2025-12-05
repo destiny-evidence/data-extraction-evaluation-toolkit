@@ -374,7 +374,6 @@ class LLMDataExtractor:
         Args:
             response_content: Raw JSON string response from LLM
             attributes: List of attributes to match against
-            document: Document being processed
 
         Returns:
             List of GoldStandardAnnotation objects
