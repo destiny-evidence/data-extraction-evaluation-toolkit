@@ -110,7 +110,7 @@ class Attribute(BaseModel):
         for field in ["attribute_id", "prompt"]:
             if field not in input_dict:
                 bad_dict = (
-                    "input dict must contain at least `attribute_id` and `prompt"
+                    "input dict must contain at least `attribute_id` and `prompt`"
                     " fields. currently, it only "
                     f"contains: {', '.join(input_dict.keys())}"
                 )
