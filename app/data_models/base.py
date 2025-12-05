@@ -129,7 +129,7 @@ class Attribute(BaseModel):
             logger.debug("added prompt  [...] to Attribute instance.")
         else:
             logger.info(
-                "overwrite is set to False, meaning we won't overwrite existing prompts."
+                "overwrite is set to False, no overwrite prompts."
             )
 
     def print_tabulated(self) -> None:
@@ -171,7 +171,7 @@ class Attribute(BaseModel):
                 print("Prompt cannot be empty. Please try again.")
                 continue
             if len(user_prompt) > MAX_PROMPT_LENGTH:
-                print(f"Prompt exceeds maximum length of {MAX_PROMPT_LENGTH} characters. Please shorten it.")
+                print(f"Prompt exceeds max {MAX_PROMPT_LENGTH} chars. Shorten!.")
                 continue
             print("\nYour prompt will be stored as:\n")
             print(f"\"{user_prompt}\"")
@@ -274,7 +274,8 @@ class LLMInputSchema(BaseModel):
             return data
         logger.debug(data)
         if fill_from_field not in data:
-            raise ValueError(f"Cannot fill prompt: '{fill_from_field}' field is missing from data")
+            no_fill_field = f" '{fill_from_field}' is missing from data"
+            raise ValueError(no_fill_field)
         data["prompt"] = data[fill_from_field]
         logger.debug(f"filled `prompt` with {data['prompt']}.")
         return data
