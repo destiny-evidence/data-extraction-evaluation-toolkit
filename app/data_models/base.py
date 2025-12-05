@@ -316,7 +316,7 @@ class LLMResponseSchema(BaseModel):
     Root schema for LLM annotation extraction response.
 
     This structure matches the expected format that can be converted
-    to list[EppiGoldStandardAnnotation] after attribute resolution.
+    to list[GoldStandardAnnotation] after attribute resolution.
     """
 
     annotations: list[LLMAnnotationResponse] = Field(
