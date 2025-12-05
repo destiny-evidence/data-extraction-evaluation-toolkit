@@ -10,6 +10,7 @@ from loguru import logger
 from pydantic import BaseModel, Field, model_validator
 from tabulate import tabulate
 
+MAX_PROMPT_LENGTH = 500
 # ruff: noqa: T201, FURB105
 
 
@@ -158,7 +159,7 @@ class Attribute(BaseModel):
             tries += 1
             if tries >= max_tries:
                 return
-        MAX_PROMPT_LENGTH = 500
+
         def sanitize_prompt(prompt: str) -> str:
             # Remove non-printable/control characters
             return ''.join(c for c in prompt if c.isprintable())
