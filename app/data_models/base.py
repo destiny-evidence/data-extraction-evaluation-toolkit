@@ -128,7 +128,7 @@ class Attribute(BaseModel):
             logger.debug("added prompt  [...] to Attribute instance.")
         else:
             logger.info(
-                "overwrite is set to True, meaning we won't overwrite existing prompts."
+                "overwrite is set to False, meaning we won't overwrite existing prompts."
             )
 
     def print_tabulated(self) -> None:
