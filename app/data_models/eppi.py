@@ -316,7 +316,7 @@ class ProcessedAnnotationData(BaseModel):
         Populate custom prompts.
 
         Args:
-            method (Literal[&quot;cli&quot;, &quot;file&quot;])
+            method (Literal["cli", "file"])
             filepath (Path | None): infile path.
 
         Raises:
