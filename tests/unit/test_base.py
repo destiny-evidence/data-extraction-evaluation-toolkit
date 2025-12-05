@@ -16,14 +16,14 @@ from app.data_models.base import (
 )
 
 
-def attribute_type_to_python_type_population() -> None:
+def test_attribute_type_to_python_type_population() -> None:
     """Test that the type conversion for Attribute type works."""
     deet_type_str = AttributeType.STRING
     deet_type_int = AttributeType.INTEGER
     deet_type_bool = AttributeType.BOOL
-    assert isinstance(deet_type_str.to_python_type(), str)
-    assert isinstance(deet_type_int.to_python_type(), int)
-    assert isinstance(deet_type_bool.to_python_type(), bool)
+    assert deet_type_str.to_python_type() is str
+    assert deet_type_int.to_python_type() is int
+    assert deet_type_bool.to_python_type() is bool
 
 
 def test_attribute_creation_from_dict() -> None:
