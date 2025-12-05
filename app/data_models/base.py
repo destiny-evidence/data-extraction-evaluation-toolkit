@@ -229,7 +229,7 @@ class GoldStandardAnnotation(BaseModel):
     def ensure_correct_type(cls, data: dict) -> dict:
         """Ensure output_data is of the type required by annotation_type."""
         target_att: Attribute = data["attribute"]
-        target_type: type = target_att.model_dump()["output_data_type"].to_python_type()
+        target_type: type = target_att.output_data_type.to_python_type()
         if not isinstance(data["output_data"], target_type):
             bad_type = (
                 f"field {data['output_data']} is of "
