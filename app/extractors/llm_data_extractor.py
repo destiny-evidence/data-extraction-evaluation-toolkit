@@ -294,7 +294,7 @@ class LLMDataExtractor:
         target output data type.
 
         NOTE: If `prompt` field is not populated in incoming data,
-        LLMInputSchema will populate from `attribute_set_description`
+        LLMInputSchema will populate from `attribute_label`
         field, or fail.
 
         Args:
