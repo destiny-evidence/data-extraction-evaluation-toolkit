@@ -141,6 +141,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    if not args.pdf_path:
+        raise ValueError("pdf_path is required")
     eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
     eppi_out_path = (
         Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
