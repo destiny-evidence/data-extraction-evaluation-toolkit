@@ -171,7 +171,6 @@ def main() -> None:
     my_beautiful_pipeline = Pipeline(
         name="test_pipeline",
         stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
-        # stages=[ingest_gs_stage, llm_extraction_stage],
     )
 
     my_beautiful_pipeline.run()
