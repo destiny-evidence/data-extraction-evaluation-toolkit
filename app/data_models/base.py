@@ -66,7 +66,7 @@ class Attribute(BaseModel):
 
         Args:
             filepath (Path): outfile destination.
-            mode (Literal[&quot;a&quot;, &quot;w&quot;], optional): _w_rite or _a_ppend.
+            mode (Literal["a", "w"], optional): _w_rite or _a_ppend.
             Defaults to "a" (append).
 
         """
