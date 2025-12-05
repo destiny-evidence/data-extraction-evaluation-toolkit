@@ -253,6 +253,8 @@ class LLMInputSchema(BaseModel):
         if data["prompt"] is not None:
             return data
         logger.debug(data)
+        if fill_from_field not in data:
+            raise ValueError(f"Cannot fill prompt: '{fill_from_field}' field is missing from data")
         data["prompt"] = data[fill_from_field]
         logger.debug(f"filled `prompt` with {data['prompt']}.")
         return data
