@@ -299,7 +299,7 @@ class LLMDataExtractor:
 
         Args:
             context: Prepared document context string.
-            attributes: List of LLMInputSchema.
+            attributes: List of Attribute objects to extract.
 
         Returns:
             JSON string containing `context` and `attributes`.
