@@ -158,12 +158,31 @@ class Attribute(BaseModel):
             tries += 1
             if tries >= max_tries:
                 return
-        print("Please enter your prompt: ")
-        # @harryjmoss @sagaruprety how can we validate this user input
-        # somewhat so as to avoid nastiness?
-        self.prompt = input()
-        logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
-        return
+        MAX_PROMPT_LENGTH = 500
+        def sanitize_prompt(prompt: str) -> str:
+            # Remove non-printable/control characters
+            return ''.join(c for c in prompt if c.isprintable())
+        while True:
+            print(f"Please enter your prompt (max {MAX_PROMPT_LENGTH} characters): ")
+            user_prompt = input().strip()
+            user_prompt = sanitize_prompt(user_prompt)
+            if len(user_prompt) == 0:
+                print("Prompt cannot be empty. Please try again.")
+                continue
+            if len(user_prompt) > MAX_PROMPT_LENGTH:
+                print(f"Prompt exceeds maximum length of {MAX_PROMPT_LENGTH} characters. Please shorten it.")
+                continue
+            print("\nYour prompt will be stored as:\n")
+            print(f"\"{user_prompt}\"")
+            print("Confirm? y/n")
+            confirm = input().strip().lower()
+            if confirm == "y":
+                self.prompt = user_prompt
+                logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
+                return
+            elif confirm == "n":
+                print("Prompt entry cancelled. Please enter again or CTRL+C to exit.")
+                continue
 
 
 class AttributesList(BaseModel):
