@@ -118,7 +118,7 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
+        "-p", "--pdf_path", help="incoming pdf file", required=True, type=Path
     )
     parser.add_argument(
         "-m",
@@ -141,8 +141,6 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if not args.pdf_path:
-        raise ValueError("pdf_path is required")
     eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
     eppi_out_path = (
         Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
