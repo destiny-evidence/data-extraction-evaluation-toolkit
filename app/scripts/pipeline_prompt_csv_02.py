@@ -75,7 +75,7 @@ def ingest_gold_standard_import_csv_func(
     """Convert EPPI JSON to DEET data models."""
     out = converter.process_annotation_file(eppi_json_path)
 
-    # import attributes to csv for prompt editing.
+    # import prompts from csv for attribute population.
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
 
