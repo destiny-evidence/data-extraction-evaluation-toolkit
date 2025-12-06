@@ -1,6 +1,6 @@
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = ["setuptools>=61.0", "wheel"]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
 
 [dependency-groups]
 dev = [
@@ -42,7 +42,8 @@ requires-python = ">=3.12.11"
 version = "0.2.0"
 
 [project.scripts]
-DEET-eppi-convert = "app.scripts.eppi_annotation_converter_cli:main"
+DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
+DEET-pipeline = "deet.scripts.default_pipeline:main"
 
 [tool.coverage.report]
 # This section is optional but good practice
@@ -128,10 +129,6 @@ per-file-ignores = {"tests*" = [
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
-
-[tool.setuptools]
-package-dir = {"deet" = "deet"}
-packages = ["deet"]
 
 [tool.tomlsort]
 all = true
