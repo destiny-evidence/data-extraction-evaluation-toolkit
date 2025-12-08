@@ -128,9 +128,7 @@ class Attribute(BaseModel):
             self.prompt = input_dict["prompt"]
             logger.debug("added prompt  [...] to Attribute instance.")
         else:
-            logger.info(
-                "overwrite is set to False, no overwrite prompts."
-            )
+            logger.info("overwrite is set to False, no overwrite prompts.")
 
     def print_tabulated(self) -> None:
         """Print tabulated version of the contents of this attribute."""
@@ -162,7 +160,8 @@ class Attribute(BaseModel):
 
         def sanitize_prompt(prompt: str) -> str:
             # Remove non-printable/control characters
-            return ''.join(c for c in prompt if c.isprintable())
+            return "".join(c for c in prompt if c.isprintable())
+
         while True:
             print(f"Please enter your prompt (max {MAX_PROMPT_LENGTH} characters): ")
             user_prompt = input().strip()
@@ -174,14 +173,14 @@ class Attribute(BaseModel):
                 print(f"Prompt exceeds max {MAX_PROMPT_LENGTH} chars. Shorten!.")
                 continue
             print("\nYour prompt will be stored as:\n")
-            print(f"\"{user_prompt}\"")
+            print(f'"{user_prompt}"')
             print("Confirm? y/n")
             confirm = input().strip().lower()
             if confirm == "y":
                 self.prompt = user_prompt
                 logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
                 return
-            elif confirm == "n":
+            if confirm == "n":
                 print("Prompt entry cancelled. Please enter again or CTRL+C to exit.")
                 continue
 
@@ -265,6 +264,8 @@ class LLMInputSchema(BaseModel):
 
         Args:
             data (dict): the incoming data
+            fill_from_field (str, optional): field to use to fill prompt if empty.
+                Defaults to "attribute_label".
 
         Returns:
             dict: the populated data.
