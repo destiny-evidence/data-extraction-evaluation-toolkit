@@ -75,7 +75,7 @@ def ingest_gold_standard_import_csv_func(
     """Convert EPPI JSON to DEET data models."""
     out = converter.process_annotation_file(eppi_json_path)
 
-    # import attributes to csv for prompt editing.
+    # import prompts from csv for attribute population.
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
 
@@ -92,10 +92,10 @@ def llm_data_extraction(
     **kwargs,
 ) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
-    full_text = full_text_path.read_text()
+    full_text = full_text_path.read_text(encoding="utf-8")
 
-    documents_raw = json.loads(documents_file_path.read_text())
-    attributes_raw = json.loads(attributes_file_path.read_text())
+    documents_raw = json.loads(documents_file_path.read_text(encoding="utf-8"))
+    attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
 
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
     if filter_by_attribute_ids:
@@ -118,7 +118,7 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
+        "-p", "--pdf_path", help="incoming pdf file", required=True, type=Path
     )
     parser.add_argument(
         "-m",

@@ -236,7 +236,7 @@ class ProcessedAnnotationData(BaseModel):
 
         """
         if filepath.suffix != ".csv":
-            bad_filetype = "file ending must be .csv."
+            bad_filetype = "file ending must be .csv"
             raise ValueError(bad_filetype)
         for attribute in self.attributes:
             attribute.write_to_csv(filepath=filepath)
@@ -316,7 +316,7 @@ class ProcessedAnnotationData(BaseModel):
         Populate custom prompts.
 
         Args:
-            method (Literal[&quot;cli&quot;, &quot;file&quot;])
+            method (Literal["cli", "file"])
             filepath (Path | None): infile path.
 
         Raises:

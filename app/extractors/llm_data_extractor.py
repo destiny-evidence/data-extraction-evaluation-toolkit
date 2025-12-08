@@ -294,12 +294,12 @@ class LLMDataExtractor:
         target output data type.
 
         NOTE: If `prompt` field is not populated in incoming data,
-        LLMInputSchema will populate from `attribute_set_description`
+        LLMInputSchema will populate from `attribute_label`
         field, or fail.
 
         Args:
             context: Prepared document context string.
-            attributes: List of LLMInputSchema.
+            attributes: List of Attribute objects to extract.
 
         Returns:
             JSON string containing `context` and `attributes`.
@@ -374,7 +374,6 @@ class LLMDataExtractor:
         Args:
             response_content: Raw JSON string response from LLM
             attributes: List of attributes to match against
-            document: Document being processed
 
         Returns:
             List of GoldStandardAnnotation objects

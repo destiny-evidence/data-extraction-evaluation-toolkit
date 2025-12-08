@@ -106,7 +106,7 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
+        "-p", "--pdf_path", help="incoming pdf file", required=True, type=Path
     )
     parser.add_argument(
         "-m",
@@ -169,7 +169,6 @@ def main() -> None:
     my_beautiful_pipeline = Pipeline(
         name="test_pipeline",
         stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
-        # stages=[ingest_gs_stage, llm_extraction_stage],
     )
 
     my_beautiful_pipeline.run()

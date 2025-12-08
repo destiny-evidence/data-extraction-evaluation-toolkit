@@ -10,6 +10,7 @@ from loguru import logger
 from pydantic import BaseModel, Field, model_validator
 from tabulate import tabulate
 
+MAX_PROMPT_LENGTH = 500
 # ruff: noqa: T201, FURB105
 
 
@@ -66,7 +67,7 @@ class Attribute(BaseModel):
 
         Args:
             filepath (Path): outfile destination.
-            mode (Literal[&quot;a&quot;, &quot;w&quot;], optional): _w_rite or _a_ppend.
+            mode (Literal["a", "w"], optional): _w_rite or _a_ppend.
             Defaults to "a" (append).
 
         """
@@ -110,7 +111,7 @@ class Attribute(BaseModel):
         for field in ["attribute_id", "prompt"]:
             if field not in input_dict:
                 bad_dict = (
-                    "input dict must contain at least `attribute_id` and `prompt"
+                    "input dict must contain at least `attribute_id` and `prompt`"
                     " fields. currently, it only "
                     f"contains: {', '.join(input_dict.keys())}"
                 )
@@ -127,9 +128,7 @@ class Attribute(BaseModel):
             self.prompt = input_dict["prompt"]
             logger.debug("added prompt  [...] to Attribute instance.")
         else:
-            logger.info(
-                "overwrite is set to True, meaning we won't overwrite existing prompts."
-            )
+            logger.info("overwrite is set to False, no overwrite prompts.")
 
     def print_tabulated(self) -> None:
         """Print tabulated version of the contents of this attribute."""
@@ -158,12 +157,32 @@ class Attribute(BaseModel):
             tries += 1
             if tries >= max_tries:
                 return
-        print("Please enter your prompt: ")
-        # @harryjmoss @sagaruprety how can we validate this user input
-        # somewhat so as to avoid nastiness?
-        self.prompt = input()
-        logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
-        return
+
+        def sanitize_prompt(prompt: str) -> str:
+            # Remove non-printable/control characters
+            return "".join(c for c in prompt if c.isprintable())
+
+        while True:
+            print(f"Please enter your prompt (max {MAX_PROMPT_LENGTH} characters): ")
+            user_prompt = input().strip()
+            user_prompt = sanitize_prompt(user_prompt)
+            if len(user_prompt) == 0:
+                print("Prompt cannot be empty. Please try again.")
+                continue
+            if len(user_prompt) > MAX_PROMPT_LENGTH:
+                print(f"Prompt exceeds max {MAX_PROMPT_LENGTH} chars. Shorten!.")
+                continue
+            print("\nYour prompt will be stored as:\n")
+            print(f'"{user_prompt}"')
+            print("Confirm? y/n")
+            confirm = input().strip().lower()
+            if confirm == "y":
+                self.prompt = user_prompt
+                logger.debug(f"wrote prompt {self.prompt[:30]} [...] to prompt field.")
+                return
+            if confirm == "n":
+                print("Prompt entry cancelled. Please enter again or CTRL+C to exit.")
+                continue
 
 
 class AttributesList(BaseModel):
@@ -210,7 +229,7 @@ class GoldStandardAnnotation(BaseModel):
     def ensure_correct_type(cls, data: dict) -> dict:
         """Ensure output_data is of the type required by annotation_type."""
         target_att: Attribute = data["attribute"]
-        target_type: type = target_att.model_dump()["output_data_type"].to_python_type()
+        target_type: type = target_att.output_data_type.to_python_type()
         if not isinstance(data["output_data"], target_type):
             bad_type = (
                 f"field {data['output_data']} is of "
@@ -245,6 +264,8 @@ class LLMInputSchema(BaseModel):
 
         Args:
             data (dict): the incoming data
+            fill_from_field (str, optional): field to use to fill prompt if empty.
+                Defaults to "attribute_label".
 
         Returns:
             dict: the populated data.
@@ -253,6 +274,9 @@ class LLMInputSchema(BaseModel):
         if data["prompt"] is not None:
             return data
         logger.debug(data)
+        if fill_from_field not in data:
+            no_fill_field = f" '{fill_from_field}' is missing from data"
+            raise ValueError(no_fill_field)
         data["prompt"] = data[fill_from_field]
         logger.debug(f"filled `prompt` with {data['prompt']}.")
         return data
@@ -295,7 +319,7 @@ class LLMResponseSchema(BaseModel):
     Root schema for LLM annotation extraction response.
 
     This structure matches the expected format that can be converted
-    to list[EppiGoldStandardAnnotation] after attribute resolution.
+    to list[GoldStandardAnnotation] after attribute resolution.
     """
 
     annotations: list[LLMAnnotationResponse] = Field(
