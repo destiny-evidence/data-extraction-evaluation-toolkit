@@ -557,7 +557,7 @@ def test_print_tabulated_contains_all_fields(capsys) -> None:
     assert "attribute_label" in captured.out
 
 
-@patch("builtins.input", side_effect=["y", "This is my custom prompt"])
+@patch("builtins.input", side_effect=["y", "This is my custom prompt", "y"])
 def test_enter_custom_prompt_accepts_prompt(mock_input, capsys) -> None:
     """Test entering a custom prompt successfully."""
     attr = Attribute(
@@ -566,12 +566,33 @@ def test_enter_custom_prompt_accepts_prompt(mock_input, capsys) -> None:
         attribute_id=1234,
         attribute_label="Test Attribute",
     )
-
+    expected_prompt = "This is my custom prompt"
     attr.enter_custom_prompt()
 
-    assert attr.prompt == "This is my custom prompt"
+    assert attr.prompt == expected_prompt
     captured = capsys.readouterr()
     assert "Do you want to add a new prompt?" in captured.out
+    assert "Confirm? y/n" in captured.out
+
+
+@patch("builtins.input", side_effect=["y", "This is my custom prompt", "n"])
+def test_enter_custom_prompt_user_cancelled(mock_input, capsys) -> None:
+    """Test entering a custom prompt successfully."""
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+    )
+    with pytest.raises(StopIteration):  # input exhausted
+        attr.enter_custom_prompt()
+
+    captured = capsys.readouterr()
+    assert "Do you want to add a new prompt?" in captured.out
+    assert "Confirm? y/n" in captured.out
+    assert (
+        "Prompt entry cancelled. Please enter again or CTRL+C to exit." in captured.out
+    )
 
 
 @patch("builtins.input", return_value="n")
@@ -633,7 +654,7 @@ def test_enter_custom_prompt_max_tries(mock_input) -> None:
     assert attr.prompt is None
 
 
-@patch("builtins.input", side_effect=["Y", "This is my custom prompt"])
+@patch("builtins.input", side_effect=["Y", "This is my custom prompt", "Y"])
 def test_enter_custom_prompt_case_insensitive(mock_input) -> None:
     """Test that 'Y' (uppercase) is accepted."""
     attr = Attribute(
@@ -647,7 +668,7 @@ def test_enter_custom_prompt_case_insensitive(mock_input) -> None:
     assert attr.prompt == "This is my custom prompt"
 
 
-@patch("builtins.input", side_effect=["  y  ", "Prompt with whitespace handling"])
+@patch("builtins.input", side_effect=["  y  ", "Prompt with whitespace handling", "y"])
 def test_enter_custom_prompt_strips_whitespace(mock_input) -> None:
     """Test that whitespace in y/n input is stripped."""
     attr = Attribute(
@@ -662,7 +683,7 @@ def test_enter_custom_prompt_strips_whitespace(mock_input) -> None:
 
 
 @patch("builtins.input", side_effect=["y", ""])
-def test_enter_custom_prompt_empty_string(mock_input) -> None:
+def test_enter_custom_prompt_empty_string(mock_input, capsys) -> None:
     """Test entering an empty string as prompt."""
     # NOTE: same as above. may want to
     # raise an error if this occurs instead...
@@ -673,11 +694,13 @@ def test_enter_custom_prompt_empty_string(mock_input) -> None:
         attribute_label="Test Attribute",
     )
 
-    attr.enter_custom_prompt()
-    assert attr.prompt == ""
+    with pytest.raises(StopIteration):  # input exhausted
+        attr.enter_custom_prompt()
+    captured = capsys.readouterr()
+    assert "Prompt cannot be empty. Please try again." in captured.out
 
 
-@patch("builtins.input", side_effect=["invalid", "y", "My prompt"])
+@patch("builtins.input", side_effect=["invalid", "y", "My prompt", "y"])
 def test_enter_custom_prompt_recovers_from_invalid(mock_input) -> None:
     """Test that function recovers from invalid input and accepts valid input."""
     attr = Attribute(
