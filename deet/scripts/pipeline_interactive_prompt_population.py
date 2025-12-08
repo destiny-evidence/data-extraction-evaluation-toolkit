@@ -76,10 +76,10 @@ def llm_data_extraction(
     **kwargs,
 ) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
-    full_text = full_text_path.read_text()
+    full_text = full_text_path.read_text(encoding="utf-8")
 
-    documents_raw = json.loads(documents_file_path.read_text())
-    attributes_raw = json.loads(attributes_file_path.read_text())
+    documents_raw = json.loads(documents_file_path.read_text(encoding="utf-8"))
+    attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
 
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
     if filter_by_attribute_ids:
