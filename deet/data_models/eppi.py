@@ -1,8 +1,11 @@
 """EPPI-specific data models extending the core models."""
 
+import csv
 from collections.abc import Callable
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
+from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
@@ -124,15 +127,6 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     the extracted information relates to.
     """
 
-    attribute: EppiAttribute = Field(
-        description="The EPPI attribute being annotated  "
-        "with hierarchy and metadata info."
-    )
-    additional_text: str | None = Field(
-        description="Notes provided by the annotator - usually the citation "
-        " from the paper containing the context window where the attribute is found",
-        default=None,
-    )
     arm_id: int | None = Field(
         description="ID of the study arm this annotation relates to", default=None
     )
@@ -148,11 +142,6 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
             " arm-specific information for this annotation",
             default=None,
         )
-    )
-
-    # additional, optional llm-based fields
-    reasoning: str | None = Field(
-        description="Reasoning, taken from LLM response", default=None
     )
 
 
@@ -226,6 +215,125 @@ class ProcessedAnnotationData(BaseModel):
     attribute_id_to_label: dict[int, str]
     raw_data: EppiRawData
 
+    def _custom_prompts_cli(self) -> None:
+        """
+        Use an interactive CLI to have the user enter custom prompts.
+
+        Args:
+            attribute (Attribute): a single (Eppi)Attribute
+
+        """
+        for attribute in self.attributes:
+            attribute.enter_custom_prompt()
+
+    def export_attributes_csv_file(self, filepath: Path) -> None:
+        """
+        Write a csv file containing all attributes for prompt population.
+
+        Args:
+            filepath (Path): outfile path.
+
+
+        """
+        if filepath.suffix != ".csv":
+            bad_filetype = "file ending must be .csv"
+            raise ValueError(bad_filetype)
+        for attribute in self.attributes:
+            attribute.write_to_csv(filepath=filepath)
+
+        logger.info(f"wrote attributes to file {filepath}.")
+
+    def _import_prompts_csv_file(
+        self, filepath: Path, *, overwrite: bool = True
+    ) -> None:
+        """
+        Import prompts from a csv file.
+
+        Args:
+            filepath (Path): attribute/prompt input file.
+            overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
+
+        """
+        if not filepath.exists():
+            no_file = f"CSV file not found: {filepath}"
+            raise FileNotFoundError(no_file)
+
+        if filepath.suffix != ".csv":
+            bad_suffix = "File must have .csv extension"
+            raise ValueError(bad_suffix)
+
+        with filepath.open(mode="r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+
+            if reader.fieldnames is None:
+                empty_csv = "CSV file is empty or has no headers"
+                raise ValueError(empty_csv)
+
+            required_fields = ["attribute_id", "prompt"]
+            for field in required_fields:
+                if field not in reader.fieldnames:
+                    csv_missing_fields = (
+                        f"CSV must contain '{field}' column. "
+                        f"Found columns: {', '.join(reader.fieldnames)}"
+                    )
+
+                    raise ValueError(csv_missing_fields)
+
+            rows_processed = 0
+            for row in reader:
+                # find attribute_id match
+                attribute_id = int(row["attribute_id"])
+                matching_attribute = None
+
+                for attribute in self.attributes:
+                    if attribute.attribute_id == attribute_id:
+                        matching_attribute = attribute
+                        break
+
+                if matching_attribute is None:
+                    logger.warning(
+                        f"No attribute found with ID {attribute_id}, skipping row"
+                    )
+                    continue
+
+                # populate prompt using the Attribute method
+                try:
+                    matching_attribute.populate_prompt_from_dict(
+                        row, overwrite=overwrite
+                    )
+                    rows_processed += 1
+                except ValueError as e:
+                    logger.error(
+                        f"Error processing row for attribute {attribute_id}: {e}"
+                    )
+
+            logger.info(f"Processed {rows_processed} prompts from {filepath}")
+
+    def populate_custom_prompts(
+        self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
+    ) -> None:
+        """
+        Populate custom prompts.
+
+        Args:
+            method (Literal["cli", "file"])
+            filepath (Path | None): infile path.
+
+        Raises:
+            FileNotFoundError: if method is file and there's no filepath.
+
+        """
+        if method == "cli":
+            self._custom_prompts_cli()
+        elif method == "file":
+            if filepath is None:
+                missing_filepath = "please specify a filepath!"
+                raise FileNotFoundError(missing_filepath)
+            self._import_prompts_csv_file(filepath=filepath, **kwargs)
+        else:
+            not_impl = f"method {method} is not implemented. use cli or file."
+            raise NotImplementedError(not_impl)
+
     @property
     def total_attributes(self) -> int:
         """Total number of attributes processed."""
@@ -292,52 +400,3 @@ class BatchAnswerFormatCoT(BaseModel):
     answers: list[AttributeAnswerCoT] = Field(
         description="List of answers for each attribute"
     )
-
-
-class LLMAnnotationResponse(BaseModel):
-    """
-    LLM response model for a single annotation.
-
-    This mirrors EppiGoldStandardAnnotation structure but uses attribute_id
-    instead of full EppiAttribute object, as the LLM cannot provide the full
-    attribute object.
-    """
-
-    attribute_id: int = Field(
-        ..., description="The ID of the EPPI attribute being annotated"
-    )
-    output_data: bool = Field(
-        ..., description="Whether the attribute is present (True/False)"
-    )
-    additional_text: str | None = Field(
-        ...,
-        description=(
-            "Supporting text from document containing the context window "
-            "where the attribute is found"
-        ),
-    )
-    reasoning: str | None = Field(
-        ...,
-        description="Reasoning or explanation for the annotation decision",
-    )
-
-    # Note: arm_id, arm_title, arm_description, item_attribute_full_text_details
-    # are not included as they're EPPI-specific metadata the LLM cannot provide
-    class Config:  # noqa: D106
-        extra = "forbid"
-
-
-class LLMResponseSchema(BaseModel):
-    """
-    Root schema for LLM annotation extraction response.
-
-    This structure matches the expected format that can be converted
-    to list[EppiGoldStandardAnnotation] after attribute resolution.
-    """
-
-    annotations: list[LLMAnnotationResponse] = Field(
-        ..., description="List of annotations extracted from the document"
-    )
-
-    class Config:  # noqa: D106 # TO DO FIX THIS!
-        extra = "forbid"
