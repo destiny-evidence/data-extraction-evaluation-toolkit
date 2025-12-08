@@ -9,19 +9,17 @@ import pytest
 from destiny_sdk.references import Reference
 from pydantic import ValidationError
 
-from app.data_models.base import AnnotationType
+from app.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
 from app.data_models.eppi import (
     AttributeType,
     EppiAttribute,
     EppiDocument,
-    EppiGoldStandardAnnotation,
 )
 from app.extractors.llm_data_extractor import (
     ContextType,
     DataExtractionConfig,
     LLMDataExtractor,
     PromptConfig,
-    extract_all_attributes,
 )
 
 
@@ -61,17 +59,18 @@ def sample_eppi_document() -> EppiDocument:
 def sample_eppi_attributes() -> list[EppiAttribute]:
     """Fixture for a list of sample EppiAttributes."""
     return [
-        EppiAttribute(
+        EppiAttribute(  # vanilla / old
             attribute_id=1234,
             attribute_label="Attribute 1",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="Is attribute 1 present?",
         ),
-        EppiAttribute(
+        EppiAttribute(  # new
             attribute_id=2345,
+            prompt="What is the question?",
             attribute_label="Attribute 2",
             output_data_type=AttributeType.BOOL,
-            attribute_set_description="Is attribute 2 present?",
+            attribute_set_description="foo",
         ),
     ]
 
@@ -197,11 +196,23 @@ def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
     json_str = llm_extractor._generate_user_message_json(
         context, sample_eppi_attributes
     )
-    data = json.loads(json_str)
-    assert data["context"] == context
-    assert len(data["attributes"]) == 2
-    assert data["attributes"][0]["attribute_id"] == 1234
-    assert data["attributes"][0]["question_target"] == "Is attribute 1 present?"
+    payload = json.loads(json_str)
+    assert "context" in payload
+    assert "attributes" in payload
+    assert len(payload.keys()) == 2
+
+    one_input_item = LLMInputSchema(**payload["attributes"][0])
+    second_input_item = LLMInputSchema(**payload["attributes"][1])
+    assert isinstance(one_input_item, LLMInputSchema)
+
+    # we didn't tell it what to use as prompt, so use
+    # whatever's in `attribute_label`
+    assert one_input_item.prompt == "Attribute 1"
+    assert one_input_item.prompt == sample_eppi_attributes[0].attribute_label
+
+    # for att 2, we gave it a prompt
+    assert second_input_item.prompt == "What is the question?"
+    assert second_input_item.prompt != sample_eppi_attributes[1].attribute_label
 
 
 def test_call_llm(llm_extractor, mock_litellm_completion):
@@ -237,38 +248,40 @@ def test_parse_llm_response(
         }
     )
     annotations = llm_extractor._parse_llm_response(
-        response_content, sample_eppi_attributes, sample_eppi_document
+        response_content, sample_eppi_attributes
     )
+    # it filters through ids which exist in both,
+    # so even though the length of sample_eppi_attributes is
+    # longer than response_content,
+    # below is expeceted behaviour and we're happy.
     assert len(annotations) == 1
     annotation = annotations[0]
-    assert isinstance(annotation, EppiGoldStandardAnnotation)
+    assert isinstance(annotation, GoldStandardAnnotation)
     assert annotation.attribute.attribute_id == 1234
     assert annotation.output_data is True
     assert annotation.annotation_type == AnnotationType.LLM
 
 
 def test_parse_llm_response_validation_error(
-    llm_extractor, sample_eppi_attributes, sample_eppi_document
+    llm_extractor,
+    sample_eppi_attributes,
 ):
     """Test that _parse_llm_response raises ValidationError for bad schema."""
     invalid_response = json.dumps(
         {"annotations": [{"attribute_id": "attr1"}]}
     )  # Missing fields
     with pytest.raises(ValidationError):
-        llm_extractor._parse_llm_response(
-            invalid_response, sample_eppi_attributes, sample_eppi_document
-        )
+        llm_extractor._parse_llm_response(invalid_response, sample_eppi_attributes)
 
 
 def test_parse_llm_response_json_decode_error(
-    llm_extractor, sample_eppi_attributes, sample_eppi_document
+    llm_extractor,
+    sample_eppi_attributes,
 ):
     """Test that _parse_llm_response raises ValueError for invalid JSON."""
     invalid_json = "this is not json"
     with pytest.raises(ValueError, match="Invalid JSON"):
-        llm_extractor._parse_llm_response(
-            invalid_json, sample_eppi_attributes, sample_eppi_document
-        )
+        llm_extractor._parse_llm_response(invalid_json, sample_eppi_attributes)
 
 
 def test_extract_from_document(
@@ -343,20 +356,3 @@ def test_extract_from_documents_continues_on_error(
     )
     assert len(all_annotations) == 1  # Only one should not raise
     assert mock_litellm_completion.call_count == 2
-
-
-# convenience funcs
-@patch("app.extractors.llm_data_extractor.LLMDataExtractor")
-def test_convenience_function_extract_all(
-    mock_extractor_cls,
-    sample_eppi_document,
-    sample_eppi_attributes,
-    default_config,
-):
-    """Test the extract_all_attributes convenience function."""
-    mock_instance = mock_extractor_cls.return_value
-    extract_all_attributes(sample_eppi_document, sample_eppi_attributes, default_config)
-    mock_extractor_cls.assert_called_once_with(default_config)
-    mock_instance.extract_from_document.assert_called_once_with(
-        sample_eppi_document, sample_eppi_attributes
-    )

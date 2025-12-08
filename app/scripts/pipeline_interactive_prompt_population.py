@@ -1,4 +1,11 @@
-"""Exploration of what a pipeline might look like."""
+"""
+An example of a pipeline script where prompts are supplied
+by the user, attribute by attribute. The user writes the
+prompts interactively as a stage in the pipeline.
+
+The logic for this is implemented in lines 91-93
+of this file.
+"""
 
 import argparse
 import json
@@ -6,13 +13,15 @@ from pathlib import Path
 
 from loguru import logger
 
+from app.data_models.base import Attribute, Document, GoldStandardAnnotation
+
+# @sagaruprety note that we now only use Eppi types in our
+# specific use-case (i.e. a pipeline script), no longer in the
+# underlying application. The application uses base.py data types.
 from app.data_models.eppi import EppiAttribute, EppiDocument
 from app.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from app.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from app.processors.eppi_annotation_converter import (
-    EppiAnnotationConverter,
-    EppiGoldStandardAnnotation,
-)
+from app.processors.eppi_annotation_converter import EppiAnnotationConverter
 from app.processors.parser import DocumentParser
 
 parser = DocumentParser()
@@ -65,21 +74,24 @@ def llm_data_extraction(
     output_path: Path,
     filter_by_attribute_ids: list[int] | None = None,
     **kwargs,
-) -> list[EppiGoldStandardAnnotation]:
+) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
-    logger.debug(full_text_path)
     full_text = full_text_path.read_text()
 
     documents_raw = json.loads(documents_file_path.read_text())
     attributes_raw = json.loads(attributes_file_path.read_text())
 
-    attributes = [EppiAttribute(**record) for record in attributes_raw]
+    attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
     if filter_by_attribute_ids:
         attributes = [
             a for a in attributes if a.attribute_id in filter_by_attribute_ids
         ]
 
-    documents = [EppiDocument(**record) for record in documents_raw]
+    # add prompts interactively:
+    for att in attributes:
+        att.enter_custom_prompt()
+
+    documents: list[Document] = [EppiDocument(**record) for record in documents_raw]
 
     return data_extractor.extract_from_documents(
         documents=documents,
@@ -94,7 +106,7 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
+        "-p", "--pdf_path", help="incoming pdf file", required=True, type=Path
     )
     parser.add_argument(
         "-m",
@@ -157,7 +169,6 @@ def main() -> None:
     my_beautiful_pipeline = Pipeline(
         name="test_pipeline",
         stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
-        # stages=[ingest_gs_stage, llm_extraction_stage],
     )
 
     my_beautiful_pipeline.run()
