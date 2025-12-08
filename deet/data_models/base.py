@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from destiny_sdk.references import Reference
 from loguru import logger
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -257,8 +257,7 @@ class LLMInputSchema(BaseModel):
     attribute_id: int
     output_data_type: AttributeType
 
-    class Config:  # noqa: D106
-        extra = "ignore"
+    model_config = ConfigDict(extra="ignore")
 
     @model_validator(mode="before")
     @classmethod
@@ -315,8 +314,7 @@ class LLMAnnotationResponse(BaseModel):
     # Note: arm_id, arm_title, arm_description, item_attribute_full_text_details
     # are not included as they're EPPI-specific metadata the LLM cannot provide
 
-    class Config:  # noqa: D106
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class LLMResponseSchema(BaseModel):
@@ -331,8 +329,7 @@ class LLMResponseSchema(BaseModel):
         ..., description="List of annotations extracted from the document"
     )
 
-    class Config:  # noqa: D106 # TO DO FIX THIS!
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class ProcessedAttributeData(BaseModel):
@@ -518,3 +515,4 @@ class ProcessedAnnotationData(ProcessedAttributeData):
             if attr.attribute_id == attribute_id:
                 return attr
         return None
+    
