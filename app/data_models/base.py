@@ -55,6 +55,8 @@ class Attribute(BaseModel):
     Represents a single piece of information to be extracted from documents.
     """
 
+    model_config = ConfigDict()
+
     prompt: str | None = None  # an optional prompt.
     question_target: str  # 'How many patients were recruited?' - the prompt/question
     output_data_type: AttributeType  # One of the defined output data types
@@ -188,6 +190,8 @@ class Attribute(BaseModel):
 class AttributesList(BaseModel):
     """Container for a list of attributes."""
 
+    model_config = ConfigDict()
+
     attributes: list[Attribute]
 
     def __iter__(self):  # noqa: ANN204
@@ -202,6 +206,8 @@ class AttributesList(BaseModel):
 class Document(BaseModel):
     """Represents a document in the dataset."""
 
+    model_config = ConfigDict()
+
     name: str
     citation: Reference
     context: str | list[str]
@@ -211,6 +217,8 @@ class Document(BaseModel):
 
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
+
+    model_config = ConfigDict()
 
     attribute: Attribute
     output_data: Any
@@ -241,6 +249,8 @@ class GoldStandardAnnotation(BaseModel):
 
 class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
+
+    model_config = ConfigDict()
 
     annotations: list[GoldStandardAnnotation]
 
