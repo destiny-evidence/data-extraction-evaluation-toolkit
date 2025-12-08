@@ -12,7 +12,7 @@ from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
 from PIL.Image import Image
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.exceptions import (
     FileParserMismatchError,
@@ -70,8 +70,9 @@ class ParsedOutput(BaseModel):
     images: dict[str, Image] | None = None
     metadata: dict | None = None
 
-    class Config:  # noqa: D106
-        arbitrary_types_allowed = True  # this is to allow our Executor class as a type.
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True
+    )  # this is to allow our Executor class as a type.
 
     @field_validator("text", mode="after")
     @classmethod
