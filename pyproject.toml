@@ -1,6 +1,6 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = ["hatchling"]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
 
 [dependency-groups]
 dev = [
@@ -129,6 +129,10 @@ per-file-ignores = {"tests*" = [
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = ["deet"]
 
 [tool.tomlsort]
 all = true
