@@ -48,6 +48,7 @@ DEET-create-project = "deet.scripts.create_project:main"
 DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
 DEET-new-batch = "deet.scripts.new_batch:main"
 DEET-pipeline = "deet.scripts.default_pipeline:main"
+DEET-write-csv-template = "deet.scripts.create_prompt_definition_csv:main"
 
 [tool.coverage.report]
 # This section is optional but good practice

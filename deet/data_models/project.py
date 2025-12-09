@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, computed_field
 
-from deet.data_models.base import GoldStandardAnnotatedDocument
+from deet.data_models.base import Attribute, GoldStandardAnnotatedDocument
 
 
 class DeetProject(BaseModel):
@@ -66,6 +66,11 @@ class DeetProject(BaseModel):
                 for i, document in enumerate(documents):
                     if i in sample_ids:
                         yield document
+
+    def read_attributes(self) -> list[Attribute]:
+        """Read the attributes of a project."""
+        with self.proc_data.joinpath("attributes.json").open() as f:
+            return [Attribute.model_validate(att) for att in json.load(f)]
 
     @computed_field  # type: ignore[prop-decorator]
     @property
