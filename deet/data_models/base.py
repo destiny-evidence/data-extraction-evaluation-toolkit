@@ -60,6 +60,10 @@ class Attribute(BaseModel):
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
+    attribute_set_description: str | None = Field(
+        description="Description of the attribute set this attribute belongs to",
+        default=None,
+    )
 
     def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
         """
@@ -237,6 +241,17 @@ class GoldStandardAnnotation(BaseModel):
             )
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
+
+    reasoning: str | None = Field(
+        description="Reasoning, taken from LLM response", default=None
+    )
+    additional_text: str | None = Field(
+        ...,
+        description=(
+            "Supporting text from document containing the context window "
+            "where the attribute is found"
+        ),
+    )
 
 
 class GoldStandardAnnotatedDocument(Document):

@@ -36,10 +36,8 @@ class EppiAttribute(Attribute):
     output_data_type: AttributeType = AttributeType.BOOL
 
     # EPPI-specific fields - these map automatically from camelCase JSON
-    attribute_set_description: str | None = Field(
-        description="Description of the attribute set this attribute belongs to",
-        default=None,
-    )
+    # MC - I've put those of these that the pipeline requires in the base
+    # class
     hierarchy_path: str | None = Field(
         description="Dot-separated path showing the hierarchical "
         " position of this attribute",

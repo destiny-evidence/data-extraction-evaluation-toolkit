@@ -54,6 +54,8 @@ class DataExtractionSettings(BaseSettings):
         ),
     )
 
+    llm_provider: str = Field(default="azure", description="LLM Provider")
+
     # # Context and selection
     # context_type: str = Field(
     #     default="full_document",

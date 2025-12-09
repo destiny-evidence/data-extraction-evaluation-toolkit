@@ -7,11 +7,13 @@ from pathlib import Path
 import litellm
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from deet.data_models.base import AnnotationType
+from deet.data_models.base import (
+    AnnotationType,
+    Attribute,
+    Document,
+    GoldStandardAnnotation,
+)
 from deet.data_models.eppi import (  # type: ignore[attr-defined]
-    EppiAttribute,
-    EppiDocument,
-    EppiGoldStandardAnnotation,
     LLMResponseSchema,
 )
 from deet.logger import logger
@@ -139,7 +141,10 @@ class LLMDataExtractor:
         """
         self.config = config
         self.custom_system_prompt_file = custom_system_prompt_file
-        self.model = f"azure/{settings.azure_deployment}"
+        if settings.llm_provider == "azure":
+            self.model = f"azure/{settings.azure_deployment}"
+        else:
+            self.model = settings.llm_model
         self.azure_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
         self.azure_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
         if show_litellm_debug_messages:
@@ -225,6 +230,39 @@ class LLMDataExtractor:
 
         return all_annotations
 
+    def extract_from_document(
+        self,
+        document: Document,
+        attributes: list[Attribute],
+        **kwargs,
+    ) -> list[GoldStandardAnnotation]:
+        """
+        Extract data from a single document.
+
+        Args:
+            document: Document to analyze
+            attributes: List of attributes to extract
+
+        Returns:
+            List of annotations for the document
+
+        Raises:
+            ValueError: If no attributes are selected for extraction after filtering.
+
+        """
+        selected_attributes = self._filter_attributes(attributes)
+
+        if not selected_attributes:
+            msg = "No attributes selected for extraction"
+            logger.warning(msg)
+            raise ValueError(msg)
+
+        context = self._prepare_context(document, **kwargs)
+        prompt = self._generate_user_message_json(context, selected_attributes)
+        llm_response = self._call_llm(prompt, **kwargs)
+
+        return self._parse_llm_response(llm_response, selected_attributes, document)
+
     def _filter_attributes(self, attributes: list[Attribute]) -> list[Attribute]:
         """Filter attributes using selected_attribute_ids if provided."""
         if self.config.selected_attribute_ids:
@@ -243,9 +281,14 @@ class LLMDataExtractor:
         )
         return attributes
 
-    def _prepare_context(self, document: Document, full_text: str, **kwargs) -> str:
+    def _prepare_context(
+        self, document: Document, full_text: str | None = None, **kwargs
+    ) -> str:
         """Prepare context based on context type."""
         if self.config.context_type == ContextType.FULL_DOCUMENT:
+            if full_text is None:
+                logger.error("No full text for this document")
+                raise ValueError
             context = full_text
             logger.debug(f"Using full document context (length: {len(str(context))})")
         elif self.config.context_type == ContextType.ABSTRACT_ONLY:
