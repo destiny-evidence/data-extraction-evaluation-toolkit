@@ -348,11 +348,8 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pypandoc" },
     { name = "python-dotenv" },
-<<<<<<< HEAD
     { name = "tabulate" },
-=======
     { name = "typer" },
->>>>>>> d19b921 (developing project folder workflows)
     { name = "types-pyyaml" },
 ]
 
