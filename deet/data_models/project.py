@@ -12,7 +12,6 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from deet.data_models.base import Attribute, GoldStandardAnnotatedDocument
 from deet.logger import logger
 
-
 class DeetProject(BaseModel):
     """Data structure for a deet project."""
 
