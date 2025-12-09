@@ -43,7 +43,10 @@ version = "0.2.0"
 
 [project.scripts]
 DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
-DEET-pipeline = "deet.scripts.default_pipeline:main"
+DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
+DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
+DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
+DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
 
 [tool.coverage.report]
 # This section is optional but good practice
