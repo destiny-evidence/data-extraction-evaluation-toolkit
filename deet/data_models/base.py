@@ -228,17 +228,6 @@ class GoldStandardAnnotation(BaseModel):
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
 
-    reasoning: str | None = Field(
-        description="Reasoning, taken from LLM response", default=None
-    )
-    additional_text: str | None = Field(
-        ...,
-        description=(
-            "Supporting text from document containing the context window "
-            "where the attribute is found"
-        ),
-    )
-
 
 class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
