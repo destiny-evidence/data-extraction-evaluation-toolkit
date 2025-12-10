@@ -135,7 +135,7 @@ pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools]
 package-dir = {"" = "."}
-packages = ["deet"]
+packages = {find = {}}
 
 [tool.tomlsort]
 all = true
