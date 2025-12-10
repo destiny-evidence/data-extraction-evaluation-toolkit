@@ -36,7 +36,7 @@ dependencies = [
     "types-pyyaml>=6.0.12.20250915",
 ]
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
-name = "deet"
+name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11"
 version = "0.2.0"
@@ -135,7 +135,7 @@ pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools]
 package-dir = {"" = "."}
-packages = {find = {}}
+packages = {find = {exclude = ["test_env*", "tests*"]}}
 
 [tool.tomlsort]
 all = true
