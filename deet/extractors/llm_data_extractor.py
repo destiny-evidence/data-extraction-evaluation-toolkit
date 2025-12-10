@@ -469,6 +469,6 @@ class LLMDataExtractor:
         self, annotations: list[GoldStandardAnnotatedDocument], output_file: Path
     ) -> None:
         """Save results to file."""
-        annotations_json = [x.model_dump_json() for x in annotations]
+        annotations_json = [x.model_dump(mode="json") for x in annotations]
         output_file.write_text(json.dumps(annotations_json))
         logger.info(f"Results saved to: {output_file}")
