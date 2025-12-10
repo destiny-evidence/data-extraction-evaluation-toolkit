@@ -1,37 +1,33 @@
 """Command line script to run a pipeline on a batch of records in a project."""
 
-import json
 from pathlib import Path
 
 import typer
+import yaml
 
-from deet.data_models.base import Attribute, Document, GoldStandardAnnotation
-from deet.data_models.eppi import EppiAttribute
+from deet.data_models.base import (
+    Attribute,
+    Document,
+    GoldStandardAnnotatedDocument,
+    ProcessedAttributeData,
+)
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.data_models.project import DeetProject
 from deet.extractors.llm_data_extractor import (
-    ContextType,
     DataExtractionConfig,
     LLMDataExtractor,
 )
 
-# NOTE - define your LLM config stuff here. currently all values are default.
-config = DataExtractionConfig(context_type=ContextType.ABSTRACT_ONLY)
-
-data_extractor = LLMDataExtractor(config=config)
-
 
 def llm_data_extraction(
     documents: list[Document],
-    attributes_file_path: Path,
+    attributes: list[Attribute],
     output_path: Path,
+    data_extractor: LLMDataExtractor,
     filter_by_attribute_ids: list[int] | None = None,
     **kwargs,
-) -> list[GoldStandardAnnotation]:
+) -> list[GoldStandardAnnotatedDocument]:
     """Run LLM data extraction."""
-    attributes_raw = json.loads(attributes_file_path.read_text())
-
-    attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
     if filter_by_attribute_ids:
         attributes = [
             a for a in attributes if a.attribute_id in filter_by_attribute_ids
@@ -45,7 +41,7 @@ def llm_data_extraction(
     )
 
 
-app = typer.Typer(help="Create a DEET project")
+app = typer.Typer(help="Run a pipeline on your batch")
 
 
 @app.command()
@@ -63,6 +59,25 @@ def batch_pipeline() -> None:
     run_path = proj.batches[-1] / f"run_{len(runs)}"
     run_path.mkdir()
 
+    run_config = yaml.safe_load(proj.p.joinpath("run-settings.yaml").open())
+
+    config = DataExtractionConfig(**run_config)
+
+    data_extractor = LLMDataExtractor(config=config)
+
+    run_config_path = run_path / "run_settings.json"
+
+    run_config_path.write_text(config.model_dump_json())
+
+    if config.prompt_csv_path is not None:
+        proc_attributes = ProcessedAttributeData(attributes=proj.read_attributes())
+        prompt_csv_path = proj.p / "prompts" / config.prompt_csv_path
+        proc_attributes.populate_custom_prompts(method="file", filepath=prompt_csv_path)
+
+        attributes = proc_attributes.attributes
+    else:
+        attributes = proj.read_attributes()
+
     llm_extraction_stage = stage_from_job(
         jobify(
             name="llm_extraction",
@@ -71,9 +86,10 @@ def batch_pipeline() -> None:
                 "documents": proj.read_annotated_documents(
                     batch_ids=proj.documents_in_batches
                 ),
-                "attributes_file_path": proj.proc_data / "attributes_filtered.json",
+                "attributes": attributes,
                 "output_path": run_path / "llm_extractions.json",
                 "prompt_outfile": run_path / "full_prompt_payload.json",
+                "data_extractor": data_extractor,
             },
         )(llm_data_extraction)
     )
@@ -85,6 +101,8 @@ def batch_pipeline() -> None:
     )
 
     my_beautiful_pipeline.run()
+
+    proj.evaluate_run(run_path)
 
 
 def main() -> None:

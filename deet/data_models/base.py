@@ -335,19 +335,15 @@ class LLMResponseSchema(BaseModel):
         extra = "forbid"
 
 
-class ProcessedAnnotationData(BaseModel):
+class ProcessedAttributeData(BaseModel):
     """
     Structured result from annotation processing.
 
-    This model provides a clean, validated structure for all processed
-    annotation data with useful properties and methods.
+    Contains only attributes, so the ProcessedAnnotationData class can
+    subclass this
     """
 
     attributes: list[Attribute]
-    documents: list[Document]
-    annotations: list[GoldStandardAnnotation]
-    annotated_documents: list[GoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[int, str]
 
     def _custom_prompts_cli(self) -> None:
         """
@@ -472,6 +468,21 @@ class ProcessedAnnotationData(BaseModel):
     def total_attributes(self) -> int:
         """Total number of attributes processed."""
         return len(self.attributes)
+
+
+class ProcessedAnnotationData(ProcessedAttributeData):
+    """
+    Structured result from annotation processing.
+
+    This model provides a clean, validated structure for all processed
+    annotation data with useful properties and methods.
+    """
+
+    attributes: list[Attribute]
+    documents: list[Document]
+    annotations: list[GoldStandardAnnotation]
+    annotated_documents: list[GoldStandardAnnotatedDocument]
+    attribute_id_to_label: dict[int, str]
 
     @property
     def total_documents(self) -> int:

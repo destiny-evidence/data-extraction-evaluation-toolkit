@@ -38,11 +38,11 @@ def create_project(
 
     input_path = proj.raw_data / "data.json"
 
-    if not input_path.exists() or typer.confirm(
+    if not input_path.exists() and not typer.confirm(
         "Finished setting up project"
         "structure. Please confirm you have"
         "saved your raw data as "
-        "{input_path.absolute()}"
+        f"{input_path.absolute()}"
     ):
         typer.echo("aborting")
         raise typer.Abort()  # noqa: RSE102

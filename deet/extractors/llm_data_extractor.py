@@ -86,6 +86,9 @@ class DataExtractionConfig(BaseSettings):
     temperature: float = settings.llm_temperature
     max_tokens: int | None = settings.llm_max_tokens
 
+    system_prompt_path: str | None = None
+    prompt_csv_path: str | None = None
+
     # Context
     context_type: ContextType = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
@@ -150,7 +153,7 @@ class LLMDataExtractor:
         if settings.llm_provider == "openai":
             self.api_key = settings.openai_api_key.get_secret_value()  # type: ignore[union-attr]
             self.api_base = None
-            self.model = settings.llm_model
+            self.model = self.config.model
 
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001

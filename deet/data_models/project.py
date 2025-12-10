@@ -7,6 +7,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 from pydantic import BaseModel, computed_field
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 from deet.data_models.base import Attribute, GoldStandardAnnotatedDocument
 
@@ -109,3 +110,51 @@ class DeetProject(BaseModel):
     def folders_exist(self) -> bool:
         """Check all required folders exist."""
         return all(f.exists() for f in self.folders)
+
+    def evaluate_run(self, run_path: Path) -> None:
+        """Evaluate run by comparing human with LLM responses."""
+        metric_dict: dict[str, dict] = {}
+        human_annotations = self.read_annotated_documents(
+            batch_ids=self.documents_in_batches
+        )
+
+        llm_annotations = [
+            GoldStandardAnnotatedDocument.model_validate(x)
+            for x in json.load(run_path.joinpath("llm_extractions.json").open())
+        ]
+
+        for attribute in self.read_attributes():
+            y_true = []
+            y_pred = []
+            for i, human_annotation in enumerate(human_annotations):
+                llm_annotation = llm_annotations[i]
+                ground_truth = [
+                    x
+                    for x in human_annotation.annotations
+                    if x.attribute.attribute_id == attribute.attribute_id
+                ]
+
+                # Currently, the presence of an attribute indicates true,
+                # and the absence false
+                if len(ground_truth) == 0:
+                    y_true.append(False)
+                else:
+                    y_true.append(True)
+
+                prediction = [
+                    x
+                    for x in llm_annotation.annotations
+                    if x.attribute.attribute_id == attribute.attribute_id
+                ]
+                if len(prediction) == 0:
+                    continue  # attribute not in human document
+                y_pred.append(prediction[0].output_data)
+
+            attribute_metrics = {}
+
+            for metric in [f1_score, precision_score, recall_score, accuracy_score]:
+                attribute_metrics[metric.__name__] = metric(y_true, y_pred)
+
+            metric_dict[attribute.attribute_label] = attribute_metrics
+
+        json.dump(metric_dict, run_path.joinpath("metrics.json").open("w"))
