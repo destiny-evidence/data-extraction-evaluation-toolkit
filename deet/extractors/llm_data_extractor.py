@@ -6,14 +6,15 @@ from pathlib import Path
 
 import litellm
 from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic_settings import BaseSettings
 
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
     Document,
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
-)
-from deet.data_models.eppi import (  # type: ignore[attr-defined]
+    LLMInputSchema,
     LLMResponseSchema,
 )
 from deet.logger import logger
@@ -77,7 +78,7 @@ class PromptConfig(BaseModel):
         return self
 
 
-class DataExtractionConfig(BaseModel):
+class DataExtractionConfig(BaseSettings):
     """Configuration for data extraction tasks."""
 
     # LLM
@@ -143,10 +144,14 @@ class LLMDataExtractor:
         self.custom_system_prompt_file = custom_system_prompt_file
         if settings.llm_provider == "azure":
             self.model = f"azure/{settings.azure_deployment}"
-        else:
+            self.api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+
+        if settings.llm_provider == "openai":
+            self.api_key = settings.openai_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = None
             self.model = settings.llm_model
-        self.azure_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
-        self.azure_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001
 
@@ -160,43 +165,13 @@ class LLMDataExtractor:
                 self.custom_system_prompt_file.read_text()
             )
 
-    def extract_from_document(
-        self, document: Document, attributes: list[Attribute], **kwargs
-    ) -> list[GoldStandardAnnotation]:
-        """
-        Extract data from a single document.
-
-        Args:
-            document: Document to analyze
-            attributes: List of attributes to extract
-
-        Returns:
-            List of annotations for the document
-
-        Raises:
-            ValueError: If no attributes are selected for extraction after filtering.
-
-        """
-        selected_attributes = self._filter_attributes(attributes)
-
-        if not selected_attributes:
-            msg = "No attributes selected for extraction"
-            logger.warning(msg)
-            raise ValueError(msg)
-
-        context = self._prepare_context(document, **kwargs)
-        prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt, **kwargs)
-
-        return self._parse_llm_response(llm_response, selected_attributes)
-
     def extract_from_documents(
         self,
         documents: list[Document],
         attributes: list[Attribute],
         output_file: Path | None = None,
         **kwargs,
-    ) -> list[GoldStandardAnnotation]:
+    ) -> list[GoldStandardAnnotatedDocument]:
         """
         Extract data from multiple documents.
 
@@ -209,7 +184,7 @@ class LLMDataExtractor:
             List of annotations for all documents and attributes
 
         """
-        all_annotations = []
+        all_annotated_documents = []
 
         for document in documents:
             logger.info(f"Processing document: {document.name}")
@@ -217,7 +192,14 @@ class LLMDataExtractor:
                 document_annotations = self.extract_from_document(
                     document, attributes, **kwargs
                 )
-                all_annotations.extend(document_annotations)
+                annotated_document = GoldStandardAnnotatedDocument(
+                    document_id=document.document_id,
+                    name=document.name,
+                    citation=document.citation,
+                    context=document.context,
+                    annotations=document_annotations,
+                )
+                all_annotated_documents.append(annotated_document)
             except (ValidationError, ValueError) as e:
                 logger.error(
                     f"Failed to extract from document {document.document_id}: {e}"
@@ -226,9 +208,9 @@ class LLMDataExtractor:
                 continue
 
         if output_file:
-            self._save_results(all_annotations, output_file)
+            self._save_results(all_annotated_documents, output_file)
 
-        return all_annotations
+        return all_annotated_documents
 
     def extract_from_document(
         self,
@@ -261,7 +243,7 @@ class LLMDataExtractor:
         prompt = self._generate_user_message_json(context, selected_attributes)
         llm_response = self._call_llm(prompt, **kwargs)
 
-        return self._parse_llm_response(llm_response, selected_attributes, document)
+        return self._parse_llm_response(llm_response, selected_attributes)
 
     def _filter_attributes(self, attributes: list[Attribute]) -> list[Attribute]:
         """Filter attributes using selected_attribute_ids if provided."""
@@ -385,8 +367,8 @@ class LLMDataExtractor:
 
         response = litellm.completion(
             model=self.model,
-            api_key=self.azure_key,
-            api_base=self.azure_base,
+            api_key=self.api_key,
+            api_base=self.api_base,
             messages=messages,
             temperature=self.config.temperature,
             response_format={
@@ -484,9 +466,9 @@ class LLMDataExtractor:
         return annotations
 
     def _save_results(
-        self, annotations: list[GoldStandardAnnotation], output_file: Path
+        self, annotations: list[GoldStandardAnnotatedDocument], output_file: Path
     ) -> None:
         """Save results to file."""
-        annotations_json = [x.model_dump() for x in annotations]
+        annotations_json = [x.model_dump_json() for x in annotations]
         output_file.write_text(json.dumps(annotations_json))
         logger.info(f"Results saved to: {output_file}")

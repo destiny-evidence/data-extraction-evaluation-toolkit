@@ -99,6 +99,14 @@ class DataExtractionSettings(BaseSettings):
         description="Azure deployment name to use when azure_api_key is provided.",
     )
 
+    openai_api_key: SecretStr | None = Field(
+        description="OpenAI API key if using OpenAI provider.",
+    )
+    openai_api_base: str | None = Field(
+        default="https://api.openai.com/v1/",
+        description="OpenAI API key if using OpenAI provider.",
+    )
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> DataExtractionSettings:
