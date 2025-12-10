@@ -232,7 +232,7 @@ class GoldStandardAnnotation(BaseModel):
     @classmethod
     def ensure_correct_type(cls, data: dict) -> dict:
         """Ensure output_data is of the type required by annotation_type."""
-        target_att: Attribute = data["attribute"]
+        target_att: Attribute = Attribute.model_validate(data["attribute"])
         target_type: type = target_att.output_data_type.to_python_type()
         if not isinstance(data["output_data"], target_type):
             bad_type = (
@@ -298,7 +298,8 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    # Note: Reverting to bool, as any results in an invalid json schema
+    output_data: bool = Field(..., description="The LLM's annotation.")
     additional_text: str | None = Field(
         ...,
         description=(
