@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
 
 [dependency-groups]
 dev = [
@@ -32,16 +32,21 @@ dependencies = [
     "pydantic>=2.11.7",
     "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
+    "tabulate>=0.9.0",
     "types-pyyaml>=6.0.12.20250915",
 ]
-description = " A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
+description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11"
-version = "0.1.0"
+version = "0.2.0"
 
 [project.scripts]
-DEET-eppi-convert = "app.scripts.eppi_annotation_converter_cli:main"
+DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
+DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
+DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
+DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
+DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
 
 [tool.coverage.report]
 # This section is optional but good practice
@@ -50,9 +55,9 @@ show_missing = true
 
 [tool.coverage.run]
 omit = [
-    "app/scripts/*",
+    "deet/scripts/*",
 ]
-source = ["app"]
+source = ["deet"]
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -70,13 +75,17 @@ module = "nltk.*"
 ignore_missing_imports = true
 module = "loguru.*"
 
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "tabulate.*"
+
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
 pythonpath = "."
 testpaths = ["tests"]
 
 [tool.ruff]
-extend-exclude = ["app/migrations/versions/*.py", "docs/*.py"]
+extend-exclude = ["deet/migrations/versions/*.py", "docs/*.py"]
 fix = true
 force-exclude = true
 line-length = 88
@@ -125,8 +134,8 @@ mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools]
-package-dir = {"data_extraction_evaluation_toolkit" = "app"}
-packages = ["data_extraction_evaluation_toolkit"]
+package-dir = {"" = "."}
+packages = {find = {exclude = ["test_env*", "tests*"]}}
 
 [tool.tomlsort]
 all = true

@@ -2,8 +2,8 @@
 
 import pytest
 
-from app.data_models.base import AnnotationType, AttributeType
-from app.data_models.eppi import (
+from deet.data_models.base import AnnotationType, AttributeType
+from deet.data_models.eppi import (
     EppiAttribute,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
@@ -235,6 +235,7 @@ def test_eppi_gold_standard_annotation_with_llm() -> None:
     attr = EppiAttribute(
         attribute_id=2345,
         attribute_label="Test EPPI Attribute 2",
+        output_data_type=AttributeType.STRING,
     )
 
     annotation = EppiGoldStandardAnnotation(
