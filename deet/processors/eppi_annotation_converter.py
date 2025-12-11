@@ -8,8 +8,8 @@ from uuid import uuid4
 from destiny_sdk.references import Reference
 from destiny_sdk.visibility import Visibility
 
-from app.data_models.base import AnnotationType, AttributeType
-from app.data_models.eppi import (
+from deet.data_models.base import AnnotationType, AttributeType
+from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotatedDocument,
@@ -18,7 +18,7 @@ from app.data_models.eppi import (
     EppiRawData,
     ProcessedAnnotationData,
 )
-from app.logger import logger
+from deet.logger import logger
 
 
 class EppiAnnotationConverter:

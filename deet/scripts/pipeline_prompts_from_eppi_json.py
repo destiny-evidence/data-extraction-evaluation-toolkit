@@ -1,18 +1,7 @@
 """
-An example of a pipeline script where prompts are supplied
-by the user, asynchronously.
-
-This is a two-part pipeline.
-This script is part 02, where the user-written prompts are
-incorporated into the attributes that are used by the
-LLM extractor to extract info.
-
-Before running this, the user has to
-- run pipeline_prompt_csv_01.py
-- write prompts into the csv created by that pipeline
-- make a note of that csv's location and pass it to
-  this script with a -c flag.
-
+An example of a pipeline script which inherits prompts from the EPPI JSON,
+specifically `attribute_label`. This is defined in the LLMInputSchema class
+in base.py.
 """
 
 import argparse
@@ -21,16 +10,16 @@ from pathlib import Path
 
 from loguru import logger
 
-from app.data_models.base import Attribute, Document, GoldStandardAnnotation
+from deet.data_models.base import Attribute, Document, GoldStandardAnnotation
 
 # @sagaruprety note that we now only use Eppi types in our
 # specific use-case (i.e. a pipeline script), no longer in the
 # underlying application. The application uses base.py data types.
-from app.data_models.eppi import EppiAttribute, EppiDocument
-from app.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
-from app.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from app.processors.eppi_annotation_converter import EppiAnnotationConverter
-from app.processors.parser import DocumentParser
+from deet.data_models.eppi import EppiAttribute, EppiDocument
+from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
+from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()
 converter = EppiAnnotationConverter()
@@ -69,17 +58,9 @@ def parse_pdf(
     parser(input_=pdf_path, out_path=out_path)
 
 
-def ingest_gold_standard_import_csv_func(
-    eppi_json_path: Path, output_dir: Path, csv_path: Path
-) -> None:
+def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
     """Convert EPPI JSON to DEET data models."""
     out = converter.process_annotation_file(eppi_json_path)
-
-    # import prompts from csv for attribute population.
-    if csv_path.parent == Path("."):  # noqa: PTH201
-        csv_path = output_dir / csv_path
-
-    out.populate_custom_prompts(method="file", filepath=csv_path)
     converter.save_processed_data(processed_data=out, output_dir=output_dir)
 
 
@@ -92,6 +73,7 @@ def llm_data_extraction(
     **kwargs,
 ) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
+    logger.debug(full_text_path)
     full_text = full_text_path.read_text(encoding="utf-8")
 
     documents_raw = json.loads(documents_file_path.read_text(encoding="utf-8"))
@@ -118,7 +100,7 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=True, type=Path
+        "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
     )
     parser.add_argument(
         "-m",
@@ -129,14 +111,6 @@ def main() -> None:
     )
     parser.add_argument(
         "-e", "--eppi_json_path", help="path to eppi json", type=Path, required=True
-    )
-
-    parser.add_argument(
-        "-c",
-        "--csv_path",
-        help="path you want to write prompt editing csv to.",
-        type=Path,
-        required=True,
     )
 
     args = parser.parse_args()
@@ -162,16 +136,16 @@ def main() -> None:
         )(parse_pdf)  # Apply jobify decorator to function
     )
 
-    ingest_gs_csv_stage = stage_from_job(
+    ingest_gs_stage = stage_from_job(
         jobify(
-            name="ingest_gs_csv_import",
+            name="ingest_gs",
             func_kwargs={
                 "eppi_json_path": args.eppi_json_path,
                 "output_dir": eppi_out_path,
-                "csv_path": args.csv_path,
             },
-        )(ingest_gold_standard_import_csv_func)
+        )(ingest_gold_standard_func)
     )
+
     llm_extraction_stage = stage_from_job(
         jobify(
             name="llm_extraction",
@@ -188,7 +162,8 @@ def main() -> None:
 
     my_beautiful_pipeline = Pipeline(
         name="test_pipeline",
-        stages=[parse_pdf_stage, ingest_gs_csv_stage, llm_extraction_stage],
+        stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
+        # stages=[ingest_gs_stage, llm_extraction_stage],
     )
 
     my_beautiful_pipeline.run()

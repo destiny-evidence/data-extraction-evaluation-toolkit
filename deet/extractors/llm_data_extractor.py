@@ -7,7 +7,7 @@ from pathlib import Path
 import litellm
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from app.data_models.base import (
+from deet.data_models.base import (
     AnnotationType,
     Attribute,
     Document,
@@ -15,8 +15,8 @@ from app.data_models.base import (
     LLMInputSchema,
     LLMResponseSchema,
 )
-from app.logger import logger
-from app.settings import get_settings
+from deet.logger import logger
+from deet.settings import get_settings
 
 settings = get_settings()
 

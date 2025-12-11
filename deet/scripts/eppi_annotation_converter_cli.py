@@ -10,7 +10,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from app.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
 def main() -> None:
