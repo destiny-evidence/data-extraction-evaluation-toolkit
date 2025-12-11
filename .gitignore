@@ -206,12 +206,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 misc
-app.log
+deet.log
 
 # Data files and outputs
 *.json
 output/
-app/annotations/processed/
-app/annotations/raw/
+deet/annotations/processed/
+deet/annotations/raw/
 .DS_Store
 .keys

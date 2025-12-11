@@ -9,7 +9,7 @@ from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
-from app.data_models.base import (
+from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributeType,

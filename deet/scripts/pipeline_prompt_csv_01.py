@@ -15,8 +15,8 @@ in the data extraction stage.
 import argparse
 from pathlib import Path
 
-from app.data_models.pipeline import Pipeline, jobify, stage_from_job
-from app.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.data_models.pipeline import Pipeline, jobify, stage_from_job
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 converter = EppiAnnotationConverter()
 

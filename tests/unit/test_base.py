@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 from destiny_sdk.references import Reference
 
-from app.data_models.base import (
+from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributesList,
