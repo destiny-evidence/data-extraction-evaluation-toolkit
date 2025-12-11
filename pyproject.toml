@@ -1,6 +1,11 @@
 [build-system]
+<<<<<<< HEAD
 build-backend = "hatchling.build"
 requires = ["hatchling"]
+=======
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
+>>>>>>> fc79e29 (Renamed app directory to deet, updated config (#83))
 
 [dependency-groups]
 dev = [
@@ -41,12 +46,17 @@ dependencies = [
     "types-pyyaml>=6.0.12.20250915",
 ]
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
+<<<<<<< HEAD
 name = "deet"
+=======
+name = "data-extraction-evaluation-toolkit"
+>>>>>>> fc79e29 (Renamed app directory to deet, updated config (#83))
 readme = "README.md"
 requires-python = ">=3.12.11"
 version = "0.2.0"
 
 [project.scripts]
+<<<<<<< HEAD
 DEET-batch-pipeline = "deet.scripts.batch_pipeline:main"
 DEET-create-project = "deet.scripts.create_project:main"
 DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
@@ -54,6 +64,13 @@ DEET-new-batch = "deet.scripts.new_batch:main"
 DEET-pipeline = "deet.scripts.default_pipeline:main"
 DEET-ui = "deet.ui.cli:main"
 DEET-write-csv-template = "deet.scripts.create_prompt_definition_csv:main"
+=======
+DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
+DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
+DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
+DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
+DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
+>>>>>>> fc79e29 (Renamed app directory to deet, updated config (#83))
 
 [tool.coverage.report]
 # This section is optional but good practice
@@ -139,6 +156,10 @@ per-file-ignores = {"tests*" = [
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = {find = {exclude = ["test_env*", "tests*"]}}
 
 [tool.tomlsort]
 all = true
