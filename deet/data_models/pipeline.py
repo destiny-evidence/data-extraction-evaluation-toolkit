@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Literal, TypeVar, overload
 
 from loguru import logger
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -357,8 +357,7 @@ class Job(BaseModel):
     capture_output: bool = True
     executor: Executor
 
-    class Config:  # noqa: D106
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def run_job(self) -> None | str:
         """Run the job defined in this model instance."""
