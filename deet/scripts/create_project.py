@@ -1,28 +1,28 @@
 """Command line script to create a project."""
 
+import shutil
 from pathlib import Path
-from typing import Annotated
 
 import typer
+import yaml
 from loguru import logger
 
 from deet.data_models.project import DeetProject
+from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 app = typer.Typer(help="Create a DEET project")
 
 
 @app.command()
-def create_project(
-    name: Annotated[str, typer.Argument()] = ".", *, clear: bool = False
-) -> None:
+def create_project(path: str, data_path: str, *, clear: bool = False) -> None:
     """Set up a folder structure for a DEET project."""
-    if name == ".":
+    if path == ".":
         typer.echo("creating project in current directory")
     else:
-        typer.echo(f"creating project in {name}")
+        typer.echo(f"creating project in {path}")
 
-    proj = DeetProject(path=name)
+    proj = DeetProject(path=path)
     if (
         proj.p.exists()
         and clear
@@ -34,18 +34,18 @@ def create_project(
         raise typer.Abort()  # noqa: RSE102
 
     for f in proj.folders:
+        if clear:
+            shutil.rmtree(f)
         f.mkdir(exist_ok=not clear)
 
     input_path = proj.raw_data / "data.json"
+    with Path(data_path).open() as src:
+        input_path.write_text(src.read())
 
-    if not input_path.exists() and not typer.confirm(
-        "Finished setting up project"
-        "structure. Please confirm you have"
-        "saved your raw data as "
-        f"{input_path.absolute()}"
-    ):
-        typer.echo("aborting")
-        raise typer.Abort()  # noqa: RSE102
+    # Create config file with defaults
+    config = DataExtractionConfig()
+    with proj.p.joinpath("run-settings.yaml").open("w") as f:
+        yaml.dump(config.model_dump(mode="json"), f)
 
     convert_raw_data(input_path, proj.proc_data)
 

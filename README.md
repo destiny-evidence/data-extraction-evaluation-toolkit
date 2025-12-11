@@ -104,6 +104,59 @@ For example, processing `sample_eppi.json` creates `output/processed/eppi/sample
 
 ## Orchastration into `Pipeline`s
 
+## Projects
+
+### Setup
+
+Projects offer a way to organise and manage data and configuration files for a data extraction task.
+
+The suggested way to make a project is in a separate directory, into which you install deet
+
+From a terminal inside this directory you can do this with the following:
+
+```shell
+uv init
+uv add git@github.com:destiny-evidence/data-extraction-evaluation-toolkit.git@project
+```
+
+After doing this you can create a project by providing a path to the project folder and a path to the EPPIJson data you want to add to the project with the command `DEET-create-project`
+
+Assuming you want to create the project in the current directory using a file in that directory called `data.json`, this will look like
+
+```shell
+DEET-create-project . data.json
+```
+
+### Batches and runs
+
+We don't run our data extraction pipeline on all documents inside a project, instead we create batches of documents, and run our pipeline on those documents ([further info](https://destiny-evidence.github.io/evaluation-book/index-1/#chunked-evaluation-data)).
+
+We can create a batch with `n` documents sampled at random with the `DEET-new-batch n` command. For example, `DEET-new-batch 5` will create a batch of 5 records.
+
+Each time we run our pipeline on that batch of documents, we will save what we sent to the LLM, what came out, our configuration options, and some evaluation of the results in a new run folder within the batch folder. Configuration options can be changed by editing the `run-settings.yaml` file that was created when we set up the project. We may want to try a few different settings, editing and saving this file, before running
+
+```shell
+DEET-batch-pipeline
+```
+
+which will run the pipeline with the settings currently defined in the file.
+
+### Creating and using a prompt definition file
+
+Prompts for the individual attributes will be taken from the EPPIJson file, if they are specified there. An alternative way to do this is using a prompt definition file.
+
+We can create this file in the `prompts` folder of our project using
+
+```shell
+DEET-write-csv-template
+```
+
+Now to change the prompts, we can copy this file, give it a new name, edit it, save it, and point to this new file in the `prompt_csv_path` option of our `run-settings.yaml` file. That way we can keep track of all the versions of our prompts, and which ones were used in which run.
+
+### Metrics to compare runs
+
+We run multiple runs with different prompts and configuration options in order to find out which of these works the best. We can assess this by comparing the `metrics.json` file that is created in each run after each successful pipeline run.
+
 ## Contributing
 
 If you want to contribute to this project -- awesome, everyone's welcome.
