@@ -144,16 +144,17 @@ def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
 
 def test_filter_attributes(llm_extractor, sample_eppi_attributes):
     """Test the _filter_attributes method."""
-    llm_extractor.config.selected_attribute_ids = [1234]
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filter_ids = [1234]
+    filtered = llm_extractor._filter_attributes(
+        sample_eppi_attributes, filter_ids=filter_ids
+    )
     assert len(filtered) == 1
     assert filtered[0].attribute_id == 1234
 
 
 def test_filter_attributes_no_selection(llm_extractor, sample_eppi_attributes):
     """Test _filter_attributes when no IDs are selected."""
-    llm_extractor.config.selected_attribute_ids = []
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filtered = llm_extractor._filter_attributes(sample_eppi_attributes, filter_ids=None)
     assert len(filtered) == 2
 
 
