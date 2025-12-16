@@ -11,7 +11,6 @@ from destiny_sdk.references import Reference
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
-    AttributesList,
     AttributeType,
     Document,
     GoldStandardAnnotatedDocument,
@@ -112,48 +111,6 @@ def test_attribute_validation_required_fields() -> None:
     assert attr.question_target == "Test"
     assert attr.attribute_id == 12345
     assert attr.attribute_label == "Test Label"
-
-
-def test_attributes_list_creation() -> None:
-    """Test creating AttributesList with multiple attributes."""
-    attrs = [
-        Attribute(
-            question_target="Question 1",
-            output_data_type=AttributeType.BOOL,
-            attribute_id=1234,
-            attribute_label="Attribute 1",
-        ),
-        Attribute(
-            question_target="Question 2",
-            output_data_type=AttributeType.STRING,
-            attribute_id=2345,
-            attribute_label="Attribute 2",
-        ),
-    ]
-    attr_list = AttributesList(attributes=attrs)
-    assert len(attr_list.attributes) == 2
-    assert attr_list.attributes[0].attribute_id == 1234
-    assert attr_list.attributes[1].attribute_id == 2345
-
-
-def test_attributes_list_iteration() -> None:
-    """Test that AttributesList is iterable."""
-    attrs = [
-        Attribute(
-            question_target="Question 1",
-            output_data_type=AttributeType.BOOL,
-            attribute_id=1234,
-            attribute_label="Attribute 1",
-        ),
-    ]
-    attr_list = AttributesList(attributes=attrs)
-
-    # Test iteration
-    for attr in attr_list:
-        assert attr.attribute_id == 1234
-
-    # Test to_list method
-    assert attr_list.to_list() == attrs
 
 
 def test_write_to_csv_creates_new_file(tmp_path) -> None:
