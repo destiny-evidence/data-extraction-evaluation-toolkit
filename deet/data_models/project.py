@@ -10,6 +10,7 @@ from pydantic import BaseModel, computed_field
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 from deet.data_models.base import Attribute, GoldStandardAnnotatedDocument
+from deet.logger import logger
 
 
 class DeetProject(BaseModel):
@@ -113,7 +114,7 @@ class DeetProject(BaseModel):
 
     def evaluate_run(self, run_path: Path) -> None:
         """Evaluate run by comparing human with LLM responses."""
-        metric_dict: dict[str, dict] = {}
+        attribute_metrics = []
         human_annotations = self.read_annotated_documents(
             batch_ids=self.documents_in_batches
         )
@@ -150,11 +151,39 @@ class DeetProject(BaseModel):
                     continue  # attribute not in human document
                 y_pred.append(prediction[0].output_data)
 
-            attribute_metrics = {}
-
             for metric in [f1_score, precision_score, recall_score, accuracy_score]:
-                attribute_metrics[metric.__name__] = metric(y_true, y_pred)
+                try:
+                    value = metric(y_true, y_pred)
+                except ValueError as e:
+                    logger.error(
+                        f"Error when evaluating attribute: "
+                        f"{attribute.attribute_label}. {e}"
+                    )
+                    value = None
+                attribute_metric = AttributeMetric(
+                    attribute=attribute,
+                    batch=run_path.parts[1],
+                    run=run_path.parts[2],
+                    metric=metric.__name__,
+                    value=value,
+                )
+                attribute_metrics.append(attribute_metric.model_dump(mode="json"))
 
-            metric_dict[attribute.attribute_label] = attribute_metrics
+        json.dump(attribute_metrics, run_path.joinpath("metrics.json").open("w"))
 
-        json.dump(metric_dict, run_path.joinpath("metrics.json").open("w"))
+    def all_runs(self) -> Generator[Path]:
+        """Return all runs from a project."""
+        for batch in self.batches:
+            for run in batch.iterdir():
+                if "run_" in run.name:
+                    yield run
+
+
+class AttributeMetric(BaseModel):
+    """Data structure storing a metric for an attribute for a pipeline run."""
+
+    attribute: Attribute
+    batch: str
+    run: str
+    metric: str
+    value: float | None

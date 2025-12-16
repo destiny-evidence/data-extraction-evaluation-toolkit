@@ -5,6 +5,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 
 import litellm
+from loguru._logger import Logger
 from pydantic import BaseModel, Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings
 
@@ -129,6 +130,7 @@ class LLMDataExtractor:
         self,
         config: DataExtractionConfig,
         custom_system_prompt_file: Path | None = None,
+        logger: Logger = logger,
         *,
         show_litellm_debug_messages: bool = False,
     ) -> None:
@@ -150,10 +152,14 @@ class LLMDataExtractor:
             self.api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
             self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
 
-        if settings.llm_provider == "openai":
+        elif settings.llm_provider == "openai":
             self.api_key = settings.openai_api_key.get_secret_value()  # type: ignore[union-attr]
-            self.api_base = None
-            self.model = self.config.model
+
+        else:
+            self.api_key = None
+
+        self.api_base = None
+        self.model = self.config.model
 
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001
