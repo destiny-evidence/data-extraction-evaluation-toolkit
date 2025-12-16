@@ -189,20 +189,6 @@ class Attribute(BaseModel):
                 continue
 
 
-class AttributesList(BaseModel):
-    """Container for a list of attributes."""
-
-    attributes: list[Attribute]
-
-    def __iter__(self):  # noqa: ANN204
-        """Make AttributesList iterable over its attributes."""
-        yield from self.attributes
-
-    def to_list(self) -> list[Attribute]:
-        """Convert to a simple list of attributes."""
-        return list(self)
-
-
 class Document(BaseModel):
     """Represents a document in the dataset."""
 
