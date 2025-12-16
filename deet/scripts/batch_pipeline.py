@@ -4,6 +4,7 @@ from pathlib import Path
 
 import typer
 import yaml
+from loguru import logger
 
 from deet.data_models.base import (
     Attribute,
@@ -69,6 +70,8 @@ def batch_pipeline() -> None:
 
     run_config_path.write_text(config.model_dump_json())
 
+    logger.add(run_path.joinpath("pipeline-log.log"), level="DEBUG", rotation="500 mb")
+
     if config.prompt_csv_path is not None:
         proc_attributes = ProcessedAttributeData(attributes=proj.read_attributes())
         prompt_csv_path = proj.p / "prompts" / config.prompt_csv_path
@@ -103,6 +106,8 @@ def batch_pipeline() -> None:
     my_beautiful_pipeline.run()
 
     proj.evaluate_run(run_path)
+
+    # asyncio.run(_batch_pipeline())
 
 
 def main() -> None:
