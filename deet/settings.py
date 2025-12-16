@@ -100,6 +100,7 @@ class DataExtractionSettings(BaseSettings):
     )
 
     openai_api_key: SecretStr | None = Field(
+        default=None,
         description="OpenAI API key if using OpenAI provider.",
     )
     openai_api_base: str | None = Field(
