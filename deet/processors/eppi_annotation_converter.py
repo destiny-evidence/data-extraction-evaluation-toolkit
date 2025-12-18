@@ -247,8 +247,8 @@ class EppiAnnotationConverter:
     def _convert_single_annotation(
         self,
         annotation: dict[str, Any],
-        attributes_lookup: dict[str, EppiAttribute] | None = None,
-        attribute_id_to_label: dict[str, str] | None = None,
+        attributes_lookup: dict[int, EppiAttribute] | None = None,
+        attribute_id_to_label: dict[int, str] | None = None,
     ) -> EppiGoldStandardAnnotation:
         """
         Convert a single annotation dictionary to EppiGoldStandardAnnotation.
@@ -272,16 +272,34 @@ class EppiAnnotationConverter:
         output_data = " | ".join(extracted_texts) if extracted_texts else ""
 
         # Look up the attribute from the attributes list
-        attribute_id = str(annotation.get("AttributeId", ""))
-        attribute = attributes_lookup.get(attribute_id) if attributes_lookup else None
+        #
+        # NOTE: EPPI JSON uses int `AttributeId`. Our `EppiAttribute.attribute_id`
+        # is also an int. If we accidentally coerce to str, the lookup will miss
+        # and we will fall back to a synthetic label like "Attribute 6830266".
+        attribute_id_raw = annotation.get("AttributeId")
+        try:
+            attribute_id = (
+                int(attribute_id_raw) if attribute_id_raw is not None else None
+            )
+        except (TypeError, ValueError):
+            attribute_id = None
+
+        attribute = (
+            attributes_lookup.get(attribute_id)
+            if attributes_lookup is not None and attribute_id is not None
+            else None
+        )
 
         if not attribute:
             # Create a basic attribute if not found in lookup
             # Use the mapping to get the correct label
+            attribute_label_default = (
+                f"Attribute {attribute_id}" if attribute_id is not None else "Attribute"
+            )
             attribute_label = (
-                attribute_id_to_label.get(attribute_id, f"Attribute {attribute_id}")
-                if attribute_id_to_label
-                else f"Attribute {attribute_id}"
+                attribute_id_to_label.get(attribute_id, attribute_label_default)
+                if attribute_id_to_label is not None and attribute_id is not None
+                else attribute_label_default
             )
             # Create minimal attribute data and process it
             minimal_attr_data = {
@@ -299,7 +317,11 @@ class EppiAnnotationConverter:
             # Create the model - alias generators automatically map camelCase fields
             attribute = EppiAttribute.model_validate(combined_data)
         # Ensure the attribute has the correct label from the mapping
-        elif attribute_id_to_label and attribute_id in attribute_id_to_label:
+        elif (
+            attribute_id_to_label is not None
+            and attribute_id is not None
+            and attribute_id in attribute_id_to_label
+        ):
             attribute.attribute_label = attribute_id_to_label[attribute_id]
 
         return EppiGoldStandardAnnotation(
@@ -319,8 +341,8 @@ class EppiAnnotationConverter:
         self,
         annotations_data: list[dict[str, Any]],
         document: EppiDocument,
-        attributes_lookup: dict[str, EppiAttribute] | None = None,
-        attribute_id_to_label: dict[str, str] | None = None,
+        attributes_lookup: dict[int, EppiAttribute] | None = None,
+        attribute_id_to_label: dict[int, str] | None = None,
     ) -> list[EppiGoldStandardAnnotation]:
         """
         Convert annotation data to EppiGoldStandardAnnotation models.
@@ -417,7 +439,7 @@ class EppiAnnotationConverter:
         attributes_lookup = {attr.attribute_id: attr for attr in attributes}
 
         attribute_id_to_label = {
-            int(attr.attribute_id): attr.attribute_label for attr in attributes
+            attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
         # extract annotations from References
@@ -455,8 +477,8 @@ class EppiAnnotationConverter:
                 annotations = self.convert_to_eppi_annotations(
                     doc_annotations,
                     document,
-                    attributes_lookup,  # type: ignore[arg-type]
-                    attribute_id_to_label,  # type: ignore[arg-type]
+                    attributes_lookup,
+                    attribute_id_to_label,
                 )
 
                 # Create EppiGoldStandardAnnotatedDocument
