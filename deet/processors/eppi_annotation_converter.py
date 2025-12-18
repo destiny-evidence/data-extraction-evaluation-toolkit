@@ -38,14 +38,14 @@ class EppiAnnotationConverter:
         """
         Process raw attribute data for EppiAttribute validation.
 
-        Only handles fields that need manual processing -
-        alias generators handle the rest.
+        Maps camelCase JSON fields to snake_case Python fields
+        and handles fields that need manual processing.
 
         Args:
             attr_data: Raw attribute data from EPPI JSON
 
         Returns:
-            Dictionary with only the fields that need manual processing
+            Dictionary with fields mapped to snake_case Python field names
 
         """
         return {
@@ -54,8 +54,14 @@ class EppiAnnotationConverter:
             "output_data_type": AttributeType.BOOL,  # Always boolean for EPPI
             "attribute_id": attr_data.get("AttributeId", 0),  # Convert int to str
             "attribute_label": attr_data.get("AttributeName", ""),
-            # Note: All other fields (attribute_set_description, hierarchy_path, etc.)
-            # are automatically mapped by alias generators from camelCase JSON
+            # Explicitly map camelCase JSON fields to snake_case Python fields
+            # (alias generators don't work in reverse for deserialization)
+            "attribute_description": attr_data.get("AttributeDescription"),
+            "attribute_type": attr_data.get("AttributeType"),
+            "attribute_set_description": attr_data.get("AttributeSetDescription"),
+            # hierarchy_path is already in snake_case from flatten_attributes_hierarchy
+            # hierarchy_level is already in snake_case from flatten_attributes_hierarchy
+            # is_leaf is already in snake_case from flatten_attributes_hierarchy
         }
 
     def process_document_data_for_validation(
@@ -180,15 +186,25 @@ class EppiAnnotationConverter:
 
         for attr_data in flattened_attributes:
             # Get fields that need manual processing
+            # (includes explicit camelCase to snake_case mapping)
             manual_fields = self.process_attribute_data_for_validation(attr_data)
 
-            # Merge manual fields with raw data (alias generators handle the rest)
-            combined_data = {**attr_data, **manual_fields}
+            # Merge manual fields with raw data
+            # manual_fields contains snake_case versions of all needed fields
+            # attr_data may contain both camelCase and snake_case keys
+            # We prioritize manual_fields (snake_case) and keep hierarchy
+            # fields from attr_data
+            combined_data = {
+                # Includes hierarchy_path, hierarchy_level, is_leaf
+                # (already snake_case)
+                **attr_data,
+                # Overrides with snake_case versions of camelCase fields
+                **manual_fields,
+            }
 
-            # Create the model - alias generators automatically map camelCase fields
+            # Create the model using model_validate for proper alias handling
             logger.debug(combined_data)
-            # attribute = EppiAttribute.model_validate(combined_data)
-            attribute = EppiAttribute(**combined_data)
+            attribute = EppiAttribute.model_validate(combined_data)
             attributes.append(attribute)
 
         return attributes
