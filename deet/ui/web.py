@@ -1,5 +1,6 @@
 """FastHTML App definition."""
 
+import csv
 import json
 from collections.abc import Generator
 from itertools import groupby
@@ -12,10 +13,14 @@ import monsterui.all as mui
 import yaml
 from fh_pydantic_form import PydanticForm
 from starlette.requests import Request
+from starlette.responses import RedirectResponse
+from starlette.status import HTTP_303_SEE_OTHER
 
 from deet.data_models.project import AttributeMetric, DeetProject
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.scripts.batch_pipeline import batch_pipeline
+from deet.scripts.create_project import create_project
+from deet.scripts.new_batch import new_batch
 
 hdrs = mui.Theme.blue.headers()
 
@@ -29,7 +34,7 @@ def get_metrics(run_path: Path) -> Generator[fh.FT]:
     metric_path = run_path.joinpath("metrics.json")
     metrics = [AttributeMetric.model_validate(x) for x in json.load(metric_path.open())]
     metrics_names = ["Attribute", *list({x.metric for x in metrics})]
-    yield fh.Tr([fh.Th(x) for x in metrics_names])
+    yield fh.Tr(*[fh.Th(x) for x in metrics_names])
     for k, g in groupby(metrics, lambda x: x.attribute):
         yield fh.Tr(fh.Td(k.attribute_label), *[fh.Td(x.value) for x in g])
 
@@ -40,6 +45,7 @@ def sidebar() -> fh.FT:
         ("Project home", "/"),
         ("Documents", "documents"),
         ("Attributes", "attributes"),
+        ("Prompts", "prompts"),
         ("Batches", "batches"),
         ("Pipeline runs", "list_runs"),
     ]
@@ -63,6 +69,106 @@ def layout(content: fh.FT) -> fh.FT:
             heading(), fh.Div(cls="flex gap-x-12")(sidebar(), fh.Div(content))
         ),
     )
+
+
+@rt()
+def prompts() -> fh.FT:
+    """Show list of prompt files."""
+    prompt_files = [x for x in p.prompt_folder.iterdir() if ".csv" in x.name]
+    prompt_links = [
+        fh.Li(fh.A(x.name, href=prompt_definitions.to(file=str(x))))
+        for x in prompt_files
+    ]
+
+    content = mui.DivVStacked(mui.H3("Prompt manager"), fh.Ul(*prompt_links))
+    return layout(content)
+
+
+@rt()
+async def update_prompt_definitions(req: Request, file: str) -> RedirectResponse:
+    """Write the updated prompt definitions to a new file."""
+    form = await req.form()
+
+    fpath = Path(file)
+    if "_" in fpath.stem:
+        parts = fpath.stem.split("_")
+        idx = parts[-1]
+        if idx.isdigit():
+            int_idx = int(idx)
+            idx = str(int_idx + 1)
+        else:
+            idx = f"{idx}_1"
+        parts[-1] = idx
+        stem = "_".join(parts)
+        new_path = fpath.parent.joinpath(f"{stem}.csv")
+    else:
+        new_path = fpath.parent.joinpath(f"{fpath.stem}_1.csv")
+
+    with fpath.open() as input_file:  # noqa: ASYNC230
+        reader = csv.DictReader(input_file)
+        field_names = reader.fieldnames
+        if field_names is None:
+            raise ValueError
+        data = list(reader)
+
+    with new_path.open("w") as output:
+        writer = csv.DictWriter(output, fieldnames=field_names)
+        writer.writeheader()
+        for k, v in form.items():
+            rows = filter(lambda x: x["attribute_id"] == k, data)
+            for row in rows:
+                row["prompt"] = v
+                writer.writerow(row)
+
+    return RedirectResponse(
+        url=prompt_definitions.to(file=str(new_path), update=True),
+        status_code=HTTP_303_SEE_OTHER,
+    )
+
+
+@rt()
+def prompt_definitions(file: str, *, update: bool = False) -> fh.FT:
+    """Return Interface to edit prompt definitions."""
+    if update:
+        title = mui.H3(f"Successfully updated prompts and saved as {file}")
+    else:
+        title = mui.H3(f"Manage prompts in {file}")
+
+    subtitle = fh.P("Edit prompts and click to save a new version")
+    with Path(file).open() as csvfile:
+        data = list(csv.DictReader(csvfile))
+
+    table_data = [
+        fh.Tr(
+            mui.Td(mui.Input(value=x["prompt"], name=x["attribute_id"])),
+            mui.Td(x["attribute_id"]),
+            mui.Td(x["attribute_label"]),
+        )
+        for x in data
+    ]
+
+    table = mui.Table(
+        fh.Tr(*[mui.Th(x) for x in ["prompt", "attribute_id", "attribute_label"]]),
+        *table_data,
+    )
+
+    form = mui.Form(
+        table,
+        fh.Div(
+            mui.Button(
+                "Submit",
+                type="submit",
+                cls=mui.ButtonT.primary,
+                hx_on="htmx:afterRequest: console.log('R')",
+            ),
+            cls="mt-4 flex items-center gap-2",
+        ),
+        action=update_prompt_definitions.to(file=file),
+        method="POST",
+    )
+
+    content = mui.DivVStacked(title, subtitle, form)
+    return layout(content)
 
 
 @rt()
@@ -127,8 +233,16 @@ def attributes() -> fh.FT:
 
 
 @rt()
-def batches() -> fh.FT:
-    """Show a table of batches."""
+async def submit_batch(req: Request) -> fh.FT:
+    """Process form to create a new batch."""
+    form = await req.form()
+    batch_size: float = float(form["batch_size"])
+    new_batch(batch_size)
+    return get_batch_table()
+
+
+def get_batch_table() -> fh.FT:
+    """Get a table with a row for each batch."""
     data = [
         {
             "name": b.parts[1],
@@ -137,14 +251,63 @@ def batches() -> fh.FT:
         }
         for b in p.batches
     ]
-    content = fh.Div(
-        mui.TableFromDicts(
-            ["name", "number of documents", "runs"],
-            body_data=data,
-            sortable=True,
-            cls=(mui.TableT.responsive, mui.TableT.sm, mui.TableT.divider),
-        ),  # footer()
+    return mui.TableFromDicts(
+        ["name", "number of documents", "runs"],
+        body_data=data,
+        sortable=True,
+        cls=(mui.TableT.responsive, mui.TableT.sm, mui.TableT.divider),
     )
+
+
+@rt()
+def batches() -> fh.FT:
+    """Show a table of batches."""
+    batch_table = get_batch_table()
+
+    batch_modal = mui.Modal(
+        fh.Div(
+            mui.Form(
+                mui.LabelInput(
+                    "Batch size", type="number", step="0.01", id="batch_size"
+                ),
+                fh.P(
+                    "enter either an integer or a decimal for a fraction of the"
+                    "size of the original dataset",
+                    cls=mui.TextPresets.muted_sm,
+                ),
+                fh.Div(
+                    mui.Button(
+                        "Submit",
+                        type="submit",
+                        cls=mui.ButtonT.primary,
+                        hx_on="htmx:afterRequest: console.log('R')",
+                    ),
+                    cls="mt-4 flex items-center gap-2",
+                ),
+                hx_post="/submit_batch",
+                hx_target="#batch-table",
+            ),
+            id="batch-modal-content",
+        ),
+        id="batch-modal",
+    )
+
+    batch_table_controls = mui.Button(
+        "Create new batch",
+        cls=(mui.ButtonT.primary, mui.TextPresets.bold_sm),
+        data_uk_toggle="target: #batch-modal",
+    )
+
+    batch_ui = fh.Div(
+        mui.DivFullySpaced(mui.DivLAligned(batch_table_controls), cls="mt-8"),
+        fh.Div(
+            batch_table,
+            id="batch-table",
+            hx_on__after_swap="document.getElementById('batch-modal').classList.remove('uk-open')",
+        ),
+        # footer()
+    )
+    content = fh.Container(batch_ui, batch_modal)
 
     return layout(content)
 
@@ -166,7 +329,7 @@ def fill_metric_modal(run_path: str) -> fh.FT:
     """Fill a modal with a view of the metrics for the run described in run_path."""
     return fh.Div(
         mui.H3(f"{run_path}", cls="text-lg font-bold"),
-        mui.Table(get_metrics(Path(run_path))),
+        mui.Table(*get_metrics(Path(run_path))),
         mui.ModalCloseButton("Close"),
     )
 
@@ -293,8 +456,30 @@ def list_runs(batch: str | None = None) -> fh.FT:
 
 
 @rt()
+async def upload_project_data(file: fh.UploadFile) -> fh.FT:
+    """Upload and parse EPPI json data."""
+    filebuffer = await file.read()
+    filepath = p.p.joinpath("raw_data.json")
+    filepath.write_bytes(filebuffer)
+    create_project("", str(filepath))
+
+    return fh.P("Finished uploading project data, created a project")
+
+
+@rt()
 def index() -> fh.FT:
     """Return the homepage."""
-    content = fh.Div(fh.P("Home"))
+    if not p.folders_exist():
+        content = fh.Div(
+            mui.Form(
+                mui.Input(type="file", name="file"),
+                mui.Button("Upload", type="submit", cls="secondary"),
+                hx_post="/upload_project_data",
+                hx_target="#project-home",
+            ),
+            id="project-home",
+        )
+    else:
+        content = fh.Div(fh.P("Home"))
 
     return layout(content)

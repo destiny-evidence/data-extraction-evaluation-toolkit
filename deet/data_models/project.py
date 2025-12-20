@@ -36,6 +36,14 @@ class DeetProject(BaseModel):
         """Return path to processed data folder."""
         return self.p / "processed_data"
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def n_documents(self) -> int:
+        """Return the number of documents in the project."""
+        path = self.p / "processed_data" / "annotated_documents.json"
+        docs = json.load(path.open())
+        return len(docs)
+
     def read_annotated_documents(
         self,
         sample: int | None = None,

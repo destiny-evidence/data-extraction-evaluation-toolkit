@@ -49,6 +49,11 @@ def create_project(path: str, data_path: str, *, clear: bool = False) -> None:
 
     convert_raw_data(input_path, proj.proc_data)
 
+    # Create prompt definition file
+    csv_path = proj.prompt_folder / "definitions.csv"
+    for attribute in proj.read_attributes():
+        attribute.write_to_csv(csv_path)
+
 
 def convert_raw_data(input_path: Path, output_path: Path) -> None:
     """Process EPPIJson file."""
