@@ -9,11 +9,13 @@ import pytest
 from destiny_sdk.references import Reference
 from pydantic import ValidationError
 
-from deet.data_models.base import AnnotationType
-from deet.data_models.eppi import (
+from deet.data_models.base import (
+    AnnotationType,
+    Attribute,
     AttributeType,
-    EppiAttribute,
-    EppiDocument,
+    Document,
+    GoldStandardAnnotatedDocument,
+    LLMInputSchema,
 )
 from deet.extractors.llm_data_extractor import (
     ContextType,
@@ -45,9 +47,9 @@ def mock_settings(monkeypatch):
 
 
 @pytest.fixture
-def sample_eppi_document() -> EppiDocument:
-    """Fixture for a sample EppiDocument."""
-    return EppiDocument(
+def sample_document() -> Document:
+    """Fixture for a sample Document."""
+    return Document(
         document_id="doc1",
         name="Test Document",
         context="This is the abstract.",
@@ -58,18 +60,20 @@ def sample_eppi_document() -> EppiDocument:
 
 
 @pytest.fixture
-def sample_eppi_attributes() -> list[EppiAttribute]:
-    """Fixture for a list of sample EppiAttributes."""
+def sample_attributes() -> list[Attribute]:
+    """Fixture for a list of sample Attributes."""
     return [
-        EppiAttribute(  # vanilla / old
+        Attribute(  # vanilla / old
             attribute_id=1234,
             attribute_label="Attribute 1",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="Is attribute 1 present?",
+            question_target="Is attribute 1 present?",
         ),
-        EppiAttribute(  # new
+        Attribute(  # new
             attribute_id=2345,
             prompt="What is the question?",
+            question_target="What is the question?",
             attribute_label="Attribute 2",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="foo",
@@ -142,62 +146,60 @@ def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
     assert extractor.config.prompt_config.system_prompt == "This is a custom prompt."
 
 
-def test_filter_attributes(llm_extractor, sample_eppi_attributes):
+def test_filter_attributes(llm_extractor, sample_attributes):
     """Test the _filter_attributes method."""
     llm_extractor.config.selected_attribute_ids = [1234]
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filtered = llm_extractor._filter_attributes(sample_attributes)
     assert len(filtered) == 1
     assert filtered[0].attribute_id == 1234
 
 
-def test_filter_attributes_no_selection(llm_extractor, sample_eppi_attributes):
+def test_filter_attributes_no_selection(llm_extractor, sample_attributes):
     """Test _filter_attributes when no IDs are selected."""
     llm_extractor.config.selected_attribute_ids = []
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filtered = llm_extractor._filter_attributes(sample_attributes)
     assert len(filtered) == 2
 
 
-def test_prepare_context_full_document(llm_extractor, sample_eppi_document):
+def test_prepare_context_full_document(llm_extractor, sample_document):
     """Test _prepare_context with FULL_DOCUMENT type."""
     full_text = "This is the full text."
     llm_extractor.config.context_type = ContextType.FULL_DOCUMENT
-    context = llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
+    context = llm_extractor._prepare_context(sample_document, full_text=full_text)
     assert context == full_text
 
 
-def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
+def test_prepare_context_abstract_only(llm_extractor, sample_document):
     """Test _prepare_context with ABSTRACT_ONLY type."""
     full_text = "This is the full text."
     llm_extractor.config.context_type = ContextType.ABSTRACT_ONLY
-    context = llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
-    assert context == sample_eppi_document.context
+    context = llm_extractor._prepare_context(sample_document, full_text=full_text)
+    assert context == sample_document.context
 
 
-def test_prepare_context_truncation(llm_extractor, sample_eppi_document):
+def test_prepare_context_truncation(llm_extractor, sample_document):
     """Test that context is truncated if it exceeds max length."""
     full_text = "This is the very long full text of the document."
     llm_extractor.config.max_context_length = 10
-    context = llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
+    context = llm_extractor._prepare_context(sample_document, full_text=full_text)
     assert len(context) <= 13  # 10 chars + "..."
     assert context.endswith("...")
 
 
 def test_prepare_context_not_implemented(
-    llm_extractor: LLMDataExtractor, sample_eppi_document
+    llm_extractor: LLMDataExtractor, sample_document
 ):
     """Test that RAG and CUSTOM context types raise NotImplementedError."""
     full_text = "This is the full text."
     llm_extractor.config.context_type = ContextType.RAG_SNIPPETS
     with pytest.raises(NotImplementedError):
-        llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
+        llm_extractor._prepare_context(sample_document, full_text=full_text)
 
 
-def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
+def test_generate_user_message_json(llm_extractor, sample_attributes):
     """Test the generation of the structured JSON user message."""
     context = "Sample context"
-    json_str = llm_extractor._generate_user_message_json(
-        context, sample_eppi_attributes
-    )
+    json_str = llm_extractor._generate_user_message_json(context, sample_attributes)
     payload = json.loads(json_str)
     assert "context" in payload
     assert "attributes" in payload
@@ -210,11 +212,11 @@ def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
     # we didn't tell it what to use as prompt, so use
     # whatever's in `attribute_label`
     assert one_input_item.prompt == "Attribute 1"
-    assert one_input_item.prompt == sample_eppi_attributes[0].attribute_label
+    assert one_input_item.prompt == sample_attributes[0].attribute_label
 
     # for att 2, we gave it a prompt
     assert second_input_item.prompt == "What is the question?"
-    assert second_input_item.prompt != sample_eppi_attributes[1].attribute_label
+    assert second_input_item.prompt != sample_attributes[1].attribute_label
 
 
 def test_call_llm(llm_extractor, mock_litellm_completion):
@@ -233,9 +235,7 @@ def test_call_llm(llm_extractor, mock_litellm_completion):
     assert response is not None
 
 
-def test_parse_llm_response(
-    llm_extractor, sample_eppi_attributes, sample_eppi_document
-):
+def test_parse_llm_response(llm_extractor, sample_attributes, sample_document):
     """Test successful parsing of a valid LLM response."""
     response_content = json.dumps(
         {
@@ -249,16 +249,14 @@ def test_parse_llm_response(
             ]
         }
     )
-    annotations = llm_extractor._parse_llm_response(
-        response_content, sample_eppi_attributes
-    )
+    annotations = llm_extractor._parse_llm_response(response_content, sample_attributes)
     # it filters through ids which exist in both,
-    # so even though the length of sample_eppi_attributes is
+    # so even though the length of sample_attributes is
     # longer than response_content,
     # below is expeceted behaviour and we're happy.
     assert len(annotations) == 1
     annotation = annotations[0]
-    assert isinstance(annotation, GoldStandardAnnotation)
+    assert isinstance(annotation, GoldStandardAnnotatedDocument)
     assert annotation.attribute.attribute_id == 1234
     assert annotation.output_data is True
     assert annotation.annotation_type == AnnotationType.LLM
@@ -266,37 +264,37 @@ def test_parse_llm_response(
 
 def test_parse_llm_response_validation_error(
     llm_extractor,
-    sample_eppi_attributes,
+    sample_attributes,
 ):
     """Test that _parse_llm_response raises ValidationError for bad schema."""
     invalid_response = json.dumps(
         {"annotations": [{"attribute_id": "attr1"}]}
     )  # Missing fields
     with pytest.raises(ValidationError):
-        llm_extractor._parse_llm_response(invalid_response, sample_eppi_attributes)
+        llm_extractor._parse_llm_response(invalid_response, sample_attributes)
 
 
 def test_parse_llm_response_json_decode_error(
     llm_extractor,
-    sample_eppi_attributes,
+    sample_attributes,
 ):
     """Test that _parse_llm_response raises ValueError for invalid JSON."""
     invalid_json = "this is not json"
     with pytest.raises(ValueError, match="Invalid JSON"):
-        llm_extractor._parse_llm_response(invalid_json, sample_eppi_attributes)
+        llm_extractor._parse_llm_response(invalid_json, sample_attributes)
 
 
 def test_extract_from_document(
     llm_extractor,
-    sample_eppi_document,
-    sample_eppi_attributes,
+    sample_document,
+    sample_attributes,
     mock_litellm_completion,
 ):
     """Test the end-to-end flow of extract_from_document."""
     full_text = "This is the full text of the document."
     annotations = llm_extractor.extract_from_document(
-        sample_eppi_document,
-        sample_eppi_attributes,
+        sample_document,
+        sample_attributes,
         full_text=full_text,
     )
     assert len(annotations) == 1
@@ -305,31 +303,31 @@ def test_extract_from_document(
 
 
 def test_extract_from_document_no_attributes(
-    llm_extractor, sample_eppi_document, sample_eppi_attributes
+    llm_extractor, sample_document, sample_attributes
 ):
     """Test extract_from_document raises ValueError if no attributes are selected."""
     full_text = "This is the full text of the document."
     llm_extractor.config.selected_attribute_ids = ["nonexistent_id"]
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
-            sample_eppi_document,
-            sample_eppi_attributes,
+            sample_document,
+            sample_attributes,
             full_text=full_text,
         )
 
 
 def test_extract_from_documents(
     llm_extractor,
-    sample_eppi_document,
-    sample_eppi_attributes,
+    sample_document,
+    sample_attributes,
     mock_litellm_completion,
 ):
     """Test extracting from multiple documents."""
     full_text = "This is the full text of the document."
-    documents = [sample_eppi_document, sample_eppi_document]
+    documents = [sample_document, sample_document]
     all_annotations = llm_extractor.extract_from_documents(
         documents,
-        sample_eppi_attributes,
+        sample_attributes,
         full_text=full_text,
     )
     assert len(all_annotations) == 2
@@ -338,8 +336,8 @@ def test_extract_from_documents(
 
 def test_extract_from_documents_continues_on_error(
     llm_extractor,
-    sample_eppi_document,
-    sample_eppi_attributes,
+    sample_document,
+    sample_attributes,
     mock_litellm_completion,
 ):
     """Test that processing continues if one document fails."""
@@ -349,32 +347,12 @@ def test_extract_from_documents_continues_on_error(
         mock_litellm_completion.return_value,
     ]
 
-    documents = [sample_eppi_document, sample_eppi_document]
+    documents = [sample_document, sample_document]
     full_text = "This is the full text of the document."
     all_annotations = llm_extractor.extract_from_documents(
         documents,
-        sample_eppi_attributes,
+        sample_attributes,
         full_text=full_text,
     )
     assert len(all_annotations) == 1  # Only one should not raise
     assert mock_litellm_completion.call_count == 2
-<<<<<<< HEAD
-=======
-
-
-# convenience funcs
-@patch("deet.extractors.llm_data_extractor.LLMDataExtractor")
-def test_convenience_function_extract_all(
-    mock_extractor_cls,
-    sample_eppi_document,
-    sample_eppi_attributes,
-    default_config,
-):
-    """Test the extract_all_attributes convenience function."""
-    mock_instance = mock_extractor_cls.return_value
-    extract_all_attributes(sample_eppi_document, sample_eppi_attributes, default_config)
-    mock_extractor_cls.assert_called_once_with(default_config)
-    mock_instance.extract_from_document.assert_called_once_with(
-        sample_eppi_document, sample_eppi_attributes
-    )
->>>>>>> 5609d4f (Renamed app directory to deet, updated config)
