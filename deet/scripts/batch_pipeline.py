@@ -107,8 +107,6 @@ def batch_pipeline() -> None:
 
     proj.evaluate_run(run_path)
 
-    # asyncio.run(_batch_pipeline())
-
 
 def main() -> None:
     """Run the typer app."""
