@@ -10,27 +10,13 @@ from pathlib import Path
 
 from loguru import logger
 
-<<<<<<<< HEAD:deet/scripts/pipeline_prompts_from_eppi_json.py
-from app.data_models.base import Attribute, Document, GoldStandardAnnotation
-
-# @sagaruprety note that we now only use Eppi types in our
-# specific use-case (i.e. a pipeline script), no longer in the
-# underlying application. The application uses base.py data types.
-from app.data_models.eppi import EppiAttribute, EppiDocument
-from app.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
-from app.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from app.processors.eppi_annotation_converter import EppiAnnotationConverter
-from app.processors.parser import DocumentParser
-========
-from deet.data_models.eppi import EppiAttribute, EppiDocument
+from deet.data_models.base import Attribute, Document, GoldStandardAnnotatedDocument
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
 from deet.processors.eppi_annotation_converter import (
     EppiAnnotationConverter,
-    EppiGoldStandardAnnotation,
 )
 from deet.processors.parser import DocumentParser
->>>>>>>> 5609d4f (Renamed app directory to deet, updated config):deet/scripts/default_pipeline.py
 
 parser = DocumentParser()
 converter = EppiAnnotationConverter()
@@ -82,7 +68,7 @@ def llm_data_extraction(
     output_path: Path,
     filter_by_attribute_ids: list[int] | None = None,
     **kwargs,
-) -> list[GoldStandardAnnotation]:
+) -> list[GoldStandardAnnotatedDocument]:
     """Run LLM data extraction."""
     logger.debug(full_text_path)
     full_text = full_text_path.read_text(encoding="utf-8")
@@ -90,13 +76,13 @@ def llm_data_extraction(
     documents_raw = json.loads(documents_file_path.read_text(encoding="utf-8"))
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
 
-    attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
+    attributes: list[Attribute] = [Attribute(**record) for record in attributes_raw]
     if filter_by_attribute_ids:
         attributes = [
             a for a in attributes if a.attribute_id in filter_by_attribute_ids
         ]
 
-    documents: list[Document] = [EppiDocument(**record) for record in documents_raw]
+    documents: list[Document] = [Document(**record) for record in documents_raw]
 
     return data_extractor.extract_from_documents(
         documents=documents,
