@@ -194,11 +194,13 @@ class EppiAnnotationConverter:
             # attr_data may contain both camelCase and snake_case keys
             # We prioritize manual_fields (snake_case) and keep hierarchy
             # fields from attr_data
+            
+            # attr_data: Includes hierarchy_path, hierarchy_level, is_leaf
+            # (already snake_case)
+            
+            # manual_fields: Overrides with snake_case versions of camelCase fields
             combined_data = {
-                # Includes hierarchy_path, hierarchy_level, is_leaf
-                # (already snake_case)
                 **attr_data,
-                # Overrides with snake_case versions of camelCase fields
                 **manual_fields,
             }
 
