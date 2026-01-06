@@ -90,22 +90,22 @@ def test_convert_to_eppi_attributes_field_population(
         assert isinstance(attr.hierarchy_level, int)
         assert isinstance(attr.is_leaf, bool)
 
-    # Check first attribute has expected fields populated
-    first_attr = attributes[0]
-    # Find the corresponding raw data to verify mapping
-    first_raw = all_attributes_raw[0]
-    if first_raw.get("AttributeType"):
-        assert (
-            first_attr.attribute_type == first_raw["AttributeType"]
-        ), "attribute_type should be populated from AttributeType"
-    if "AttributeDescription" in first_raw:
-        assert (
-            first_attr.attribute_description == first_raw["AttributeDescription"]
-        ), "attribute_description should be populated from AttributeDescription"
-    if first_raw.get("AttributeSetDescription"):
-        assert (
-            first_attr.attribute_set_description == first_raw["AttributeSetDescription"]
-        ), "attribute_set_description should be populated from AttributeSetDescription"
+    assert all(
+        attribute.attribute_type == raw.get("AttributeType")
+        for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
+        if raw.get("AttributeType") is not None
+    ), "attribute_type should match for all attributes where present"
+    assert all(
+        attribute.attribute_description == raw.get("AttributeDescription")
+        for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
+        if "AttributeDescription" in raw
+    ), "attribute_description should match for all attributes where present"
+    assert all(
+        attribute.attribute_set_description == raw.get("AttributeSetDescription")
+        for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
+        if raw.get("AttributeSetDescription") is not None
+    ), "attribute_set_description should match for all attributes where present"
+
 
 
 def test_extract_attributes_from_codesets(
