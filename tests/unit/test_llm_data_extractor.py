@@ -332,7 +332,7 @@ def test_extract_from_document_no_attributes(
 ):
     """Test extract_from_document raises ValueError if no attributes are selected."""
     full_text = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = ["nonexistent_id"]
+    llm_extractor.config.selected_attribute_ids = [999999]
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
             sample_eppi_document,

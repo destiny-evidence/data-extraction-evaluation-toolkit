@@ -93,7 +93,7 @@ class DataExtractionConfig(BaseModel):
         description="Maximum context length for LLM CHARACTERS? ",  # fix with tokens!
     )
 
-    selected_attribute_ids: list[str] = Field(
+    selected_attribute_ids: list[int] = Field(
         default=[], description="Specific attribute IDs to extract"
     )
 

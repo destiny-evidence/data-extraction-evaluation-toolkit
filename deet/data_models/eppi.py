@@ -54,7 +54,7 @@ class EppiAttribute(Attribute):
         description="Whether this attribute is a leaf node  (has no child attributes)",
         default=True,
     )
-    parent_attribute_id: str | None = Field(
+    parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
     attribute_type: str | None = Field(
@@ -373,7 +373,7 @@ class ProcessedAnnotationData(BaseModel):
             ann for ann in self.annotations if ann.annotation_type == annotation_type
         ]
 
-    def get_attribute_by_id(self, attribute_id: str) -> EppiAttribute | None:
+    def get_attribute_by_id(self, attribute_id: int) -> EppiAttribute | None:
         """Get an attribute by its ID."""
         for attr in self.attributes:
             if attr.attribute_id == attribute_id:

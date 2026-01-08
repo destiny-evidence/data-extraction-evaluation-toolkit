@@ -56,14 +56,14 @@ def test_eppi_attribute_with_eppi_fields() -> None:
         hierarchy_path="root.test.attribute",
         hierarchy_level=2,
         is_leaf=False,
-        parent_attribute_id="parent1",
+        parent_attribute_id=123,
         attribute_type="Selectable",
     )
     assert attr.attribute_set_description == "Test description"
     assert attr.hierarchy_path == "root.test.attribute"
     assert attr.hierarchy_level == 2
     assert attr.is_leaf is False
-    assert attr.parent_attribute_id == "parent1"
+    assert attr.parent_attribute_id == 123
     assert attr.attribute_type == "Selectable"
 
 
