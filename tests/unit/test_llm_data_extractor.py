@@ -14,7 +14,7 @@ from deet.data_models.base import (
     Attribute,
     AttributeType,
     Document,
-    GoldStandardAnnotatedDocument,
+    GoldStandardAnnotation,
     LLMInputSchema,
 )
 from deet.extractors.llm_data_extractor import (
@@ -256,7 +256,7 @@ def test_parse_llm_response(llm_extractor, sample_attributes, sample_document):
     # below is expeceted behaviour and we're happy.
     assert len(annotations) == 1
     annotation = annotations[0]
-    assert isinstance(annotation, GoldStandardAnnotatedDocument)
+    assert isinstance(annotation, GoldStandardAnnotation)
     assert annotation.attribute.attribute_id == 1234
     assert annotation.output_data is True
     assert annotation.annotation_type == AnnotationType.LLM
