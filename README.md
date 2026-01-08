@@ -106,9 +106,15 @@ For example, processing `sample_eppi.json` creates `output/processed/eppi/sample
 
 ## Projects
 
-### Setup
+A project is a space to manage a collection of documents and attributes for a given data extraction task.
 
-Projects offer a way to organise and manage data and configuration files for a data extraction task.
+A project lives in a directory. This contains all of the data, configuration options, and results from
+your collection of documents and data extraction task.
+
+The pydantic model in [DeetProject](deet/data_models/project.py) defines how data is stored and accessed
+within that directory.
+
+### Setup
 
 The suggested way to make a project is in a separate directory, into which you install deet
 
@@ -129,11 +135,15 @@ DEET-create-project . data.json
 
 ### Batches and runs
 
-We don't run our data extraction pipeline on all documents inside a project, instead we create batches of documents, and run our pipeline on those documents ([further info](https://destiny-evidence.github.io/evaluation-book/index-1/#chunked-evaluation-data)).
+We don't run our data extraction pipeline on all documents inside a project, instead we create **batches** of documents, and run our pipeline on those documents ([further info](https://destiny-evidence.github.io/evaluation-book/index-1/#chunked-evaluation-data)).
 
 We can create a batch with `n` documents sampled at random with the `DEET-new-batch n` command. For example, `DEET-new-batch 5` will create a batch of 5 records.
+If we want to use a fraction of the total number of documents, `DEET-new-batch 0.5` will create a batch with 50% of the documents in the dataset. A batch is simply a folder
+in the `batches` folder of your project, that contains a json list of document ids that are in that batch.
 
-Each time we run our pipeline on that batch of documents, we will save what we sent to the LLM, what came out, our configuration options, and some evaluation of the results in a new run folder within the batch folder. Configuration options can be changed by editing the `run-settings.yaml` file that was created when we set up the project. We may want to try a few different settings, editing and saving this file, before running
+A **run** is an instance of a pipeline run on a batch of documents. We don't know which model or which prompts will perform best for our data extraction task, so we want to try different combinations of models, configuration options, and prompts. Each of these is a run.
+
+Each time we run our pipeline on that batch of documents, we will save what we sent to the LLM, what came out, our configuration options, including the prompts we used, and some evaluation of the results in a new run folder within the batch folder. Configuration options can be changed by editing the `run-settings.yaml` file that was created when we set up the project. We may want to try a few different settings, editing and saving this file, before running
 
 ```shell
 DEET-batch-pipeline
@@ -145,7 +155,8 @@ which will run the pipeline with the settings currently defined in the file.
 
 Prompts for the individual attributes will be taken from the EPPIJson file, if they are specified there. An alternative way to do this is using a prompt definition file.
 
-We can create this file in the `prompts` folder of our project using
+This is created automatically when we initialise a DeetProject, but if for some reason this has not worked,
+of we have deleted it, we can create this file in the `prompts` folder of our project using
 
 ```shell
 DEET-write-csv-template

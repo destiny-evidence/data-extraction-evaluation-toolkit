@@ -21,11 +21,9 @@ authors = [
 ]
 dependencies = [
     "destiny-sdk>=0.3.0",
-    "fh-pydantic-form>=0.3.9",
     "litellm>=1.77.4",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
-    "monsterui>=1.0.35",
     "nltk>=3.9.1",
     "openai>=1.0.0",
     "pillow>=10.4.0",
@@ -34,7 +32,6 @@ dependencies = [
     "pydantic>=2.11.7",
     "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
-    "python-fasthtml>=0.12.36",
     "pyyaml>=6.0.2",
     "tabulate>=0.9.0",
     "typer>=0.20.0",
@@ -56,7 +53,6 @@ DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
 DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
 DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
 DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
-DEET-ui = "deet.ui.cli:main"
 DEET-write-csv-template = "deet.scripts.create_prompt_definition_csv:main"
 
 [tool.coverage.report]
