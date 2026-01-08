@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from deet.data_models.base import Attribute, GoldStandardAnnotatedDocument
 from deet.logger import logger
 
+
 class DeetProject(BaseModel):
     """Data structure for a deet project."""
 
@@ -122,8 +123,8 @@ class DeetProject(BaseModel):
     def evaluate_run(self, run_path: Path) -> None:
         """Evaluate run by comparing human with LLM responses."""
         attribute_metrics = []
-        human_annotations = self.read_annotated_documents(
-            batch_ids=self.documents_in_batches
+        human_annotations = list(
+            self.read_annotated_documents(batch_ids=self.documents_in_batches)
         )
 
         llm_annotations = [
@@ -155,8 +156,11 @@ class DeetProject(BaseModel):
                     if x.attribute.attribute_id == attribute.attribute_id
                 ]
                 if len(prediction) == 0:
-                    continue  # attribute not in human document
-                y_pred.append(prediction[0].output_data)
+                    # Answer for attribute not returned by the LLM, we'll assume
+                    # this is because the LLM does not think the attribute is present
+                    y_pred.append(False)
+                else:
+                    y_pred.append(prediction[0].output_data)
 
             for metric in [f1_score, precision_score, recall_score, accuracy_score]:
                 try:
