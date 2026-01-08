@@ -107,6 +107,35 @@ def test_convert_to_eppi_attributes_field_population(
     ), "attribute_set_description should match for all attributes where present"
 
 
+def test_convert_to_eppi_attributes_with_null_values() -> None:
+    """Test that null/None values in JSON are handled for EPPI-specific fields."""
+    converter = EppiAnnotationConverter()
+
+    attr_data_with_nulls = {
+        "AttributeId": 12345,
+        "AttributeName": "Test Attribute",
+        "AttributeDescription": None,
+        "AttributeSetDescription": None,
+        "AttributeType": None,
+        "hierarchy_path": "",
+        "hierarchy_level": 0,
+        "is_leaf": True,
+    }
+
+    attributes = converter.convert_to_eppi_attributes([attr_data_with_nulls])
+
+    assert len(attributes) == 1
+    attr = attributes[0]
+
+    assert attr.attribute_id == 12345
+    assert attr.attribute_label == "Test Attribute"
+    assert attr.attribute_description is None
+    assert attr.attribute_set_description is None
+    assert attr.attribute_type is None
+    assert attr.hierarchy_path == ""
+    assert attr.hierarchy_level == 0
+    assert attr.is_leaf is True
+
 
 def test_extract_attributes_from_codesets(
     sample_eppi_data: dict,
