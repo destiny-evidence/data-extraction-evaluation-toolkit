@@ -180,7 +180,7 @@ class LLMDataExtractor:
                 filter_ids = [
                     int(attr_id) for attr_id in self.config.selected_attribute_ids
                 ]
-            except ValueError:
+            except (ValueError, TypeError):
                 # If conversion fails, set to empty list so no attributes match
                 logger.warning(
                     f"Invalid attribute IDs in config: "
