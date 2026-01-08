@@ -227,8 +227,19 @@ def test_convert_to_eppi_annotations_uses_codeset_attribute_label(
     )
 
     assert len(annotations) == 1
-    assert all(annotation.attribute.attribute_id == attribute_id for annotation, attribute_id in zip(annotations, attributes_lookup.keys()))
-    assert all(annotation.attribute.attribute_label == attributes_lookup[attribute_id].attribute_label for annotation, attribute_id in zip(annotations, attributes_lookup.keys()))
+    assert all(
+        annotation.attribute.attribute_id == attribute_id
+        for annotation, attribute_id in zip(
+            annotations, attributes_lookup.keys(), strict=False
+        )
+    )
+    assert all(
+        annotation.attribute.attribute_label
+        == attributes_lookup[attribute_id].attribute_label
+        for annotation, attribute_id in zip(
+            annotations, attributes_lookup.keys(), strict=False
+        )
+    )
 
 
 def test_error_handling_malformed_data() -> None:
