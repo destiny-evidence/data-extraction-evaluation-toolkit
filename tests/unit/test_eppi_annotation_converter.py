@@ -59,6 +59,84 @@ def test_convert_to_eppi_attributes(sample_eppi_data: dict) -> None:
     assert first_attr.question_target == "", "Should be empty for EPPI"
 
 
+def test_convert_to_eppi_attributes_field_population(
+    sample_eppi_data: dict,
+) -> None:
+    """Test that all fields are properly populated when converting attributes."""
+    converter = EppiAnnotationConverter()
+    raw_data = EppiRawData.model_validate(sample_eppi_data)
+
+    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)
+
+    attributes = converter.convert_to_eppi_attributes(all_attributes_raw)
+
+    assert len(attributes) > 0
+
+    # Check that all expected fields are populated
+    for attr in attributes:
+        # Core fields
+        assert attr.attribute_id is not None
+        assert attr.attribute_label is not None
+        assert attr.output_data_type == AttributeType.BOOL.value
+        assert attr.question_target == ""
+
+        # EPPI-specific fields should be populated
+        # (not None unless explicitly None in JSON)
+        # attribute_type should be populated if present in JSON
+        # attribute_description should be populated if present in JSON
+        # attribute_set_description should be populated if present in JSON
+        # hierarchy_path should be a string (may be empty for root level)
+        assert isinstance(attr.hierarchy_path, str)
+        assert isinstance(attr.hierarchy_level, int)
+        assert isinstance(attr.is_leaf, bool)
+
+    assert all(
+        attribute.attribute_type == raw.get("AttributeType")
+        for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
+        if raw.get("AttributeType") is not None
+    ), "attribute_type should match for all attributes where present"
+    assert all(
+        attribute.attribute_description == raw.get("AttributeDescription")
+        for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
+        if "AttributeDescription" in raw
+    ), "attribute_description should match for all attributes where present"
+    assert all(
+        attribute.attribute_set_description == raw.get("AttributeSetDescription")
+        for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
+        if raw.get("AttributeSetDescription") is not None
+    ), "attribute_set_description should match for all attributes where present"
+
+
+def test_convert_to_eppi_attributes_with_null_values() -> None:
+    """Test that null/None values in JSON are handled for EPPI-specific fields."""
+    converter = EppiAnnotationConverter()
+
+    attr_data_with_nulls = {
+        "AttributeId": 12345,
+        "AttributeName": "Test Attribute",
+        "AttributeDescription": None,
+        "AttributeSetDescription": None,
+        "AttributeType": None,
+        "hierarchy_path": "",
+        "hierarchy_level": 0,
+        "is_leaf": True,
+    }
+
+    attributes = converter.convert_to_eppi_attributes([attr_data_with_nulls])
+
+    assert len(attributes) == 1
+    attr = attributes[0]
+
+    assert attr.attribute_id == 12345
+    assert attr.attribute_label == "Test Attribute"
+    assert attr.attribute_description is None
+    assert attr.attribute_set_description is None
+    assert attr.attribute_type is None
+    assert attr.hierarchy_path == ""
+    assert attr.hierarchy_level == 0
+    assert attr.is_leaf is True
+
+
 def test_extract_attributes_from_codesets(
     sample_eppi_data: dict,
 ) -> None:

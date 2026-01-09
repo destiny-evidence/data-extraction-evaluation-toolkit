@@ -15,8 +15,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     """Test creating EppiAttribute from JSON-like data (would come from EPPI JSON)."""
     # This mimics how EppiAttribute is created from JSON data in the ann converter
     # The data structure matches what comes from EPPI JSON files
-    # Currently the alias generator is not working as expected,
-    # so we use snake_case field names
+    # The converter now properly maps camelCase fields to snake_case
     attr_data = {
         "AttributeId": 5730447,  # Integer ID from JSON
         "AttributeName": "Test EPPI Attribute",
@@ -33,18 +32,20 @@ def test_eppi_attribute_creation_from_json_data() -> None:
         "output_data_type": AttributeType.BOOL.value,  # Always boolean for EPPI
         "attribute_id": "5730447",  # Converted to string
         "attribute_label": "Test EPPI Attribute",
-        # Use snake_case field names directly since alias generator is not working
+        # Converter now maps camelCase to snake_case automatically
         "attribute_set_description": "Test set description",
         "attribute_type": "Selectable (show checkbox)",
+        "attribute_description": "Test description",
     }
     attr = EppiAttribute.model_validate(attr_data)
     assert attr.attribute_id == 5730447
     assert attr.attribute_label == "Test EPPI Attribute"
     assert attr.question_target == ""  # Default empty for EPPI
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
-    # Test the EPPI-specific fields
+    # Test the EPPI-specific fields are properly populated
     assert attr.attribute_set_description == "Test set description"
     assert attr.attribute_type == "Selectable (show checkbox)"
+    assert attr.attribute_description == "Test description"
 
 
 def test_eppi_attribute_with_eppi_fields() -> None:
