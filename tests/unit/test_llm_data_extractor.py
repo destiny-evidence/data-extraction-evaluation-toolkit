@@ -144,17 +144,43 @@ def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
 
 def test_filter_attributes(llm_extractor, sample_eppi_attributes):
     """Test the _filter_attributes method."""
-    llm_extractor.config.selected_attribute_ids = [1234]
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filter_ids = [1234]
+    filtered = llm_extractor._filter_attributes(
+        sample_eppi_attributes, filter_ids=filter_ids
+    )
     assert len(filtered) == 1
     assert filtered[0].attribute_id == 1234
 
 
 def test_filter_attributes_no_selection(llm_extractor, sample_eppi_attributes):
     """Test _filter_attributes when no IDs are selected."""
-    llm_extractor.config.selected_attribute_ids = []
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filtered = llm_extractor._filter_attributes(sample_eppi_attributes, filter_ids=None)
     assert len(filtered) == 2
+
+
+@pytest.mark.parametrize(
+    "filter_ids",
+    [
+        ["bad_id_1", "bad_id_2", 12345, 6789],
+        ["bad_id_1", "bad_id_2"],
+        [{"test_key": "test_value"}, [1, 2, 3]],
+    ],
+)
+def test_extract_from_document_bad_filter_list(
+    llm_extractor, sample_eppi_document, sample_eppi_attributes, filter_ids
+):
+    """
+    Test extract_from_document raises ValueError if the filter list cannot
+    entirely be cast to integers.
+    """
+    full_text = "This is the full text of the document."
+    llm_extractor.config.selected_attribute_ids = filter_ids
+    with pytest.raises(ValueError, match="No attributes selected"):
+        llm_extractor.extract_from_document(
+            sample_eppi_document,
+            sample_eppi_attributes,
+            full_text=full_text,
+        )
 
 
 def test_prepare_context_full_document(llm_extractor, sample_eppi_document):
@@ -309,7 +335,7 @@ def test_extract_from_document_no_attributes(
 ):
     """Test extract_from_document raises ValueError if no attributes are selected."""
     full_text = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = ["nonexistent_id"]
+    llm_extractor.config.selected_attribute_ids = [999999]
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
             sample_eppi_document,

@@ -93,7 +93,7 @@ class DataExtractionConfig(BaseModel):
         description="Maximum context length for LLM CHARACTERS? ",  # fix with tokens!
     )
 
-    selected_attribute_ids: list[str] = Field(
+    selected_attribute_ids: list[int] = Field(
         default=[], description="Specific attribute IDs to extract"
     )
 
@@ -173,7 +173,23 @@ class LLMDataExtractor:
             ValueError: If no attributes are selected for extraction after filtering.
 
         """
-        selected_attributes = self._filter_attributes(attributes)
+        # Convert config's selected_attribute_ids (list[str]) to list[int] for filtering
+        filter_ids: list[int] | None = None
+        if self.config.selected_attribute_ids:
+            try:
+                filter_ids = [
+                    int(attr_id) for attr_id in self.config.selected_attribute_ids
+                ]
+            except (ValueError, TypeError):
+                # If conversion fails, set to empty list so no attributes match
+                logger.warning(
+                    f"Invalid attribute IDs in config: "
+                    f"{self.config.selected_attribute_ids}. "
+                    "No attributes will be selected."
+                )
+                filter_ids = []
+
+        selected_attributes = self._filter_attributes(attributes, filter_ids=filter_ids)
 
         if not selected_attributes:
             msg = "No attributes selected for extraction"
@@ -226,23 +242,36 @@ class LLMDataExtractor:
 
         return all_annotations
 
-    def _filter_attributes(self, attributes: list[Attribute]) -> list[Attribute]:
-        """Filter attributes using selected_attribute_ids if provided."""
-        if self.config.selected_attribute_ids:
-            filtered = [
-                attr
-                for attr in attributes
-                if attr.attribute_id in self.config.selected_attribute_ids
-            ]
+    def _filter_attributes(
+        self, attributes: list[Attribute], filter_ids: list[int] | None = None
+    ) -> list[Attribute]:
+        """
+        Filter attributes using provided attribute IDs.
+
+        Args:
+            attributes: List of attributes to filter
+            filter_ids: Optional list of attribute IDs (ints) to filter by.
+                        If None, returns all attributes.
+                        If empty list, returns empty list.
+
+        Returns:
+            Filtered list of attributes matching the provided IDs, or all attributes
+            if filter_ids is None, or empty list if filter_ids is empty.
+
+        """
+        if filter_ids is None:
             logger.debug(
-                f"Filtered {len(attributes)} attributes to {len(filtered)} "
-                f"using selected_attribute_ids: {self.config.selected_attribute_ids}"
+                f"No attribute filtering applied, "
+                f"using all {len(attributes)} attributes"
             )
-            return filtered
+            return attributes
+
+        filtered = [attr for attr in attributes if attr.attribute_id in filter_ids]
         logger.debug(
-            f"No attribute filtering applied, using all {len(attributes)} attributes"
+            f"Filtered {len(attributes)} attributes to {len(filtered)} "
+            f"using filter_ids: {filter_ids}"
         )
-        return attributes
+        return filtered
 
     def _prepare_context(self, document: Document, full_text: str, **kwargs) -> str:
         """Prepare context based on context type."""

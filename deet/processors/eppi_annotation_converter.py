@@ -54,9 +54,10 @@ class EppiAnnotationConverter:
 
         """
         return {
-            "question_target": "",
-            "output_data_type": AttributeType.BOOL,
-            "attribute_id": attr_data.get("AttributeId", 0),
+            # Core fields that need manual processing
+            "question_target": "",  # Always empty for EPPI
+            "output_data_type": AttributeType.BOOL,  # Always boolean for EPPI
+            "attribute_id": attr_data.get("AttributeId", 0),  # Keep as int
             "attribute_label": attr_data.get("AttributeName", ""),
             "attribute_description": attr_data.get("AttributeDescription"),
             "attribute_type": attr_data.get("AttributeType"),
@@ -267,25 +268,41 @@ class EppiAnnotationConverter:
 
         output_data = " | ".join(extracted_texts) if extracted_texts else ""
 
-        attribute_id = int(annotation.get("AttributeId", 0))
-        attribute = attributes_lookup.get(attribute_id) if attributes_lookup else None
+        # Look up the attribute from the attributes list
+        #
+        # NOTE: EPPI JSON uses int `AttributeId`. Our `EppiAttribute.attribute_id`
+        # is also an int. Python's json parser keeps numeric values as int, so
+        # we can directly use the value without conversion.
+        attribute_id = annotation.get("AttributeId")
 
-        if not attribute:
-            attribute_label = (
-                attribute_id_to_label.get(attribute_id, f"Attribute {attribute_id}")
-                if attribute_id_to_label is not None and attribute_id is not None
-                else f"Attribute {attribute_id}"
+        # Validate that attribute_id is present (required field)
+        if attribute_id is None:
+            missing_attr_id_msg = (
+                "Annotation is missing required field 'AttributeId'. "
+                "All annotations must have an AttributeId."
             )
-            minimal_attr_data = {
-                "AttributeId": attribute_id,
-                "AttributeName": attribute_label,
-            }
-            manual_fields = self.process_attribute_data_for_validation(
-                minimal_attr_data
+            raise ValueError(missing_attr_id_msg)
+
+        # Validate that attributes_lookup is provided
+        if attributes_lookup is None:
+            missing_lookup_msg = (
+                "attributes_lookup is required but was None. "
+                "Cannot convert annotation without attribute definitions."
             )
-            combined_data = {**minimal_attr_data, **manual_fields}
-            attribute = EppiAttribute.model_validate(combined_data)
-        elif attribute_id_to_label and attribute_id in attribute_id_to_label:
+            raise ValueError(missing_lookup_msg)
+
+        # Look up the attribute - it must exist in the attributes list
+        attribute = attributes_lookup.get(attribute_id)
+
+        if attribute is None:
+            attr_not_found_msg = (
+                f"Attribute with ID {attribute_id} not found in attributes list. "
+                "All annotations must reference a valid attribute from the CodeSets."
+            )
+            raise ValueError(attr_not_found_msg)
+
+        # Ensure the attribute has the correct label from the mapping if available
+        if attribute_id_to_label is not None and attribute_id in attribute_id_to_label:
             attribute.attribute_label = attribute_id_to_label[attribute_id]
 
         return EppiGoldStandardAnnotation(
