@@ -272,6 +272,53 @@ def test_integration_full_workflow(sample_eppi_data: dict) -> None:
         assert hasattr(first_doc, "document_id")
         assert hasattr(first_doc, "citation")
 
+        # NOTE: This fixture does not include the data needed for
+        # `process_annotation_file()` to attach annotations to documents.
+        # Attribute-label resolution is tested separately.
+
+
+def test_convert_to_eppi_annotations_uses_codeset_attribute_label(
+    sample_eppi_data: dict,
+) -> None:
+    """Regression test for #93: avoid fallback `Attribute <id>` labels."""
+    converter = EppiAnnotationConverter()
+
+    raw_data = EppiRawData.model_validate(sample_eppi_data)
+    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)
+    attributes = converter.convert_to_eppi_attributes(all_attributes_raw)
+
+    attributes_lookup = {attr.attribute_id: attr for attr in attributes}
+    attribute_id_to_label = {
+        attr.attribute_id: attr.attribute_label for attr in attributes
+    }
+
+    # Create a minimal doc; convert_to_eppi_annotations doesn't actually use it.
+    first_ref = sample_eppi_data["References"][0]
+    document = converter.convert_to_eppi_document(first_ref)
+
+    raw_codes = first_ref["Codes"]
+    annotations = converter.convert_to_eppi_annotations(
+        raw_codes,
+        document,
+        attributes_lookup=attributes_lookup,
+        attribute_id_to_label=attribute_id_to_label,
+    )
+
+    assert len(annotations) == 1
+    assert all(
+        annotation.attribute.attribute_id == attribute_id
+        for annotation, attribute_id in zip(
+            annotations, attributes_lookup.keys(), strict=False
+        )
+    )
+    assert all(
+        annotation.attribute.attribute_label
+        == attributes_lookup[attribute_id].attribute_label
+        for annotation, attribute_id in zip(
+            annotations, attributes_lookup.keys(), strict=False
+        )
+    )
+
 
 def test_error_handling_malformed_data() -> None:
     """Test error handling with malformed data."""
