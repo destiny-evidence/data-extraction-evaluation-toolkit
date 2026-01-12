@@ -240,8 +240,8 @@ class EppiAnnotationConverter:
     def _convert_single_annotation(
         self,
         annotation: dict[str, Any],
-        attributes_lookup: dict[str, EppiAttribute] | None = None,
-        attribute_id_to_label: dict[str, str] | None = None,
+        attributes_lookup: dict[int, EppiAttribute] | None = None,
+        attribute_id_to_label: dict[int, str] | None = None,
     ) -> EppiGoldStandardAnnotation:
         """
         Convert a single annotation dictionary to EppiGoldStandardAnnotation.
@@ -320,8 +320,8 @@ class EppiAnnotationConverter:
         self,
         annotations_data: list[dict[str, Any]],
         document: EppiDocument,
-        attributes_lookup: dict[str, EppiAttribute] | None = None,
-        attribute_id_to_label: dict[str, str] | None = None,
+        attributes_lookup: dict[int, EppiAttribute] | None = None,
+        attribute_id_to_label: dict[int, str] | None = None,
     ) -> list[EppiGoldStandardAnnotation]:
         """
         Convert annotation data to EppiGoldStandardAnnotation models.
@@ -411,10 +411,12 @@ class EppiAnnotationConverter:
 
         attributes = self.convert_to_eppi_attributes(all_attributes_raw)
 
-        attributes_lookup = {attr.attribute_id: attr for attr in attributes}
+        attributes_lookup: dict[int, EppiAttribute] = {
+            attr.attribute_id: attr for attr in attributes
+        }
 
-        attribute_id_to_label = {
-            int(attr.attribute_id): attr.attribute_label for attr in attributes
+        attribute_id_to_label: dict[int, str] = {
+            attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
         all_annotations_raw = []
@@ -445,8 +447,8 @@ class EppiAnnotationConverter:
                 annotations = self.convert_to_eppi_annotations(
                     doc_annotations,
                     document,
-                    attributes_lookup,  # type: ignore[arg-type]
-                    attribute_id_to_label,  # type: ignore[arg-type]
+                    attributes_lookup,
+                    attribute_id_to_label,
                 )
 
                 annotated_doc = EppiGoldStandardAnnotatedDocument(
