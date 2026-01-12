@@ -267,14 +267,14 @@ class EppiAnnotationConverter:
 
         output_data = " | ".join(extracted_texts) if extracted_texts else ""
 
-        attribute_id = str(annotation.get("AttributeId", ""))
+        attribute_id = int(annotation.get("AttributeId", 0))
         attribute = attributes_lookup.get(attribute_id) if attributes_lookup else None
 
         if not attribute:
             attribute_label = (
-                attribute_id_to_label.get(attribute_id, attribute_label_default)
+                attribute_id_to_label.get(attribute_id, f"Attribute {attribute_id}")
                 if attribute_id_to_label is not None and attribute_id is not None
-                else attribute_label_default
+                else f"Attribute {attribute_id}"
             )
             minimal_attr_data = {
                 "AttributeId": attribute_id,
@@ -394,9 +394,11 @@ class EppiAnnotationConverter:
 
         attributes = self.convert_to_eppi_attributes(all_attributes_raw)
 
-        attributes_lookup = {attr.attribute_id: attr for attr in attributes}
+        attributes_lookup: dict[int, EppiAttribute] = {
+            attr.attribute_id: attr for attr in attributes
+        }
 
-        attribute_id_to_label = {
+        attribute_id_to_label: dict[int, str] = {
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
