@@ -10,12 +10,12 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, Document, GoldStandardAnnotation
+from deet.data_models.base import Attribute, GoldStandardAnnotation
 
 # @sagaruprety note that we now only use Eppi types in our
 # specific use-case (i.e. a pipeline script), no longer in the
 # underlying application. The application uses base.py data types.
-from deet.data_models.eppi import EppiAttribute, EppiDocument
+from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
@@ -66,17 +66,30 @@ def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
 
 def llm_data_extraction(
     full_text_path: Path,
-    documents_file_path: Path,
     attributes_file_path: Path,
     output_path: Path,
+    file_path: Path | None = None,
     filter_by_attribute_ids: list[int] | None = None,
     **kwargs,
-) -> list[GoldStandardAnnotation]:
-    """Run LLM data extraction."""
+) -> dict[str, list[GoldStandardAnnotation]]:
+    """
+    Run LLM data extraction.
+
+    Args:
+        full_text_path: Path to markdown file with full text
+        attributes_file_path: Path to attributes JSON file
+        output_path: Path to save output JSON
+        file_path: Path to the source file being processed (used as key in output)
+        filter_by_attribute_ids: Optional list of attribute IDs to filter
+        **kwargs: Additional arguments passed to extractor
+
+    Returns:
+        Dictionary mapping file paths to lists of annotations
+
+    """
     logger.debug(full_text_path)
     full_text = full_text_path.read_text(encoding="utf-8")
 
-    documents_raw = json.loads(documents_file_path.read_text(encoding="utf-8"))
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
 
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
@@ -85,15 +98,140 @@ def llm_data_extraction(
             a for a in attributes if a.attribute_id in filter_by_attribute_ids
         ]
 
-    documents: list[Document] = [EppiDocument(**record) for record in documents_raw]
+    # Use file_path if provided, otherwise derive from full_text_path
+    if file_path is None:
+        file_path = full_text_path
 
     return data_extractor.extract_from_documents(
-        documents=documents,
         attributes=attributes,
         output_file=output_path,
+        file_path=file_path,
         full_text=full_text,
         **kwargs,
     )
+
+
+def process_directory(  # noqa: PLR0912
+    eppi_json_path: Path,
+    output_path: Path,
+    pdf_dir: Path | None = None,
+    markdown_dir: Path | None = None,
+    filter_by_attribute_ids: list[int] | None = None,
+    **kwargs,
+) -> dict[str, list[GoldStandardAnnotation]]:
+    """
+    Process all PDFs or markdowns in a directory.
+
+    Args:
+        eppi_json_path: Path to EPPI JSON file
+        output_path: Path to save combined output JSON
+        pdf_dir: Directory containing PDF files (optional)
+        markdown_dir: Directory containing markdown files
+            (optional, for checking existing markdowns)
+        filter_by_attribute_ids: Optional list of attribute IDs to filter
+        **kwargs: Additional arguments passed to extraction
+
+    Returns:
+        Dictionary mapping file paths to lists of annotations
+
+    """
+    eppi_out_path = output_path.parent / "eppi"
+
+    # Ingest gold standard once
+    ingest_gold_standard_func(eppi_json_path, eppi_out_path)
+
+    all_results: dict[str, list[GoldStandardAnnotation]] = {}
+
+    # Determine which directory to process
+    if pdf_dir and pdf_dir.exists() and pdf_dir.is_dir():
+        input_dir = pdf_dir
+        file_extensions = [".pdf"]
+        is_pdf = True
+    elif markdown_dir and markdown_dir.exists() and markdown_dir.is_dir():
+        input_dir = markdown_dir
+        file_extensions = [".md"]
+        is_pdf = False
+    else:
+        error_msg = "Either pdf_dir or markdown_dir must be provided and exist"
+        raise ValueError(error_msg)
+
+    # Find all files with matching extensions
+    input_files = [
+        f
+        for f in input_dir.iterdir()
+        if f.is_file() and f.suffix.lower() in file_extensions
+    ]
+
+    if not input_files:
+        logger.warning(f"No {file_extensions} files found in {input_dir}")
+        return all_results
+
+    logger.info(f"Processing {len(input_files)} files from {input_dir}")
+    logger.info(f"Files to process: {[f.name for f in sorted(input_files)]}")
+
+    for input_file in sorted(input_files):
+        logger.info(f"Processing file: {input_file.name} ({input_file})")
+        try:
+            # Determine markdown path
+            if is_pdf:
+                # Check if markdown exists in markdown_dir
+                md_filename = input_file.stem + ".md"
+                if markdown_dir and (markdown_dir / md_filename).exists():
+                    md_path = markdown_dir / md_filename
+                    logger.info(f"Using existing markdown: {md_path}")
+                else:
+                    # Parse PDF to markdown
+                    # Save to markdown_dir if provided, otherwise to PDF's directory
+                    if markdown_dir:
+                        md_path = markdown_dir / md_filename
+                        # Ensure markdown_dir exists
+                        markdown_dir.mkdir(parents=True, exist_ok=True)
+                    else:
+                        md_path = input_file.parent / md_filename
+                    logger.info(f"Parsing PDF to markdown: {md_path}")
+                    parse_pdf(input_file, md_path, skip_if_md_exists=False)
+            else:
+                md_path = input_file
+
+            # Run extraction for this file
+            file_output_path = eppi_out_path / f"{input_file.stem}_llm_extractions.json"
+            file_results = llm_data_extraction(
+                full_text_path=md_path,
+                attributes_file_path=eppi_out_path / "attributes.json",
+                output_path=file_output_path,
+                file_path=input_file,
+                filter_by_attribute_ids=filter_by_attribute_ids,
+                prompt_outfile=eppi_out_path
+                / f"{input_file.stem}_full_prompt_payload.json",
+                **kwargs,
+            )
+            all_results.update(file_results)
+            logger.info(
+                f"Successfully processed {input_file.name}: "
+                f"{len(file_results.get(str(input_file.resolve()), []))} annotations"
+            )
+
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Failed to process {input_file}: {e}")
+            logger.debug("Error details", exc_info=True)
+            continue
+
+    logger.info(
+        f"Completed processing. Total files processed: {len(all_results)} "
+        f"out of {len(input_files)}"
+    )
+
+    # Save combined results
+    if all_results:
+        # Convert annotations to dict format for JSON serialization
+        results_json = {
+            file_path: [ann.model_dump() for ann in annotations]
+            for file_path, annotations in all_results.items()
+        }
+        output_path.write_text(json.dumps(results_json, indent=2))
+        logger.info(f"Combined results saved to: {output_path}")
+
+    return all_results
 
 
 def main() -> None:
@@ -110,63 +248,156 @@ def main() -> None:
         required=False,
     )
     parser.add_argument(
+        "--pdf_dir",
+        help="directory containing PDF files to process",
+        type=Path,
+        required=False,
+    )
+    parser.add_argument(
+        "--markdown_dir",
+        help=(
+            "directory containing markdown files "
+            "(for checking existing markdowns or processing markdowns directly)"
+        ),
+        type=Path,
+        required=False,
+    )
+    parser.add_argument(
         "-e", "--eppi_json_path", help="path to eppi json", type=Path, required=True
+    )
+    parser.add_argument(
+        "-o",
+        "--output_path",
+        help=(
+            "path to save output JSON (for directory processing, "
+            "auto-generated if not provided)"
+        ),
+        type=Path,
+        required=False,
     )
 
     args = parser.parse_args()
 
-    eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-    eppi_out_path = (
-        Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
+    # Auto-detect if pdf_path or markdown_path are directories
+    # and convert to directory mode for backward compatibility
+    pdf_dir_final = args.pdf_dir
+    markdown_dir_final = args.markdown_dir
+
+    if args.pdf_path and args.pdf_path.exists() and args.pdf_path.is_dir():
+        if pdf_dir_final:
+            error_msg = (
+                "Cannot specify both --pdf_dir and a directory for -p/--pdf_path"
+            )
+            raise ValueError(error_msg)
+        pdf_dir_final = args.pdf_path
+        logger.info(f"Detected directory for -p, using as pdf_dir: {pdf_dir_final}")
+
+    if (
+        args.markdown_path
+        and args.markdown_path.exists()
+        and args.markdown_path.is_dir()
+    ):
+        if markdown_dir_final:
+            error_msg = (
+                "Cannot specify both --markdown_dir and a directory "
+                "for -m/--markdown_path"
+            )
+            raise ValueError(error_msg)
+        markdown_dir_final = args.markdown_path
+        logger.info(
+            f"Detected directory for -m, using as markdown_dir: {markdown_dir_final}"
+        )
+
+    # Determine if processing directory or single file
+    # Check if pdf_path is a file (single file mode) or if directories are specified
+    is_single_file = (
+        args.pdf_path
+        and args.pdf_path.exists()
+        and args.pdf_path.is_file()
+        and not pdf_dir_final
     )
 
-    logger.debug(eppi_out_path)
-    if not args.markdown_path:
-        args.markdown_path = Path(str(args.pdf_path).split(".")[:-1][0] + ".md")
+    if pdf_dir_final or (markdown_dir_final and not is_single_file):
+        # Directory processing mode
+        # Auto-generate output path if not provided
+        if not args.output_path:
+            eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+            input_dir = pdf_dir_final or markdown_dir_final
+            if input_dir:
+                args.output_path = (
+                    input_dir.parent
+                    / "tmp_parsed_eppi"
+                    / eppi_json_dir
+                    / "llm_extractions.json"
+                )
+            else:
+                args.output_path = Path("llm_extractions.json")
+            logger.info(f"Auto-generated output path: {args.output_path}")
 
-    # Create stages by wrapping the jobified functions
-    logger.debug("decorating our functions as Jobs and PipelineStages")
-    parse_pdf_stage = stage_from_job(
-        jobify(
-            name="parse_pdf",
-            func_kwargs={
-                "pdf_path": args.pdf_path,
-                "out_path": args.markdown_path,
-            },
-        )(parse_pdf)  # Apply jobify decorator to function
-    )
+        process_directory(
+            eppi_json_path=args.eppi_json_path,
+            output_path=args.output_path,
+            pdf_dir=pdf_dir_final,
+            markdown_dir=markdown_dir_final,
+        )
+    else:
+        # Single file processing mode (backward compatibility)
+        if not args.pdf_path:
+            error_msg = "pdf_path is required for single file processing"
+            raise ValueError(error_msg)
 
-    ingest_gs_stage = stage_from_job(
-        jobify(
-            name="ingest_gs",
-            func_kwargs={
-                "eppi_json_path": args.eppi_json_path,
-                "output_dir": eppi_out_path,
-            },
-        )(ingest_gold_standard_func)
-    )
+        eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+        eppi_out_path = (
+            Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
+        )
 
-    llm_extraction_stage = stage_from_job(
-        jobify(
-            name="llm_extraction",
-            job_type=JobType.EXTRACTION,
-            func_kwargs={
-                "full_text_path": args.markdown_path,
-                "documents_file_path": eppi_out_path / "documents.json",
-                "attributes_file_path": eppi_out_path / "attributes.json",
-                "output_path": eppi_out_path / "llm_extractions.json",
-                "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
-            },
-        )(llm_data_extraction)
-    )
+        logger.debug(eppi_out_path)
+        if not args.markdown_path:
+            args.markdown_path = Path(str(args.pdf_path).split(".")[:-1][0] + ".md")
 
-    my_beautiful_pipeline = Pipeline(
-        name="test_pipeline",
-        stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
-        # stages=[ingest_gs_stage, llm_extraction_stage],
-    )
+        # Create stages by wrapping the jobified functions
+        logger.debug("decorating our functions as Jobs and PipelineStages")
+        parse_pdf_stage = stage_from_job(
+            jobify(
+                name="parse_pdf",
+                func_kwargs={
+                    "pdf_path": args.pdf_path,
+                    "out_path": args.markdown_path,
+                },
+            )(parse_pdf)  # Apply jobify decorator to function
+        )
 
-    my_beautiful_pipeline.run()
+        ingest_gs_stage = stage_from_job(
+            jobify(
+                name="ingest_gs",
+                func_kwargs={
+                    "eppi_json_path": args.eppi_json_path,
+                    "output_dir": eppi_out_path,
+                },
+            )(ingest_gold_standard_func)
+        )
+
+        llm_extraction_stage = stage_from_job(
+            jobify(
+                name="llm_extraction",
+                job_type=JobType.EXTRACTION,
+                func_kwargs={
+                    "full_text_path": args.markdown_path,
+                    "attributes_file_path": eppi_out_path / "attributes.json",
+                    "output_path": eppi_out_path / "llm_extractions.json",
+                    "file_path": args.pdf_path,
+                    "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
+                },
+            )(llm_data_extraction)
+        )
+
+        my_beautiful_pipeline = Pipeline(
+            name="test_pipeline",
+            stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
+            # stages=[ingest_gs_stage, llm_extraction_stage],
+        )
+
+        my_beautiful_pipeline.run()
 
 
 if __name__ == "__main__":
