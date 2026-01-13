@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
-    Document,
     GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
@@ -157,13 +156,12 @@ class LLMDataExtractor:
             )
 
     def extract_from_document(
-        self, document: Document, attributes: list[Attribute], **kwargs
+        self, attributes: list[Attribute], **kwargs
     ) -> list[GoldStandardAnnotation]:
         """
         Extract data from a single document.
 
         Args:
-            document: Document to analyze
             attributes: List of attributes to extract
 
         Returns:
@@ -196,7 +194,7 @@ class LLMDataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        context = self._prepare_context(document, **kwargs)
+        context = self._prepare_context(**kwargs)
         prompt = self._generate_user_message_json(context, selected_attributes)
         llm_response = self._call_llm(prompt, **kwargs)
 
@@ -204,7 +202,6 @@ class LLMDataExtractor:
 
     def extract_from_documents(
         self,
-        documents: list[Document],
         attributes: list[Attribute],
         output_file: Path | None = None,
         **kwargs,
@@ -213,7 +210,6 @@ class LLMDataExtractor:
         Extract data from multiple documents.
 
         Args:
-            documents: List of documents to analyze
             attributes: List of attributes to extract
             output_file: Optional file to save results
 
@@ -222,20 +218,22 @@ class LLMDataExtractor:
 
         """
         all_annotations = []
+        document_annotations = self.extract_from_document(attributes, **kwargs)
+        all_annotations.extend(document_annotations)
 
-        for document in documents:
-            logger.info(f"Processing document: {document.name}")
-            try:
-                document_annotations = self.extract_from_document(
-                    document, attributes, **kwargs
-                )
-                all_annotations.extend(document_annotations)
-            except (ValidationError, ValueError) as e:
-                logger.error(
-                    f"Failed to extract from document {document.document_id}: {e}"
-                )
-                logger.debug(f"Document: {document.name}")
-                continue
+        # for document in documents:
+        #     logger.info(f"Processing document: {document.name}")
+        #     try:
+        #         document_annotations = self.extract_from_document(
+        #             document, attributes, **kwargs
+        #         )
+        #         all_annotations.extend(document_annotations)
+        #     except (ValidationError, ValueError) as e:
+        #         logger.error(
+        #             f"Failed to extract from document {document.document_id}: {e}"
+        #         )
+        #         logger.debug(f"Document: {document.name}")
+        #         continue
 
         if output_file:
             self._save_results(all_annotations, output_file)
@@ -273,14 +271,14 @@ class LLMDataExtractor:
         )
         return filtered
 
-    def _prepare_context(self, document: Document, full_text: str, **kwargs) -> str:
+    def _prepare_context(self, full_text: str, **kwargs) -> str:
         """Prepare context based on context type."""
         if self.config.context_type == ContextType.FULL_DOCUMENT:
             context = full_text
             logger.debug(f"Using full document context (length: {len(str(context))})")
-        elif self.config.context_type == ContextType.ABSTRACT_ONLY:
-            context = document.context  # type: ignore[assignment]
-            logger.debug(f"Using abstract context (length: {len(str(context))})")
+        # elif self.config.context_type == ContextType.ABSTRACT_ONLY:
+        #     context = document.context  # type: ignore[assignment]
+        #     logger.debug(f"Using abstract context (length: {len(str(context))})")
         elif self.config.context_type == ContextType.RAG_SNIPPETS:
             rag_not_impl = "rag-snippets context type is not implemented."
             raise NotImplementedError(rag_not_impl)
@@ -338,7 +336,9 @@ class LLMDataExtractor:
         attributes_payload = []
         for attr in attributes:
             # validate schema & fill prompt if not yet filled
-            llm_input_attr = LLMInputSchema(**attr.model_dump())
+            # Use exclude_none=False to ensure prompt field is included even if None
+            attr_dict = attr.model_dump(exclude_none=False)
+            llm_input_attr = LLMInputSchema(**attr_dict)
             attributes_payload.append(llm_input_attr.model_dump())
 
         payload = {
