@@ -7,7 +7,7 @@ from typing import Any
 
 from loguru import logger
 
-from deet.data_models.base import AnnotationType, AttributeType
+from deet.data_models.base import AnnotationType
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -74,52 +74,6 @@ class EppiAnnotationConverter:
             Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
         }
 
-    def process_attribute_data_for_validation(
-        self, attr_data: dict[str, Any]
-    ) -> dict[str, Any]:
-        """
-        Process raw attribute data for EppiAttribute validation.
-
-        Maps camelCase JSON fields to snake_case Python fields and handles
-        fields that need manual processing. Explicitly maps camelCase to snake_case
-        since alias generators don't work in reverse for deserialization.
-
-        For EPPI attributes: question_target is always empty, output_data_type
-        is always boolean. Hierarchy fields (hierarchy_path, hierarchy_level, is_leaf)
-        are already in snake_case from flatten_attributes_hierarchy.
-
-        Args:
-            attr_data: Raw attribute data from EPPI JSON
-
-        Returns:
-            Dictionary with fields mapped to snake_case Python field names
-
-        """
-        return {
-            # Core fields that need manual processing
-            "question_target": "",  # Always empty for EPPI
-            "output_data_type": AttributeType.BOOL,  # Always boolean for EPPI
-            "attribute_id": attr_data.get("AttributeId", 0),  # Keep as int
-            "attribute_label": attr_data.get("AttributeName", ""),
-            "attribute_description": attr_data.get("AttributeDescription"),
-            "attribute_type": attr_data.get("AttributeType"),
-            "attribute_set_description": attr_data.get("AttributeSetDescription"),
-        }
-
-    def load_eppi_json_annotations(self, file_path: str | Path) -> dict[str, Any]:
-        """
-        Load EPPI-Reviewer JSON annotations from a file.
-
-        Args:
-            file_path: Path to the EPPI JSON annotation file
-
-        Returns:
-            Dictionary containing the loaded EPPI annotations
-
-        """
-        with Path(file_path).open("r", encoding="utf-8") as f:
-            return json.load(f)
-
     def flatten_attributes_hierarchy(
         self, attributes_list: list[dict[str, Any]], parent_path: str = ""
     ) -> list[dict[str, Any]]:
@@ -183,21 +137,7 @@ class EppiAnnotationConverter:
             List of EppiAttribute models
 
         """
-        attributes = []
-
-        for attr_data in flattened_attributes:
-            manual_fields = self.process_attribute_data_for_validation(attr_data)
-
-            combined_data = {
-                **attr_data,
-                **manual_fields,
-            }
-
-            logger.debug(combined_data)
-            attribute = EppiAttribute.model_validate(combined_data)
-            attributes.append(attribute)
-
-        return attributes
+        return [EppiAttribute(**att) for att in flattened_attributes]
 
     def _process_text_details(
         self, text_details: list[dict[str, Any]]
@@ -396,7 +336,9 @@ class EppiAnnotationConverter:
         """
         logger.info(f"Processing annotation file: {file_path}")
 
-        data = self.load_eppi_json_annotations(file_path)
+        with Path(file_path).open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
         raw_data = EppiRawData.model_validate(data)
 
         all_attributes_raw = self._extract_attributes_from_codesets(raw_data)

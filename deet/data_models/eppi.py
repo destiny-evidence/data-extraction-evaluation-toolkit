@@ -2,6 +2,7 @@
 
 import csv
 from collections.abc import Callable
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
@@ -64,6 +65,13 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
     )
 
 
+class EppiAttributeSelectionType(StrEnum):
+    """`AttributeType` as it appears in eppi json."""
+
+    SELECTABLE = "Selectable (show checkbox)"
+    NOT_SELECTABLE = "Not Selectable"  # this is just a guess
+
+
 class EppiAttribute(Attribute):
     """
     EPPI-specific attribute with additional fields.
@@ -80,6 +88,7 @@ class EppiAttribute(Attribute):
     # Core fields (inherited from Attribute) - these need manual processing
     question_target: str = ""  # Always empty for EPPI
     output_data_type: AttributeType = AttributeType.BOOL
+    attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(
@@ -103,10 +112,11 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    attribute_type: str | None = Field(
+    attribute_selection_type: EppiAttributeSelectionType | None = Field(
         description="Whether the attribute is Selectable in the "
         " EPPI-Reviewer interface or not",
         default=None,
+        alias="AttributeType",
     )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
@@ -414,10 +424,12 @@ class ProcessedAnnotationData(BaseModel):
         """Total number of documents with annotations."""
         return len(self.annotated_documents)
 
-    def get_attributes_by_type(self, attribute_type: str) -> list[EppiAttribute]:
+    def get_attributes_by_attribute_type(
+        self, attribute_type: AttributeType
+    ) -> list[EppiAttribute]:
         """Get all attributes of a specific type."""
         return [
-            attr for attr in self.attributes if attr.attribute_type == attribute_type
+            attr for attr in self.attributes if attr.output_data_type == attribute_type
         ]
 
     def get_documents_with_annotations(self) -> list[EppiDocument]:
@@ -425,7 +437,7 @@ class ProcessedAnnotationData(BaseModel):
         annotated_doc_ids = {doc.document_id for doc in self.annotated_documents}
         return [doc for doc in self.documents if doc.document_id in annotated_doc_ids]
 
-    def get_annotations_by_type(
+    def get_annotations_by_annotation_type(
         self, annotation_type: AnnotationType
     ) -> list[EppiGoldStandardAnnotation]:
         """Get all annotations of a specific type (human/llm)."""
