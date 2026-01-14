@@ -13,12 +13,12 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, Document, GoldStandardAnnotation
+from deet.data_models.base import Attribute, GoldStandardAnnotation
 
 # @sagaruprety note that we now only use Eppi types in our
 # specific use-case (i.e. a pipeline script), no longer in the
 # underlying application. The application uses base.py data types.
-from deet.data_models.eppi import EppiAttribute, EppiDocument
+from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
@@ -69,7 +69,6 @@ def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
 
 def llm_data_extraction(
     full_text_path: Path,
-    documents_file_path: Path,
     attributes_file_path: Path,
     output_path: Path,
     filter_by_attribute_ids: list[int] | None = None,
@@ -78,7 +77,6 @@ def llm_data_extraction(
     """Run LLM data extraction."""
     full_text = full_text_path.read_text(encoding="utf-8")
 
-    documents_raw = json.loads(documents_file_path.read_text(encoding="utf-8"))
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
 
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
@@ -91,10 +89,7 @@ def llm_data_extraction(
     for att in attributes:
         att.enter_custom_prompt()
 
-    documents: list[Document] = [EppiDocument(**record) for record in documents_raw]
-
     return data_extractor.extract_from_documents(
-        documents=documents,
         attributes=attributes,
         output_file=output_path,
         full_text=full_text,
@@ -158,7 +153,6 @@ def main() -> None:
             job_type=JobType.EXTRACTION,
             func_kwargs={
                 "full_text_path": args.markdown_path,
-                "documents_file_path": eppi_out_path / "documents.json",
                 "attributes_file_path": eppi_out_path / "attributes.json",
                 "output_path": eppi_out_path / "llm_extractions.json",
                 "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
