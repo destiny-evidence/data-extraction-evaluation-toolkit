@@ -1,12 +1,14 @@
 """Convert annotation JSON files to Pydantic models."""
 
 import json
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from destiny_sdk.enhancements import Visibility
 from destiny_sdk.references import Reference
+from loguru import logger
 
 from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
@@ -18,7 +20,21 @@ from deet.data_models.eppi import (
     EppiRawData,
     ProcessedAnnotationData,
 )
-from deet.logger import logger
+
+DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_eppi")
+DEFAULT_ATTRIBUTES_FILENAME = "attributes.json"
+DEFAULT_DOCUMENTS_FILENAME = "documents.json"
+DEFAULT_ANNOTATED_DOCUMENTS_FILENAME = "annotated_documents.json"
+DEFAULT_ATTRIBUTE_MAPPING_FILENAME = "attribute_id_to_label_mapping.json"
+
+
+class Outfiles(StrEnum):
+    """Enum of all outfiles producable by this module. Extend as required."""
+
+    ATTRIBUTES = auto()
+    DOCUMENTS = auto()
+    ANNOTATED_DOCUMENTS = auto()
+    ATTRIBUTE_LABEL_MAPPING = auto()
 
 
 class EppiAnnotationConverter:
@@ -31,6 +47,35 @@ class EppiAnnotationConverter:
     them while preserving parent-child relationships
     through path information.
     """
+
+    def __init__(
+        self,
+        base_output_dir: str | Path = DEFAULT_BASE_OUTPUT_DIR,
+        attributes_filename: str = DEFAULT_ATTRIBUTES_FILENAME,
+        documents_filename: str = DEFAULT_DOCUMENTS_FILENAME,
+        annotated_documents_filename: str = DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
+        attribute_mapping_filename: str = DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
+    ) -> None:
+        """
+        Initialize the converter with configurable output paths.
+
+        Args:
+            output_dir: Base directory for saving processed files
+            attributes_filename: Filename for attributes output
+            documents_filename: Filename for documents output
+            annotated_documents_filename: Filename for annotated documents output
+            attribute_mapping_filename: Filename for attribute ID to label mapping
+
+        """
+        self.base_output_dir = Path(base_output_dir)
+
+        # extend below if adding more output files in enum.
+        self.outfilename_object_map = {
+            Outfiles.ATTRIBUTES: attributes_filename,
+            Outfiles.DOCUMENTS: documents_filename,
+            Outfiles.ANNOTATED_DOCUMENTS: annotated_documents_filename,
+            Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
+        }
 
     def process_attribute_data_for_validation(
         self, attr_data: dict[str, Any]
@@ -473,19 +518,19 @@ class EppiAnnotationConverter:
             raw_data=raw_data,
         )
 
-    def save_processed_data(
+    def write_processed_data_to_file(
         self,
         processed_data: ProcessedAnnotationData,
         output_dir: str | Path,
-        input_filename: str | None = None,
+        outfiles_to_write: list[Outfiles] = [Outfiles.ATTRIBUTES, Outfiles.DOCUMENTS],  # noqa: B006
     ) -> dict[str, str]:
         """
         Save processed data to structured files using Pydantic model serialization.
 
         Args:
             processed_data: The processed data from process_annotation_file
-            output_dir: Directory to save the processed files
-                        (required - no default to prevent accidental commits)
+            output_dir: Supersedes the class-level `output_dir`. So, we will do:
+            Path(output_dir)/self.base_output_dir
             input_filename: Optional filename to create a subdirectory
                             (if not provided, saves directly to output_dir)
 
@@ -493,39 +538,33 @@ class EppiAnnotationConverter:
             Dictionary mapping data types to saved file paths
 
         """
-        base_path = Path(output_dir)
-        eppi_base_path = base_path
+        file_mappings = {
+            Outfiles.ATTRIBUTES: processed_data.attributes,
+            Outfiles.DOCUMENTS: processed_data.documents,
+            Outfiles.ANNOTATED_DOCUMENTS: processed_data.annotated_documents,
+            Outfiles.ATTRIBUTE_LABEL_MAPPING: processed_data.attribute_id_to_label,
+        }
 
-        if input_filename:
-            filename_without_ext = Path(input_filename).stem
-            eppi_path = eppi_base_path / filename_without_ext
-        else:
-            eppi_path = eppi_base_path
+        file_mappings = {
+            k: v for k, v in file_mappings.items() if k in outfiles_to_write
+        }
+        logger.info(f"writing {','.join(file_mappings.keys())} out...")
 
-        eppi_path.mkdir(parents=True, exist_ok=True)
+        user_dir = Path(output_dir)
+        target_dir = user_dir / self.base_output_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"writing files to dir: {target_dir}")
 
         saved_files = {}
 
-        file_mappings = {
-            "attributes": processed_data.attributes,
-            "documents": processed_data.documents,
-            "annotated_documents": processed_data.annotated_documents,
-        }
-
         for file_type, data_list in file_mappings.items():
-            file_path = eppi_path / f"{file_type}.json"
+            file_path = target_dir / self.outfilename_object_map[file_type]
             file_path.write_text(
                 json.dumps(
                     [item.model_dump(mode="json") for item in data_list],  # type: ignore[attr-defined]
                     indent=2,
                 )
             )
-            saved_files[file_type] = str(file_path)
-
-        mapping_file = eppi_path / "attribute_id_to_label_mapping.json"
-        mapping_file.write_text(
-            json.dumps(processed_data.attribute_id_to_label, indent=2)
-        )
-        saved_files["attribute_mapping"] = str(mapping_file)
+            saved_files[file_type.value] = str(file_path)
 
         return saved_files
