@@ -51,6 +51,7 @@ class AttributeType(StrEnum):
 class ContextType(StrEnum):
     """Types of context that can be provided to the LLM."""
 
+    EMPTY = auto()
     FULL_DOCUMENT = auto()
     ABSTRACT_ONLY = auto()
     RAG_SNIPPETS = auto()
@@ -220,7 +221,7 @@ class Document(BaseModel):
     citation: Reference
     context: str | list[str]
     context_type: ContextType
-    document_id: str | int
+    document_id: int
     document_id_source: DocumentIDSource
     filename: str | None = None
 

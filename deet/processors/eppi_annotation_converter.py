@@ -4,10 +4,7 @@ import json
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
-from destiny_sdk.enhancements import Visibility
-from destiny_sdk.references import Reference
 from loguru import logger
 
 from deet.data_models.base import AnnotationType, AttributeType
@@ -109,41 +106,6 @@ class EppiAnnotationConverter:
             "attribute_set_description": attr_data.get("AttributeSetDescription"),
         }
 
-    def process_document_data_for_validation(
-        self, document_data: dict[str, Any]
-    ) -> dict[str, Any]:
-        """
-        Process raw document data for EppiDocument validation.
-
-        Handles fields that need manual processing (name from Title, context from
-        Abstract, document_id from ItemId, citation object creation).
-        All EPPI-specific fields (item_id, title, parent_title, etc.) are
-        automatically mapped by alias generators from camelCase JSON.
-
-        Args:
-            document_data: Raw document data from EPPI JSON
-
-        Returns:
-            Dictionary with only the fields that need manual processing
-
-        """
-        return {
-            "name": document_data.get("Title"),
-            "citation": self._create_reference(document_data),
-            "context": document_data.get("Abstract"),
-            "document_id": str(document_data.get("ItemId", "")),
-            "filename": document_data.get("Title", "").replace(" ", "_") + ".pdf"
-            if document_data.get("Title")
-            else None,
-        }
-
-    def _create_reference(self, document_data: dict[str, Any]) -> Reference:
-        """Create a Reference object from document data."""
-        return Reference(
-            id=uuid4(),
-            visibility=Visibility.PUBLIC,
-        )
-
     def load_eppi_json_annotations(self, file_path: str | Path) -> dict[str, Any]:
         """
         Load EPPI-Reviewer JSON annotations from a file.
@@ -236,21 +198,6 @@ class EppiAnnotationConverter:
             attributes.append(attribute)
 
         return attributes
-
-    def convert_to_eppi_document(self, document_data: dict[str, Any]) -> EppiDocument:
-        """
-        Convert document data to EppiDocument model.
-
-        Args:
-            document_data: Dictionary containing document information
-
-        Returns:
-            EppiDocument model
-
-        """
-        manual_fields = self.process_document_data_for_validation(document_data)
-        combined_data = {**document_data, **manual_fields}
-        return EppiDocument.model_validate(combined_data)
 
     def _process_text_details(
         self, text_details: list[dict[str, Any]]
@@ -473,7 +420,7 @@ class EppiAnnotationConverter:
 
             doc_title = reference.get("Title", "")
             if doc_title and doc_title not in documents_by_title:
-                document = self.convert_to_eppi_document(reference)
+                document = EppiDocument(**reference)
                 documents_by_title[doc_title] = document
 
         pdf_to_title_mapping = self._create_pdf_to_title_mapping(

@@ -5,6 +5,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
 
+from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
+from destiny_sdk.parsers import EPPIParser
+from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
@@ -13,9 +16,52 @@ from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributeType,
+    ContextType,
     Document,
+    DocumentIDSource,
     GoldStandardAnnotation,
 )
+
+eppi_destiny_parser = EPPIParser(tags=["deet"])
+
+
+def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
+    """
+    Create a ReferenceFileInput object from document data.
+
+    NOTE: we are not using the wrapping parser method in
+    repository as it is for the whole document, and
+    if it fails, we wouldn't be able to map a destiny reference.
+
+    NL has raised an issue in destiny repo, and will send a
+    PR with an update if allowed.
+
+    Args:
+        referece: one reference from the eppi json.
+
+    """
+    enhancement_content = [
+        eppi_destiny_parser._parse_abstract_enhancement(reference),  # noqa: SLF001
+        eppi_destiny_parser._parse_bibliographic_enhancement(reference),  # noqa: SLF001
+        eppi_destiny_parser._create_annotation_enhancement(),  # noqa: SLF001
+    ]
+    enhancements = [
+        EnhancementFileInput(
+            source=eppi_destiny_parser.parser_source,
+            visibility=Visibility.PUBLIC,
+            content=content,  # type: ignore[arg-type]
+            enhancement_type=EnhancementType.BIBLIOGRAPHIC,
+        )
+        for content in enhancement_content
+    ]
+
+    return ReferenceFileInput(
+        visibility=Visibility.PUBLIC,
+        identifiers=eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
+            ref_to_import=reference
+        ),
+        enhancements=enhancements,
+    )
 
 
 class EppiAttribute(Attribute):
@@ -76,11 +122,17 @@ class EppiDocument(Document):
     camelCase EPPI JSON fields to snake_case Python fields.
     """
 
-    model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
+    name: str = Field(default="", alias="title")
+    context: str = ""
+    context_type: ContextType = ContextType.EMPTY
+    document_id: int = Field(alias="item_id")
+    document_id_source: DocumentIDSource = DocumentIDSource.EPPI_ITEM_ID
+
+    model_config = ConfigDict(alias_generators=to_camel, populate_by_name=True)  # type: ignore[typeddict-unknown-key]
 
     # EPPI-specific fields - these map automatically from camelCase JSON
-    item_id: int | None = None
-    title: str | None = None
+    item_id: int
+    title: str
     parent_title: str | None = None
     short_title: str | None = None
     date_created: str | None = None
@@ -91,6 +143,14 @@ class EppiDocument(Document):
     authors: str | None = None
     keywords: str | None = None
     doi: str | None = None
+
+    @model_validator(mode="before")
+    def create_destiny_reference(self, data: dict[str, Any]) -> dict:
+        """Auto-populate the document_id from eppi's item_id."""
+        citation = parse_citation_to_destiny(reference=data)
+        data["citation"] = citation
+
+        return data
 
 
 class EppiItemAttributeFullTextDetails(BaseModel):
