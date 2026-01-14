@@ -48,6 +48,21 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
+
+
+class DocumentIDSource(StrEnum):
+    """Sources for a given document_id. Can be e.g. eppi_item_id."""
+
+    EPPI_ITEM_ID = auto()
+
+
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.
@@ -186,12 +201,22 @@ class Attribute(BaseModel):
 
 
 class Document(BaseModel):
-    """Represents a document in the dataset."""
+    """
+    Represents a document.
+
+    This can be used both for references itemised
+    in a document listing gold standard annotations (e.g. eppi.json)
+    AND
+    for a document coming from a file (e.g. pdf) without
+    linking to a gold standard annotations document with references.
+    """
 
     name: str
     citation: Reference
     context: str | list[str]
-    document_id: str
+    context_type: ContextType
+    document_id: str | int
+    document_id_source: DocumentIDSource
     filename: str | None = None
 
 

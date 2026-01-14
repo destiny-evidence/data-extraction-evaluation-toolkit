@@ -1,7 +1,6 @@
 """Generalisable data extraction module for LLM-based document analysis."""
 
 import json
-from enum import StrEnum, auto
 from pathlib import Path
 
 import litellm
@@ -10,6 +9,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    ContextType,
     Document,
     GoldStandardAnnotation,
     LLMInputSchema,
@@ -19,15 +19,6 @@ from deet.logger import logger
 from deet.settings import get_settings
 
 settings = get_settings()
-
-
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
 
 
 class PromptConfig(BaseModel):
