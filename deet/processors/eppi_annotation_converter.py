@@ -66,7 +66,7 @@ class EppiAnnotationConverter:
         """
         self.base_output_dir = Path(base_output_dir)
 
-        # extend below if adding more output files in enum.
+        # extend below if adding more output files in `Outfiles`.
         self.outfilename_object_map = {
             Outfiles.ATTRIBUTES: attributes_filename,
             Outfiles.DOCUMENTS: documents_filename,
@@ -91,36 +91,27 @@ class EppiAnnotationConverter:
         flattened = []
 
         for attr in attributes_list:
-            flattened_attr = {
-                "AttributeId": attr.get("AttributeId"),
-                "AttributeName": attr.get("AttributeName"),
-                "AttributeDescription": attr.get("AttributeDescription"),
-                "AttributeSetDescription": attr.get("AttributeSetDescription"),
-                "AttributeType": attr.get("AttributeType"),
-                "AttributeTypeId": attr.get("AttributeTypeId"),
-                "AttributeSetId": attr.get("AttributeSetId"),
-                "OriginalAttributeID": attr.get("OriginalAttributeID"),
-                "ExtURL": attr.get("ExtURL"),
-                "ExtType": attr.get("ExtType"),
-                "hierarchy_path": parent_path,
-                "hierarchy_level": len(parent_path.split(" > ")) if parent_path else 0,
-                "is_leaf": "Attributes" not in attr
-                or not attr["Attributes"].get("AttributesList"),
-            }
+            # extract children before modifying  dict
+            child_attributes = attr.get("Attributes", {}).get("AttributesList", [])
 
-            flattened.append(flattened_attr)
+            attr["hierarchy_path"] = parent_path
+            attr["hierarchy_level"] = (
+                len(parent_path.split(" > ")) if parent_path else 0
+            )
+            attr["is_leaf"] = not bool(child_attributes)
 
-            if "Attributes" in attr and "AttributesList" in attr["Attributes"]:
-                child_attributes = attr["Attributes"]["AttributesList"]
+            flattened.append(attr)
+
+            # recursive extension
+            if child_attributes:
                 current_path = (
                     f"{parent_path} > {attr.get('AttributeName', '')}"
                     if parent_path
                     else attr.get("AttributeName", "")
                 )
-                child_flattened = self.flatten_attributes_hierarchy(
-                    child_attributes, current_path
+                flattened.extend(
+                    self.flatten_attributes_hierarchy(child_attributes, current_path)
                 )
-                flattened.extend(child_flattened)
 
         return flattened
 
