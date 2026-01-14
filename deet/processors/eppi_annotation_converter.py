@@ -163,7 +163,7 @@ class EppiAnnotationConverter:
     def _convert_single_annotation(
         self,
         annotation: dict[str, Any],
-        attributes_lookup: dict[int, EppiAttribute] | None = None,
+        attributes_lookup: dict[int, EppiAttribute],
         attribute_id_to_label: dict[int, str] | None = None,
     ) -> EppiGoldStandardAnnotation:
         """
@@ -192,39 +192,22 @@ class EppiAnnotationConverter:
         output_data = " | ".join(extracted_texts) if extracted_texts else ""
 
         # Look up the attribute from the attributes list
-        #
-        # NOTE: EPPI JSON uses int `AttributeId`. Our `EppiAttribute.attribute_id`
-        # is also an int. Python's json parser keeps numeric values as int, so
-        # we can directly use the value without conversion.
-        attribute_id = annotation.get("AttributeId")
-
-        # Validate that attribute_id is present (required field)
-        if attribute_id is None:
+        if (attribute_id := annotation.get("AttributeId")) is None:
             missing_attr_id_msg = (
                 "Annotation is missing required field 'AttributeId'. "
                 "All annotations must have an AttributeId."
             )
             raise ValueError(missing_attr_id_msg)
 
-        # Validate that attributes_lookup is provided
-        if attributes_lookup is None:
-            missing_lookup_msg = (
-                "attributes_lookup is required but was None. "
-                "Cannot convert annotation without attribute definitions."
-            )
-            raise ValueError(missing_lookup_msg)
-
-        # Look up the attribute - it must exist in the attributes list
-        attribute = attributes_lookup.get(attribute_id)
-
-        if attribute is None:
+        # find attribute in attributes_lookup
+        if (attribute := attributes_lookup.get(attribute_id)) is None:
             attr_not_found_msg = (
                 f"Attribute with ID {attribute_id} not found in attributes list. "
                 "All annotations must reference a valid attribute from the CodeSets."
             )
             raise ValueError(attr_not_found_msg)
 
-        # Ensure the attribute has the correct label from the mapping if available
+        # ensure the attribute has the correct label from the mapping if available
         if attribute_id_to_label is not None and attribute_id in attribute_id_to_label:
             attribute.attribute_label = attribute_id_to_label[attribute_id]
 
@@ -242,8 +225,7 @@ class EppiAnnotationConverter:
     def convert_to_eppi_annotations(
         self,
         annotations_data: list[dict[str, Any]],
-        document: EppiDocument,
-        attributes_lookup: dict[int, EppiAttribute] | None = None,
+        attributes_lookup: dict[int, EppiAttribute],
         attribute_id_to_label: dict[int, str] | None = None,
     ) -> list[EppiGoldStandardAnnotation]:
         """
@@ -371,7 +353,6 @@ class EppiAnnotationConverter:
             if doc_annotations:
                 annotations = self.convert_to_eppi_annotations(
                     doc_annotations,
-                    document,
                     attributes_lookup,
                     attribute_id_to_label,
                 )
