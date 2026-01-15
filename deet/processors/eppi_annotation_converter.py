@@ -349,48 +349,6 @@ class EppiAnnotationConverter:
         """Extract and flatten attributes from CodeSets using structured models."""
         return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
 
-    def _create_pdf_to_title_mapping(
-        self, references: list[dict[str, Any]]
-    ) -> dict[str, str]:
-        """Create mapping from PDF filenames to document titles."""
-        pdf_to_title_mapping = {}
-        for ref in references:
-            title = ref.get("Title", "")
-            pdf_filename = title.replace(" ", "_") + ".pdf"
-            pdf_to_title_mapping[pdf_filename] = title
-
-            year = ref.get("Year", "")
-            if year:
-                authors = (
-                    ref.get("Authors", "").split(";")[0].strip()
-                    if ref.get("Authors")
-                    else ""
-                )
-                if authors:
-                    author_year_pdf = f"{authors.split()[0]} {year}.pdf"
-                    pdf_to_title_mapping[author_year_pdf] = title
-
-        return pdf_to_title_mapping
-
-    def _find_document_annotations(
-        self,
-        all_annotations_raw: list[dict[str, Any]],
-        doc_title: str,
-        pdf_to_title_mapping: dict[str, str],
-    ) -> list[dict[str, Any]]:
-        """Find annotations for a specific document."""
-        doc_annotations = []
-        for ann in all_annotations_raw:
-            for text_detail in ann.get("ItemAttributeFullTextDetails", []):
-                doc_title_from_ann = text_detail.get("DocTitle", "")
-                if doc_title_from_ann == doc_title or (
-                    doc_title_from_ann in pdf_to_title_mapping
-                    and pdf_to_title_mapping[doc_title_from_ann] == doc_title
-                ):
-                    doc_annotations.append(ann)
-                    break
-        return doc_annotations
-
     def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
@@ -419,33 +377,29 @@ class EppiAnnotationConverter:
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
-        all_annotations_raw = []
-        documents_by_title = {}
-
-        for reference in data.get("References", []):
-            reference_codes = reference.get("Codes", [])
-            all_annotations_raw.extend(reference_codes)
-
-            doc_title = reference.get("Title", "")
-            if doc_title and doc_title not in documents_by_title:
-                document = self.convert_to_eppi_document(reference)
-                documents_by_title[doc_title] = document
-
-        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
-            data.get("References", [])
-        )
-
+        documents_by_item_id: dict[int, EppiDocument] = {}
         annotated_documents = []
         all_annotations = []
 
-        for doc_title, document in documents_by_title.items():
-            doc_annotations = self._find_document_annotations(
-                all_annotations_raw, doc_title, pdf_to_title_mapping
-            )
+        # Process each reference with its annotations directly
+        # Annotations are already nested within their parent reference
+        for reference in data.get("References", []):
+            item_id = reference.get("ItemId")
+            if item_id is None:
+                continue
 
-            if doc_annotations:
+            # Create or retrieve document using ItemId as unique identifier
+            if item_id not in documents_by_item_id:
+                document = self.convert_to_eppi_document(reference)
+                documents_by_item_id[item_id] = document
+            else:
+                document = documents_by_item_id[item_id]
+
+            # Get annotations directly from this reference's Codes array
+            reference_codes = reference.get("Codes", [])
+            if reference_codes:
                 annotations = self.convert_to_eppi_annotations(
-                    doc_annotations,
+                    reference_codes,
                     document,
                     attributes_lookup,
                     attribute_id_to_label,
@@ -459,14 +413,14 @@ class EppiAnnotationConverter:
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            " {len(documents_by_title)} documents, "
+            f" {len(documents_by_item_id)} documents, "
             f"{len(all_annotations)} annotations,"
             " {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(
             attributes=attributes,
-            documents=list(documents_by_title.values()),
+            documents=list(documents_by_item_id.values()),
             annotations=all_annotations,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,
