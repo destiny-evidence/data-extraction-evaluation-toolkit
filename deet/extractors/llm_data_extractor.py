@@ -264,7 +264,7 @@ class LLMDataExtractor:
         )
         return filtered
 
-    def _prepare_context(
+    def _prepare_context(  # type:ignore[mypy-note]
         self,
         payload: str,  # NOTE - potentially expand once we implement other stuff.
         context_type: ContextType | None = None,
@@ -311,7 +311,7 @@ class LLMDataExtractor:
 
     def _generate_user_message_json(
         self,
-        context: str,
+        context: str,  # NOTE - consider renaming to `payload`
         attributes: list[Attribute],
     ) -> str:
         """
