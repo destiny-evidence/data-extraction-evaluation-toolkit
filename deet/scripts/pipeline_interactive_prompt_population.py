@@ -13,7 +13,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, GoldStandardAnnotation
+from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
 
 # @sagaruprety note that we now only use Eppi types in our
 # specific use-case (i.e. a pipeline script), no longer in the
@@ -64,7 +64,7 @@ def parse_pdf(
 def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
     """Convert EPPI JSON to DEET data models."""
     out = converter.process_annotation_file(eppi_json_path)
-    converter.save_processed_data(processed_data=out, output_dir=output_dir)
+    converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
 def llm_data_extraction(
@@ -72,7 +72,6 @@ def llm_data_extraction(
     attributes_file_path: Path,
     output_path: Path,
     filter_by_attribute_ids: list[int] | None = None,
-    **kwargs,
 ) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
     full_text = full_text_path.read_text(encoding="utf-8")
@@ -90,10 +89,10 @@ def llm_data_extraction(
         att.enter_custom_prompt()
 
     return data_extractor.extract_from_documents(
+        payload=full_text,
+        context_type=ContextType.FULL_DOCUMENT,
         attributes=attributes,
         output_file=output_path,
-        full_text=full_text,
-        **kwargs,
     )
 
 
