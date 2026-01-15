@@ -151,6 +151,7 @@ class LLMDataExtractor:
         attributes: list[Attribute],
         payload: str,
         context_type: ContextType | None,
+        prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotation]:
         """
         Extract data from a single document.
@@ -192,7 +193,7 @@ class LLMDataExtractor:
 
         context = self._prepare_context(payload=payload, context_type=context_type)
         prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt)
+        llm_response = self._call_llm(prompt, prompt_outfile=prompt_outfile)
 
         return self._parse_llm_response(llm_response, selected_attributes)
 
@@ -202,6 +203,7 @@ class LLMDataExtractor:
         attributes: list[Attribute],
         output_file: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
+        prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotation]:
         """
         Extract data from multiple documents.
@@ -222,6 +224,7 @@ class LLMDataExtractor:
             attributes,
             payload=payload,
             context_type=context_type,
+            prompt_outfile=prompt_outfile,
         )
         all_annotations.extend(document_annotations)
 

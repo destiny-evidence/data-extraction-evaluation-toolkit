@@ -382,7 +382,7 @@ class PipelineStage(BaseModel):
     """A stage in a DEET pipeline."""
 
     name: str
-    skip_jobs_if_failed: bool = True
+    skip_jobs_if_failed: bool = False
     input_file: Path | None = None  # handled in job
     data: Any | None = None  # handled in job
     jobs: Job | list[Job]
@@ -524,7 +524,7 @@ def stage_from_job(  # the function version type hints
     input_file: Path | None = None,
     logfile: Path | None = None,
     *,
-    skip_jobs_if_failed: bool = True,
+    skip_jobs_if_failed: bool = False,
 ) -> PipelineStage: ...
 
 
@@ -535,7 +535,7 @@ def stage_from_job(  # the decorator version type hints
     input_file: Path | None = None,
     logfile: Path | None = None,
     *,
-    skip_jobs_if_failed: bool = True,
+    skip_jobs_if_failed: bool = False,
 ) -> Callable[[Job], PipelineStage]: ...
 
 

@@ -128,7 +128,12 @@ class EppiAnnotationConverter:
             List of EppiAttribute models
 
         """
-        return [EppiAttribute(**att) for att in flattened_attributes]
+        out = []
+        for att_dict in flattened_attributes:
+            if "AttributeId" not in att_dict:
+                att_dict["AttributeId"] = 0
+            out.append(EppiAttribute(**att_dict))
+        return out
 
     def _process_text_details(
         self, text_details: list[dict[str, Any]]
@@ -327,7 +332,7 @@ class EppiAnnotationConverter:
         }
 
         all_annotations_raw = []
-        documents_by_title = {}
+        documents_by_title: dict[str, EppiDocument] = {}
 
         for reference in data.get("References", []):
             reference_codes = reference.get("Codes", [])
@@ -345,7 +350,7 @@ class EppiAnnotationConverter:
         annotated_documents = []
         all_annotations = []
 
-        for doc_title, document in documents_by_title.items():
+        for doc_title, doc in documents_by_title.items():
             doc_annotations = self._find_document_annotations(
                 all_annotations_raw, doc_title, pdf_to_title_mapping
             )
@@ -356,10 +361,14 @@ class EppiAnnotationConverter:
                     attributes_lookup,
                     attribute_id_to_label,
                 )
+                payload = doc.model_dump(mode="python")
+                annotations = [json.loads(ann.model_dump_json()) for ann in annotations]
 
-                annotated_doc = EppiGoldStandardAnnotatedDocument(
-                    **document.model_dump(), annotations=annotations
-                )
+                payload["annotations"] = annotations
+
+                # annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
+                annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
+
                 annotated_documents.append(annotated_doc)
                 all_annotations.extend(annotations)
 
@@ -420,6 +429,7 @@ class EppiAnnotationConverter:
 
         for file_type, data_list in file_mappings.items():
             file_path = target_dir / self.outfilename_object_map[file_type]
+            logger.debug(f"writing file {file_type} to {file_path}")
             file_path.write_text(
                 json.dumps(
                     [item.model_dump(mode="json") for item in data_list],  # type: ignore[attr-defined]

@@ -5,7 +5,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal
 
-from destiny_sdk.references import Reference
+from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
@@ -218,7 +218,7 @@ class Document(BaseModel):
     """
 
     name: str
-    citation: Reference
+    citation: ReferenceFileInput
     context: str | list[str]
     context_type: ContextType
     document_id: int
@@ -246,7 +246,14 @@ class GoldStandardAnnotation(BaseModel):
     def ensure_correct_type(cls, data: dict) -> dict:
         """Ensure output_data is of the type required by annotation_type."""
         target_att: Attribute = data["attribute"]
-        target_type: type = target_att.output_data_type.to_python_type()
+
+        if isinstance(target_att, dict):
+            output_data_type = AttributeType(target_att["output_data_type"])
+        else:
+            output_data_type = target_att.output_data_type
+
+        target_type: type = output_data_type.to_python_type()
+
         if not isinstance(data["output_data"], target_type):
             bad_type = (
                 f"field {data['output_data']} is of "
@@ -254,6 +261,15 @@ class GoldStandardAnnotation(BaseModel):
             )
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
+
+        # target_type: type = target_att.output_data_type.to_python_type()
+        # if not isinstance(data["output_data"], target_type):
+        #     bad_type = (
+        #         f"field {data['output_data']} is of "
+        #         f" type {type(data['output_data'])}; should be {target_type}."
+        #     )
+        #     raise ValueError(bad_type)
+        # return data
 
 
 class GoldStandardAnnotatedDocument(Document):

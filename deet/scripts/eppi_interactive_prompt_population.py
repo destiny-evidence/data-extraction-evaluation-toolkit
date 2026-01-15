@@ -21,7 +21,11 @@ from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.processors.eppi_annotation_converter import (
+    DEFAULT_ATTRIBUTES_FILENAME,
+    DEFAULT_BASE_OUTPUT_DIR,
+    EppiAnnotationConverter,
+)
 from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()
@@ -72,6 +76,7 @@ def llm_data_extraction(
     attributes_file_path: Path,
     output_path: Path,
     filter_by_attribute_ids: list[int] | None = None,
+    prompt_outfile: Path | None = None,
 ) -> list[GoldStandardAnnotation]:
     """Run LLM data extraction."""
     full_text = full_text_path.read_text(encoding="utf-8")
@@ -93,6 +98,7 @@ def llm_data_extraction(
         context_type=ContextType.FULL_DOCUMENT,
         attributes=attributes,
         output_file=output_path,
+        prompt_outfile=prompt_outfile,
     )
 
 
@@ -115,12 +121,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-    eppi_out_path = (
-        Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
-    )
+    # eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+    eppi_out_path = Path(args.pdf_path).parent
 
-    logger.debug(eppi_out_path)
     if not args.markdown_path:
         args.markdown_path = Path(str(args.pdf_path).split(".")[:-1][0] + ".md")
 
@@ -133,7 +136,8 @@ def main() -> None:
                 "pdf_path": args.pdf_path,
                 "out_path": args.markdown_path,
             },
-        )(parse_pdf)  # Apply jobify decorator to function
+        )(parse_pdf),
+        skip_jobs_if_failed=False,
     )
 
     ingest_gs_stage = stage_from_job(
@@ -143,7 +147,8 @@ def main() -> None:
                 "eppi_json_path": args.eppi_json_path,
                 "output_dir": eppi_out_path,
             },
-        )(ingest_gold_standard_func)
+        )(ingest_gold_standard_func),
+        skip_jobs_if_failed=False,
     )
 
     llm_extraction_stage = stage_from_job(
@@ -152,11 +157,14 @@ def main() -> None:
             job_type=JobType.EXTRACTION,
             func_kwargs={
                 "full_text_path": args.markdown_path,
-                "attributes_file_path": eppi_out_path / "attributes.json",
+                "attributes_file_path": eppi_out_path
+                / DEFAULT_BASE_OUTPUT_DIR
+                / DEFAULT_ATTRIBUTES_FILENAME,
                 "output_path": eppi_out_path / "llm_extractions.json",
                 "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
             },
-        )(llm_data_extraction)
+        )(llm_data_extraction),
+        skip_jobs_if_failed=False,
     )
 
     my_beautiful_pipeline = Pipeline(
