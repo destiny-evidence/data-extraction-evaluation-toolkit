@@ -16,7 +16,6 @@ from deet.data_models.base import Attribute, GoldStandardAnnotation
 # specific use-case (i.e. a pipeline script), no longer in the
 # underlying application. The application uses base.py data types.
 from deet.data_models.eppi import EppiAttribute
-from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 from deet.processors.parser import DocumentParser
@@ -238,23 +237,15 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=False, type=Path
-    )
-    parser.add_argument(
-        "-m",
-        "--markdown_path",
-        help="path to save markdown at",
-        type=Path,
-        required=False,
-    )
-    parser.add_argument(
-        "--pdf_dir",
+        "-p",
+        "--pdf_path",
         help="directory containing PDF files to process",
         type=Path,
         required=False,
     )
     parser.add_argument(
-        "--markdown_dir",
+        "-m",
+        "--markdown_path",
         help=(
             "directory containing markdown files "
             "(for checking existing markdowns or processing markdowns directly)"
@@ -268,136 +259,61 @@ def main() -> None:
     parser.add_argument(
         "-o",
         "--output_path",
-        help=(
-            "path to save output JSON (for directory processing, "
-            "auto-generated if not provided)"
-        ),
+        help=("path to save output JSON (auto-generated if not provided)"),
         type=Path,
         required=False,
     )
 
     args = parser.parse_args()
 
-    # Auto-detect if pdf_path or markdown_path are directories
-    # and convert to directory mode for backward compatibility
-    pdf_dir_final = args.pdf_dir
-    markdown_dir_final = args.markdown_dir
+    # Validate that at least one directory is provided
+    if not args.pdf_path and not args.markdown_path:
+        error_msg = (
+            "At least one of -p/--pdf_path or -m/--markdown_path must be provided"
+        )
+        raise ValueError(error_msg)
 
-    if args.pdf_path and args.pdf_path.exists() and args.pdf_path.is_dir():
-        if pdf_dir_final:
+    # Validate pdf_path if provided
+    if args.pdf_path:
+        if not args.pdf_path.exists():
+            error_msg = f"PDF directory does not exist: {args.pdf_path}"
+            raise ValueError(error_msg)
+        if not args.pdf_path.is_dir():
+            error_msg = f"PDF path must be a directory, not a file: {args.pdf_path}"
+            raise ValueError(error_msg)
+
+    # Validate markdown_path if provided
+    if args.markdown_path:
+        if not args.markdown_path.exists():
+            error_msg = f"Markdown directory does not exist: {args.markdown_path}"
+            raise ValueError(error_msg)
+        if not args.markdown_path.is_dir():
             error_msg = (
-                "Cannot specify both --pdf_dir and a directory for -p/--pdf_path"
+                f"Markdown path must be a directory, not a file: {args.markdown_path}"
             )
             raise ValueError(error_msg)
-        pdf_dir_final = args.pdf_path
-        logger.info(f"Detected directory for -p, using as pdf_dir: {pdf_dir_final}")
 
-    if (
-        args.markdown_path
-        and args.markdown_path.exists()
-        and args.markdown_path.is_dir()
-    ):
-        if markdown_dir_final:
-            error_msg = (
-                "Cannot specify both --markdown_dir and a directory "
-                "for -m/--markdown_path"
-            )
-            raise ValueError(error_msg)
-        markdown_dir_final = args.markdown_path
-        logger.info(
-            f"Detected directory for -m, using as markdown_dir: {markdown_dir_final}"
-        )
-
-    # Determine if processing directory or single file
-    # Check if pdf_path is a file (single file mode) or if directories are specified
-    is_single_file = (
-        args.pdf_path
-        and args.pdf_path.exists()
-        and args.pdf_path.is_file()
-        and not pdf_dir_final
-    )
-
-    if pdf_dir_final or (markdown_dir_final and not is_single_file):
-        # Directory processing mode
-        # Auto-generate output path if not provided
-        if not args.output_path:
-            eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-            input_dir = pdf_dir_final or markdown_dir_final
-            if input_dir:
-                args.output_path = (
-                    input_dir.parent
-                    / "tmp_parsed_eppi"
-                    / eppi_json_dir
-                    / "llm_extractions.json"
-                )
-            else:
-                args.output_path = Path("llm_extractions.json")
-            logger.info(f"Auto-generated output path: {args.output_path}")
-
-        process_directory(
-            eppi_json_path=args.eppi_json_path,
-            output_path=args.output_path,
-            pdf_dir=pdf_dir_final,
-            markdown_dir=markdown_dir_final,
-        )
-    else:
-        # Single file processing mode (backward compatibility)
-        if not args.pdf_path:
-            error_msg = "pdf_path is required for single file processing"
-            raise ValueError(error_msg)
-
+    # Auto-generate output path if not provided
+    if not args.output_path:
         eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-        eppi_out_path = (
-            Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
-        )
+        input_dir = args.pdf_path or args.markdown_path
+        if input_dir:
+            args.output_path = (
+                input_dir.parent
+                / "tmp_parsed_eppi"
+                / eppi_json_dir
+                / "llm_extractions.json"
+            )
+        else:
+            args.output_path = Path("llm_extractions.json")
+        logger.info(f"Auto-generated output path: {args.output_path}")
 
-        logger.debug(eppi_out_path)
-        if not args.markdown_path:
-            args.markdown_path = Path(str(args.pdf_path).split(".")[:-1][0] + ".md")
-
-        # Create stages by wrapping the jobified functions
-        logger.debug("decorating our functions as Jobs and PipelineStages")
-        parse_pdf_stage = stage_from_job(
-            jobify(
-                name="parse_pdf",
-                func_kwargs={
-                    "pdf_path": args.pdf_path,
-                    "out_path": args.markdown_path,
-                },
-            )(parse_pdf)  # Apply jobify decorator to function
-        )
-
-        ingest_gs_stage = stage_from_job(
-            jobify(
-                name="ingest_gs",
-                func_kwargs={
-                    "eppi_json_path": args.eppi_json_path,
-                    "output_dir": eppi_out_path,
-                },
-            )(ingest_gold_standard_func)
-        )
-
-        llm_extraction_stage = stage_from_job(
-            jobify(
-                name="llm_extraction",
-                job_type=JobType.EXTRACTION,
-                func_kwargs={
-                    "full_text_path": args.markdown_path,
-                    "attributes_file_path": eppi_out_path / "attributes.json",
-                    "output_path": eppi_out_path / "llm_extractions.json",
-                    "file_path": args.pdf_path,
-                    "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
-                },
-            )(llm_data_extraction)
-        )
-
-        my_beautiful_pipeline = Pipeline(
-            name="test_pipeline",
-            stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
-            # stages=[ingest_gs_stage, llm_extraction_stage],
-        )
-
-        my_beautiful_pipeline.run()
+    process_directory(
+        eppi_json_path=args.eppi_json_path,
+        output_path=args.output_path,
+        pdf_dir=args.pdf_path,
+        markdown_dir=args.markdown_path,
+    )
 
 
 if __name__ == "__main__":
