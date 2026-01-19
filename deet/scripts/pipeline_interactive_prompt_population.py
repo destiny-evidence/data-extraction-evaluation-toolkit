@@ -117,7 +117,6 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
     eppi_out_path = Path(args.pdf_path).parent
 
     if not args.markdown_path:
