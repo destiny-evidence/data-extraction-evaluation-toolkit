@@ -185,8 +185,8 @@ class EppiDocument(Document):
 
     @model_validator(mode="before")
     @classmethod
-    def create_destiny_reference(cls, data: dict[str, Any]) -> dict:
-        """Auto-populate the document_id from eppi's item_id."""
+    def populate_citation_field(cls, data: dict[str, Any]) -> dict:
+        """Populate the `citation` field with a Destiny reference derived from the EPPI data."""
         if not isinstance(data, dict):
             return data
 
