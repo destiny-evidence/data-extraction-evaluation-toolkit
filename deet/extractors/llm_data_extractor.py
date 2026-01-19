@@ -160,6 +160,7 @@ class LLMDataExtractor:
             attributes: List of attributes to extract
             payload: str with the actual contents of the document to be analysed.
             context_type: Type of context to use (ContextType enum)
+            prompt_outfile: path to write whole prompt to, optional.
 
         Returns:
             List of annotations for the document
@@ -213,7 +214,11 @@ class LLMDataExtractor:
 
         Args:
             attributes: List of attributes to extract
-            output_file: Optional file to save results
+            payload: the document(s) from which to extract data.
+            output_file: Optional file to save parsed LLM response.
+            context: a ContextType enum.
+            prompt_outfile: optional path to write out complete prompt config.
+
 
         Returns:
             List of annotations for all documents and attributes
@@ -354,12 +359,23 @@ class LLMDataExtractor:
         return prompt_json
 
     def _call_llm(self, prompt: str, prompt_outfile: Path | None = None) -> str:
-        """Call the LLM with the given prompt."""
+        """
+        Call the LLM with the given prompt.
+
+        Args:
+            prompt (str): the prompt
+            prompt_outfile (Path | None, optional): a path to
+            write the whole prompt (sys prompt + user message + context) as json.
+            Defaults to None.
+
+        Returns:
+            str: the llm's response, to be parsed.
+
+        """
         messages: list[dict] = [
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
         ]
-        # Path("misc/system_user_config.json").write_text(json.dumps(messages))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")

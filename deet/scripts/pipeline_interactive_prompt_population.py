@@ -14,10 +14,6 @@ from pathlib import Path
 from loguru import logger
 
 from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
-
-# @sagaruprety note that we now only use Eppi types in our
-# specific use-case (i.e. a pipeline script), no longer in the
-# underlying application. The application uses base.py data types.
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
