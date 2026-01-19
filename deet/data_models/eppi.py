@@ -52,7 +52,7 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
     PR with an update if allowed.
 
     Args:
-        referece: one reference from the eppi json.
+        reference: one reference from the eppi json.
 
     """
     if "DOI" in reference:
