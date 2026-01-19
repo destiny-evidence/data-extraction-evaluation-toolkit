@@ -15,7 +15,7 @@ from deet.data_models.base import (
     LLMResponseSchema,
 )
 from deet.logger import logger
-from deet.settings import get_settings
+from deet.settings import LLMProvider, get_settings
 
 settings = get_settings()
 
@@ -139,9 +139,13 @@ class LLMDataExtractor:
         """
         self.config = config
         self.custom_system_prompt_file = custom_system_prompt_file
-        self.model = f"azure/{settings.azure_deployment}"
-        self.azure_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
-        self.azure_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+        if settings.llm_provider == LLMProvider.AZURE:
+            self.model = f"azure/{settings.azure_deployment}"
+            self.api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+        elif settings.llm_provider == LLMProvider.OLLAMA:
+            self.api_key = None
+
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001
 
@@ -372,8 +376,8 @@ class LLMDataExtractor:
 
         response = litellm.completion(
             model=self.model,
-            api_key=self.azure_key,
-            api_base=self.azure_base,
+            api_key=self.api_key,
+            api_base=self.api_base,
             messages=messages,
             temperature=self.config.temperature,
             response_format={

@@ -279,7 +279,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    output_data: AttributeType = Field(..., description="The LLM's annotation.")
     additional_text: str | None = Field(
         ...,
         description=(
