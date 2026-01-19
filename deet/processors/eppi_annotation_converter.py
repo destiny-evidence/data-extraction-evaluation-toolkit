@@ -234,10 +234,11 @@ class EppiAnnotationConverter:
         attribute_id_to_label: dict[int, str] | None = None,
     ) -> list[EppiGoldStandardAnnotation]:
         """
-        Convert annotation data to EppiGoldStandardAnnotation models.
+        Convert several dicts to a list of EppiGoldStandardAnnotations.
 
         Args:
-            annotations_data: List of annotation objects from EPPI JSON
+            annotations_data: List of human, gold standard
+                annotation dicts from EPPI JSON
             document: The document these annotations belong to
             attributes_lookup: Lookup dictionary for attributes
             attribute_id_to_label: Mapping from attribute ID to label
@@ -299,6 +300,7 @@ class EppiAnnotationConverter:
                 ):
                     doc_annotations.append(ann)
                     break
+
         return doc_annotations
 
     def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
@@ -392,7 +394,7 @@ class EppiAnnotationConverter:
         self,
         processed_data: ProcessedAnnotationData,
         output_dir: str | Path,
-        outfiles_to_write: list[Outfiles] = [Outfiles.ATTRIBUTES, Outfiles.DOCUMENTS],  # noqa: B006
+        outfiles_to_write: list[Outfiles] | None = None,
     ) -> dict[str, str]:
         """
         Save processed data to structured files using Pydantic model serialization.
@@ -414,6 +416,9 @@ class EppiAnnotationConverter:
             Outfiles.ANNOTATED_DOCUMENTS: processed_data.annotated_documents,
             Outfiles.ATTRIBUTE_LABEL_MAPPING: processed_data.attribute_id_to_label,
         }
+        # setting here to avoid mutable default.
+        if outfiles_to_write is None:
+            outfiles_to_write = [Outfiles.ATTRIBUTES, Outfiles.DOCUMENTS]
 
         file_mappings = {
             k: v for k, v in file_mappings.items() if k in outfiles_to_write
