@@ -403,8 +403,6 @@ class EppiAnnotationConverter:
             processed_data: The processed data from process_annotation_file
             output_dir: Supersedes the class-level `output_dir`. So, we will do:
             Path(output_dir)/self.base_output_dir
-            input_filename: Optional filename to create a subdirectory
-                            (if not provided, saves directly to output_dir)
 
         Returns:
             Dictionary mapping data types to saved file paths
