@@ -148,6 +148,8 @@ class LLMDataExtractor:
             self.api_key = None
             self.api_base = None
 
+        logger.info(f"Using {settings.llm_provider} with model: {self.model}")
+
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001
 
