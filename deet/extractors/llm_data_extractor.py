@@ -271,7 +271,7 @@ class LLMDataExtractor:
 
     def _prepare_context(  # type:ignore[mypy-note]
         self,
-        payload: str,  # NOTE - potentially expand once we implement other stuff.
+        payload: str | list[str],  # NOTE: payload may be a single document (str) or multiple documents/snippets (list[str]).
         context_type: ContextType | None = None,
     ) -> str:
         """Prepare context/payload based on context type."""
