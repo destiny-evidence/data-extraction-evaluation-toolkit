@@ -62,7 +62,7 @@ class DocumentIDSource(StrEnum):
     """
     Sources for a given document_id. Can be e.g. eppi_item_id.
 
-    Toe be extended if e.g. we start working with
+    To be extended if e.g. we start working with
     non-eppi gold standard references.
     """
 
