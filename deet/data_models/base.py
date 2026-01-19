@@ -262,6 +262,7 @@ class GoldStandardAnnotation(BaseModel):
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
 
+
 class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
 
