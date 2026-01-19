@@ -146,6 +146,7 @@ class LLMDataExtractor:
             self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
         elif settings.llm_provider == LLMProvider.OLLAMA:
             self.api_key = None
+            self.api_base = None
 
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001

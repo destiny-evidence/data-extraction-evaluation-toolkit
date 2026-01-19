@@ -37,6 +37,7 @@ def mock_settings(monkeypatch):
     mock_settings_obj.azure_deployment = "test-deployment"
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
+    mock_settings_obj.llm_provider = "ollama"
 
     monkeypatch.setattr(
         "deet.extractors.llm_data_extractor.settings", mock_settings_obj

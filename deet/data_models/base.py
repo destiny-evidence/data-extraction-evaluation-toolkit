@@ -48,6 +48,10 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
+# I tried creating this dynamically from the enum, but mypy doesn't like it
+permitted_attribute_types = str | int | float | bool | list | dict
+
+
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.
@@ -279,7 +283,9 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: AttributeType = Field(..., description="The LLM's annotation.")
+    output_data: permitted_attribute_types = Field(
+        ..., description="The LLM's annotation."
+    )
     additional_text: str | None = Field(
         ...,
         description=(
