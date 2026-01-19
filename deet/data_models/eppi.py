@@ -186,7 +186,10 @@ class EppiDocument(Document):
     @model_validator(mode="before")
     @classmethod
     def populate_citation_field(cls, data: dict[str, Any]) -> dict:
-        """Populate the `citation` field with a Destiny reference derived from the EPPI data."""
+        """
+        Populate the `citation` field with a Destiny
+        reference derived from the EPPI data.
+        """
         if not isinstance(data, dict):
             return data
 
