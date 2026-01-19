@@ -269,9 +269,12 @@ class LLMDataExtractor:
         )
         return filtered
 
-    def _prepare_context(  # type: ignore[mypy-note]  # mypy incorrectly flags 'context' as possibly unbound; all ContextType branches assign it before use.
+    def _prepare_context(  # type: ignore[mypy-note]
+        # mypy incorrectly flags 'context' as possibly unbound;
+        # all ContextType branches assign it before use.
         self,
-        payload: str | list[str],  # NOTE: payload may be a single document (str) or multiple documents/snippets (list[str]).
+        payload: str | list[str],  # NOTE: payload may be a single document (str)
+        # or multiple documents/snippets (list[str]).
         context_type: ContextType | None = None,
     ) -> str:
         """Prepare context/payload based on context type."""
