@@ -138,6 +138,7 @@ class LLMDataExtractor:
 
         """
         self.config = config
+        self.model = settings.llm_model
         self.custom_system_prompt_file = custom_system_prompt_file
         if settings.llm_provider == LLMProvider.AZURE:
             self.model = f"azure/{settings.azure_deployment}"
