@@ -262,16 +262,6 @@ class GoldStandardAnnotation(BaseModel):
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
 
-        # target_type: type = target_att.output_data_type.to_python_type()
-        # if not isinstance(data["output_data"], target_type):
-        #     bad_type = (
-        #         f"field {data['output_data']} is of "
-        #         f" type {type(data['output_data'])}; should be {target_type}."
-        #     )
-        #     raise ValueError(bad_type)
-        # return data
-
-
 class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
 
