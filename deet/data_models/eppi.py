@@ -12,7 +12,6 @@ from destiny_sdk.parsers import EPPIParser
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
-from pydantic.alias_generators import to_camel
 
 from deet.data_models.base import (
     AnnotationType,
@@ -102,7 +101,7 @@ class EppiAttribute(Attribute):
     camelCase EPPI JSON fields to snake_case Python fields.
     """
 
-    model_config = ConfigDict(alias_generators=to_camel, populate_by_name=True)  # type: ignore[typeddict-unknown-key]
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
     # Core fields (inherited from Attribute) - these need manual processing
     # attribute_name: str = Field(
@@ -166,7 +165,7 @@ class EppiDocument(Document):
     document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
     document_id_source: DocumentIDSource = DocumentIDSource.EPPI_ITEM_ID
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)  # type: ignore[typeddict-unknown-key]
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     # item_id: int
