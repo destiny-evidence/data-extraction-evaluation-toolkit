@@ -48,8 +48,7 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
     repository as it is for the whole document, and
     if it fails, we wouldn't be able to map a destiny reference.
 
-    NL has raised an issue in destiny repo, and will send a
-    PR with an update if allowed.
+    See https://github.com/destiny-evidence/destiny-repository/issues/458
 
     Args:
         reference: one reference from the eppi json.
