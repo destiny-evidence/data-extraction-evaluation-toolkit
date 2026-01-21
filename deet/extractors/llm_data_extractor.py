@@ -142,10 +142,10 @@ class LLMDataExtractor:
         self.custom_system_prompt_file = custom_system_prompt_file
         if settings.llm_provider == LLMProvider.AZURE:
             self.model = f"azure/{settings.azure_deployment}"
-            self.api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.llm_api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
             self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
         elif settings.llm_provider == LLMProvider.OLLAMA:
-            self.api_key = None
+            self.llm_api_key = None
             self.api_base = None
 
         logger.info(f"Using {settings.llm_provider} with model: {self.model}")
@@ -380,7 +380,7 @@ class LLMDataExtractor:
 
         response = litellm.completion(
             model=self.model,
-            api_key=self.api_key,
+            api_key=self.llm_api_key,
             api_base=self.api_base,
             messages=messages,
             temperature=self.config.temperature,
