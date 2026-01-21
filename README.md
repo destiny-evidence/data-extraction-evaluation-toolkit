@@ -20,7 +20,7 @@ apt install pandoc # ubuntu/debian
 choco install pandoc # windows
 ```
 
-Alternative installation instructions for Windows users are [shown further below](###pandoc)
+Alternative installation instructions for Windows users are [shown further below](#pandoc)
 ### Installing `uv`
 
 [uv](https://docs.astral.sh/uv) is used for dependency management and managing virtual environments. You can install uv either using pipx or the uv installer script:
