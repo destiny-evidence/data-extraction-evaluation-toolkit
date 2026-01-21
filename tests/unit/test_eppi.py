@@ -45,7 +45,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
     # Test the EPPI-specific fields are properly populated
     assert attr.attribute_set_description == "Test set description"
-    assert attr.attribute_type == "Selectable (show checkbox)"
+    assert attr.attribute_selection_type == "Selectable (show checkbox)"
     assert attr.attribute_description == "Test description"
 
 
@@ -66,7 +66,7 @@ def test_eppi_attribute_with_eppi_fields() -> None:
     assert attr.hierarchy_level == 2
     assert attr.is_leaf is False
     assert attr.parent_attribute_id == 123
-    assert attr.attribute_type == EppiAttributeSelectionType.SELECTABLE
+    assert attr.attribute_selection_type == EppiAttributeSelectionType.SELECTABLE
 
 
 def test_eppi_attribute_with_different_output_types() -> None:

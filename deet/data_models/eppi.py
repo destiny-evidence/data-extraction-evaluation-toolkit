@@ -112,15 +112,13 @@ class EppiAttribute(Attribute):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    # Core fields (inherited from Attribute) - these need manual processing
-    # attribute_name: str = Field(
-    #     validation_alias=AliasChoices("AttributeName", "attribute_name")
-    # )
     attribute_id: int = Field(
         validation_alias=AliasChoices("AttributeId", "attribute_id")
     )
-    attribute_type: EppiAttributeSelectionType = Field(
-        validation_alias=AliasChoices("AttributeType", "attribute_type")
+    attribute_selection_type: EppiAttributeSelectionType = Field(
+        validation_alias=AliasChoices(
+            "AttributeType", "attribute_type", "attribute_selection_type"
+        )
     )
     question_target: str = ""  # Always empty for EPPI
     output_data_type: AttributeType = AttributeType.BOOL
@@ -148,12 +146,12 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    attribute_selection_type: EppiAttributeSelectionType | None = Field(
-        description="Whether the attribute is Selectable in the "
-        " EPPI-Reviewer interface or not",
-        default=None,
-        alias="AttributeType",
-    )
+    # attribute_selection_type: EppiAttributeSelectionType | None = Field(
+    #     description="Whether the attribute is Selectable in the "
+    #     " EPPI-Reviewer interface or not",
+    #     default=None,
+    #     alias="AttributeType",
+    # )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
         default=None,

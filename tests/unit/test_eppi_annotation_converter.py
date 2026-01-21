@@ -93,7 +93,7 @@ def test_convert_to_eppi_attributes_field_population(
         assert isinstance(attr.is_leaf, bool)
 
     assert all(
-        attribute.attribute_type == raw.get("AttributeType")
+        attribute.attribute_selection_type == raw.get("AttributeType")
         for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
         if raw.get("AttributeType") is not None
     ), "attribute_type should match for all attributes where present"
@@ -134,7 +134,7 @@ def test_convert_to_eppi_attributes_with_null_values() -> None:
     assert attr.attribute_label == "Test Attribute"
     assert attr.attribute_description is None
     assert attr.attribute_set_description is None
-    assert attr.attribute_type == EppiAttributeSelectionType.SELECTABLE
+    assert attr.attribute_selection_type == EppiAttributeSelectionType.SELECTABLE
     assert attr.hierarchy_path == ""
     assert attr.hierarchy_level == 0
     assert attr.is_leaf is True
