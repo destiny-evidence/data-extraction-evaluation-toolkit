@@ -47,7 +47,7 @@ class EppiAnnotationConverter:
 
     def __init__(
         self,
-        base_output_dir: str | Path = DEFAULT_BASE_OUTPUT_DIR,
+        base_output_dir: str | Path | None = DEFAULT_BASE_OUTPUT_DIR,
         attributes_filename: str = DEFAULT_ATTRIBUTES_FILENAME,
         documents_filename: str = DEFAULT_DOCUMENTS_FILENAME,
         annotated_documents_filename: str = DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
@@ -64,6 +64,12 @@ class EppiAnnotationConverter:
             attribute_mapping_filename: Filename for attribute ID to label mapping
 
         """
+        if base_output_dir is None:
+            logger.debug(
+                "`base_output_dir` set to None; "
+                "converting to empty string for compatibility."
+            )
+            base_output_dir = ""
         self.base_output_dir = Path(base_output_dir)
 
         # extend below if adding more output files in `Outfiles`.
@@ -401,8 +407,11 @@ class EppiAnnotationConverter:
 
         Args:
             processed_data: The processed data from process_annotation_file
-            output_dir: Supersedes the class-level `output_dir`. So, we will do:
-            Path(output_dir)/self.base_output_dir
+            output_dir: Write all output (json) files from conversion to this
+            directory. NOTE: we output files will live in a sub-directory
+            `self.base_output_dir`, which by default is `DEFAULT_BASE_OUTPUT_DIR`.
+            so, if you want output files to go straight to `output_dir`, set
+            `self.base_output_dir` to '' or None.
 
         Returns:
             Dictionary mapping data types to saved file paths
