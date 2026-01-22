@@ -55,21 +55,24 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
     """
     if "DOI" in reference:
         reference["DOI"] = sanitise_doi(reference["DOI"])
-    enhancement_content = [
-        (
-            eppi_destiny_parser._parse_abstract_enhancement(reference),  # noqa: SLF001
-            EnhancementType.ABSTRACT,
-        ),
-        (
-            eppi_destiny_parser._parse_bibliographic_enhancement(reference),  # noqa: SLF001
-            EnhancementType.BIBLIOGRAPHIC,
-        ),
-        (
-            eppi_destiny_parser._create_annotation_enhancement(),  # noqa: SLF001
-            EnhancementType.ANNOTATION,
-        ),
+    raw_enhancement_content = [
+        c
+        for c in [
+            (
+                eppi_destiny_parser._parse_abstract_enhancement(reference),  # noqa: SLF001
+                EnhancementType.ABSTRACT,
+            ),
+            (
+                eppi_destiny_parser._parse_bibliographic_enhancement(reference),  # noqa: SLF001
+                EnhancementType.BIBLIOGRAPHIC,
+            ),
+            (
+                eppi_destiny_parser._create_annotation_enhancement(),  # noqa: SLF001
+                EnhancementType.ANNOTATION,
+            ),
+        ]
+        if c[0] is not None
     ]
-    enhancement_content = [c for c in enhancement_content if c[0] is not None]
 
     enhancements = [
         EnhancementFileInput(
@@ -78,7 +81,7 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
             content=content[0],  # the enhancement
             enhancement_type=content[1],  # the correct enhancement type
         )
-        for content in enhancement_content
+        for content in raw_enhancement_content
     ]
 
     return ReferenceFileInput(
