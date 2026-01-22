@@ -3,11 +3,12 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from destiny_sdk.references import Reference
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.config import JsonDict
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -47,9 +48,17 @@ class AttributeType(StrEnum):
         }
         return mapping[self]
 
-
-# I tried creating this dynamically from the enum, but mypy doesn't like it
-permitted_attribute_types = str | int | float | bool | list | dict
+    def to_json_type(self) -> dict[str, str]:
+        """Map AttributeType to actual Python types."""
+        mapping = {
+            AttributeType.STRING: {"type": "string"},
+            AttributeType.INTEGER: {"type": "integer"},
+            AttributeType.FLOAT: {"type": "number"},
+            AttributeType.BOOL: {"type": "boolean"},
+            AttributeType.LIST: {"type": "array"},
+            AttributeType.DICT: {"type": "object"},
+        }
+        return mapping[self]
 
 
 class Attribute(BaseModel):
@@ -241,7 +250,7 @@ class LLMInputSchema(BaseModel):
 
     prompt: str
     attribute_id: int
-    output_data_type: AttributeType
+    output_data_type: Any
 
     model_config = ConfigDict(extra="ignore")
 
@@ -283,8 +292,17 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: permitted_attribute_types = Field(
-        ..., description="The LLM's annotation."
+    output_data: Any = Field(
+        ...,
+        description="The LLM's annotation.",
+        json_schema_extra=cast(
+            JsonDict,
+            {
+                "anyOf": [
+                    attribute_type.to_json_type() for attribute_type in AttributeType
+                ]
+            },
+        ),
     )
     additional_text: str | None = Field(
         ...,
