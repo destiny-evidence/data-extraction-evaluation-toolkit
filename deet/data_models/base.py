@@ -49,7 +49,7 @@ class AttributeType(StrEnum):
         return mapping[self]
 
     def to_json_type(self) -> dict[str, str]:
-        """Map AttributeType to actual Python types."""
+        """Map AttributeType to JS types for the JSON schema."""
         mapping = {
             AttributeType.STRING: {"type": "string"},
             AttributeType.INTEGER: {"type": "integer"},
