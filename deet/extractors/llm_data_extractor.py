@@ -193,10 +193,14 @@ class LLMDataExtractor:
             raise ValueError(msg)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
-        prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt, prompt_outfile=prompt_outfile)
+        prompt = self._generate_user_message_json(
+            payload=context, attributes=selected_attributes
+        )
+        llm_response = self._call_llm(prompt=prompt, prompt_outfile=prompt_outfile)
 
-        return self._parse_llm_response(llm_response, selected_attributes)
+        return self._parse_llm_response(
+            response_content=llm_response, attributes=selected_attributes
+        )
 
     def extract_from_documents(
         self,
@@ -319,7 +323,7 @@ class LLMDataExtractor:
 
     def _generate_user_message_json(
         self,
-        context: str,  # NOTE - consider renaming to `payload`
+        payload: str,
         attributes: list[Attribute],
     ) -> str:
         """
@@ -350,13 +354,13 @@ class LLMDataExtractor:
             llm_input_attr = LLMInputSchema(**attr_dict)
             attributes_payload.append(llm_input_attr.model_dump())
 
-        payload = {
-            "context": context,
+        unserialised_prompt = {
+            "context": payload,
             "attributes": attributes_payload,
         }
 
         logger.debug(f"attributes payload: {attributes_payload}")
-        prompt_json = json.dumps(payload, ensure_ascii=False)
+        prompt_json = json.dumps(unserialised_prompt, ensure_ascii=False)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
 
         return prompt_json
