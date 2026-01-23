@@ -10,6 +10,7 @@ from deet.data_models.base import (
     Attribute,
     AttributeType,
     Document,
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
     ProcessedAnnotationData,
 )
@@ -142,10 +143,10 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     )
 
 
-class EppiGoldStandardAnnotatedDocument(EppiDocument):
+class EppiGoldStandardAnnotatedDocument(
+    GoldStandardAnnotatedDocument[EppiGoldStandardAnnotation]
+):
     """EPPI-specific gold standard annotated document."""
-
-    annotations: list[EppiGoldStandardAnnotation]
 
 
 class EppiCodeSet(BaseModel):
@@ -197,7 +198,14 @@ class EppiRawData(BaseModel):
         return all_attributes
 
 
-class ProcessedEppiAnnotationData(ProcessedAnnotationData):
+class ProcessedEppiAnnotationData(
+    ProcessedAnnotationData[
+        EppiAttribute,
+        EppiDocument,
+        EppiGoldStandardAnnotation,
+        EppiGoldStandardAnnotatedDocument,
+    ]
+):
     """
     Structured result from EPPI annotation processing.
 

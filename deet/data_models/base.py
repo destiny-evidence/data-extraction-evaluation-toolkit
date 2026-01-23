@@ -3,7 +3,7 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Generic, Literal, TypeVar
 
 from destiny_sdk.references import Reference
 from loguru import logger
@@ -185,6 +185,9 @@ class Attribute(BaseModel):
                 continue
 
 
+AttributeTypeVar = TypeVar("AttributeTypeVar", bound=Attribute)
+
+
 class Document(BaseModel):
     """Represents a document in the dataset."""
 
@@ -193,6 +196,9 @@ class Document(BaseModel):
     context: str | list[str]
     document_id: str
     filename: str | None = None
+
+
+DocumentTypeVar = TypeVar("DocumentTypeVar", bound=Document)
 
 
 class GoldStandardAnnotation(BaseModel):
@@ -225,13 +231,23 @@ class GoldStandardAnnotation(BaseModel):
         return data
 
 
-class GoldStandardAnnotatedDocument(Document):
+GoldStandardAnnotationTypeVar = TypeVar(
+    "GoldStandardAnnotationTypeVar", bound=GoldStandardAnnotation
+)
+
+
+class GoldStandardAnnotatedDocument(Document, Generic[GoldStandardAnnotationTypeVar]):
     """A document with its gold standard annotations."""
 
-    annotations: list[GoldStandardAnnotation]
+    annotations: list[GoldStandardAnnotationTypeVar]
 
 
-class ProcessedAttributeData(BaseModel):
+GoldStandardAnnotatedDocumentTypeVar = TypeVar(
+    "GoldStandardAnnotatedDocumentTypeVar", bound=GoldStandardAnnotatedDocument
+)
+
+
+class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
     """
     Structured result from annotation processing.
 
@@ -239,7 +255,7 @@ class ProcessedAttributeData(BaseModel):
     subclass this
     """
 
-    attributes: list[Attribute]
+    attributes: list[AttributeTypeVar]
 
     def _custom_prompts_cli(self) -> None:
         """
@@ -366,7 +382,15 @@ class ProcessedAttributeData(BaseModel):
         return len(self.attributes)
 
 
-class ProcessedAnnotationData(ProcessedAttributeData):
+class ProcessedAnnotationData(
+    ProcessedAttributeData,
+    Generic[
+        AttributeTypeVar,
+        DocumentTypeVar,
+        GoldStandardAnnotationTypeVar,
+        GoldStandardAnnotatedDocumentTypeVar,
+    ],
+):
     """
     Structured result from annotation processing.
 
@@ -374,9 +398,9 @@ class ProcessedAnnotationData(ProcessedAttributeData):
     annotation data with useful properties and methods.
     """
 
-    documents: list[Document]
-    annotations: list[GoldStandardAnnotation]
-    annotated_documents: list[GoldStandardAnnotatedDocument]
+    documents: list[DocumentTypeVar]
+    annotations: list[GoldStandardAnnotationTypeVar]
+    annotated_documents: list[GoldStandardAnnotatedDocumentTypeVar]
     attribute_id_to_label: dict[int, str]
 
     @property

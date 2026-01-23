@@ -16,7 +16,7 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
-    ProcessedAnnotationData,
+    ProcessedEppiAnnotationData,
 )
 from deet.logger import logger
 
@@ -391,7 +391,9 @@ class EppiAnnotationConverter:
                     break
         return doc_annotations
 
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
+    def process_annotation_file(
+        self, file_path: str | Path
+    ) -> ProcessedEppiAnnotationData:
         """
         Process a complete annotation file and return structured data.
 
@@ -464,7 +466,7 @@ class EppiAnnotationConverter:
             " {len(annotated_documents)} annotated documents"
         )
 
-        return ProcessedAnnotationData(
+        return ProcessedEppiAnnotationData(
             attributes=attributes,
             documents=list(documents_by_title.values()),
             annotations=all_annotations,
@@ -475,7 +477,7 @@ class EppiAnnotationConverter:
 
     def save_processed_data(
         self,
-        processed_data: ProcessedAnnotationData,
+        processed_data: ProcessedEppiAnnotationData,
         output_dir: str | Path,
         input_filename: str | None = None,
     ) -> dict[str, str]:
