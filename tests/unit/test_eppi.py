@@ -5,6 +5,7 @@ import pytest
 from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
     EppiAttribute,
+    EppiAttributeSelectionType,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
@@ -44,58 +45,62 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
     # Test the EPPI-specific fields are properly populated
     assert attr.attribute_set_description == "Test set description"
-    assert attr.attribute_type == "Selectable (show checkbox)"
+    assert attr.attribute_selection_type == "Selectable (show checkbox)"
     assert attr.attribute_description == "Test description"
 
 
 def test_eppi_attribute_with_eppi_fields() -> None:
     """Test creating EppiAttribute with EPPI-specific fields."""
-    attr = EppiAttribute(
-        attribute_id=2345,
+    attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=2345,  # as mypy forgets base.py inheritance
         attribute_label="Test EPPI Attribute 2",
         attribute_set_description="Test description",
         hierarchy_path="root.test.attribute",
         hierarchy_level=2,
         is_leaf=False,
         parent_attribute_id=123,
-        attribute_type="Selectable",
+        attribute_type=EppiAttributeSelectionType.SELECTABLE,
     )
     assert attr.attribute_set_description == "Test description"
     assert attr.hierarchy_path == "root.test.attribute"
     assert attr.hierarchy_level == 2
     assert attr.is_leaf is False
     assert attr.parent_attribute_id == 123
-    assert attr.attribute_type == "Selectable"
+    assert attr.attribute_selection_type == EppiAttributeSelectionType.SELECTABLE
 
 
 def test_eppi_attribute_with_different_output_types() -> None:
     """Test EppiAttribute with different output_data_type values."""
     # Test with str type
-    attr_str = EppiAttribute(
+    attr_str = EppiAttribute(  # type: ignore[call-arg]
         attribute_id=3456,
         attribute_label="String Attribute",
         output_data_type=AttributeType.STRING,
+        attribute_type=EppiAttributeSelectionType.SELECTABLE,
     )
     assert attr_str.output_data_type.value == AttributeType.STRING.value
 
     # Test with int type
-    attr_int = EppiAttribute(
+    attr_int = EppiAttribute(  # type: ignore[call-arg]
         attribute_id=4567,
         attribute_label="Integer Attribute",
         output_data_type=AttributeType.INTEGER,
+        attribute_type=EppiAttributeSelectionType.SELECTABLE,
     )
     assert attr_int.output_data_type.value == AttributeType.INTEGER.value
 
 
 def test_eppi_attribute_camel_case_mapping() -> None:
     """Test that camelCase JSON fields are mapped correctly."""
-    # This would be tested with actual JSON data in integration tests
-    # Here we test that the model can be created with the expected fields
-    attr = EppiAttribute(
-        attribute_id=5678,
-        attribute_label="Test Attribute",
-        attribute_set_description="Test description",
-    )
+    attr_dict = {
+        "AttributeId": 5678,
+        "AttributeName": "Attri Bute",
+        "AttributeLabel": "Test attribute",
+        "AttributeSetDescription": "bla",
+        "AttributeType": "Selectable (show checkbox)",
+    }
+
+    attr = EppiAttribute(**attr_dict)  # type: ignore[arg-type]
     assert hasattr(attr, "attribute_set_description")
     assert hasattr(attr, "hierarchy_path")
     assert hasattr(attr, "hierarchy_level")
@@ -161,43 +166,6 @@ def test_dynamic_validator_with_additional_fields() -> None:
     assert details.item_document_id == 123
 
 
-class TestEppiDocument:
-    """Test EppiDocument model."""
-
-    # def test_eppi_document_creation(self) -> None:
-    #     """Test creating EppiDocument."""
-    #     citation = Reference(
-    #         id=uuid4(),
-    #         title="Test EPPI Document",
-    #         authors=["EPPI Author"],
-    #     )
-    #     doc = EppiDocument(
-    #         name="Test EPPI Document",
-    #         citation=citation,
-    #         context="Test content",
-    #         document_id="eppi_doc1",
-    #         filename="test.pdf",
-    #     )
-    #     assert doc.name == "Test EPPI Document"
-    #     assert doc.document_id == "eppi_doc1"
-    #     assert doc.filename == "test.pdf"
-
-    # def test_eppi_document_with_list_context(self) -> None:
-    #     """Test creating EppiDocument with list context."""
-    #     citation = Reference(
-    #         id=uuid4(),
-    #         title="Test EPPI Document 2",
-    #         authors=["EPPI Author 2"],
-    #     )
-    #     doc = EppiDocument(
-    #         name="Test EPPI Document 2",
-    #         citation=citation,
-    #         context=["Paragraph 1", "Paragraph 2"],
-    #         document_id="eppi_doc2",
-    #     )
-    #     assert doc.context == ["Paragraph 1", "Paragraph 2"]
-
-
 def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
     """Test creating EppiGoldStandardAnnotation from JSON-like data."""
     # This mimics how annotations are created from EPPI JSON data
@@ -205,6 +173,7 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
     attr_data = {
         "AttributeId": 5730447,
         "AttributeName": "Test EPPI Attribute",
+        "AttributeType": "Selectable (show checkbox)",
         "question_target": "",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "5730447",
@@ -233,10 +202,11 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
 
 def test_eppi_gold_standard_annotation_with_llm() -> None:
     """Test creating EppiGoldStandardAnnotation with LLM type."""
-    attr = EppiAttribute(
+    attr = EppiAttribute(  # type: ignore[call-arg]
         attribute_id=2345,
         attribute_label="Test EPPI Attribute 2",
         output_data_type=AttributeType.STRING,
+        attribute_type=EppiAttributeSelectionType.SELECTABLE,
     )
 
     annotation = EppiGoldStandardAnnotation(
@@ -245,40 +215,6 @@ def test_eppi_gold_standard_annotation_with_llm() -> None:
         annotation_type=AnnotationType.LLM,
     )
     assert annotation.annotation_type == AnnotationType.LLM
-
-
-class TestEppiGoldStandardAnnotatedDocument:
-    """Test EppiGoldStandardAnnotatedDocument model."""
-
-    # def test_eppi_gold_standard_annotated_document_creation(self) -> None:
-    #     """Test creating EppiGoldStandardAnnotatedDocument."""
-    #     citation = Reference(
-    #         id=uuid4(),
-    #         title="Test EPPI Document 3",
-    #         authors=["EPPI Author 3"],
-    #     )
-
-    #     attr = EppiAttribute(
-    #         attribute_id="eppi_attr3",
-    #         attribute_label="Test EPPI Attribute 3",
-    #     )
-
-    #     annotation = EppiGoldStandardAnnotation(
-    #         attribute=attr,
-    #         output_data=True,
-    #         annotation_type=AnnotationType.HUMAN,
-    #     )
-
-    #     doc = EppiGoldStandardAnnotatedDocument(
-    #         name="Test EPPI Document 3",
-    #         citation=citation,
-    #         context="Test content",
-    #         document_id="eppi_doc3",
-    #         annotations=[annotation],
-    #     )
-    #     assert doc.name == "Test EPPI Document 3"
-    #     assert len(doc.annotations) == 1
-    #     assert doc.annotations[0].output_data is True
 
 
 def test_eppi_raw_data_creation() -> None:
