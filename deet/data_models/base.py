@@ -5,7 +5,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal
 
-from destiny_sdk.references import Reference
+from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
@@ -46,6 +46,27 @@ class AttributeType(StrEnum):
             AttributeType.DICT: dict,
         }
         return mapping[self]
+
+
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
+
+
+class DocumentIDSource(StrEnum):
+    """
+    Sources for a given document_id. Can be e.g. eppi_item_id.
+
+    To be extended if e.g. we start working with
+    non-eppi gold standard references.
+    """
+
+    EPPI_ITEM_ID = auto()
 
 
 class Attribute(BaseModel):
@@ -186,12 +207,22 @@ class Attribute(BaseModel):
 
 
 class Document(BaseModel):
-    """Represents a document in the dataset."""
+    """
+    Represents a document.
+
+    This can be used both for references itemised
+    in a document listing gold standard annotations (e.g. eppi.json)
+    AND
+    for a document coming from a file (e.g. pdf) without
+    linking to a gold standard annotations document with references.
+    """
 
     name: str
-    citation: Reference
+    citation: ReferenceFileInput
     context: str | list[str]
-    document_id: str
+    context_type: ContextType
+    document_id: int
+    document_id_source: DocumentIDSource
     filename: str | None = None
 
 
@@ -215,7 +246,14 @@ class GoldStandardAnnotation(BaseModel):
     def ensure_correct_type(cls, data: dict) -> dict:
         """Ensure output_data is of the type required by annotation_type."""
         target_att: Attribute = data["attribute"]
-        target_type: type = target_att.output_data_type.to_python_type()
+
+        if isinstance(target_att, dict):
+            output_data_type = AttributeType(target_att["output_data_type"])
+        else:
+            output_data_type = target_att.output_data_type
+
+        target_type: type = output_data_type.to_python_type()
+
         if not isinstance(data["output_data"], target_type):
             bad_type = (
                 f"field {data['output_data']} is of "
