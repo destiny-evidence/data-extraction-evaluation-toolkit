@@ -1,19 +1,103 @@
 """EPPI-specific data models extending the core models."""
 
+import re
 from collections.abc import Callable
+from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-from pydantic.alias_generators import to_camel
+from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
+from destiny_sdk.parsers import EPPIParser
+from destiny_sdk.references import ReferenceFileInput
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from deet.data_models.base import (
     Attribute,
     AttributeType,
+    ContextType,
     Document,
+    DocumentIDSource,
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
     ProcessedAnnotationData,
 )
+
+eppi_destiny_parser = EPPIParser(tags=["deet"])
+
+DOI_REGEX = re.compile(
+    r"(10\.\d{4,9}/[-._;()/:a-zA-Z0-9%<>\[\]+&]+)"
+)  # for sanitising DOIs
+
+
+def sanitise_doi(doi_candidate: str) -> str:
+    """Clean DOI strings in EPPI jsons."""
+    doi = DOI_REGEX.search(doi_candidate)
+    if doi and isinstance(doi, re.Match):
+        return doi[0]
+    bad_doi = f"doi {doi} is bad."
+    raise ValueError(bad_doi)
+
+
+def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
+    """
+    Create a ReferenceFileInput object from document data.
+
+    NOTE: we are not using the wrapping parser method in
+    repository as it is for the whole document, and
+    if it fails, we wouldn't be able to map a destiny reference.
+
+    See https://github.com/destiny-evidence/destiny-repository/issues/458
+
+    Args:
+        reference: one reference from the eppi json.
+
+    """
+    if "DOI" in reference:
+        reference["DOI"] = sanitise_doi(reference["DOI"])
+    raw_enhancement_content = [
+        c
+        for c in [
+            (
+                eppi_destiny_parser._parse_abstract_enhancement(reference),  # noqa: SLF001
+                EnhancementType.ABSTRACT,
+            ),
+            (
+                eppi_destiny_parser._parse_bibliographic_enhancement(reference),  # noqa: SLF001
+                EnhancementType.BIBLIOGRAPHIC,
+            ),
+            (
+                eppi_destiny_parser._create_annotation_enhancement(),  # noqa: SLF001
+                EnhancementType.ANNOTATION,
+            ),
+        ]
+        if c[0] is not None
+    ]
+
+    enhancements = [
+        EnhancementFileInput(
+            source=eppi_destiny_parser.parser_source,
+            visibility=Visibility.PUBLIC,
+            content=content[0],  # the enhancement
+            enhancement_type=content[1],  # the correct enhancement type
+        )
+        for content in raw_enhancement_content
+    ]
+
+    return ReferenceFileInput(
+        visibility=Visibility.PUBLIC,
+        identifiers=eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
+            ref_to_import=reference
+        ),
+        enhancements=enhancements,
+    )
+
+
+class EppiAttributeSelectionType(StrEnum):
+    """`AttributeType` as it appears in eppi json."""
+
+    SELECTABLE = "Selectable (show checkbox)"
+    OUTCOME = "Outcome"
+    INTERVENTION = "Intervention"
+    NOT_SELECTABLE = "Not Selectable (no checkbox)"
 
 
 class EppiAttribute(Attribute):
@@ -27,11 +111,19 @@ class EppiAttribute(Attribute):
     camelCase EPPI JSON fields to snake_case Python fields.
     """
 
-    model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    # Core fields (inherited from Attribute) - these need manual processing
+    attribute_id: int = Field(
+        validation_alias=AliasChoices("AttributeId", "attribute_id")
+    )
+    attribute_selection_type: EppiAttributeSelectionType = Field(
+        validation_alias=AliasChoices(
+            "AttributeType", "attribute_type", "attribute_selection_type"
+        )
+    )
     question_target: str = ""  # Always empty for EPPI
     output_data_type: AttributeType = AttributeType.BOOL
+    attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
     attribute_set_description: str | None = Field(
@@ -55,11 +147,12 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    attribute_type: str | None = Field(
-        description="Whether the attribute is Selectable in the "
-        " EPPI-Reviewer interface or not",
-        default=None,
-    )
+    # attribute_selection_type: EppiAttributeSelectionType | None = Field(
+    #     description="Whether the attribute is Selectable in the "
+    #     " EPPI-Reviewer interface or not",
+    #     default=None,
+    #     alias="AttributeType",
+    # )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
         default=None,
@@ -74,11 +167,17 @@ class EppiDocument(Document):
     camelCase EPPI JSON fields to snake_case Python fields.
     """
 
-    model_config = ConfigDict(alias_generators=to_camel)  # type: ignore[typeddict-unknown-key]
+    name: str = Field(default="", validation_alias=AliasChoices("Title", "name"))
+    context: str = ""
+    context_type: ContextType = ContextType.EMPTY
+    document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
+    document_id_source: DocumentIDSource = DocumentIDSource.EPPI_ITEM_ID
+
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
     # EPPI-specific fields - these map automatically from camelCase JSON
-    item_id: int | None = None
-    title: str | None = None
+    # item_id: int
+    # title: str
     parent_title: str | None = None
     short_title: str | None = None
     date_created: str | None = None
@@ -88,7 +187,22 @@ class EppiDocument(Document):
     abstract: str | None = None
     authors: str | None = None
     keywords: str | None = None
-    doi: str | None = None
+    doi: str | None = Field(default=None, validation_alias=AliasChoices("DOI", "doi"))
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_citation_field(cls, data: dict[str, Any]) -> dict:
+        """
+        Populate the `citation` field with a Destiny
+        reference derived from the EPPI data.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        citation = parse_citation_to_destiny(reference=data)
+        data["citation"] = citation
+
+        return data
 
 
 class EppiItemAttributeFullTextDetails(BaseModel):
