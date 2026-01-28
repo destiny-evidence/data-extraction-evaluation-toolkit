@@ -138,6 +138,9 @@ class LLMDataExtractor:
         elif settings.llm_provider == LLMProvider.OLLAMA:
             self.llm_api_key = None
             self.api_base = None
+        else:
+            error_message = f"Unsupported LLM provider: {settings.llm_provider}"
+            raise ValueError(error_message)
 
         logger.info(f"Using {settings.llm_provider} with model: {self.model}")
 

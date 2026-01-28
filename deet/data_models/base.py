@@ -288,7 +288,7 @@ class LLMInputSchema(BaseModel):
 
     prompt: str
     attribute_id: int
-    output_data_type: Any
+    output_data_type: AttributeType
 
     model_config = ConfigDict(extra="ignore")
 
