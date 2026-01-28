@@ -783,7 +783,7 @@ def test_gold_standard_annotated_document_creation() -> None:
         annotation_type=AnnotationType.HUMAN,
     )
 
-    doc = GoldStandardAnnotatedDocument(
+    doc: GoldStandardAnnotatedDocument = GoldStandardAnnotatedDocument(
         name="Test Document 3",
         citation=citation,
         context="Test content",
