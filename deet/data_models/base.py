@@ -1,13 +1,14 @@
 """Core data models for document processing and annotation."""
 
 import csv
+import hashlib
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal
 
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -67,6 +68,61 @@ class DocumentIDSource(StrEnum):
     """
 
     EPPI_ITEM_ID = auto()
+    DOI_AUTHOR_YEAR = auto()
+
+    def create_id(self, document: "Document") -> int:
+        """
+        Create an id given value for DocumentIDSource.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            int: the id.
+
+        """
+        id_creation_map = {
+            DocumentIDSource.EPPI_ITEM_ID: self._map_eppi_item_id(document),
+            DocumentIDSource.DOI_AUTHOR_YEAR: self._map_doi_author_year_id(document),
+        }
+
+        return id_creation_map[self](Document)
+
+    @staticmethod
+    def _map_eppi_item_id(document: "Document"):
+        pass
+
+    @staticmethod
+    def _map_doi_author_year_id(document: "Document"):
+        """Create an integer id as a function of doi, author and year."""
+
+    '''def strings_to_8digit_int(str1: str, str2: str, str3: str) -> int:
+        """
+        Converts three strings into an 8-digit integer using hash-based combination.
+        
+        Args:
+            str1: First string
+            str2: Second string
+            str3: Third string
+        
+        Returns:
+            An 8-digit integer (10000000 to 99999999)
+        """
+        # Combine the three strings
+        combined = f"{str1}|{str2}|{str3}"
+        
+        # Create hash
+        hash_object = hashlib.sha256(combined.encode())
+        hash_hex = hash_object.hexdigest()
+        
+        # Convert first 8 hex chars to integer and map to 8-digit range
+        hash_int = int(hash_hex[:8], 16)
+        
+        # Map to 8-digit range (10000000 to 99999999)
+        result = (hash_int % 90000000) + 10000000
+        
+        return result
+    '''
 
 
 class Attribute(BaseModel):
@@ -224,6 +280,31 @@ class Document(BaseModel):
     document_id: int
     document_id_source: DocumentIDSource
     filename: str | None = None
+
+
+class ParsedDocument(Document):
+    """
+    Represents a _parsed_, i.e. pdf/html/etc-derived, text.
+
+    More than just the body (str) of the parsed text,
+    this is an extension of the `Document` class, which
+    enables us to link a reference/citation, i.e. external
+    document-level metadata to the actual document.
+
+    In its serialised/pickled form, this should enable
+    us to have just _one_ representation of each document, which contains
+    every required component.
+    """
+
+    filepath: Path
+    clean_filename: str | None
+    body: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def create_id_if_empty(cls, data: dict) -> dict:
+        """Populate id field if it isn't otherwise populated."""
+        return data
 
 
 class GoldStandardAnnotation(BaseModel):

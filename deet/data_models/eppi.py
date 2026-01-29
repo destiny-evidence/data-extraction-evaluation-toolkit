@@ -177,9 +177,6 @@ class EppiDocument(Document):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    # EPPI-specific fields - these map automatically from camelCase JSON
-    # item_id: int
-    # title: str
     parent_title: str | None = None
     short_title: str | None = None
     date_created: str | None = None
