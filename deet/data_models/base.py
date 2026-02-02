@@ -21,6 +21,16 @@ class AnnotationType(StrEnum):
     LLM = auto()
 
 
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
+
+
 class AttributeType(StrEnum):
     """Enum of permitted attribute data types."""
 

@@ -1,8 +1,8 @@
 """Generalisable data extraction module for LLM-based document analysis."""
 
 import json
-from enum import StrEnum, auto
 from pathlib import Path
+from typing import Any, cast
 
 import litellm
 from pydantic import BaseModel, Field, ValidationError, model_validator
@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    ContextType,
     GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
@@ -18,15 +19,6 @@ from deet.logger import logger
 from deet.settings import get_settings
 
 settings = get_settings()
-
-
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
 
 
 class PromptConfig(BaseModel):
@@ -156,22 +148,45 @@ class LLMDataExtractor:
             )
 
     def extract_from_document(
-        self, attributes: list[Attribute], **kwargs
+        self,
+        attributes: list[Attribute],
+        *,
+        payload: str | None = None,
+        md_path: Path | None = None,
+        context_type: ContextType | None = None,
+        prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotation]:
         """
         Extract data from a single document.
 
+        Call with either payload (document text) or md_path (path to markdown file).
+        If md_path is provided, the file is read and used as the payload.
+
         Args:
-            attributes: List of attributes to extract
+            attributes: List of attributes to extract.
+            payload: Document text to extract from. Required if md_path not set.
+            md_path: Path to a markdown file to read as payload.
+                Required if payload not set.
+            context_type: Override config context type; if None, use config default.
+            prompt_outfile: Optional path to write prompt payload for debugging.
 
         Returns:
-            List of annotations for the document
+            List of annotations for the document.
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
+            ValueError: If neither payload nor md_path provided, or both provided.
 
         """
-        # Convert config's selected_attribute_ids (list[str]) to list[int] for filtering
+        if (payload is None) == (md_path is None):
+            msg = "Exactly one of payload or md_path must be provided"
+            raise ValueError(msg)
+        if md_path is not None:
+            if not md_path.exists():
+                msg = f"Markdown file not found: {md_path}"
+                raise FileNotFoundError(msg)
+            payload = md_path.read_text(encoding="utf-8")
+        payload = cast("str", payload)
         filter_ids: list[int] | None = None
         if self.config.selected_attribute_ids:
             try:
@@ -179,7 +194,6 @@ class LLMDataExtractor:
                     int(attr_id) for attr_id in self.config.selected_attribute_ids
                 ]
             except (ValueError, TypeError):
-                # If conversion fails, set to empty list so no attributes match
                 logger.warning(
                     f"Invalid attribute IDs in config: "
                     f"{self.config.selected_attribute_ids}. "
@@ -194,48 +208,85 @@ class LLMDataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        context = self._prepare_context(**kwargs)
+        context = self._prepare_context(payload, context_type=context_type)
         prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt, **kwargs)
+        llm_response = self._call_llm(prompt, prompt_outfile=prompt_outfile)
 
         return self._parse_llm_response(llm_response, selected_attributes)
 
     def extract_from_documents(
         self,
         attributes: list[Attribute],
+        markdown_dir: Path,
         output_file: Path | None = None,
-        file_path: Path | str | None = None,
-        **kwargs,
+        pdf_dir: Path | None = None,
+        context_type: ContextType = ContextType.FULL_DOCUMENT,
     ) -> dict[str, list[GoldStandardAnnotation]]:
         """
-        Extract data from multiple documents.
+        Extract data from all documents in a directory.
+
+        Loops over files in markdown_dir (or, if pdf_dir is given, over PDFs
+        and uses markdown_dir/(stem).md for each). For each file, calls
+        extract_from_document with md_path and context_type. Results are
+        merged into one dict; optional combined JSON is written to output_file.
 
         Args:
-            attributes: List of attributes to extract
-            output_file: Optional file to save results
-            file_path: Optional path to the file being processed
-                (used as key in output dict)
+            attributes: List of attributes to extract.
+            markdown_dir: Directory of markdown files (required).
+            output_file: Optional path to save combined results JSON.
+            pdf_dir: Optional directory of PDFs; when set, input list and keys
+                come from here and markdown paths are markdown_dir/(stem).md.
+            context_type: Override config context type for each document.
 
         Returns:
-            Dictionary mapping file paths to lists of annotations
+            Dictionary mapping file paths to lists of annotations.
 
         """
-        document_annotations = self.extract_from_document(attributes, **kwargs)
+        if not markdown_dir.exists() or not markdown_dir.is_dir():
+            msg = f"markdown_dir must be an existing directory: {markdown_dir}"
+            raise ValueError(msg)
 
-        # Use file_path if provided, otherwise use a default key
-        if file_path is None:
-            file_path_str = "unknown"
+        all_results: dict[str, list[GoldStandardAnnotation]] = {}
+
+        if pdf_dir is not None and pdf_dir.exists() and pdf_dir.is_dir():
+            input_files = [
+                f
+                for f in pdf_dir.iterdir()
+                if f.is_file() and f.suffix.lower() == ".pdf"
+            ]
         else:
-            # Convert to absolute path for consistency and uniqueness
-            path_obj = Path(file_path) if isinstance(file_path, str) else file_path
-            file_path_str = str(path_obj.resolve())
+            input_files = [
+                f
+                for f in markdown_dir.iterdir()
+                if f.is_file() and f.suffix.lower() == ".md"
+            ]
 
-        result_dict = {file_path_str: document_annotations}
+        for input_file in sorted(input_files):
+            if input_file.suffix.lower() == ".pdf":
+                md_path = markdown_dir / f"{input_file.stem}.md"
+            else:
+                md_path = input_file
+            if not md_path.exists():
+                logger.warning(f"Markdown not found for {input_file}, skipping")
+                continue
+            logger.info(f"Processing file: {input_file.name} ({input_file})")
+            try:
+                result = self.extract_from_document(
+                    attributes,
+                    md_path=md_path,
+                    context_type=context_type,
+                )
+                path_str = str(Path(input_file).resolve())
+                all_results[path_str] = result
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Failed to process {input_file}: {e}")
+                logger.debug("Error details", exc_info=True)
 
-        if output_file:
-            self._save_results(result_dict, output_file)
+        if all_results and output_file is not None:
+            self._save_results(all_results, output_file)
+            logger.info(f"Combined results saved to: {output_file}")
 
-        return result_dict
+        return all_results
 
     def _filter_attributes(
         self, attributes: list[Attribute], filter_ids: list[int] | None = None
@@ -268,24 +319,24 @@ class LLMDataExtractor:
         )
         return filtered
 
-    def _prepare_context(self, full_text: str, **kwargs) -> str:
+    def _prepare_context(
+        self,
+        payload: str,
+        context_type: ContextType | None = None,
+    ) -> str:
         """Prepare context based on context type."""
-        if self.config.context_type == ContextType.FULL_DOCUMENT:
-            context = full_text
+        ctx = context_type if context_type is not None else self.config.context_type
+        if ctx == ContextType.FULL_DOCUMENT:
+            context = payload
             logger.debug(f"Using full document context (length: {len(str(context))})")
-        # elif self.config.context_type == ContextType.ABSTRACT_ONLY:
-        #     context = document.context  # type: ignore[assignment]
-        #     logger.debug(f"Using abstract context (length: {len(str(context))})")
-        elif self.config.context_type == ContextType.RAG_SNIPPETS:
+        elif ctx == ContextType.RAG_SNIPPETS:
             rag_not_impl = "rag-snippets context type is not implemented."
             raise NotImplementedError(rag_not_impl)
-        elif self.config.context_type == ContextType.CUSTOM:
+        elif ctx == ContextType.CUSTOM:
             custom_not_impl = "custom context type is not implemented."
             raise NotImplementedError(custom_not_impl)
         else:
-            other_not_allowed = (
-                f"{self.config.context_type} context type is not allowed."
-            )
+            other_not_allowed = f"{ctx} context type is not allowed."
             raise ValueError(other_not_allowed)
 
         if isinstance(context, list):
@@ -350,7 +401,9 @@ class LLMDataExtractor:
         return prompt_json
 
     def _call_llm(
-        self, prompt: str, prompt_outfile: Path | None = None, **kwargs
+        self,
+        prompt: str,
+        prompt_outfile: Path | None = None,
     ) -> str:
         """Call the LLM with the given prompt."""
         messages: list[dict] = [
@@ -482,8 +535,6 @@ class LLMDataExtractor:
 
         """
         # Handle both dict and list formats for backward compatibility
-        from typing import Any
-
         results_json: dict[str, list[dict[str, Any]]] | list[dict[str, Any]]
         if isinstance(results, dict):
             # Convert dict to JSON-serializable format
