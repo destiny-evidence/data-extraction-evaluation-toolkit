@@ -469,7 +469,7 @@ class ProcessedAnnotationData(
             ann for ann in self.annotations if ann.annotation_type == annotation_type
         ]
 
-    def get_attribute_by_id(self, attribute_id: str) -> Attribute | None:
+    def get_attribute_by_id(self, attribute_id: int) -> Attribute | None:
         """Get an attribute by its ID."""
         for attr in self.attributes:
             if attr.attribute_id == attribute_id:
