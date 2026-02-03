@@ -154,13 +154,14 @@ class LLMDataExtractor:
         payload: str | None = None,
         md_path: Path | None = None,
         context_type: ContextType | None,
-        prompt_outfile: Path | None = None,
-    ) -> list[GoldStandardAnnotation]:
+    ) -> tuple[list[GoldStandardAnnotation], list[dict[str, Any]]]:
         """
         Extract data from a single document.
 
         Call with either payload (document text) or md_path (path to markdown file).
         If md_path is provided, the file is read and used as the payload.
+        Prompt payloads are not written here; the batch entry point
+        extract_from_documents writes them to prompt_outfile when provided.
 
         Args:
             attributes: List of attributes to extract.
@@ -168,10 +169,9 @@ class LLMDataExtractor:
             md_path: Path to a markdown file to read as payload.
                 Required if payload not set.
             context_type: Override config context type; if None, use config default.
-            prompt_outfile: Optional path to write prompt payload for debugging.
 
         Returns:
-            List of annotations for the document.
+            Tuple of (list of annotations for the document, messages sent to the LLM).
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
@@ -212,13 +212,13 @@ class LLMDataExtractor:
         prompt = self._generate_user_message_json(
             payload=context, attributes=selected_attributes
         )
-        llm_response = self._call_llm(prompt=prompt, prompt_outfile=prompt_outfile)
-
-        return self._parse_llm_response(
+        llm_response, messages = self._call_llm(prompt=prompt)
+        annotations = self._parse_llm_response(
             response_content=llm_response, attributes=selected_attributes
         )
+        return annotations, messages
 
-    def extract_from_documents(
+    def extract_from_documents(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
         markdown_dir: Path,
@@ -235,8 +235,6 @@ class LLMDataExtractor:
         extract_from_document with md_path and context_type. Results are
         merged into one dict; optional combined JSON is written to output_file.
 
-        NOTE: placeholder, as we're still only working
-        on one doc.
 
         Args:
             attributes: List of attributes to extract.
@@ -245,7 +243,8 @@ class LLMDataExtractor:
             pdf_dir: Optional directory of PDFs; when set, input list and keys
                 come from here and markdown paths are markdown_dir/(stem).md.
             context_type: Override config context type for each document.
-            prompt_outfile: optional path to write out complete prompt config.
+            prompt_outfile: Optional path to write a single JSON object:
+                keys are document (PDF) paths, values are prompt payload (messages).
 
 
         Returns:
@@ -257,6 +256,7 @@ class LLMDataExtractor:
             raise ValueError(msg)
 
         all_results: dict[str, list[GoldStandardAnnotation]] = {}
+        prompt_payloads: dict[str, Any] = {}
 
         if pdf_dir is not None and pdf_dir.exists() and pdf_dir.is_dir():
             input_files = [
@@ -281,14 +281,15 @@ class LLMDataExtractor:
                 continue
             logger.info(f"Processing file: {input_file.name} ({input_file})")
             try:
-                result = self.extract_from_document(
+                result, messages = self.extract_from_document(
                     attributes,
                     md_path=md_path,
                     context_type=context_type,
-                    prompt_outfile=prompt_outfile,
                 )
                 path_str = str(Path(input_file).resolve())
                 all_results[path_str] = result
+                if prompt_outfile is not None:
+                    prompt_payloads[path_str] = messages
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to process {input_file}: {e}")
                 logger.debug("Error details", exc_info=True)
@@ -296,6 +297,12 @@ class LLMDataExtractor:
         if all_results and output_file is not None:
             self._save_results(all_results, output_file)
             logger.info(f"Combined results saved to: {output_file}")
+
+        if prompt_payloads and prompt_outfile is not None:
+            prompt_outfile.write_text(
+                json.dumps(prompt_payloads, indent=2), encoding="utf-8"
+            )
+            logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
         return all_results
 
@@ -411,21 +418,18 @@ class LLMDataExtractor:
 
         return prompt_json
 
-    def _call_llm(self, prompt: str, prompt_outfile: Path | None = None) -> str:
+    def _call_llm(self, prompt: str) -> tuple[str, list[dict[str, Any]]]:
         """
         Call the LLM with the given prompt.
 
         Args:
-            prompt (str): the prompt
-            prompt_outfile (Path | None, optional): a path to
-            write the whole prompt (sys prompt + user message + context) as json.
-            Defaults to None.
+            prompt: The user prompt (with context and attributes).
 
         Returns:
-            str: the llm's response, to be parsed.
+            Tuple of (LLM response text to be parsed, messages list sent to the API).
 
         """
-        messages: list[dict] = [
+        messages: list[dict[str, Any]] = [
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
         ]
@@ -434,9 +438,6 @@ class LLMDataExtractor:
         logger.debug(f"Temperature: {self.config.temperature}")
         logger.debug(f" sys message: {messages[0]['content'][:1000]}")
         logger.debug(f"user msg{messages[1]['content'][:1000]}")
-
-        if prompt_outfile:
-            prompt_outfile.write_text(json.dumps(messages))
 
         response = litellm.completion(
             model=self.model,
@@ -458,7 +459,7 @@ class LLMDataExtractor:
         response_content = response.choices[0].message.content
         logger.debug(f"raw response: {response_content}")
 
-        return response_content
+        return response_content, messages
 
     def _parse_llm_response(
         self,

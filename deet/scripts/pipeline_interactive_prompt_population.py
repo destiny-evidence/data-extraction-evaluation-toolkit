@@ -78,7 +78,7 @@ def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
-def llm_data_extraction(
+def llm_data_extraction(  # noqa: PLR0913
     full_text_path: Path,
     attributes_file_path: Path,
     output_path: Path,
@@ -102,7 +102,6 @@ def llm_data_extraction(
 
     Returns:
         Dictionary mapping file paths to lists of annotations.
-    
 
     """
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
@@ -168,19 +167,19 @@ def main() -> None:
         msg = f"Markdown path must be an existing directory: {args.markdown_path}"
         raise ValueError(msg)
 
-    eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-    input_dir = args.pdf_path or args.markdown_path
-    args.output_path = args.output_path or (
-        input_dir.parent / "tmp_parsed_eppi" / eppi_json_dir / "llm_extractions.json"
-    )
-    logger.info(f"Auto-generated output path: {args.output_path}")
-    output_path = args.output_path.parent / "eppi"
+    # Auto-generate output path if not provided
+    if not args.output_path:
+        eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+        input_dir = args.pdf_path or args.markdown_path
+        if input_dir:
+            args.output_path = input_dir.parent / "tmp_parsed_eppi" / eppi_json_dir
+        else:
+            args.output_path = Path("llm_extractions.json")
+        logger.info(f"Auto-generated output path: {args.output_path}")
 
     if args.markdown_path is None and args.pdf_path is not None:
         args.markdown_path = args.output_path.parent / "markdown"
         args.markdown_path.mkdir(parents=True, exist_ok=True)
-
-    logger.debug(output_path)
 
     logger.debug("decorating our functions as Jobs and PipelineStages")
     parse_pdf_stage = stage_from_job(
@@ -199,7 +198,7 @@ def main() -> None:
             name="ingest_gs",
             func_kwargs={
                 "eppi_json_path": args.eppi_json_path,
-                "output_dir": output_path,
+                "output_dir": args.output_path,
             },
         )(ingest_gold_standard_func),
         skip_jobs_if_failed=False,
@@ -211,12 +210,12 @@ def main() -> None:
             job_type=JobType.EXTRACTION,
             func_kwargs={
                 "full_text_path": args.markdown_path,
-                "attributes_file_path": output_path 
+                "attributes_file_path": args.output_path
                 / DEFAULT_BASE_OUTPUT_DIR
-                / DEFAULT_ATTRIBUTES_FILENAME
-                "output_path": args.output_path,
+                / DEFAULT_ATTRIBUTES_FILENAME,
+                "output_path": args.output_path / "llm_extractions.json",
                 "pdf_dir": args.pdf_path,
-                "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
+                "prompt_outfile": args.output_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction),
         skip_jobs_if_failed=False,

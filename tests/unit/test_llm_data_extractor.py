@@ -177,9 +177,8 @@ def test_extract_from_document_bad_filter_list(
     llm_extractor.config.selected_attribute_ids = filter_ids
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
-            sample_eppi_attributes,
-            payload=payload,
             attributes=sample_eppi_attributes,
+            payload=payload,
             context_type=ContextType.FULL_DOCUMENT,
         )
 
@@ -250,7 +249,7 @@ def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
 def test_call_llm(llm_extractor, mock_litellm_completion):
     """Test the _call_llm method."""
     prompt = '{"key": "value"}'
-    response = llm_extractor._call_llm(prompt)
+    response, messages = llm_extractor._call_llm(prompt)
 
     mock_litellm_completion.assert_called_once()
     call_args = mock_litellm_completion.call_args
@@ -261,6 +260,8 @@ def test_call_llm(llm_extractor, mock_litellm_completion):
         in call_args.kwargs["response_format"]["json_schema"]["name"]
     )
     assert response is not None
+    assert isinstance(messages, list)
+    assert len(messages) >= 1
 
 
 def test_parse_llm_response(
@@ -324,12 +325,14 @@ def test_extract_from_document(
 ):
     """Test the end-to-end flow of extract_from_document."""
     payload = "This is the full text of the document."
-    annotations = llm_extractor.extract_from_document(
+    annotations, messages = llm_extractor.extract_from_document(
         sample_eppi_attributes,
         payload=payload,
         context_type=ContextType.FULL_DOCUMENT,
     )
     assert len(annotations) == 1
+    assert isinstance(messages, list)
+    assert len(messages) >= 1
     assert annotations[0].attribute.attribute_id == 1234
     mock_litellm_completion.assert_called_once()
 
@@ -344,6 +347,7 @@ def test_extract_from_document_no_attributes(
         llm_extractor.extract_from_document(
             sample_eppi_attributes,
             payload=payload,
+            context_type=ContextType.FULL_DOCUMENT,
         )
 
 
@@ -378,7 +382,7 @@ def test_extract_from_documents_continues_on_error(
     (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
     mock_litellm_completion.side_effect = ValueError("LLM call failed")
     all_annotations = llm_extractor.extract_from_documents(
-        attributes=sample_eppi_attributes, 
+        attributes=sample_eppi_attributes,
         markdown_dir=tmp_path,
         context_type=ContextType.FULL_DOCUMENT,
     )

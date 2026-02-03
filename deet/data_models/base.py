@@ -58,16 +58,6 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    EMPTY = auto()
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
-
-
 class DocumentIDSource(StrEnum):
     """
     Sources for a given document_id. Can be e.g. eppi_item_id.
