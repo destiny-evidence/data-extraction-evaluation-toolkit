@@ -1,0 +1,47 @@
+{
+  "csv_path": "example.csv",
+  "out_json_path": "example.json",
+
+  "write_md": true,
+  "md_dir": "example_md",
+
+  "delimit_str": ";; ",
+  "nlreplace": ";",
+
+  "ignore_columns": ["from_gold"],
+
+  "meta_variable_dict": {
+    "ItemId": "pmid",
+    "Title": "",
+    "Abstract": "text",
+    "ParentTitle": "",
+    "ShortTitle": "",
+    "DateCreated": "",
+    "CreatedBy": "",
+    "DateEdited": "",
+    "EditedBy": "",
+    "Year": "",
+    "Month": "",
+    "StandardNumber": "",
+    "City": "",
+    "Country": "",
+    "Publisher": "",
+    "Institution": "",
+    "Volume": "",
+    "Pages": "",
+    "Edition": "",
+    "Issue": "",
+    "Availability": "",
+    "URL": "",
+    "OldItemId": "",
+    "Comments": "",
+    "TypeName": "",
+    "Authors": "",
+    "ParentAuthors": "",
+    "DOI": "",
+    "Keywords": "",
+    "ItemStatus": "",
+    "ItemStatusTooltip": "",
+    "QuickCitation": ""
+  }
+}
