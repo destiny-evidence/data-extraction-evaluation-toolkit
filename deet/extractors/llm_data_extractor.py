@@ -1,7 +1,6 @@
 """Generalisable data extraction module for LLM-based document analysis."""
 
 import json
-from enum import StrEnum, auto
 from pathlib import Path
 
 import litellm
@@ -10,6 +9,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    ContextType,
     GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
@@ -18,15 +18,6 @@ from deet.logger import logger
 from deet.settings import get_settings
 
 settings = get_settings()
-
-
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
 
 
 class PromptConfig(BaseModel):
@@ -156,13 +147,20 @@ class LLMDataExtractor:
             )
 
     def extract_from_document(
-        self, attributes: list[Attribute], **kwargs
+        self,
+        attributes: list[Attribute],
+        payload: str,
+        context_type: ContextType | None,
+        prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotation]:
         """
         Extract data from a single document.
 
         Args:
             attributes: List of attributes to extract
+            payload: str with the actual contents of the document to be analysed.
+            context_type: Type of context to use (ContextType enum)
+            prompt_outfile: path to write whole prompt to, optional.
 
         Returns:
             List of annotations for the document
@@ -194,46 +192,50 @@ class LLMDataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        context = self._prepare_context(**kwargs)
-        prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt, **kwargs)
+        context = self._prepare_context(payload=payload, context_type=context_type)
+        prompt = self._generate_user_message_json(
+            payload=context, attributes=selected_attributes
+        )
+        llm_response = self._call_llm(prompt=prompt, prompt_outfile=prompt_outfile)
 
-        return self._parse_llm_response(llm_response, selected_attributes)
+        return self._parse_llm_response(
+            response_content=llm_response, attributes=selected_attributes
+        )
 
     def extract_from_documents(
         self,
+        payload: str,  # change to list[str] once we run for multiple pdfs.
         attributes: list[Attribute],
         output_file: Path | None = None,
-        **kwargs,
+        context_type: ContextType = ContextType.FULL_DOCUMENT,
+        prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotation]:
         """
         Extract data from multiple documents.
 
+        NOTE: placeholder, as we're still only working
+        on one doc.
+
         Args:
             attributes: List of attributes to extract
-            output_file: Optional file to save results
+            payload: the document(s) from which to extract data.
+            output_file: Optional file to save parsed LLM response.
+            context: a ContextType enum.
+            prompt_outfile: optional path to write out complete prompt config.
+
 
         Returns:
             List of annotations for all documents and attributes
 
         """
         all_annotations = []
-        document_annotations = self.extract_from_document(attributes, **kwargs)
+        document_annotations = self.extract_from_document(
+            attributes,
+            payload=payload,
+            context_type=context_type,
+            prompt_outfile=prompt_outfile,
+        )
         all_annotations.extend(document_annotations)
-
-        # for document in documents:
-        #     logger.info(f"Processing document: {document.name}")
-        #     try:
-        #         document_annotations = self.extract_from_document(
-        #             document, attributes, **kwargs
-        #         )
-        #         all_annotations.extend(document_annotations)
-        #     except (ValidationError, ValueError) as e:
-        #         logger.error(
-        #             f"Failed to extract from document {document.document_id}: {e}"
-        #         )
-        #         logger.debug(f"Document: {document.name}")
-        #         continue
 
         if output_file:
             self._save_results(all_annotations, output_file)
@@ -271,18 +273,29 @@ class LLMDataExtractor:
         )
         return filtered
 
-    def _prepare_context(self, full_text: str, **kwargs) -> str:
-        """Prepare context based on context type."""
-        if self.config.context_type == ContextType.FULL_DOCUMENT:
-            context = full_text
+    def _prepare_context(  # type: ignore[mypy-note]
+        # mypy incorrectly flags 'context' as possibly unbound;
+        # all ContextType branches assign it before use.
+        self,
+        payload: str | list[str],  # NOTE: payload may be a single document (str)
+        # or multiple documents/snippets (list[str]).
+        context_type: ContextType | None = None,
+    ) -> str:
+        """Prepare context/payload based on context type."""
+        if context_type is None:
+            logger.debug("custom `context_type` not provided, using config-level.")
+            context_type = self.config.context_type
+
+        if context_type == ContextType.FULL_DOCUMENT:
+            context = payload
             logger.debug(f"Using full document context (length: {len(str(context))})")
         # elif self.config.context_type == ContextType.ABSTRACT_ONLY:
         #     context = document.context  # type: ignore[assignment]
         #     logger.debug(f"Using abstract context (length: {len(str(context))})")
-        elif self.config.context_type == ContextType.RAG_SNIPPETS:
+        elif context_type == ContextType.RAG_SNIPPETS:
             rag_not_impl = "rag-snippets context type is not implemented."
             raise NotImplementedError(rag_not_impl)
-        elif self.config.context_type == ContextType.CUSTOM:
+        elif context_type == ContextType.CUSTOM:
             custom_not_impl = "custom context type is not implemented."
             raise NotImplementedError(custom_not_impl)
         else:
@@ -310,7 +323,7 @@ class LLMDataExtractor:
 
     def _generate_user_message_json(
         self,
-        context: str,
+        payload: str,
         attributes: list[Attribute],
     ) -> str:
         """
@@ -341,26 +354,35 @@ class LLMDataExtractor:
             llm_input_attr = LLMInputSchema(**attr_dict)
             attributes_payload.append(llm_input_attr.model_dump())
 
-        payload = {
-            "context": context,
+        unserialised_prompt = {
+            "context": payload,
             "attributes": attributes_payload,
         }
 
         logger.debug(f"attributes payload: {attributes_payload}")
-        prompt_json = json.dumps(payload, ensure_ascii=False)
+        prompt_json = json.dumps(unserialised_prompt, ensure_ascii=False)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
 
         return prompt_json
 
-    def _call_llm(
-        self, prompt: str, prompt_outfile: Path | None = None, **kwargs
-    ) -> str:
-        """Call the LLM with the given prompt."""
+    def _call_llm(self, prompt: str, prompt_outfile: Path | None = None) -> str:
+        """
+        Call the LLM with the given prompt.
+
+        Args:
+            prompt (str): the prompt
+            prompt_outfile (Path | None, optional): a path to
+            write the whole prompt (sys prompt + user message + context) as json.
+            Defaults to None.
+
+        Returns:
+            str: the llm's response, to be parsed.
+
+        """
         messages: list[dict] = [
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
         ]
-        # Path("misc/system_user_config.json").write_text(json.dumps(messages))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")
