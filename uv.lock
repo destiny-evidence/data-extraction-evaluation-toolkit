@@ -337,6 +337,7 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "destiny-sdk" },
+    { name = "ftfy" },
     { name = "litellm" },
     { name = "loguru" },
     { name = "marker-pdf" },
@@ -366,6 +367,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "destiny-sdk", specifier = ">=0.3.0" },
+    { name = "ftfy", specifier = ">=6.3.1" },
     { name = "litellm", specifier = ">=1.77.4" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "marker-pdf", specifier = ">=1.9.1" },
