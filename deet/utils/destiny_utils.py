@@ -37,11 +37,12 @@ class ReferencePresenter:
     @property
     def title(self) -> str:
         """Returns the title of the reference."""
-        return (
-            fix_text(self.bibliographic_metadata.title) or ""
-            if self.bibliographic_metadata
-            else ""
-        )
+        if (
+            self.bibliographic_metadata is not None
+            and self.bibliographic_metadata.title
+        ):
+            return fix_text(self.bibliographic_metadata.title)
+        return ""
 
     @property
     def authors(self) -> str:
@@ -267,7 +268,7 @@ class ReferencePresenter:
         for e in self.reference.enhancements or []:
             if e.content.enhancement_type == EnhancementType.ANNOTATION:
                 for x in e.content.annotations or []:
-                    if x.scheme.startswith("classifier:taxonomy") and x.value:
+                    if x.scheme.startswith("classifier:taxonomy") and x.value:  # type:ignore[union-attr]
                         a += str((x.scheme.split(":")[-1], x.label)).title()
                         a += ";"
         return a.strip(";")
