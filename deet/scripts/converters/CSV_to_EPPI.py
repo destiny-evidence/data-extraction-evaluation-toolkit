@@ -9,6 +9,10 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class Config:
+    """
+    Config variables
+    """
+
     csv_path: Path
     out_json_path: Path
     write_md: bool
@@ -69,16 +73,23 @@ def load_config(config_path: Path) -> Config:
 
 
 def get_metadata(
-    row, i: int, meta_variable_dict: dict[str, str], nlreplace: str
+    row: dict, i: int, meta_variable_dict: dict[str, str], nlreplace: str
 ) -> dict[str, Any]:
+    """
+    Read one row of data from the CSV and create a reference from it
+    :param row:
+    :param i:
+    :param meta_variable_dict:
+    :param nlreplace:
+    :return:
+    """
     mycols = row.keys()
     refdict: dict[str, Any] = {"Codes": [], "Outcomes": []}
 
     try:
-        unique_ID_int = int(row[meta_variable_dict["ItemId"]])
-        refdict["ItemId"] = unique_ID_int
-    except Exception:
-        print("Unable to retrieve int ID, using index instead")
+        unique_id_int = int(row[meta_variable_dict["ItemId"]])
+        refdict["ItemId"] = unique_id_int
+    except:  # use sequential numbering
         refdict["ItemId"] = i
 
     # iterate through all required fields and fill them if possible from the row data
@@ -118,23 +129,31 @@ def custom_json(
     delimit_str: str,
     nlreplace: str,
 ) -> None:
-    df = pd.read_csv(csv_path, encoding="utf-8").fillna("")
+    """
+    Create an EPPI-Json file based on a CSV input file
+    :param csv_path:
+    :param out_json_path:
+    :param write_md:
+    :param md_dir:
+    :param meta_variable_dict:
+    :param ignore_columns:
+    :param delimit_str:
+    :param nlreplace:
+    :return:
+    """
+    df_data = pd.read_csv(csv_path, encoding="utf-8").fillna("")
 
     reflist: list[dict[str, Any]] = []
     attributeslist: list[dict[str, Any]] = []
 
     remove_set = set(ignore_columns) | set(meta_variable_dict.values())
-    mapping_vars = [x for x in df.columns if x not in remove_set]
-
-    print(
-        f"Transferring data from the following columns into JSON attributes: {mapping_vars}"
-    )
+    mapping_vars = [x for x in df_data.columns if x not in remove_set]
 
     # Collect all codes and assign new ids as discovered
     attributes: dict[str, dict[str, int]] = {k: {} for k in mapping_vars}
     cnt = 1  # attribute ID counter (for leaf attribute values)
 
-    for i, row in df.iterrows():
+    for i, row in df_data.iterrows():
         myattributes: list[int] = []
 
         for mvar in mapping_vars:
@@ -150,7 +169,7 @@ def custom_json(
                 else:
                     myattributes.append(attributes[mvar][c])
 
-        refdict = get_metadata(row, i, meta_variable_dict, nlreplace=nlreplace)
+        refdict = get_metadata(dict(row), i, meta_variable_dict, nlreplace=nlreplace)
 
         if write_md:
             if md_dir is None:
@@ -194,12 +213,12 @@ def custom_json(
     with out_json_path.open("w", encoding="utf-8") as f:
         json.dump(final_json, f, ensure_ascii=False, indent=4)
 
-    print(f"Wrote JSON: {out_json_path}")
-    if write_md and md_dir:
-        print(f"Wrote MD files to: {md_dir}")
-
 
 def parse_args() -> argparse.Namespace:
+    """
+    Parsing argument input
+    :return:
+    """
     parser = argparse.ArgumentParser(
         description="Convert a CSV into EPPI-style JSON with coded attributes."
     )
@@ -214,6 +233,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """
+    Main function
+    :return:
+    """
     args = parse_args()
     cfg = load_config(args.config)
 
