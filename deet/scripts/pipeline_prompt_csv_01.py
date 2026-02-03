@@ -15,8 +15,8 @@ in the data extraction stage.
 import argparse
 from pathlib import Path
 
-from app.data_models.pipeline import Pipeline, jobify, stage_from_job
-from app.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.data_models.pipeline import Pipeline, jobify, stage_from_job
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 converter = EppiAnnotationConverter()
 
@@ -31,7 +31,7 @@ def ingest_gold_standard_export_csv_func(
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
     out.export_attributes_csv_file(filepath=csv_path)
-    converter.save_processed_data(processed_data=out, output_dir=output_dir)
+    converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
 def main() -> None:

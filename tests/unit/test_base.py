@@ -3,17 +3,17 @@
 import csv
 from pathlib import Path
 from unittest.mock import patch
-from uuid import uuid4
 
 import pytest
-from destiny_sdk.references import Reference
+from destiny_sdk.references import ReferenceFileInput
 
-from app.data_models.base import (
+from deet.data_models.base import (
     AnnotationType,
     Attribute,
-    AttributesList,
     AttributeType,
+    ContextType,
     Document,
+    DocumentIDSource,
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
     LLMInputSchema,
@@ -112,48 +112,6 @@ def test_attribute_validation_required_fields() -> None:
     assert attr.question_target == "Test"
     assert attr.attribute_id == 12345
     assert attr.attribute_label == "Test Label"
-
-
-def test_attributes_list_creation() -> None:
-    """Test creating AttributesList with multiple attributes."""
-    attrs = [
-        Attribute(
-            question_target="Question 1",
-            output_data_type=AttributeType.BOOL,
-            attribute_id=1234,
-            attribute_label="Attribute 1",
-        ),
-        Attribute(
-            question_target="Question 2",
-            output_data_type=AttributeType.STRING,
-            attribute_id=2345,
-            attribute_label="Attribute 2",
-        ),
-    ]
-    attr_list = AttributesList(attributes=attrs)
-    assert len(attr_list.attributes) == 2
-    assert attr_list.attributes[0].attribute_id == 1234
-    assert attr_list.attributes[1].attribute_id == 2345
-
-
-def test_attributes_list_iteration() -> None:
-    """Test that AttributesList is iterable."""
-    attrs = [
-        Attribute(
-            question_target="Question 1",
-            output_data_type=AttributeType.BOOL,
-            attribute_id=1234,
-            attribute_label="Attribute 1",
-        ),
-    ]
-    attr_list = AttributesList(attributes=attrs)
-
-    # Test iteration
-    for attr in attr_list:
-        assert attr.attribute_id == 1234
-
-    # Test to_list method
-    assert attr_list.to_list() == attrs
 
 
 def test_write_to_csv_creates_new_file(tmp_path) -> None:
@@ -718,38 +676,36 @@ def test_enter_custom_prompt_recovers_from_invalid(mock_input) -> None:
     assert attr.prompt == "My prompt"
 
 
-class TestDocument:
-    """Test Document model."""
+def test_document_creation() -> None:
+    """Test creating a document."""
+    citation = ReferenceFileInput()
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+        context="This is test content",
+        context_type=ContextType.FULL_DOCUMENT,
+        document_id=1,
+        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+        filename="test.pdf",
+    )
+    assert doc.name == "Test Document"
+    assert doc.document_id == 1
+    assert doc.filename == "test.pdf"
+    assert doc.context == "This is test content"
 
-    def test_document_creation(self) -> None:
-        """Test creating a document."""
-        citation = Reference(
-            id=uuid4(),
-        )
-        doc = Document(
-            name="Test Document",
-            citation=citation,
-            context="This is test content",
-            document_id="doc1",
-            filename="test.pdf",
-        )
-        assert doc.name == "Test Document"
-        assert doc.document_id == "doc1"
-        assert doc.filename == "test.pdf"
-        assert doc.context == "This is test content"
 
-    def test_document_creation_with_list_context(self) -> None:
-        """Test creating a document with list context."""
-        citation = Reference(
-            id=uuid4(),
-        )
-        doc = Document(
-            name="Test Document 2",
-            citation=citation,
-            context=["Paragraph 1", "Paragraph 2"],
-            document_id="doc2",
-        )
-        assert doc.context == ["Paragraph 1", "Paragraph 2"]
+def test_document_creation_with_list_context() -> None:
+    """Test creating a document with list context."""
+    citation = ReferenceFileInput()
+    doc = Document(
+        name="Test Document 2",
+        citation=citation,
+        context=["Paragraph 1", "Paragraph 2"],
+        context_type=ContextType.RAG_SNIPPETS,
+        document_id=2,
+        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+    )
+    assert doc.context == ["Paragraph 1", "Paragraph 2"]
 
 
 def test_gold_standard_annotation_creation_from_dict() -> None:
@@ -810,38 +766,36 @@ def test_gold_standard_annotation_bool_type_invalid() -> None:
         )
 
 
-class TestGoldStandardAnnotatedDocument:
-    """Test GoldStandardAnnotatedDocument model."""
+def test_gold_standard_annotated_document_creation() -> None:
+    """Test creating a gold standard annotated document."""
+    citation = ReferenceFileInput()
 
-    def test_gold_standard_annotated_document_creation(self) -> None:
-        """Test creating a gold standard annotated document."""
-        citation = Reference(
-            id=uuid4(),
-        )
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute 3",
+    )
 
-        attr = Attribute(
-            question_target="Test question",
-            output_data_type=AttributeType.BOOL,
-            attribute_id=1234,
-            attribute_label="Test Attribute 3",
-        )
+    annotation = GoldStandardAnnotation(
+        attribute=attr,
+        output_data=True,
+        annotation_type=AnnotationType.HUMAN,
+    )
 
-        annotation = GoldStandardAnnotation(
-            attribute=attr,
-            output_data=True,
-            annotation_type=AnnotationType.HUMAN,
-        )
-
-        doc = GoldStandardAnnotatedDocument(
-            name="Test Document 3",
-            citation=citation,
-            context="Test content",
-            document_id="doc3",
-            annotations=[annotation],
-        )
-        assert doc.name == "Test Document 3"
-        assert len(doc.annotations) == 1
-        assert doc.annotations[0].output_data is True
+    doc = GoldStandardAnnotatedDocument(
+        name="Test Document 3",
+        citation=citation,
+        context="Test content",
+        context_type=ContextType.FULL_DOCUMENT,
+        document_id=3,
+        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+        annotations=[annotation],
+    )
+    assert doc.name == "Test Document 3"
+    assert doc.document_id == 3
+    assert len(doc.annotations) == 1
+    assert doc.annotations[0].output_data is True
 
 
 def test_llm_input_schema_with_prompt() -> None:

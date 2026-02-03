@@ -3,19 +3,19 @@
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
 
 import pytest
-from destiny_sdk.references import Reference
+from destiny_sdk.references import ReferenceFileInput
 from pydantic import ValidationError
 
-from app.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
-from app.data_models.eppi import (
+from deet.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
+from deet.data_models.eppi import (
     AttributeType,
     EppiAttribute,
+    EppiAttributeSelectionType,
     EppiDocument,
 )
-from app.extractors.llm_data_extractor import (
+from deet.extractors.llm_data_extractor import (
     ContextType,
     DataExtractionConfig,
     LLMDataExtractor,
@@ -38,7 +38,9 @@ def mock_settings(monkeypatch):
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
 
-    monkeypatch.setattr("app.extractors.llm_data_extractor.settings", mock_settings_obj)
+    monkeypatch.setattr(
+        "deet.extractors.llm_data_extractor.settings", mock_settings_obj
+    )
     return mock_settings_obj
 
 
@@ -46,12 +48,10 @@ def mock_settings(monkeypatch):
 def sample_eppi_document() -> EppiDocument:
     """Fixture for a sample EppiDocument."""
     return EppiDocument(
-        document_id="doc1",
+        document_id=12345,
         name="Test Document",
         context="This is the abstract.",
-        citation=Reference(  # minimal destiny ref
-            id=uuid4(),
-        ),
+        citation=ReferenceFileInput(),
     )
 
 
@@ -59,18 +59,20 @@ def sample_eppi_document() -> EppiDocument:
 def sample_eppi_attributes() -> list[EppiAttribute]:
     """Fixture for a list of sample EppiAttributes."""
     return [
-        EppiAttribute(  # vanilla / old
+        EppiAttribute(  # type: ignore [call-arg] # old
             attribute_id=1234,
             attribute_label="Attribute 1",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="Is attribute 1 present?",
+            attribute_type=EppiAttributeSelectionType.SELECTABLE,
         ),
-        EppiAttribute(  # new
+        EppiAttribute(  # type: ignore [call-arg]# new
             attribute_id=2345,
             prompt="What is the question?",
             attribute_label="Attribute 2",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="foo",
+            attribute_type=EppiAttributeSelectionType.SELECTABLE,
         ),
     ]
 
@@ -142,24 +144,64 @@ def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
 
 def test_filter_attributes(llm_extractor, sample_eppi_attributes):
     """Test the _filter_attributes method."""
-    llm_extractor.config.selected_attribute_ids = [1234]
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filter_ids = [1234]
+    filtered = llm_extractor._filter_attributes(
+        sample_eppi_attributes, filter_ids=filter_ids
+    )
     assert len(filtered) == 1
     assert filtered[0].attribute_id == 1234
 
 
 def test_filter_attributes_no_selection(llm_extractor, sample_eppi_attributes):
     """Test _filter_attributes when no IDs are selected."""
-    llm_extractor.config.selected_attribute_ids = []
-    filtered = llm_extractor._filter_attributes(sample_eppi_attributes)
+    filtered = llm_extractor._filter_attributes(sample_eppi_attributes, filter_ids=None)
     assert len(filtered) == 2
 
 
-def test_prepare_context_full_document(llm_extractor, sample_eppi_document):
+@pytest.mark.parametrize(
+    "filter_ids",
+    [
+        ["bad_id_1", "bad_id_2", 12345, 6789],
+        ["bad_id_1", "bad_id_2"],
+        [{"test_key": "test_value"}, [1, 2, 3]],
+    ],
+)
+def test_extract_from_document_bad_filter_list(
+    llm_extractor, sample_eppi_document, sample_eppi_attributes, filter_ids
+):
+    """
+    Test extract_from_document raises ValueError if the filter list cannot
+    entirely be cast to integers.
+    """
+    full_text = "This is the full text of the document."
+    llm_extractor.config.selected_attribute_ids = filter_ids
+    with pytest.raises(ValueError, match="No attributes selected"):
+        llm_extractor.extract_from_document(
+            attributes=sample_eppi_attributes,
+            payload=full_text,
+            context_type=ContextType.FULL_DOCUMENT,
+        )
+
+
+def test_prepare_context_full_document_context_in_config(
+    llm_extractor, sample_eppi_document
+):
     """Test _prepare_context with FULL_DOCUMENT type."""
     full_text = "This is the full text."
     llm_extractor.config.context_type = ContextType.FULL_DOCUMENT
-    context = llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
+    context = llm_extractor._prepare_context(payload=full_text)
+    assert context == full_text
+
+
+def test_prepare_context_full_document_context_as_arg(
+    llm_extractor, sample_eppi_document
+):
+    """Test _prepare_context with FULL_DOCUMENT type."""
+    full_text = "This is the full text."
+
+    context = llm_extractor._prepare_context(
+        payload=full_text, context_type=ContextType.FULL_DOCUMENT
+    )
     assert context == full_text
 
 
@@ -167,15 +209,16 @@ def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     """Test _prepare_context with ABSTRACT_ONLY type."""
     full_text = "This is the full text."
     llm_extractor.config.context_type = ContextType.ABSTRACT_ONLY
-    context = llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
-    assert context == sample_eppi_document.context
+    # ABSTRACT_ONLY is currently commented out, so this will raise ValueError
+    with pytest.raises(ValueError, match="context type is not allowed"):
+        llm_extractor._prepare_context(payload=full_text)
 
 
 def test_prepare_context_truncation(llm_extractor, sample_eppi_document):
     """Test that context is truncated if it exceeds max length."""
     full_text = "This is the very long full text of the document."
     llm_extractor.config.max_context_length = 10
-    context = llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
+    context = llm_extractor._prepare_context(payload=full_text)
     assert len(context) <= 13  # 10 chars + "..."
     assert context.endswith("...")
 
@@ -187,7 +230,7 @@ def test_prepare_context_not_implemented(
     full_text = "This is the full text."
     llm_extractor.config.context_type = ContextType.RAG_SNIPPETS
     with pytest.raises(NotImplementedError):
-        llm_extractor._prepare_context(sample_eppi_document, full_text=full_text)
+        llm_extractor._prepare_context(payload=full_text)
 
 
 def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
@@ -293,9 +336,9 @@ def test_extract_from_document(
     """Test the end-to-end flow of extract_from_document."""
     full_text = "This is the full text of the document."
     annotations = llm_extractor.extract_from_document(
-        sample_eppi_document,
         sample_eppi_attributes,
-        full_text=full_text,
+        payload=full_text,
+        context_type=ContextType.FULL_DOCUMENT,
     )
     assert len(annotations) == 1
     assert annotations[0].attribute.attribute_id == 1234
@@ -307,12 +350,12 @@ def test_extract_from_document_no_attributes(
 ):
     """Test extract_from_document raises ValueError if no attributes are selected."""
     full_text = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = ["nonexistent_id"]
+    llm_extractor.config.selected_attribute_ids = [999999]
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
-            sample_eppi_document,
             sample_eppi_attributes,
-            full_text=full_text,
+            payload=full_text,
+            context_type=ContextType.FULL_DOCUMENT,
         )
 
 
@@ -324,14 +367,13 @@ def test_extract_from_documents(
 ):
     """Test extracting from multiple documents."""
     full_text = "This is the full text of the document."
-    documents = [sample_eppi_document, sample_eppi_document]
     all_annotations = llm_extractor.extract_from_documents(
-        documents,
-        sample_eppi_attributes,
-        full_text=full_text,
+        payload=full_text,
+        attributes=sample_eppi_attributes,
+        context_type=ContextType.FULL_DOCUMENT,
     )
-    assert len(all_annotations) == 2
-    assert mock_litellm_completion.call_count == 2
+    assert len(all_annotations) == 1
+    assert mock_litellm_completion.call_count == 1
 
 
 def test_extract_from_documents_continues_on_error(
@@ -341,18 +383,13 @@ def test_extract_from_documents_continues_on_error(
     mock_litellm_completion,
 ):
     """Test that processing continues if one document fails."""
-    # first fails, second works
-    mock_litellm_completion.side_effect = [
-        ValueError("LLM call failed"),
-        mock_litellm_completion.return_value,
-    ]
-
-    documents = [sample_eppi_document, sample_eppi_document]
+    # Note: extract_from_documents now processes a single extraction
+    # The error handling test is less relevant now, but we test that it raises
     full_text = "This is the full text of the document."
-    all_annotations = llm_extractor.extract_from_documents(
-        documents,
-        sample_eppi_attributes,
-        full_text=full_text,
-    )
-    assert len(all_annotations) == 1  # Only one should not raise
-    assert mock_litellm_completion.call_count == 2
+    mock_litellm_completion.side_effect = ValueError("LLM call failed")
+    with pytest.raises(ValueError, match="LLM call failed"):
+        llm_extractor.extract_from_documents(
+            payload=full_text,
+            attributes=sample_eppi_attributes,
+            context_type=ContextType.FULL_DOCUMENT,
+        )
