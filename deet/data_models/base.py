@@ -413,36 +413,41 @@ class Document(BaseModel):
 
     name: str
     citation: ReferenceFileInput
-    context: str | list[str]
+    context: str | None = None  # new defaults, empty
+    context_type: ContextType | None = None
+    document_id: int | None = None
+    document_id_source: DocumentIDSource | None = None
+    document_identity: DocumentIdentity | None = None
+    document_filepath: Path | None = None
+
+    def init_document_identity(self):
+        # dump the citation to dict, write the id stuff if exists.
+        pass
+
+    def link_parsed_pdf(self, parsed_document: str):
+        # attach the string output from the parser to `context` field
+        # update the `context_type`
+        # update document_filepath
+        pass
+
+    def update_document_identity(self):
+        # update the remaining empty fields
+        pass
+
+
+class LinkedDocument(Document):
+    """A document linked to an actual context/body, usually derived from a pdf."""
+
+    context: str
     context_type: ContextType
     document_id: int
     document_id_source: DocumentIDSource
-    filename: str | None = None
+    document_identity: DocumentIdentity
+    document_filepath: Path = None
 
-
-class ParsedDocument(Document):
-    """
-    Represents a _parsed_, i.e. pdf/html/etc-derived, text.
-
-    More than just the body (str) of the parsed text,
-    this is an extension of the `Document` class, which
-    enables us to link a reference/citation, i.e. external
-    document-level metadata to the actual document.
-
-    In its serialised/pickled form, this should enable
-    us to have just _one_ representation of each document, which contains
-    every required component.
-    """
-
-    filepath: Path
-    clean_filename: str | None
-    body: str
-
-    @model_validator(mode="before")
-    @classmethod
-    def create_id_if_empty(cls, data: dict) -> dict:
-        """Populate id field if it isn't otherwise populated."""
-        return data
+    def pickle(self, path: Path) -> None:
+        """Pickle a fully populated linked document to file."""
+        raise NotImplementedError
 
 
 class GoldStandardAnnotation(BaseModel):
