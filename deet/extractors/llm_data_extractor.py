@@ -153,7 +153,7 @@ class LLMDataExtractor:
         *,
         payload: str | None = None,
         md_path: Path | None = None,
-        context_type: ContextType | None = None,
+        context_type: ContextType | None,
         prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotation]:
         """
@@ -208,11 +208,15 @@ class LLMDataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        context = self._prepare_context(payload, context_type=context_type)
-        prompt = self._generate_user_message_json(context, selected_attributes)
-        llm_response = self._call_llm(prompt, prompt_outfile=prompt_outfile)
+        context = self._prepare_context(payload=payload, context_type=context_type)
+        prompt = self._generate_user_message_json(
+            payload=context, attributes=selected_attributes
+        )
+        llm_response = self._call_llm(prompt=prompt, prompt_outfile=prompt_outfile)
 
-        return self._parse_llm_response(llm_response, selected_attributes)
+        return self._parse_llm_response(
+            response_content=llm_response, attributes=selected_attributes
+        )
 
     def extract_from_documents(
         self,
@@ -221,6 +225,7 @@ class LLMDataExtractor:
         output_file: Path | None = None,
         pdf_dir: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
+        prompt_outfile: Path | None = None,
     ) -> dict[str, list[GoldStandardAnnotation]]:
         """
         Extract data from all documents in a directory.
@@ -230,6 +235,9 @@ class LLMDataExtractor:
         extract_from_document with md_path and context_type. Results are
         merged into one dict; optional combined JSON is written to output_file.
 
+        NOTE: placeholder, as we're still only working
+        on one doc.
+
         Args:
             attributes: List of attributes to extract.
             markdown_dir: Directory of markdown files (required).
@@ -237,6 +245,8 @@ class LLMDataExtractor:
             pdf_dir: Optional directory of PDFs; when set, input list and keys
                 come from here and markdown paths are markdown_dir/(stem).md.
             context_type: Override config context type for each document.
+            prompt_outfile: optional path to write out complete prompt config.
+
 
         Returns:
             Dictionary mapping file paths to lists of annotations.
@@ -275,6 +285,7 @@ class LLMDataExtractor:
                     attributes,
                     md_path=md_path,
                     context_type=context_type,
+                    prompt_outfile=prompt_outfile,
                 )
                 path_str = str(Path(input_file).resolve())
                 all_results[path_str] = result
@@ -358,7 +369,7 @@ class LLMDataExtractor:
 
     def _generate_user_message_json(
         self,
-        context: str,
+        payload: str,
         attributes: list[Attribute],
     ) -> str:
         """
@@ -389,28 +400,35 @@ class LLMDataExtractor:
             llm_input_attr = LLMInputSchema(**attr_dict)
             attributes_payload.append(llm_input_attr.model_dump())
 
-        payload = {
-            "context": context,
+        unserialised_prompt = {
+            "context": payload,
             "attributes": attributes_payload,
         }
 
         logger.debug(f"attributes payload: {attributes_payload}")
-        prompt_json = json.dumps(payload, ensure_ascii=False)
+        prompt_json = json.dumps(unserialised_prompt, ensure_ascii=False)
         logger.debug(f"Generated prompt JSON ({len(prompt_json)} characters)")
 
         return prompt_json
 
-    def _call_llm(
-        self,
-        prompt: str,
-        prompt_outfile: Path | None = None,
-    ) -> str:
-        """Call the LLM with the given prompt."""
+    def _call_llm(self, prompt: str, prompt_outfile: Path | None = None) -> str:
+        """
+        Call the LLM with the given prompt.
+
+        Args:
+            prompt (str): the prompt
+            prompt_outfile (Path | None, optional): a path to
+            write the whole prompt (sys prompt + user message + context) as json.
+            Defaults to None.
+
+        Returns:
+            str: the llm's response, to be parsed.
+
+        """
         messages: list[dict] = [
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
         ]
-        # Path("misc/system_user_config.json").write_text(json.dumps(messages))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")

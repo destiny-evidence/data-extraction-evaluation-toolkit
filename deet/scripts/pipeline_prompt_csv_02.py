@@ -21,15 +21,15 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, GoldStandardAnnotation
-
-# @sagaruprety note that we now only use Eppi types in our
-# specific use-case (i.e. a pipeline script), no longer in the
-# underlying application. The application uses base.py data types.
+from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.processors.eppi_annotation_converter import (
+    DEFAULT_ATTRIBUTES_FILENAME,
+    DEFAULT_BASE_OUTPUT_DIR,
+    EppiAnnotationConverter,
+)
 from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()
@@ -90,7 +90,7 @@ def ingest_gold_standard_func(
         csv_path = output_dir / csv_path
 
     out.populate_custom_prompts(method="file", filepath=csv_path)
-    converter.save_processed_data(processed_data=out, output_dir=output_dir)
+    converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
 def llm_data_extraction(
@@ -99,6 +99,7 @@ def llm_data_extraction(
     output_path: Path,
     pdf_dir: Path | None = None,
     filter_by_attribute_ids: list[int] | None = None,
+    prompt_outfile=prompt_outfile,
 ) -> dict[str, list[GoldStandardAnnotation]]:
     """
     Run LLM data extraction for all files in the markdown dir.
@@ -112,6 +113,7 @@ def llm_data_extraction(
         output_path: Path to save combined output JSON.
         pdf_dir: Directory of PDFs (optional); when set, lists inputs from here.
         filter_by_attribute_ids: Optional list of attribute IDs to filter.
+        prompt_outfile: Path | None = None,
 
     Returns:
         Dictionary mapping file paths to lists of annotations.
@@ -129,6 +131,8 @@ def llm_data_extraction(
         markdown_dir=full_text_path,
         output_file=output_path,
         pdf_dir=pdf_dir,
+        context_type=ContextType.FULL_DOCUMENT,
+        prompt_outfile=prompt_outfile,
     )
 
 
@@ -245,9 +249,12 @@ def main() -> None:
             job_type=JobType.EXTRACTION,
             func_kwargs={
                 "full_text_path": args.markdown_path,
-                "attributes_file_path": eppi_out_path / "attributes.json",
-                "output_path": args.output_path,
+                "attributes_file_path": eppi_out_path
+                / DEFAULT_BASE_OUTPUT_DIR
+                / DEFAULT_ATTRIBUTES_FILENAME,
+                "output_path": args.output_path / "llm_extractions.json",
                 "pdf_dir": args.pdf_path,
+                "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction)
     )

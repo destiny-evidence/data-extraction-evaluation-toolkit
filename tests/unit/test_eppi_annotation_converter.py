@@ -1,27 +1,29 @@
 """Tests for eppi_annotation_converter using real EPPI data."""
 
 import json
+from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
+from pytest_mock import MockerFixture
 
 from deet.data_models.base import AttributeType
-from deet.data_models.eppi import EppiRawData
+from deet.data_models.eppi import EppiAttributeSelectionType, EppiDocument, EppiRawData
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
-# from pytest_mock import mock_open, patch
 
-
-def test_load_eppi_json_annotations(sample_eppi_data: dict) -> None:
-    """Test loading EPPI JSON annotations."""
+def test_load_eppi_json_annotations(
+    sample_eppi_data: dict, mocker: MockerFixture
+) -> None:
+    """Test loading EPPI JSON annotations via process_annotation_file."""
     converter = EppiAnnotationConverter()
-    with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
-        result = converter.load_eppi_json_annotations("fake_path.json")
-        assert result == sample_eppi_data
-        assert "CodeSets" in result
-        assert "References" in result
-        assert len(result["CodeSets"]) == 2
-        assert len(result["References"]) > 0
+    mocker.patch.object(  # @sagaruprety note i've removed the json.loads wrapper
+        Path, "open", mocker.mock_open(read_data=json.dumps(sample_eppi_data))
+    )  # @harryjmoss is this the right way to use non-`unittest` mocking?
+    result = converter.process_annotation_file("fake_path.json")
+    assert hasattr(result, "raw_data")
+    assert len(result.raw_data.code_sets) == 2
+    assert len(result.raw_data.references) > 0
 
 
 def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
@@ -91,7 +93,7 @@ def test_convert_to_eppi_attributes_field_population(
         assert isinstance(attr.is_leaf, bool)
 
     assert all(
-        attribute.attribute_type == raw.get("AttributeType")
+        attribute.attribute_selection_type == raw.get("AttributeType")
         for attribute, raw in zip(attributes, all_attributes_raw, strict=False)
         if raw.get("AttributeType") is not None
     ), "attribute_type should match for all attributes where present"
@@ -111,12 +113,13 @@ def test_convert_to_eppi_attributes_with_null_values() -> None:
     """Test that null/None values in JSON are handled for EPPI-specific fields."""
     converter = EppiAnnotationConverter()
 
+    # AttributeType is required, so we must provide a valid value
     attr_data_with_nulls = {
         "AttributeId": 12345,
         "AttributeName": "Test Attribute",
         "AttributeDescription": None,
         "AttributeSetDescription": None,
-        "AttributeType": None,
+        "AttributeType": EppiAttributeSelectionType.SELECTABLE.value,
         "hierarchy_path": "",
         "hierarchy_level": 0,
         "is_leaf": True,
@@ -131,7 +134,7 @@ def test_convert_to_eppi_attributes_with_null_values() -> None:
     assert attr.attribute_label == "Test Attribute"
     assert attr.attribute_description is None
     assert attr.attribute_set_description is None
-    assert attr.attribute_type is None
+    assert attr.attribute_selection_type == EppiAttributeSelectionType.SELECTABLE
     assert attr.hierarchy_path == ""
     assert attr.hierarchy_level == 0
     assert attr.is_leaf is True
@@ -193,55 +196,50 @@ def test_validate_eppi_data_invalid_structure() -> None:
     assert result.references == []
 
 
-def test_process_document_data_for_validation(
+def test_process_document_data(
     sample_eppi_data: dict,
 ) -> None:
-    """Test processing document data."""
-    converter = EppiAnnotationConverter()
+    """Test processing document data by creating an EppiDocument."""
     first_ref = sample_eppi_data["References"][0]
 
-    processed = converter.process_document_data_for_validation(first_ref)
+    # EppiDocument handles the conversion directly
+    doc = EppiDocument(**first_ref)
 
-    assert "name" in processed
-    assert "citation" in processed
-    assert "context" in processed
-    assert "document_id" in processed
+    assert doc.name is not None
+    assert doc.citation is not None
+    assert doc.document_id is not None
 
 
-def test_process_attribute_data_for_validation(
+def test_process_attribute_data(
     sample_eppi_data: dict,
 ) -> None:
-    """Test processing attribute data."""
+    """Test processing attribute data via convert_to_eppi_attributes."""
     converter = EppiAnnotationConverter()
-    # Get first attribute
     first_attr = sample_eppi_data["CodeSets"][0]["Attributes"]["AttributesList"][0]
 
-    processed = converter.process_attribute_data_for_validation(first_attr)
+    first_attr["hierarchy_path"] = ""
+    first_attr["hierarchy_level"] = 0
+    first_attr["is_leaf"] = True
 
-    assert "question_target" in processed
-    assert "output_data_type" in processed
-    assert "attribute_id" in processed
-    assert "attribute_label" in processed
-    assert processed["question_target"] == ""  # Should be empty for EPPI
-    assert (
-        processed["output_data_type"] == AttributeType.BOOL.value
-    )  # Should be bool for EPPI
+    attributes = converter.convert_to_eppi_attributes([first_attr])
+
+    assert len(attributes) == 1
+    attr = attributes[0]
+    assert attr.question_target == ""  # empty for EPPI
+    assert attr.output_data_type == AttributeType.BOOL  # bool for EPPI
 
 
-def test_create_reference_from_document_data(
+def test_create_document_from_reference_data(
     sample_eppi_data: dict,
 ) -> None:
-    """Test creating reference from document data."""
-    converter = EppiAnnotationConverter()
+    """Test creating EppiDocument from reference data."""
     first_ref = sample_eppi_data["References"][0]
 
-    reference = converter._create_reference(first_ref)
+    # EppiDocument creates the reference via model_validator
+    doc = EppiDocument(**first_ref)
 
-    # Verify reference was created
-    assert hasattr(reference, "id")
-    assert hasattr(reference, "visibility")
-    # Reference object has different structure than expected
-    assert reference.id is not None
+    # Verify document was created
+    assert doc.citation is not None
 
 
 def test_integration_full_workflow(sample_eppi_data: dict) -> None:
@@ -292,14 +290,11 @@ def test_convert_to_eppi_annotations_uses_codeset_attribute_label(
         attr.attribute_id: attr.attribute_label for attr in attributes
     }
 
-    # Create a minimal doc; convert_to_eppi_annotations doesn't actually use it.
     first_ref = sample_eppi_data["References"][0]
-    document = converter.convert_to_eppi_document(first_ref)
-
     raw_codes = first_ref["Codes"]
+
     annotations = converter.convert_to_eppi_annotations(
         raw_codes,
-        document,
         attributes_lookup=attributes_lookup,
         attribute_id_to_label=attribute_id_to_label,
     )

@@ -3,16 +3,16 @@
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
 
 import pytest
-from destiny_sdk.references import Reference
+from destiny_sdk.references import ReferenceFileInput
 from pydantic import ValidationError
 
 from deet.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
 from deet.data_models.eppi import (
     AttributeType,
     EppiAttribute,
+    EppiAttributeSelectionType,
     EppiDocument,
 )
 from deet.extractors.llm_data_extractor import (
@@ -48,12 +48,10 @@ def mock_settings(monkeypatch):
 def sample_eppi_document() -> EppiDocument:
     """Fixture for a sample EppiDocument."""
     return EppiDocument(
-        document_id="doc1",
+        document_id=12345,
         name="Test Document",
         context="This is the abstract.",
-        citation=Reference(  # minimal destiny ref
-            id=uuid4(),
-        ),
+        citation=ReferenceFileInput(),
     )
 
 
@@ -61,18 +59,20 @@ def sample_eppi_document() -> EppiDocument:
 def sample_eppi_attributes() -> list[EppiAttribute]:
     """Fixture for a list of sample EppiAttributes."""
     return [
-        EppiAttribute(  # vanilla / old
+        EppiAttribute(  # type: ignore [call-arg] # old
             attribute_id=1234,
             attribute_label="Attribute 1",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="Is attribute 1 present?",
+            attribute_type=EppiAttributeSelectionType.SELECTABLE,
         ),
-        EppiAttribute(  # new
+        EppiAttribute(  # type: ignore [call-arg]# new
             attribute_id=2345,
             prompt="What is the question?",
             attribute_label="Attribute 2",
             output_data_type=AttributeType.BOOL,
             attribute_set_description="foo",
+            attribute_type=EppiAttributeSelectionType.SELECTABLE,
         ),
     ]
 
@@ -179,10 +179,14 @@ def test_extract_from_document_bad_filter_list(
         llm_extractor.extract_from_document(
             sample_eppi_attributes,
             payload=payload,
+            attributes=sample_eppi_attributes,
+            context_type=ContextType.FULL_DOCUMENT,
         )
 
 
-def test_prepare_context_full_document(llm_extractor, sample_eppi_document):
+def test_prepare_context_full_document_context_in_config(
+    llm_extractor, sample_eppi_document
+):
     """Test _prepare_context with FULL_DOCUMENT type."""
     payload = "This is the full text."
     llm_extractor.config.context_type = ContextType.FULL_DOCUMENT
@@ -323,6 +327,7 @@ def test_extract_from_document(
     annotations = llm_extractor.extract_from_document(
         sample_eppi_attributes,
         payload=payload,
+        context_type=ContextType.FULL_DOCUMENT,
     )
     assert len(annotations) == 1
     assert annotations[0].attribute.attribute_id == 1234
@@ -353,8 +358,9 @@ def test_extract_from_documents(
     full_text = "This is the full text of the document."
     (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
     all_annotations = llm_extractor.extract_from_documents(
-        sample_eppi_attributes,
+        attributes=sample_eppi_attributes,
         markdown_dir=tmp_path,
+        context_type=ContextType.FULL_DOCUMENT,
     )
     assert len(all_annotations) == 1
     assert mock_litellm_completion.call_count == 1
@@ -372,8 +378,9 @@ def test_extract_from_documents_continues_on_error(
     (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
     mock_litellm_completion.side_effect = ValueError("LLM call failed")
     all_annotations = llm_extractor.extract_from_documents(
-        sample_eppi_attributes,
+        attributes=sample_eppi_attributes, 
         markdown_dir=tmp_path,
+        context_type=ContextType.FULL_DOCUMENT,
     )
     assert all_annotations == {}
     assert mock_litellm_completion.call_count == 1

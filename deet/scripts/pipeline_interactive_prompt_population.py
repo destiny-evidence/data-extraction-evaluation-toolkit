@@ -13,15 +13,15 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, GoldStandardAnnotation
-
-# @sagaruprety note that we now only use Eppi types in our
-# specific use-case (i.e. a pipeline script), no longer in the
-# underlying application. The application uses base.py data types.
+from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+from deet.processors.eppi_annotation_converter import (
+    DEFAULT_ATTRIBUTES_FILENAME,
+    DEFAULT_BASE_OUTPUT_DIR,
+    EppiAnnotationConverter,
+)
 from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()
@@ -75,7 +75,7 @@ def parse_pdf(
 def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
     """Convert EPPI JSON to DEET data models."""
     out = converter.process_annotation_file(eppi_json_path)
-    converter.save_processed_data(processed_data=out, output_dir=output_dir)
+    converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
 def llm_data_extraction(
@@ -84,6 +84,7 @@ def llm_data_extraction(
     output_path: Path,
     pdf_dir: Path | None = None,
     filter_by_attribute_ids: list[int] | None = None,
+    prompt_outfile: Path | None = None,
 ) -> dict[str, list[GoldStandardAnnotation]]:
     """
     Run LLM data extraction for all files in the markdown dir.
@@ -97,9 +98,11 @@ def llm_data_extraction(
         output_path: Path to save combined output JSON.
         pdf_dir: Directory of PDFs (optional); when set, lists inputs from here.
         filter_by_attribute_ids: Optional list of attribute IDs to filter.
+        prompt_outfile: Optional file path to write final prompt sent to LLM.
 
     Returns:
         Dictionary mapping file paths to lists of annotations.
+    
 
     """
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
@@ -117,6 +120,8 @@ def llm_data_extraction(
         markdown_dir=full_text_path,
         output_file=output_path,
         pdf_dir=pdf_dir,
+        context_type=ContextType.FULL_DOCUMENT,
+        prompt_outfile=prompt_outfile,
     )
 
 
@@ -185,7 +190,8 @@ def main() -> None:
                 "pdf_path": args.pdf_path,
                 "out_path": args.markdown_path,
             },
-        )(parse_pdf)
+        )(parse_pdf),
+        skip_jobs_if_failed=False,
     )
 
     ingest_gs_stage = stage_from_job(
@@ -195,7 +201,8 @@ def main() -> None:
                 "eppi_json_path": args.eppi_json_path,
                 "output_dir": output_path,
             },
-        )(ingest_gold_standard_func)
+        )(ingest_gold_standard_func),
+        skip_jobs_if_failed=False,
     )
 
     llm_extraction_stage = stage_from_job(
@@ -204,11 +211,15 @@ def main() -> None:
             job_type=JobType.EXTRACTION,
             func_kwargs={
                 "full_text_path": args.markdown_path,
-                "attributes_file_path": output_path / "attributes.json",
+                "attributes_file_path": output_path 
+                / DEFAULT_BASE_OUTPUT_DIR
+                / DEFAULT_ATTRIBUTES_FILENAME
                 "output_path": args.output_path,
                 "pdf_dir": args.pdf_path,
+                "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
             },
-        )(llm_data_extraction)
+        )(llm_data_extraction),
+        skip_jobs_if_failed=False,
     )
 
     my_beautiful_pipeline = Pipeline(
