@@ -49,3 +49,24 @@ class MalformedLanguageError(Exception):
         Exception (_type_): _description_
 
     """
+
+
+class MissingCitationElementError(Exception):
+    """
+    Raise when required element of citation is missing.
+
+    Args:
+        Exception (_type_): _description_
+
+    """
+
+
+class BadDocumentIdError(Exception):
+    """
+    Raise when our `Document.document_id` field
+    doesn't satisfy our criteria.
+
+    Args:
+        Exception (_type_): _description_
+
+    """

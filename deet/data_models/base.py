@@ -1,15 +1,24 @@
 """Core data models for document processing and annotation."""
 
 import csv
-import hashlib
+from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
+from random import randint
 from typing import Any, Literal
 
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
+
+from deet.exceptions import BadDocumentIdError, MissingCitationElementError
+from deet.utils.identifier_utils import (
+    DOCUMENT_ID_N_DIGITS,
+    MAX_DOCUMENT_ID,
+    MIN_DOCUMENT_ID,
+    hash_n_strings_to_eight_digit_int,
+)
 
 MAX_PROMPT_LENGTH = 500
 # ruff: noqa: T201, FURB105
@@ -69,60 +78,189 @@ class DocumentIDSource(StrEnum):
 
     EPPI_ITEM_ID = auto()
     DOI_AUTHOR_YEAR = auto()
+    DOI_ID = auto()
+    AUTHOR_YEAR_ID = auto()
+    RANDINT = auto()
 
-    def create_id(self, document: "Document") -> int:
+
+class DocumentIdentity(BaseModel):
+    """A unified identity for a document, deriveable from multiple sources."""
+
+    document_id: int | None = None
+    document_id_source: DocumentIDSource | None = None
+
+    # parsed citation info
+    citation_dict: dict  # a dump of the reference as dict, via ReferencePresenter
+
+    def populate_id(
+        self,
+        existing_ids: list[int] | None = None,
+        hierarchy: list[DocumentIDSource] | None = None,
+    ) -> None:
         """
-        Create an id given value for DocumentIDSource.
+        Populate document_id using a hierarchical list of ID creation methods.
+
+        Tries each method in order until a unique ID is generated. If an ID
+        conflicts with existing_ids, tries the next method. RANDINT always
+        succeeds as fallback.
+
+        NOTE: we will have to implement some sort of matching thing, if we are
+        concerned that an id-collision might be becuase we have already
+        parsed&linked a document.
+
+        Args:
+            existing_ids: List of existing IDs to check for conflicts.
+            hierarchy: Ordered list of DocumentIDSource methods to try.
+                Defaults to [EPPI_ITEM_ID, DOI_ID, DOI_AUTHOR_YEAR,
+                AUTHOR_YEAR_ID, RANDINT].
 
         Raises:
-            ValueError: _description_
+            BadDocumentIdError: If unable to generate unique ID (should never
+                happen as RANDINT is always in hierarchy).
+
+        """
+        if existing_ids is None:
+            existing_ids = []
+
+        if hierarchy is None:
+            hierarchy = list(DocumentIDSource)
+
+        if DocumentIDSource.RANDINT not in hierarchy:
+            hierarchy.append(DocumentIDSource.RANDINT)
+
+        attempted_sources = []
+
+        for id_source in hierarchy:
+            try:
+                id_factory = self._create_id_factory(id_source)
+                logger.debug(f"created id_factory: {id_factory}")
+                potential_id = id_factory()
+                logger.debug(f"created potential id: {potential_id}")
+
+                # id collisions?
+                if potential_id not in existing_ids:
+                    self.document_id = potential_id
+                    self.document_id_source = id_source
+                    logger.debug(
+                        f"successfully created document_id {potential_id} "
+                        f"using {id_source}"
+                    )
+                    return
+
+                logger.debug(
+                    f"id {potential_id} from {id_source} conflicts with existing IDs"
+                )
+                attempted_sources.append(id_source)
+
+            except (BadDocumentIdError, MissingCitationElementError) as e:
+                logger.debug(f"Failed to create ID using {id_source}: {e}")
+                attempted_sources.append(id_source)
+                continue
+
+        failed_sources = ", ".join(str(s) for s in attempted_sources)
+        err_msg = (
+            f"Failed to generate unique document_id after trying: {failed_sources}"
+        )
+
+        if len(attempted_sources) == len(hierarchy):
+            max_attempts = 10
+            attempts = 0
+            while True:
+                potential_id = self._random_int_id()
+                if potential_id not in existing_ids:
+                    self.document_id = potential_id
+                    self.document_id_source = DocumentIDSource.RANDINT
+                    logger.debug(
+                        f"successfully created document_id {potential_id} "
+                        f"using {id_source}"
+                    )
+                    return
+                attempts += 1
+                if attempts == max_attempts:
+                    err_msg += f" plus {attempts} randint attempts."
+                    break
+
+        raise BadDocumentIdError(err_msg)
+
+    def _create_id_factory(self, id_source: DocumentIDSource) -> Callable:
+        """
+        Return an id-creating method given specific value of DocumentIDSource.
 
         Returns:
             int: the id.
 
         """
         id_creation_map = {
-            DocumentIDSource.EPPI_ITEM_ID: self._map_eppi_item_id(document),
-            DocumentIDSource.DOI_AUTHOR_YEAR: self._map_doi_author_year_id(document),
+            DocumentIDSource.EPPI_ITEM_ID: self._eppi_item_id,
+            DocumentIDSource.DOI_ID: self._doi_id,
+            DocumentIDSource.AUTHOR_YEAR_ID: self._author_year_id,
+            DocumentIDSource.DOI_AUTHOR_YEAR: self._doi_author_year_id,
+            DocumentIDSource.RANDINT: self._random_int_id,
         }
 
-        return id_creation_map[self](Document)
+        return id_creation_map[id_source]
 
-    @staticmethod
-    def _map_eppi_item_id(document: "Document"):
-        pass
+    def _eppi_item_id(self) -> None:
+        """Map an existing item_id (parsed as document_id)."""
+        # we're going to assume that our `document_id`, received
+        # from parsing eppi-json to EppiDocument is always going
+        # to be eppi, otherwise this method should be extended to
+        # reflect it coming from somewhere else.
+        # either way, it'll have to be an 8-digit int.
+        if (
+            self.document_id is not None
+            and isinstance(self.document_id, int)
+            and len(str(self.document_id)) == DOCUMENT_ID_N_DIGITS
+        ):
+            return
+        bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
+        raise BadDocumentIdError(bad_doc_id)
 
-    @staticmethod
-    def _map_doi_author_year_id(document: "Document"):
+    def _citation_id_hasher(self, target_fields: list[str]) -> int:
+        """Create an id from _n_ citation fields."""
+        if not all(field in self.citation_dict for field in target_fields):
+            missing_citation = (
+                f"required fields are missing in citation. "
+                "required: {', '.join(target_fields)}"
+                f"actual: {','.join(self.citation_dict)}"
+            )
+            raise MissingCitationElementError(missing_citation)
+        payload = [self.citation_dict[field] for field in target_fields]
+        if "" in payload or None in payload:
+            none_or_empty = (
+                "some or all of target fields are "
+                f"None or empty strings: {','.join(target_fields)} "
+            )
+            raise MissingCitationElementError(none_or_empty)
+        return hash_n_strings_to_eight_digit_int(payload)
+
+    def _doi_id(self) -> int:
+        """Create an integer id as a function of doi."""
+        return self._citation_id_hasher([self.citation_dict["doi"]])
+
+    def _doi_author_year_id(self) -> int:
         """Create an integer id as a function of doi, author and year."""
+        return self._citation_id_hasher(
+            [
+                self.citation_dict["doi"],
+                self.citation_dict["author"],
+                self.citation_dict["year"],
+            ]
+        )
 
-    '''def strings_to_8digit_int(str1: str, str2: str, str3: str) -> int:
-        """
-        Converts three strings into an 8-digit integer using hash-based combination.
-        
-        Args:
-            str1: First string
-            str2: Second string
-            str3: Third string
-        
-        Returns:
-            An 8-digit integer (10000000 to 99999999)
-        """
-        # Combine the three strings
-        combined = f"{str1}|{str2}|{str3}"
-        
-        # Create hash
-        hash_object = hashlib.sha256(combined.encode())
-        hash_hex = hash_object.hexdigest()
-        
-        # Convert first 8 hex chars to integer and map to 8-digit range
-        hash_int = int(hash_hex[:8], 16)
-        
-        # Map to 8-digit range (10000000 to 99999999)
-        result = (hash_int % 90000000) + 10000000
-        
-        return result
-    '''
+    def _author_year_id(self) -> int:
+        """Create an 8-digit integer id as a function of author and year."""
+        return self._citation_id_hasher(
+            [
+                self.citation_dict["author"],
+                self.citation_dict["year"],
+            ]
+        )
+
+    @staticmethod
+    def _random_int_id() -> int:
+        """Create a random integer id with 8 digits."""
+        return randint(MIN_DOCUMENT_ID, MAX_DOCUMENT_ID)  # noqa: S311
 
 
 class Attribute(BaseModel):
