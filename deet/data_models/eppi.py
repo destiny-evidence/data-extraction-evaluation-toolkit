@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
 from destiny_sdk.parsers import EPPIParser
+from destiny_sdk.parsers.exceptions import ExternalIdentifierNotFoundError
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
@@ -18,10 +19,9 @@ from deet.data_models.base import (
     Attribute,
     AttributeType,
     ContextType,
-    Document,
-    DocumentIDSource,
     GoldStandardAnnotation,
 )
+from deet.data_models.documents import Document
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
 
@@ -90,11 +90,17 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
         for content in raw_enhancement_content
     ]
 
+    destiny_ids = None
+    try:
+        destiny_ids = eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
+            ref_to_import=reference
+        )
+    except ExternalIdentifierNotFoundError as e:
+        logger.warning(f"no identifier for reference. storing `None`. error: {e}")
+
     return ReferenceFileInput(
         visibility=Visibility.PUBLIC,
-        identifiers=eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
-            ref_to_import=reference
-        ),
+        identifiers=destiny_ids,
         enhancements=enhancements,
     )
 
@@ -179,7 +185,6 @@ class EppiDocument(Document):
     context: str = ""
     context_type: ContextType = ContextType.EMPTY
     document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
-    document_id_source: DocumentIDSource = DocumentIDSource.EPPI_ITEM_ID
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
