@@ -3,11 +3,12 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.config import JsonDict
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -44,6 +45,18 @@ class AttributeType(StrEnum):
             AttributeType.BOOL: bool,
             AttributeType.LIST: list,
             AttributeType.DICT: dict,
+        }
+        return mapping[self]
+
+    def to_json_type(self) -> dict[str, str]:
+        """Map AttributeType to JS types for the JSON schema."""
+        mapping = {
+            AttributeType.STRING: {"type": "string"},
+            AttributeType.INTEGER: {"type": "integer"},
+            AttributeType.FLOAT: {"type": "number"},
+            AttributeType.BOOL: {"type": "boolean"},
+            AttributeType.LIST: {"type": "array"},
+            AttributeType.DICT: {"type": "object"},
         }
         return mapping[self]
 
@@ -317,7 +330,18 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    output_data: Any = Field(
+        ...,
+        description="The LLM's annotation.",
+        json_schema_extra=cast(
+            JsonDict,
+            {
+                "anyOf": [
+                    attribute_type.to_json_type() for attribute_type in AttributeType
+                ]
+            },
+        ),
+    )
     additional_text: str | None = Field(
         ...,
         description=(

@@ -17,6 +17,13 @@ class Runtime(StrEnum):
     PRODUCTION = auto()
 
 
+class LLMProvider(StrEnum):
+    """Supported LLM Providers."""
+
+    AZURE = auto()
+    OLLAMA = auto()
+
+
 class DataExtractionSettings(BaseSettings):
     """
     Settings model for data extraction behavior and provider credentials.
@@ -35,6 +42,10 @@ class DataExtractionSettings(BaseSettings):
     runtime: Runtime = Field(
         default=Runtime.LOCAL,
         description="Runtime environment.",
+    )
+
+    llm_provider: LLMProvider = Field(
+        default=LLMProvider.AZURE, description="LLM Provider"
     )
 
     # LLM configuration

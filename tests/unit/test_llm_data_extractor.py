@@ -21,6 +21,7 @@ from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
     PromptConfig,
 )
+from deet.settings import LLMProvider
 
 
 @pytest.fixture(autouse=True)
@@ -37,6 +38,7 @@ def mock_settings(monkeypatch):
     mock_settings_obj.azure_deployment = "test-deployment"
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
+    mock_settings_obj.llm_provider = "ollama"
 
     monkeypatch.setattr(
         "deet.extractors.llm_data_extractor.settings", mock_settings_obj
@@ -84,9 +86,19 @@ def default_config() -> DataExtractionConfig:
 
 
 @pytest.fixture
-def llm_extractor(default_config, mock_settings) -> LLMDataExtractor:
+def llm_extractor(request, default_config, mock_settings) -> LLMDataExtractor:
     """Fixture for an LLMDataExtractor instance."""
     # Patch file reads in the PromptConfig validator
+    with patch("pathlib.Path.read_text", return_value="Default system prompt"):
+        return LLMDataExtractor(config=default_config)
+
+
+def create_llm_extractor(default_config, mock_settings) -> LLMDataExtractor:
+    """
+    Create an LLMDataExtractor instance.
+
+    Useful when we want to test different configuration options.
+    """
     with patch("pathlib.Path.read_text", return_value="Default system prompt"):
         return LLMDataExtractor(config=default_config)
 
@@ -258,20 +270,36 @@ def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
     assert second_input_item.prompt != sample_eppi_attributes[1].attribute_label
 
 
-def test_call_llm(llm_extractor, mock_litellm_completion):
+@pytest.mark.parametrize("llm_provider", [*list(LLMProvider), "unsupported_provider"])
+def test_call_llm(mock_litellm_completion, default_config, mock_settings, llm_provider):
     """Test the _call_llm method."""
     prompt = '{"key": "value"}'
-    response = llm_extractor._call_llm(prompt)
+    mock_settings.llm_provider = llm_provider
+    if llm_provider in [member.value for member in LLMProvider]:
+        llm_extractor = create_llm_extractor(default_config, mock_settings)
+        response = llm_extractor._call_llm(prompt)
 
-    mock_litellm_completion.assert_called_once()
-    call_args = mock_litellm_completion.call_args
-    assert call_args.kwargs["model"] == llm_extractor.model
-    assert call_args.kwargs["response_format"]["type"] == "json_schema"
-    assert (
-        "llm_annotation_response"
-        in call_args.kwargs["response_format"]["json_schema"]["name"]
-    )
-    assert response is not None
+        mock_litellm_completion.assert_called_once()
+        call_args = mock_litellm_completion.call_args
+        if mock_settings.llm_provider == LLMProvider.AZURE:
+            assert (
+                call_args.kwargs["model"] == f"azure/{mock_settings.azure_deployment}"
+            )
+        elif mock_settings.llm_provider == LLMProvider.OLLAMA:
+            assert call_args.kwargs["model"] == mock_settings.llm_model
+        else:
+            assert mock_settings.llm_provider in LLMProvider
+        assert call_args.kwargs["response_format"]["type"] == "json_schema"
+        assert (
+            "llm_annotation_response"
+            in call_args.kwargs["response_format"]["json_schema"]["name"]
+        )
+        assert response is not None
+    else:
+        with pytest.raises(
+            ValueError, match="Unsupported LLM provider: unsupported_provider"
+        ):
+            llm_extractor = create_llm_extractor(default_config, mock_settings)
 
 
 def test_parse_llm_response(
