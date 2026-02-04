@@ -61,8 +61,6 @@ eppi_list = EppiAttributeList(attributes=[])
 # Now, if we try to add a base attribute to a list of Eppi Attributes,
 # mypy will complain
 add_attribute(eppi_list, Attribute(attribute_id=123))
+
+# But if we add an eppi attribute to an eppi attribute list, it will work
 add_attribute(eppi_list, EppiAttribute(attribute_id=123, eppi_attribute_id=1234))
-
-
-# This will now fail at runtime
-eppi_list.print_eppi_attributes()
