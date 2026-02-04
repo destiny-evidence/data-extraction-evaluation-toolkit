@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import litellm
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from deet.data_models.base import (
     AnnotationType,
@@ -22,6 +22,8 @@ settings = get_settings()
 
 class PromptConfig(BaseModel):
     """Configuration for prompts used in data extraction."""
+
+    model_config = ConfigDict()
 
     system_prompt: str | Path = Field(
         description="System prompt that defines the task and role",
@@ -68,6 +70,8 @@ class PromptConfig(BaseModel):
 
 class DataExtractionConfig(BaseModel):
     """Configuration for data extraction tasks."""
+
+    model_config = ConfigDict()
 
     # LLM
     model: str = settings.llm_model

@@ -381,6 +381,8 @@ class Job(BaseModel):
 class PipelineStage(BaseModel):
     """A stage in a DEET pipeline."""
 
+    model_config = ConfigDict()
+
     name: str
     skip_jobs_if_failed: bool = False
     input_file: Path | None = None  # handled in job
@@ -469,6 +471,8 @@ class PipelineStage(BaseModel):
 
 class Pipeline(BaseModel):
     """A complete pipeline consisting of several `PipelineStage` objects."""
+
+    model_config = ConfigDict()
 
     name: str
     stages: list[PipelineStage]
