@@ -30,13 +30,19 @@ DOI_REGEX = re.compile(
 )  # for sanitising DOIs
 
 
-def sanitise_doi(doi_candidate: str) -> str:
+def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
     """Clean DOI strings in EPPI jsons."""
     doi = DOI_REGEX.search(doi_candidate)
     if doi and isinstance(doi, re.Match):
         return doi[0]
-    bad_doi = f"doi {doi} is bad."
-    raise ValueError(bad_doi)
+    if raise_on_fail:
+        bad_doi = f"doi {doi} is bad."
+        raise ValueError(bad_doi)
+    logger.debug(
+        "not found a valid DOI, returning empty string."
+        " to modify this behavioru, set raise_on_fail=True"
+    )
+    return ""
 
 
 def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
