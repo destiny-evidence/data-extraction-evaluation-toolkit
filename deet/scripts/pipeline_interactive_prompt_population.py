@@ -79,7 +79,7 @@ def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
 
 
 def llm_data_extraction(  # noqa: PLR0913
-    full_text_path: Path,
+    markdown_dir: Path,
     attributes_file_path: Path,
     output_path: Path,
     pdf_dir: Path | None = None,
@@ -93,7 +93,7 @@ def llm_data_extraction(  # noqa: PLR0913
     (and pdf_dir), which performs the loop over files inside the extractor.
 
     Args:
-        full_text_path: Directory of markdown files.
+        markdown_dir: Directory of markdown files.
         attributes_file_path: Path to attributes JSON file.
         output_path: Path to save combined output JSON.
         pdf_dir: Directory of PDFs (optional); when set, lists inputs from here.
@@ -116,7 +116,7 @@ def llm_data_extraction(  # noqa: PLR0913
 
     return data_extractor.extract_from_documents(
         attributes=attributes,
-        markdown_dir=full_text_path,
+        markdown_dir=markdown_dir,
         output_file=output_path,
         pdf_dir=pdf_dir,
         context_type=ContextType.FULL_DOCUMENT,
@@ -209,7 +209,7 @@ def main() -> None:
             name="llm_extraction",
             job_type=JobType.EXTRACTION,
             func_kwargs={
-                "full_text_path": args.markdown_path,
+                "markdown_dir": args.markdown_path,
                 "attributes_file_path": args.output_path
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,

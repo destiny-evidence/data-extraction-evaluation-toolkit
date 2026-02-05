@@ -388,3 +388,85 @@ def test_extract_from_documents_continues_on_error(
     )
     assert all_annotations == {}
     assert mock_litellm_completion.call_count == 1
+
+
+# Helpers used by extract_from_documents (parametrised, testable)
+
+
+def test_get_document_input_files_returns_md_files_when_pdf_dir_none(
+    llm_extractor, tmp_path
+):
+    """When pdf_dir is None, return .md files from markdown_dir."""
+    (tmp_path / "a.md").write_text("a")
+    (tmp_path / "b.md").write_text("b")
+    (tmp_path / "other.txt").write_text("x")
+    result = llm_extractor._get_document_input_files(tmp_path, pdf_dir=None)
+    assert len(result) == 2
+    assert {p.name for p in result} == {"a.md", "b.md"}
+
+
+def test_get_document_input_files_returns_pdfs_when_pdf_dir_valid(
+    llm_extractor, tmp_path
+):
+    """When pdf_dir exists and is a directory, return .pdf files from it."""
+    pdf_dir = tmp_path / "pdfs"
+    pdf_dir.mkdir()
+    (pdf_dir / "one.pdf").write_bytes(b"")
+    (pdf_dir / "two.pdf").write_bytes(b"")
+    (pdf_dir / "readme.txt").write_text("x")
+    md_dir = tmp_path / "md"
+    md_dir.mkdir()
+    (md_dir / "one.md").write_text("a")
+    result = llm_extractor._get_document_input_files(md_dir, pdf_dir=pdf_dir)
+    assert len(result) == 2
+    assert {p.name for p in result} == {"one.pdf", "two.pdf"}
+
+
+def test_get_document_input_files_falls_back_to_markdown_dir_when_pdf_dir_invalid(
+    llm_extractor, tmp_path
+):
+    """When pdf_dir is None or not a directory, return .md files from markdown_dir."""
+    (tmp_path / "only.md").write_text("x")
+    assert len(llm_extractor._get_document_input_files(tmp_path, pdf_dir=None)) == 1
+    # pdf_dir pointing to non-dir (file) should fall back to markdown_dir
+    file_path = tmp_path / "only.md"
+    result = llm_extractor._get_document_input_files(tmp_path, pdf_dir=file_path)
+    assert len(result) == 1
+    assert result[0].name == "only.md"
+
+
+def test_input_file_to_md_path_pdf_returns_markdown_dir_stem_md(llm_extractor):
+    """PDF input maps to markdown_dir / (stem).md."""
+    input_file = Path("report.pdf")
+    markdown_dir = Path("/data/md")
+    result = llm_extractor._input_file_to_md_path(input_file, markdown_dir)
+    assert result == Path("/data/md/report.md")
+
+
+def test_input_file_to_md_path_markdown_returns_unchanged(llm_extractor):
+    """Markdown input is returned unchanged."""
+    input_file = Path("/data/md/report.md")
+    markdown_dir = Path("/data/md")
+    result = llm_extractor._input_file_to_md_path(input_file, markdown_dir)
+    assert result == input_file
+
+
+def test_input_file_to_md_path_case_insensitive_suffix(llm_extractor):
+    """Suffix comparison is case-insensitive (.PDF -> .md)."""
+    result = llm_extractor._input_file_to_md_path(Path("doc.PDF"), Path("/md"))
+    assert result == Path("/md/doc.md")
+
+
+def test_write_json_if_path_none_does_not_write(llm_extractor, tmp_path):
+    """When path is None, no file is created."""
+    llm_extractor._write_json_if_path({"k": "v"}, path=None)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_write_json_if_path_writes_json(llm_extractor, tmp_path):
+    """When path is set, data is written as JSON."""
+    out = tmp_path / "out.json"
+    data = {"a": 1, "b": [2, 3]}
+    llm_extractor._write_json_if_path(data, path=out)
+    assert out.exists()
+    assert json.loads(out.read_text()) == data

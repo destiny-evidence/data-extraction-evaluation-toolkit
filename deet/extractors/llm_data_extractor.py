@@ -258,24 +258,10 @@ class LLMDataExtractor:
         all_results: dict[str, list[GoldStandardAnnotation]] = {}
         prompt_payloads: dict[str, Any] = {}
 
-        if pdf_dir is not None and pdf_dir.exists() and pdf_dir.is_dir():
-            input_files = [
-                f
-                for f in pdf_dir.iterdir()
-                if f.is_file() and f.suffix.lower() == ".pdf"
-            ]
-        else:
-            input_files = [
-                f
-                for f in markdown_dir.iterdir()
-                if f.is_file() and f.suffix.lower() == ".md"
-            ]
+        input_files = self._get_document_input_files(markdown_dir, pdf_dir)
 
         for input_file in sorted(input_files):
-            if input_file.suffix.lower() == ".pdf":
-                md_path = markdown_dir / f"{input_file.stem}.md"
-            else:
-                md_path = input_file
+            md_path = self._input_file_to_md_path(input_file, markdown_dir)
             if not md_path.exists():
                 logger.warning(f"Markdown not found for {input_file}, skipping")
                 continue
@@ -299,12 +285,73 @@ class LLMDataExtractor:
             logger.info(f"Combined results saved to: {output_file}")
 
         if prompt_payloads and prompt_outfile is not None:
-            prompt_outfile.write_text(
-                json.dumps(prompt_payloads, indent=2), encoding="utf-8"
-            )
+            self._write_json_if_path(prompt_payloads, prompt_outfile)
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
         return all_results
+
+    def _get_document_input_files(
+        self, markdown_dir: Path, pdf_dir: Path | None
+    ) -> list[Path]:
+        """
+        Resolve the list of input files (PDFs from pdf_dir or .md from markdown_dir).
+
+        Args:
+            markdown_dir: Directory containing markdown files (used when pdf_dir
+                is not used, or to resolve .md paths for each PDF stem).
+            pdf_dir: Optional directory of PDFs; when present and valid, input
+                list is PDFs from here; otherwise input list is .md files from
+                markdown_dir.
+
+        Returns:
+            List of paths: either PDF files in pdf_dir or .md files in
+            markdown_dir.
+
+        """
+        if pdf_dir is not None and pdf_dir.exists() and pdf_dir.is_dir():
+            return [
+                f
+                for f in pdf_dir.iterdir()
+                if f.is_file() and f.suffix.lower() == ".pdf"
+            ]
+        return [
+            f
+            for f in markdown_dir.iterdir()
+            if f.is_file() and f.suffix.lower() == ".md"
+        ]
+
+    def _input_file_to_md_path(self, input_file: Path, markdown_dir: Path) -> Path:
+        """
+        Map an input file to its markdown path.
+
+        For a PDF input, returns markdown_dir/(stem).md; for a markdown input,
+        returns the input path unchanged.
+
+        Args:
+            input_file: Path to the input file (PDF or markdown).
+            markdown_dir: Directory used to resolve .md path when input is PDF.
+
+        Returns:
+            Path to the markdown file for this input.
+
+        """
+        if input_file.suffix.lower() == ".pdf":
+            return markdown_dir / f"{input_file.stem}.md"
+        return input_file
+
+    def _write_json_if_path(
+        self, data: dict[str, Any] | list[Any], path: Path | None
+    ) -> None:
+        """
+        Write data as JSON to path if path is not None; otherwise no-op.
+
+        Args:
+            data: Dict or list to serialize as JSON.
+            path: Optional file path; when None, nothing is written.
+
+        """
+        if path is not None:
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def _filter_attributes(
         self, attributes: list[Attribute], filter_ids: list[int] | None = None
@@ -344,6 +391,7 @@ class LLMDataExtractor:
     ) -> str:
         """Prepare context based on context type."""
         ctx = context_type if context_type is not None else self.config.context_type
+        logger.debug(f"Using context type: {ctx}")
         if ctx == ContextType.FULL_DOCUMENT:
             context = payload
             logger.debug(f"Using full document context (length: {len(str(context))})")
@@ -541,29 +589,20 @@ class LLMDataExtractor:
 
     def _save_results(
         self,
-        results: dict[str, list[GoldStandardAnnotation]] | list[GoldStandardAnnotation],
+        results: dict[str, list[GoldStandardAnnotation]],
         output_file: Path,
     ) -> None:
         """
         Save results to file.
 
         Args:
-            results: Either a dictionary mapping file paths to annotations,
-                     or a list of annotations (for backward compatibility)
-            output_file: Path to save results
+            results: Dictionary mapping file paths to lists of annotations.
+            output_file: Path to save results.
 
         """
-        # Handle both dict and list formats for backward compatibility
-        results_json: dict[str, list[dict[str, Any]]] | list[dict[str, Any]]
-        if isinstance(results, dict):
-            # Convert dict to JSON-serializable format
-            results_json = {
-                file_path: [ann.model_dump() for ann in annotations]
-                for file_path, annotations in results.items()
-            }
-        else:
-            # Backward compatibility: list format
-            results_json = [x.model_dump() for x in results]
-
+        results_json: dict[str, list[dict[str, Any]]] = {
+            file_path: [ann.model_dump() for ann in annotations]
+            for file_path, annotations in results.items()
+        }
         output_file.write_text(json.dumps(results_json, indent=2))
         logger.info(f"Results saved to: {output_file}")
