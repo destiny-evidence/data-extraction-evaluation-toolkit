@@ -214,6 +214,8 @@ class EppiItemAttributeFullTextDetails(BaseModel):
     Arm specific information, exact text keywords for the attribute.
     """
 
+    model_config = ConfigDict()
+
     item_document_id: int | None = None
     text: str | None = None
     item_arm: str | None = None
@@ -272,6 +274,8 @@ class EppiCodeSet(BaseModel):
     CodeSets contain hierarchical attribute definitions used in EPPI-Reviewer.
     """
 
+    model_config = ConfigDict()
+
     attributes: dict[str, Any] | None = Field(alias="Attributes", default=None)
 
     def get_attributes_list(self) -> list[dict[str, Any]]:
@@ -288,6 +292,8 @@ class EppiRawData(BaseModel):
     This model validates and structures the raw EPPI JSON data,
     making it easier to work with and validate.
     """
+
+    model_config = ConfigDict()
 
     code_sets: list[EppiCodeSet] = Field(alias="CodeSets", default=[])
     references: list[dict[str, Any]] = Field(alias="References", default=[])
@@ -321,6 +327,8 @@ class ProcessedAnnotationData(BaseModel):
     This model provides a clean, validated structure for all processed
     annotation data with useful properties and methods.
     """
+
+    model_config = ConfigDict()
 
     attributes: list[EppiAttribute]
     documents: list[EppiDocument]
@@ -500,6 +508,8 @@ class ProcessedAnnotationData(BaseModel):
 class AttributeAnswerCoT(BaseModel):
     """Detailed answer format for a single attribute with reasoning."""
 
+    model_config = ConfigDict()
+
     attribute_name: str = Field(
         description="The name of the attribute being asked about"
     )
@@ -512,6 +522,8 @@ class AttributeAnswerCoT(BaseModel):
 
 class BatchAnswerFormatCoT(BaseModel):
     """Batch answers for all attributes with reasoning."""
+
+    model_config = ConfigDict()
 
     answers: list[AttributeAnswerCoT] = Field(
         description="List of answers for each attribute"

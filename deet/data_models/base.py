@@ -3,11 +3,12 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.config import JsonDict
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -47,6 +48,18 @@ class AttributeType(StrEnum):
         }
         return mapping[self]
 
+    def to_json_type(self) -> dict[str, str]:
+        """Map AttributeType to JS types for the JSON schema."""
+        mapping = {
+            AttributeType.STRING: {"type": "string"},
+            AttributeType.INTEGER: {"type": "integer"},
+            AttributeType.FLOAT: {"type": "number"},
+            AttributeType.BOOL: {"type": "boolean"},
+            AttributeType.LIST: {"type": "array"},
+            AttributeType.DICT: {"type": "object"},
+        }
+        return mapping[self]
+
 
 class ContextType(StrEnum):
     """Types of context that can be provided to the LLM."""
@@ -75,6 +88,8 @@ class Attribute(BaseModel):
 
     Represents a single piece of information to be extracted from documents.
     """
+
+    model_config = ConfigDict()
 
     prompt: str | None = None  # an optional prompt.
     question_target: str  # 'How many patients were recruited?' - the prompt/question
@@ -217,6 +232,8 @@ class Document(BaseModel):
     linking to a gold standard annotations document with references.
     """
 
+    model_config = ConfigDict()
+
     name: str
     citation: ReferenceFileInput
     context: str | list[str]
@@ -228,6 +245,8 @@ class Document(BaseModel):
 
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
+
+    model_config = ConfigDict()
 
     attribute: Attribute
     output_data: Any
@@ -265,6 +284,8 @@ class GoldStandardAnnotation(BaseModel):
 
 class GoldStandardAnnotatedDocument(Document):
     """A document with its gold standard annotations."""
+
+    model_config = ConfigDict()
 
     annotations: list[GoldStandardAnnotation]
 
@@ -317,7 +338,18 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    output_data: Any = Field(
+        ...,
+        description="The LLM's annotation.",
+        json_schema_extra=cast(
+            JsonDict,
+            {
+                "anyOf": [
+                    attribute_type.to_json_type() for attribute_type in AttributeType
+                ]
+            },
+        ),
+    )
     additional_text: str | None = Field(
         ...,
         description=(
