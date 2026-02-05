@@ -307,37 +307,24 @@ class EppiAnnotationConverter:
             if item_id is None:
                 continue
 
-            doc_title = reference.get("Title", "")
-            if doc_title and doc_title not in documents_by_title:
-                document = EppiDocument(**reference)
-                documents_by_title[doc_title] = document
+            # Create or retrieve document using ItemId as unique identifier
+            if item_id not in documents_by_item_id:
+                document = EppiDocument.model_validate(reference)
+                documents_by_item_id[item_id] = document
+            else:
+                document = documents_by_item_id[item_id]
 
-        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
-            data.get("References", [])
-        )
-
-        annotated_documents = []
-        all_annotations = []
-
-        for doc_title, doc in documents_by_title.items():
-            doc_annotations = self._find_document_annotations(
-                all_annotations_raw, doc_title, pdf_to_title_mapping
-            )
-
-            if doc_annotations:
+            # Get annotations directly from this reference's Codes array
+            reference_codes = reference.get("Codes", [])
+            if reference_codes:
                 annotations = self.convert_to_eppi_annotations(
-                    doc_annotations,
+                    reference_codes,
                     attributes_lookup,
                     attribute_id_to_label,
                 )
-                payload = doc.model_dump(mode="python")
-                annotations = [json.loads(ann.model_dump_json()) for ann in annotations]
-
-                payload["annotations"] = annotations
-
-                # annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
-                annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
-
+                annotated_doc = EppiGoldStandardAnnotatedDocument(
+                    **document.model_dump(mode="python"), annotations=annotations
+                )
                 annotated_documents.append(annotated_doc)
                 all_annotations.extend(annotations)
 
