@@ -8,14 +8,15 @@ from enum import StrEnum, auto
 from io import BytesIO
 from pathlib import Path
 from random import randint
+from typing import Self
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from PIL import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
-from deet.data_models.base import ContextType
+from deet.data_models.base import ContextType, GoldStandardAnnotation
 from deet.exceptions import BadDocumentIdError, MissingCitationElementError
 from deet.processors.parser import ParsedOutput
 from deet.utils.identifier_utils import (
@@ -246,7 +247,7 @@ class Document(BaseModel):
             document_id=self.document_id,
             doi=labs_ref.doi,
             first_author=labs_ref.first_author,
-            year=labs_ref.publication_year,
+            year=str(labs_ref.publication_year),
         )
 
         logger.info("populating id & id source...")
@@ -257,6 +258,37 @@ class Document(BaseModel):
                 f"newly populated id {self.document_identity.document_id}... "
             )
             self.document_id = self.document_identity.document_id
+
+    def author_year_from_document_identity(self) -> str:
+        """
+        Create lower-case `author_year` guess from a Document's
+        DocumentIdentity field.
+        The idea is to take the last name of the first author.
+
+        NOTE: this can probably improved with more knowledge
+        of how destiny encodes the first_author field.
+
+        Returns:
+            author_year (str): `author_year`
+
+        """
+        if self.document_identity is None:
+            logger.debug("document identity is None, initialising...")
+            self.init_document_identity()
+
+        if (
+            self.document_identity is None
+            or self.document_identity.first_author is None
+            or self.document_identity.year is None
+        ):
+            raise ValueError
+        author_name = self.document_identity.first_author
+        year = self.document_identity.year
+
+        name_components = author_name.split(" ")
+        longest_component = max(name_components, key=len)
+
+        return f"{longest_component.lower()}_{year}"
 
     def link_parsed_document(
         self,
@@ -290,7 +322,6 @@ class Document(BaseModel):
 class LinkedDocument(Document):
     """A document linked to an actual context/body, usually derived from a pdf."""
 
-    context: str
     context_type: ContextType
     document_id: int
     document_identity: DocumentIdentity
@@ -298,14 +329,23 @@ class LinkedDocument(Document):
     parsed_document: ParsedOutput
     parse_timestamp: datetime
 
+    @model_validator(mode="after")
+    def set_context_from_parsed(self) -> Self:
+        """Symlink context to parsed_document.text."""
+        if self.parsed_document and self.parsed_document.text:
+            self.context = self.parsed_document.text
+        return self
+
     def save(self, path: Path) -> None:
         """Save linked document to .json."""
         data = self.model_dump()
 
         # convert images to base64 for json serialization
-        # NOTE @all -- we obviously leave ourselves open to
+        # NOTE @all -- we leave ourselves open to
         # malicious stuff being injected here. open to
         # suggestions as to how to validate/circumvent.
+        # however, we do control what goes in and out,
+        # so the danger here might be overstated.
         if self.parsed_document.images:
             images_b64 = {}
             for key, img in self.parsed_document.images.items():
@@ -335,3 +375,9 @@ class LinkedDocument(Document):
             data["parsed_document"]["images"] = images
 
         return cls(**data)
+
+
+class GoldStandardAnnotatedDocument(Document):
+    """A document with its gold standard annotations."""
+
+    annotations: list[GoldStandardAnnotation]

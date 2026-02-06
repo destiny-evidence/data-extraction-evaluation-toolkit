@@ -14,14 +14,13 @@ from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
-from deet.data_models.base import (
+from deet.data_models.base import (  # ContextType,
     AnnotationType,
     Attribute,
     AttributeType,
-    ContextType,
     GoldStandardAnnotation,
 )
-from deet.data_models.documents import Document
+from deet.data_models.documents import ContextType, Document
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
 

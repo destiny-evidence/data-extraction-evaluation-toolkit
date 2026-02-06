@@ -9,8 +9,6 @@ from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
 
-from deet.data_models.documents import Document
-
 MAX_PROMPT_LENGTH = 500
 # ruff: noqa: T201, FURB105
 
@@ -231,12 +229,6 @@ class GoldStandardAnnotation(BaseModel):
             )
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
-
-
-class GoldStandardAnnotatedDocument(Document):
-    """A document with its gold standard annotations."""
-
-    annotations: list[GoldStandardAnnotation]
 
 
 # models specifically for interfacing with the LLM below
