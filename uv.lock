@@ -485,7 +485,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "destiny-sdk", extras = ["labs"], specifier = ">=0.9.0" },
+    { name = "destiny-sdk", extras = ["labs"], specifier = ">=0.9.1" },
     { name = "ftfy", specifier = ">=6.3.1" },
     { name = "litellm", specifier = ">=1.77.4" },
     { name = "loguru", specifier = ">=0.7.3" },
@@ -515,7 +515,7 @@ dev = [
 
 [[package]]
 name = "destiny-sdk"
-version = "0.9.0"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -525,9 +525,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-jose" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/98/2f0a60b685457aae8c41d4a62139f9f58bf312119ad4f74b1bf1a2129085/destiny_sdk-0.9.0.tar.gz", hash = "sha256:601578b0a3f2cdab3a290fc1c7ad842ce842b0bac4e618ded8463d957c9c393e", size = 111970, upload-time = "2026-02-04T04:52:41.011Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/36/4d89557d839b0757c91f37a1b291b274914fdf9eeadc6edf6f3c2dbfb28a/destiny_sdk-0.9.1.tar.gz", hash = "sha256:e911d812e664c83d58ed630085f89e3fa418d4f70d28873207aee2fc49c31e93", size = 112056, upload-time = "2026-02-05T06:58:41.178Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/05/87a2460406deab6d7ed83997cf2788a54f2fa5ecdde33d6df93dc78a40ac/destiny_sdk-0.9.0-py3-none-any.whl", hash = "sha256:51aeaa62cf5d8cd42786392c7830db7012e2f44adf65be6a3b8955d41d25da6e", size = 34060, upload-time = "2026-02-04T04:52:40.186Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/c6/f8334be91997248e0129bad29057a401afad78da03e03e9227f054a7df7a/destiny_sdk-0.9.1-py3-none-any.whl", hash = "sha256:440b9943f818e56cf6416f61a7c0d1594169549b34d1dee3a30d9e2142a8af1b", size = 34175, upload-time = "2026-02-05T06:58:39.16Z" },
 ]
 
 [[package]]
