@@ -84,6 +84,9 @@ module = "tabulate.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
+filterwarnings = [
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+]
 pythonpath = "."
 testpaths = ["tests"]
 
