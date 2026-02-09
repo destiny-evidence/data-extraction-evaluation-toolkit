@@ -25,7 +25,7 @@ parser = DocumentParser()
 converter = EppiAnnotationConverter()
 
 # NOTE - define your LLM config stuff here. currently all values are default.
-config = DataExtractionConfig()
+config = DataExtractionConfig(selected_attribute_ids=[6080465, 6080480])
 
 data_extractor = LLMDataExtractor(config=config)
 

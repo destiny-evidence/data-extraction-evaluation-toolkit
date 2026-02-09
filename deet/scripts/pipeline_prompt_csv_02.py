@@ -36,7 +36,7 @@ parser = DocumentParser()
 converter = EppiAnnotationConverter()
 
 # NOTE - define your LLM config stuff here. currently all values are default.
-config = DataExtractionConfig()
+config = DataExtractionConfig(selected_attribute_ids=[6080465, 6080480])
 
 data_extractor = LLMDataExtractor(config=config)
 
@@ -162,7 +162,7 @@ def main() -> None:
     parser.add_argument(
         "-c",
         "--csv_path",
-        help="path you want to write prompt editing csv to.",
+        help="path you want to ingest manually populated pomrpt csv from.",
         type=Path,
         required=True,
     )
@@ -175,6 +175,12 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    pdf_path = Path()
+    markdown_path = Path()
+    eppi_json_path: Path = args.eppi_json_path
+    output_path: Path = args.output_path
+    csv_path: Path = args.csv_path
 
     # Validate that at least one directory is provided
     if not args.pdf_path and not args.markdown_path:
@@ -191,6 +197,7 @@ def main() -> None:
         if not args.pdf_path.is_dir():
             error_msg = f"PDF path must be a directory, not a file: {args.pdf_path}"
             raise ValueError(error_msg)
+        pdf_path = args.pdf_path
 
     # Validate markdown_path if provided
     if args.markdown_path:
@@ -202,27 +209,26 @@ def main() -> None:
                 f"Markdown path must be a directory, not a file: {args.markdown_path}"
             )
             raise ValueError(error_msg)
+        markdown_path = args.markdown_path
 
     # Auto-generate output path if not provided
     if not args.output_path:
-        eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-        input_dir = args.pdf_path or args.markdown_path
-        if input_dir:
-            args.output_path = input_dir.parent / "tmp_parsed_eppi" / eppi_json_dir
-        else:
-            args.output_path = Path("llm_extractions.json")
+        args.output_path = eppi_json_path.parent
         logger.info(f"Auto-generated output path: {args.output_path}")
+    output_path = args.output_path
 
-    if args.markdown_path is None and args.pdf_path is not None:
-        args.markdown_path = args.output_path.parent / "markdown"
-        args.markdown_path.mkdir(parents=True, exist_ok=True)
+    if markdown_path is None and pdf_path is not None:
+        markdown_path = pdf_path / "markdown"
+        markdown_path.mkdir(parents=True, exist_ok=True)
+    # elif markdown_path is not None and pdf_path is None:
+    #     pdf_path = None
 
     parse_pdf_stage = stage_from_job(
         jobify(
             name="parse_pdf",
             func_kwargs={
-                "pdf_path": args.pdf_path,
-                "out_path": args.markdown_path,
+                "pdf_path": pdf_path,
+                "out_path": markdown_path,
             },
         )(parse_pdf)
     )
@@ -230,9 +236,9 @@ def main() -> None:
         jobify(
             name="ingest_gs",
             func_kwargs={
-                "eppi_json_path": args.eppi_json_path,
-                "output_dir": args.output_path,
-                "csv_path": args.csv_path,
+                "eppi_json_path": eppi_json_path,
+                "output_dir": output_path,
+                "csv_path": csv_path,
             },
         )(ingest_gold_standard_func)
     )
@@ -241,16 +247,17 @@ def main() -> None:
             name="llm_extraction",
             job_type=JobType.EXTRACTION,
             func_kwargs={
-                "markdown_dir": args.markdown_path,
-                "attributes_file_path": args.output_path
+                "markdown_dir": markdown_path,
+                "attributes_file_path": output_path
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,
-                "output_path": args.output_path / "llm_extractions.json",
-                "pdf_dir": args.pdf_path,
-                "prompt_outfile": args.output_path / "full_prompt_payload.json",
+                "output_path": output_path / "llm_extractions.json",
+                "pdf_dir": pdf_path,
+                "prompt_outfile": output_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction)
     )
+
     pipeline = Pipeline(
         name="csv_02_batch_extraction",
         stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],

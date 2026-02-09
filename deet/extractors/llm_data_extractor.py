@@ -76,6 +76,7 @@ class DataExtractionConfig(BaseModel):
 
     # LLM
     model: str = settings.llm_model
+    provider: LLMProvider = settings.llm_provider
     temperature: float = settings.llm_temperature
     max_tokens: int | None = settings.llm_max_tokens
 
@@ -134,13 +135,13 @@ class LLMDataExtractor:
 
         """
         self.config = config
-        self.model = settings.llm_model
         self.custom_system_prompt_file = custom_system_prompt_file
         if settings.llm_provider == LLMProvider.AZURE:
             self.model = f"azure/{settings.azure_deployment}"
             self.llm_api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
             self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
         elif settings.llm_provider == LLMProvider.OLLAMA:
+            self.model = f"ollama/{settings.llm_model}"
             self.llm_api_key = None
             self.api_base = None
         else:
@@ -193,7 +194,7 @@ class LLMDataExtractor:
             ValueError: If neither payload nor md_path provided, or both provided.
 
         """
-        if (payload is None) == (md_path is None):
+        if payload is None and md_path is None:
             msg = "Exactly one of payload or md_path must be provided"
             raise ValueError(msg)
         if md_path is not None:
@@ -202,6 +203,7 @@ class LLMDataExtractor:
                 raise FileNotFoundError(msg)
             payload = md_path.read_text(encoding="utf-8")
         payload = cast("str", payload)
+
         filter_ids: list[int] | None = None
         if self.config.selected_attribute_ids:
             try:
@@ -273,86 +275,43 @@ class LLMDataExtractor:
         all_results: dict[str, list[GoldStandardAnnotation]] = {}
         prompt_payloads: dict[str, Any] = {}
 
-        input_files = self._get_document_input_files(markdown_dir, pdf_dir)
+        # input_files = self._get_document_input_files(markdown_dir, pdf_dir)
+        input_files = [f for f in markdown_dir.iterdir() if f.suffix == ".md"]
+        if not input_files:
+            missing_files = f"no files in dir {markdown_dir}"
+            raise ValueError(missing_files)
 
         for input_file in sorted(input_files):
-            md_path = self._input_file_to_md_path(input_file, markdown_dir)
-            if not md_path.exists():
-                logger.warning(f"Markdown not found for {input_file}, skipping")
-                continue
+            # md_path = self._input_file_to_md_path(input_file, markdown_dir)
+            # if not md_path.exists():
+            #     logger.warning(f"Markdown not found for {input_file}, skipping")
+            #     continue
             logger.info(f"Processing file: {input_file.name} ({input_file})")
             try:
                 result, messages = self.extract_from_document(
                     attributes,
-                    md_path=md_path,
+                    md_path=input_file,
                     context_type=context_type,
                 )
-                path_str = str(Path(input_file).resolve())
-                all_results[path_str] = result
-                if prompt_outfile is not None:
-                    prompt_payloads[path_str] = messages
+
+                all_results[input_file.name] = result
+                prompt_payloads[input_file.name] = messages
+
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to process {input_file}: {e}")
                 logger.debug("Error details", exc_info=True)
 
-        if all_results and output_file is not None:
+        if output_file is not None:
             self._save_results(all_results, output_file)
-            logger.info(f"Combined results saved to: {output_file}")
+            logger.info(f"Combined LLM classifications written to: {output_file}")
 
-        if prompt_payloads and prompt_outfile is not None:
-            self._write_json_if_path(prompt_payloads, prompt_outfile)
+        if prompt_outfile is not None:
+            prompt_outfile.write_text(
+                json.dumps(prompt_payloads, indent=2), encoding="utf-8"
+            )
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
         return all_results
-
-    def _get_document_input_files(
-        self, markdown_dir: Path, pdf_dir: Path | None
-    ) -> list[Path]:
-        """
-        Resolve the list of input files (PDFs from pdf_dir or .md from markdown_dir).
-
-        Args:
-            markdown_dir: Directory containing markdown files (used when pdf_dir
-                is not used, or to resolve .md paths for each PDF stem).
-            pdf_dir: Optional directory of PDFs; when present and valid, input
-                list is PDFs from here; otherwise input list is .md files from
-                markdown_dir.
-
-        Returns:
-            List of paths: either PDF files in pdf_dir or .md files in
-            markdown_dir.
-
-        """
-        if pdf_dir is not None and pdf_dir.exists() and pdf_dir.is_dir():
-            return [
-                f
-                for f in pdf_dir.iterdir()
-                if f.is_file() and f.suffix.lower() == ".pdf"
-            ]
-        return [
-            f
-            for f in markdown_dir.iterdir()
-            if f.is_file() and f.suffix.lower() == ".md"
-        ]
-
-    def _input_file_to_md_path(self, input_file: Path, markdown_dir: Path) -> Path:
-        """
-        Map an input file to its markdown path.
-
-        For a PDF input, returns markdown_dir/(stem).md; for a markdown input,
-        returns the input path unchanged.
-
-        Args:
-            input_file: Path to the input file (PDF or markdown).
-            markdown_dir: Directory used to resolve .md path when input is PDF.
-
-        Returns:
-            Path to the markdown file for this input.
-
-        """
-        if input_file.suffix.lower() == ".pdf":
-            return markdown_dir / f"{input_file.stem}.md"
-        return input_file
 
     def _write_json_if_path(
         self, data: dict[str, Any] | list[Any], path: Path | None
