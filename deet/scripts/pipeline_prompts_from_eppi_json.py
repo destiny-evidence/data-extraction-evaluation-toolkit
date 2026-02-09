@@ -32,8 +32,8 @@ data_extractor = LLMDataExtractor(config=config)
 
 # the three functions we want to run (one per pipeline stage)
 def parse_pdf(
-    pdf_path: Path | None,
-    out_path: Path | None,
+    pdf_path: Path,
+    out_path: Path,
     *,
     skip_if_md_exists: bool = True,
 ) -> None:
@@ -50,10 +50,10 @@ def parse_pdf(
             Defaults to True.
 
     """
-    if pdf_path is None or out_path is None:
-        return
-    if not pdf_path.exists() or not pdf_path.is_dir():
-        return
+    if pdf_path is None or out_path is None or not pdf_path.is_dir():
+        missing_paths = "must specify a pdf_path and out_path"
+        raise ValueError(missing_paths)
+
     out_path.mkdir(parents=True, exist_ok=True)
     pdf_files = [
         f for f in pdf_path.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"
