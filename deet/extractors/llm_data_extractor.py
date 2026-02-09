@@ -169,7 +169,7 @@ class LLMDataExtractor:
         *,
         payload: str | None = None,
         md_path: Path | None = None,
-        context_type: ContextType | None,
+        context_type: ContextType | None = None,
     ) -> tuple[list[GoldStandardAnnotation], list[dict[str, Any]]]:
         """
         Extract data from a single document.
