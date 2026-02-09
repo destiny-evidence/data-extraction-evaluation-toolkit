@@ -93,11 +93,10 @@ def ingest_gold_standard_func(
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
-def llm_data_extraction(  # noqa: PLR0913
+def llm_data_extraction(
     markdown_dir: Path,
     attributes_file_path: Path,
     output_path: Path,
-    pdf_dir: Path | None = None,
     filter_by_attribute_ids: list[int] | None = None,
     prompt_outfile: Path | None = None,
 ) -> dict[str, list[GoldStandardAnnotation]]:
@@ -130,7 +129,6 @@ def llm_data_extraction(  # noqa: PLR0913
         attributes=attributes,
         markdown_dir=markdown_dir,
         output_file=output_path,
-        pdf_dir=pdf_dir,
         context_type=ContextType.FULL_DOCUMENT,
         prompt_outfile=prompt_outfile,
     )
@@ -252,7 +250,6 @@ def main() -> None:
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,
                 "output_path": output_path / "llm_extractions.json",
-                "pdf_dir": pdf_path,
                 "prompt_outfile": output_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction)

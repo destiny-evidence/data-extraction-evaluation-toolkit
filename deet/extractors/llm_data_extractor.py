@@ -235,12 +235,11 @@ class LLMDataExtractor:
         )
         return annotations, messages
 
-    def extract_from_documents(  # noqa: PLR0913
+    def extract_from_documents(
         self,
         attributes: list[Attribute],
         markdown_dir: Path,
         output_file: Path | None = None,
-        pdf_dir: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
         prompt_outfile: Path | None = None,
     ) -> dict[str, list[GoldStandardAnnotation]]:
@@ -275,17 +274,12 @@ class LLMDataExtractor:
         all_results: dict[str, list[GoldStandardAnnotation]] = {}
         prompt_payloads: dict[str, Any] = {}
 
-        # input_files = self._get_document_input_files(markdown_dir, pdf_dir)
         input_files = [f for f in markdown_dir.iterdir() if f.suffix == ".md"]
         if not input_files:
             missing_files = f"no files in dir {markdown_dir}"
             raise ValueError(missing_files)
 
         for input_file in sorted(input_files):
-            # md_path = self._input_file_to_md_path(input_file, markdown_dir)
-            # if not md_path.exists():
-            #     logger.warning(f"Markdown not found for {input_file}, skipping")
-            #     continue
             logger.info(f"Processing file: {input_file.name} ({input_file})")
             try:
                 result, messages = self.extract_from_document(

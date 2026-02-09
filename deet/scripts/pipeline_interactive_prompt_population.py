@@ -78,11 +78,10 @@ def ingest_gold_standard_func(eppi_json_path: Path, output_dir: Path) -> None:
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
-def llm_data_extraction(  # noqa: PLR0913
+def llm_data_extraction(
     markdown_dir: Path,
     attributes_file_path: Path,
     output_path: Path,
-    pdf_dir: Path | None = None,
     filter_by_attribute_ids: list[int] | None = None,
     prompt_outfile: Path | None = None,
 ) -> dict[str, list[GoldStandardAnnotation]]:
@@ -118,7 +117,6 @@ def llm_data_extraction(  # noqa: PLR0913
         attributes=attributes,
         markdown_dir=markdown_dir,
         output_file=output_path,
-        pdf_dir=pdf_dir,
         context_type=ContextType.FULL_DOCUMENT,
         prompt_outfile=prompt_outfile,
     )
