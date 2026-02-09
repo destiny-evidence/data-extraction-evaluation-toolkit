@@ -3,12 +3,11 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from pydantic.config import JsonDict
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -338,18 +337,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(
-        ...,
-        description="The LLM's annotation.",
-        json_schema_extra=cast(
-            JsonDict,
-            {
-                "anyOf": [
-                    attribute_type.to_json_type() for attribute_type in AttributeType
-                ]
-            },
-        ),
-    )
+    output_data: Any
     additional_text: str | None = Field(
         ...,
         description=(
