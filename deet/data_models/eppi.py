@@ -85,8 +85,8 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
         EnhancementFileInput(
             source=eppi_destiny_parser.parser_source,
             visibility=Visibility.PUBLIC,
-            content=content[0],  # the enhancement
-            enhancement_type=content[1],  # the correct enhancement type
+            content=content[0],  # type:ignore[arg-type]
+            enhancement_type=content[1],  # type:ignore[call-arg]
         )
         for content in raw_enhancement_content
     ]
