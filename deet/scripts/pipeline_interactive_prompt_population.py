@@ -167,7 +167,7 @@ def main() -> None:
 
     # Auto-generate output path if not provided
     if not args.output_path:
-        eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+        eppi_json_dir = Path(args.eppi_json_path).stem
         input_dir = args.pdf_path or args.markdown_path
         if input_dir:
             args.output_path = input_dir.parent / "tmp_parsed_eppi" / eppi_json_dir

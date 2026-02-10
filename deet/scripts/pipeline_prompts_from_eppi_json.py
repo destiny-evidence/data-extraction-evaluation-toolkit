@@ -149,14 +149,12 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Validate that at least one directory is provided
     if not args.pdf_path and not args.markdown_path:
         error_msg = (
             "At least one of -p/--pdf_path or -m/--markdown_path must be provided"
         )
         raise ValueError(error_msg)
 
-    # Validate pdf_path if provided
     if args.pdf_path:
         if not args.pdf_path.exists():
             error_msg = f"PDF directory does not exist: {args.pdf_path}"
@@ -165,7 +163,6 @@ def main() -> None:
             error_msg = f"PDF path must be a directory, not a file: {args.pdf_path}"
             raise ValueError(error_msg)
 
-    # Validate markdown_path if provided
     if args.markdown_path:
         if not args.markdown_path.exists():
             error_msg = f"Markdown directory does not exist: {args.markdown_path}"
@@ -176,9 +173,8 @@ def main() -> None:
             )
             raise ValueError(error_msg)
 
-    # Auto-generate output path if not provided (same as csv_02 / interactive)
     if not args.output_path:
-        eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+        eppi_json_dir = Path(args.eppi_json_path).stem
         input_dir = args.pdf_path or args.markdown_path
         if input_dir:
             args.output_path = input_dir.parent / "tmp_parsed_eppi" / eppi_json_dir
