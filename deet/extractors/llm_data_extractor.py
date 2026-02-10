@@ -57,7 +57,7 @@ class DataExtractionConfig(BaseModel):
     max_tokens: int | None = settings.llm_max_tokens
 
     # Context
-    context_type: ContextType = Field(
+    default_context_type: ContextType = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
     max_context_length: int = Field(
@@ -332,7 +332,11 @@ class LLMDataExtractor:
         context_type: ContextType | None = None,
     ) -> str:
         """Prepare context based on context type."""
-        ctx = context_type if context_type is not None else self.config.context_type
+        ctx = (
+            context_type
+            if context_type is not None
+            else self.config.default_context_type
+        )
         logger.debug(f"Using context type: {ctx}")
         if ctx == ContextType.FULL_DOCUMENT:
             context = payload
