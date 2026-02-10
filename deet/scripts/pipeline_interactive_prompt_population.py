@@ -53,8 +53,13 @@ def parse_pdf(
             Defaults to True.
 
     """
-    if pdf_path is None or out_path is None or not pdf_path.is_dir():
-        missing_paths = "must specify a pdf_path and out_path"
+    if pdf_path is None or out_path is None:
+        logger.info(
+            "pdf_path or out_path not provided; skipping parse_pdf stage (no-op)."
+        )
+        return
+    if not pdf_path.is_dir():
+        missing_paths = "must specify a pdf_path that is an existing directory"
         raise ValueError(missing_paths)
 
     out_path.mkdir(parents=True, exist_ok=True)
