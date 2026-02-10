@@ -212,7 +212,6 @@ def main() -> None:
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,
                 "output_path": args.output_path / "llm_extractions.json",
-                "pdf_dir": args.pdf_path,
                 "prompt_outfile": args.output_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction),
