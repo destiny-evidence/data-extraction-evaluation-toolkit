@@ -194,7 +194,9 @@ class LLMDataExtractor:
             ValueError: If neither payload nor md_path provided, or both provided.
 
         """
-        if payload is None and md_path is None:
+        if (payload is None and md_path is None) or (
+            payload is not None and md_path is not None
+        ):
             msg = "Exactly one of payload or md_path must be provided"
             raise ValueError(msg)
         if md_path is not None:
