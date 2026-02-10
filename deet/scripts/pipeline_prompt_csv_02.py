@@ -36,12 +36,12 @@ parser = DocumentParser()
 converter = EppiAnnotationConverter()
 
 # NOTE - define your LLM config stuff here. currently all values are default.
-config = DataExtractionConfig(selected_attribute_ids=[6080465, 6080480])
+config = DataExtractionConfig()
 
 data_extractor = LLMDataExtractor(config=config)
 
 
-# the three functions we want to run (one per pipeline stage)
+# the three functions we want to run
 def parse_pdf(
     pdf_path: Path,
     out_path: Path,
@@ -61,8 +61,13 @@ def parse_pdf(
             Defaults to True.
 
     """
-    if pdf_path is None or out_path is None or not pdf_path.is_dir():
-        missing_paths = "must specify a pdf_path and out_path"
+    if pdf_path is None or out_path is None:
+        logger.info(
+            "pdf_path or out_path not provided; skipping parse_pdf stage (no-op)."
+        )
+        return
+    if not pdf_path.is_dir():
+        missing_paths = "must specify a pdf_path that is an existing directory"
         raise ValueError(missing_paths)
 
     out_path.mkdir(parents=True, exist_ok=True)
