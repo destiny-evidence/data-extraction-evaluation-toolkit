@@ -65,10 +65,6 @@ class DataExtractionConfig(BaseModel):
         description="Maximum context length for LLM CHARACTERS? ",  # fix with tokens!
     )
 
-    selected_attribute_ids: list[int] = Field(
-        default=[], description="Specific attribute IDs to extract"
-    )
-
     # Prompt
     prompt_config: PromptConfig = Field(
         default_factory=PromptConfig, description="Prompt configuration"
@@ -142,6 +138,7 @@ class LLMDataExtractor:
     def extract_from_document(
         self,
         attributes: list[Attribute],
+        filter_attribute_ids: list[int] | None = None,
         *,
         payload: str | None = None,
         md_path: Path | None = None,
@@ -182,21 +179,18 @@ class LLMDataExtractor:
             payload = md_path.read_text(encoding="utf-8")
         payload = cast("str", payload)
 
-        filter_ids: list[int] | None = None
-        if self.config.selected_attribute_ids:
+        selected_attributes = attributes
+        if filter_attribute_ids and len(filter_attribute_ids) > 0:
             try:
-                filter_ids = [
-                    int(attr_id) for attr_id in self.config.selected_attribute_ids
-                ]
+                selected_attributes = self._filter_attributes(
+                    selected_attributes, filter_ids=filter_attribute_ids
+                )
             except (ValueError, TypeError):
                 logger.warning(
                     f"Invalid attribute IDs in config: "
-                    f"{self.config.selected_attribute_ids}. "
+                    f"{filter_attribute_ids}. "
                     "No attributes will be selected."
                 )
-                filter_ids = []
-
-        selected_attributes = self._filter_attributes(attributes, filter_ids=filter_ids)
 
         if not selected_attributes:
             msg = "No attributes selected for extraction"
