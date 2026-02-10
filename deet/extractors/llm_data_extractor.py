@@ -31,30 +31,6 @@ class PromptConfig(BaseModel):
         default_factory=lambda: Path(__file__).parent.parent.parent
         / "prompts/system_prompt.txt",
     )
-    attribute_specific_prompt: str = Field(
-        description="Prompt template for attribute-specific extraction",
-        default=(
-            "Analyse this research document and answer questions about "
-            "specific attributes. For each attribute, determine if it is "
-            "present (True/False), provide reasoning, and include citations."
-        ),
-    )
-    single_attribute_prompt: str = Field(
-        description="Prompt template for single attribute extraction",
-        default=(
-            "Analyse this research document for the following attribute: "
-            "{attribute_label}. Determine if it is present (True/False), "
-            "provide reasoning, and include citations."
-        ),
-    )
-    batch_attribute_prompt: str = Field(
-        description="Prompt template for batch attribute extraction",
-        default=(
-            "Analyse this research document and answer questions about the "
-            "following attributes. For each attribute, determine if it's "
-            "present (True/False), provide reasoning, and include citations."
-        ),
-    )
 
     @model_validator(mode="after")
     def load_system_prompt_file(self) -> "PromptConfig":

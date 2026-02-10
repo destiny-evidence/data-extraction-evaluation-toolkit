@@ -368,13 +368,19 @@ class ProcessedAnnotationData(BaseModel):
         logger.info(f"wrote attributes to file {filepath}.")
 
     def _import_prompts_csv_file(
-        self, filepath: Path, *, overwrite: bool = True
+        self,
+        filepath: Path,
+        *,
+        retain_only_csv_attributes: bool = True,
+        overwrite: bool = True,
     ) -> None:
         """
         Import prompts from a csv file.
 
         Args:
             filepath (Path): attribute/prompt input file.
+            retain_only_csv_attributes (bool, optional): if True, filter self.attributes
+                to only include attributes with ids found in csv. Defaults to True.
             overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
 
         """
@@ -385,6 +391,8 @@ class ProcessedAnnotationData(BaseModel):
         if filepath.suffix != ".csv":
             bad_suffix = "File must have .csv extension"
             raise ValueError(bad_suffix)
+
+        csv_attribute_ids = set()
 
         with filepath.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -407,6 +415,7 @@ class ProcessedAnnotationData(BaseModel):
             for row in reader:
                 # find attribute_id match
                 attribute_id = int(row["attribute_id"])
+                csv_attribute_ids.add(attribute_id)
                 matching_attribute = None
 
                 for attribute in self.attributes:
@@ -432,6 +441,18 @@ class ProcessedAnnotationData(BaseModel):
                     )
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
+
+        if retain_only_csv_attributes:
+            original_count = len(self.attributes)
+            self.attributes = [
+                attr
+                for attr in self.attributes
+                if attr.attribute_id in csv_attribute_ids
+            ]
+            logger.info(
+                f"filtered attributes from {original_count} to {len(self.attributes)} "
+                f"(retained only those in CSV)"
+            )
 
     def populate_custom_prompts(
         self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
