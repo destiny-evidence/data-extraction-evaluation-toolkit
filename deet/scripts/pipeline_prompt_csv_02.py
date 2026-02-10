@@ -180,14 +180,12 @@ def main() -> None:
     output_path: Path = args.output_path
     csv_path: Path = args.csv_path
 
-    # Validate that at least one directory is provided
     if not args.pdf_path and not args.markdown_path:
         error_msg = (
             "At least one of -p/--pdf_path or -m/--markdown_path must be provided"
         )
         raise ValueError(error_msg)
 
-    # Validate pdf_path if provided
     if args.pdf_path:
         if not args.pdf_path.exists():
             error_msg = f"PDF directory does not exist: {args.pdf_path}"
@@ -197,7 +195,6 @@ def main() -> None:
             raise ValueError(error_msg)
         pdf_path = args.pdf_path
 
-    # Validate markdown_path if provided
     if args.markdown_path:
         if not args.markdown_path.exists():
             error_msg = f"Markdown directory does not exist: {args.markdown_path}"
@@ -209,7 +206,6 @@ def main() -> None:
             raise ValueError(error_msg)
         markdown_path = args.markdown_path
 
-    # Auto-generate output path if not provided
     if not args.output_path:
         args.output_path = eppi_json_path.parent
         logger.info(f"Auto-generated output path: {args.output_path}")
@@ -218,8 +214,6 @@ def main() -> None:
     if markdown_path is None and pdf_path is not None:
         markdown_path = pdf_path / "markdown"
         markdown_path.mkdir(parents=True, exist_ok=True)
-    # elif markdown_path is not None and pdf_path is None:
-    #     pdf_path = None
 
     parse_pdf_stage = stage_from_job(
         jobify(

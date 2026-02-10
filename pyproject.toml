@@ -59,9 +59,6 @@ omit = [
 ]
 source = ["deet"]
 
-[tool.mypy]
-plugins = ["pydantic.mypy"]
-
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "pypandoc.*"
