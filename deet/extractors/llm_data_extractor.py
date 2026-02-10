@@ -248,18 +248,14 @@ class LLMDataExtractor:
         """
         Extract data from all documents in a directory.
 
-        Loops over files in markdown_dir (or, if pdf_dir is given, over PDFs
-        and uses markdown_dir/(stem).md for each). For each file, calls
+        Loops over files in markdown_dir. For each file, calls
         extract_from_document with md_path and context_type. Results are
         merged into one dict; optional combined JSON is written to output_file.
-
 
         Args:
             attributes: List of attributes to extract.
             markdown_dir: Directory of markdown files (required).
             output_file: Optional path to save combined results JSON.
-            pdf_dir: Optional directory of PDFs; when set, input list and keys
-                come from here and markdown paths are markdown_dir/(stem).md.
             context_type: Override config context type for each document.
             prompt_outfile: Optional path to write a single JSON object:
                 keys are document (PDF) paths, values are prompt payload (messages).
