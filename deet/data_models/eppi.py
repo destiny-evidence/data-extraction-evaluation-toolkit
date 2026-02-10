@@ -9,11 +9,12 @@ from typing import Any, Literal
 
 from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
 from destiny_sdk.parsers import EPPIParser
+from destiny_sdk.parsers.exceptions import ExternalIdentifierNotFoundError
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
-from deet.data_models.base import (
+from deet.data_models.base import (  # ContextType,
     AnnotationType,
     Attribute,
     AttributeType,
@@ -30,13 +31,19 @@ DOI_REGEX = re.compile(
 )  # for sanitising DOIs
 
 
-def sanitise_doi(doi_candidate: str) -> str:
+def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
     """Clean DOI strings in EPPI jsons."""
     doi = DOI_REGEX.search(doi_candidate)
     if doi and isinstance(doi, re.Match):
         return doi[0]
-    bad_doi = f"doi {doi} is bad."
-    raise ValueError(bad_doi)
+    if raise_on_fail:
+        bad_doi = f"doi {doi} is bad."
+        raise ValueError(bad_doi)
+    logger.debug(
+        "not found a valid DOI, returning empty string."
+        " to modify this behavioru, set raise_on_fail=True"
+    )
+    return ""
 
 
 def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
@@ -78,17 +85,23 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
         EnhancementFileInput(
             source=eppi_destiny_parser.parser_source,
             visibility=Visibility.PUBLIC,
-            content=content[0],  # the enhancement
-            enhancement_type=content[1],  # the correct enhancement type
+            content=content[0],  # type:ignore[arg-type]
+            enhancement_type=content[1],  # type:ignore[call-arg]
         )
         for content in raw_enhancement_content
     ]
 
+    destiny_ids = None
+    try:
+        destiny_ids = eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
+            ref_to_import=reference
+        )
+    except ExternalIdentifierNotFoundError as e:
+        logger.warning(f"no identifier for reference. storing `None`. error: {e}")
+
     return ReferenceFileInput(
         visibility=Visibility.PUBLIC,
-        identifiers=eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
-            ref_to_import=reference
-        ),
+        identifiers=destiny_ids,
         enhancements=enhancements,
     )
 
@@ -177,9 +190,6 @@ class EppiDocument(Document):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    # EPPI-specific fields - these map automatically from camelCase JSON
-    # item_id: int
-    # title: str
     parent_title: str | None = None
     short_title: str | None = None
     date_created: str | None = None
@@ -213,8 +223,6 @@ class EppiItemAttributeFullTextDetails(BaseModel):
 
     Arm specific information, exact text keywords for the attribute.
     """
-
-    model_config = ConfigDict()
 
     item_document_id: int | None = None
     text: str | None = None
@@ -274,8 +282,6 @@ class EppiCodeSet(BaseModel):
     CodeSets contain hierarchical attribute definitions used in EPPI-Reviewer.
     """
 
-    model_config = ConfigDict()
-
     attributes: dict[str, Any] | None = Field(alias="Attributes", default=None)
 
     def get_attributes_list(self) -> list[dict[str, Any]]:
@@ -292,8 +298,6 @@ class EppiRawData(BaseModel):
     This model validates and structures the raw EPPI JSON data,
     making it easier to work with and validate.
     """
-
-    model_config = ConfigDict()
 
     code_sets: list[EppiCodeSet] = Field(alias="CodeSets", default=[])
     references: list[dict[str, Any]] = Field(alias="References", default=[])
@@ -327,8 +331,6 @@ class ProcessedAnnotationData(BaseModel):
     This model provides a clean, validated structure for all processed
     annotation data with useful properties and methods.
     """
-
-    model_config = ConfigDict()
 
     attributes: list[EppiAttribute]
     documents: list[EppiDocument]
@@ -508,8 +510,6 @@ class ProcessedAnnotationData(BaseModel):
 class AttributeAnswerCoT(BaseModel):
     """Detailed answer format for a single attribute with reasoning."""
 
-    model_config = ConfigDict()
-
     attribute_name: str = Field(
         description="The name of the attribute being asked about"
     )
@@ -522,8 +522,6 @@ class AttributeAnswerCoT(BaseModel):
 
 class BatchAnswerFormatCoT(BaseModel):
     """Batch answers for all attributes with reasoning."""
-
-    model_config = ConfigDict()
 
     answers: list[AttributeAnswerCoT] = Field(
         description="List of answers for each attribute"

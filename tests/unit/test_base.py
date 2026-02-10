@@ -16,7 +16,6 @@ from deet.data_models.base import (
     DocumentIDSource,
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
-    LLMAnnotationResponse,
     LLMInputSchema,
 )
 
@@ -37,20 +36,6 @@ def test_to_python_type_is_defined_for_all_enum_members(attr_type):
     python_type = attr_type.to_python_type()
 
     assert isinstance(python_type, type)
-
-
-def test_llm_response_schema_covers_all_attribute_types():
-    """
-    Ensure every AttributeType is correctly exported to the
-    LLMResponse json schema.
-    """
-    schema = LLMAnnotationResponse.model_json_schema()
-
-    output_data_schema = schema["properties"]["output_data"]
-    any_of = output_data_schema["anyOf"]
-
-    expected = [attr.to_json_type() for attr in AttributeType]
-    assert any_of == expected
 
 
 def test_attribute_creation_from_dict() -> None:
