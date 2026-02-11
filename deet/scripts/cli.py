@@ -3,9 +3,14 @@
 from pathlib import Path
 
 import typer
-from loguru import logger
 
-from deet.data_models.base import SupportedImportFormat
+from deet.data_models.base import Attribute, AttributeType
+from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
+from deet.logger import logger
+from deet.processors.base_converter import SupportedImportFormat
+from deet.settings import get_settings
+
+settings = get_settings()
 
 app = typer.Typer()
 
@@ -21,7 +26,25 @@ def import_data(gs_data_path: Path, gs_data_format: SupportedImportFormat) -> No
 @app.command()
 def test_llmconfig() -> None:
     """Test llm config."""
-    logger.info("Testing LLM Config")
+    config = DataExtractionConfig()
+    data_extractor = LLMDataExtractor(config=config)
+    attr = Attribute(
+        question_target="Test question",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Attribute",
+        prompt="Is the document about climate and health? Return a BOOL",
+    )
+    context = (
+        "This is document, extract data from me please. "
+        "I am about climate and health"
+    )
+    response = data_extractor.extract_from_document(
+        attributes=[attr],
+        payload=context,
+        context_type=None,
+    )
+    logger.info(response)
 
 
 def main() -> None:
