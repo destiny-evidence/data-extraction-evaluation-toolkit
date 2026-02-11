@@ -1,11 +1,13 @@
 """Core data models for document processing and annotation."""
 
+from __future__ import annotations
+
 import csv
 from enum import StrEnum, auto
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 from typing import Any, Literal
 
-from destiny_sdk.references import ReferenceFileInput
+from destiny_sdk.references import ReferenceFileInput  # noqa: TC002
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
@@ -68,6 +70,35 @@ class AttributeType(StrEnum):
             AttributeType.DICT: {"type": "object"},
         }
         return mapping[self]
+
+    @classmethod
+    def parse(cls, value: str | AttributeType | None) -> AttributeType | None:
+        """
+        Parse a value into AttributeType.
+
+        Accepts string (CSV/JSON/config), an existing AttributeType (pass-through),
+        or None. Returns None for empty or invalid input so callers can use
+        `if attr_type := AttributeType.parse(...): ...`.
+
+        Args:
+            value: String like "string", "bool", "integer"; an AttributeType; or None.
+
+        Returns:
+            The matching AttributeType, or None if empty/invalid.
+
+        """
+        if value is None:
+            return None
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, str):
+            if not (normalized := value.strip().lower()):
+                return None
+            for member in cls:
+                if member.value.lower() == normalized:
+                    return member
+            return None
+        return None
 
 
 class DocumentIDSource(StrEnum):

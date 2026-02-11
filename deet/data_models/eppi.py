@@ -425,6 +425,8 @@ class ProcessedAnnotationData(BaseModel):
                     matching_attribute.populate_prompt_from_dict(
                         row, overwrite=overwrite
                     )
+                    if attr_type := AttributeType.parse(row.get("output_data_type")):
+                        matching_attribute.output_data_type = attr_type
                     rows_processed += 1
                 except ValueError as e:
                     logger.error(

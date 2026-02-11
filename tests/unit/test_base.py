@@ -38,6 +38,39 @@ def test_to_python_type_is_defined_for_all_enum_members(attr_type):
     assert isinstance(python_type, type)
 
 
+def test_attribute_type_parse_from_string() -> None:
+    """Test AttributeType.parse parses string type names correctly."""
+    assert AttributeType.parse("string") == AttributeType.STRING
+    assert AttributeType.parse("bool") == AttributeType.BOOL
+    assert AttributeType.parse("integer") == AttributeType.INTEGER
+    assert AttributeType.parse("float") == AttributeType.FLOAT
+    assert AttributeType.parse("list") == AttributeType.LIST
+    assert AttributeType.parse("dict") == AttributeType.DICT
+
+
+def test_attribute_type_parse_case_insensitive() -> None:
+    """Test AttributeType.parse is case insensitive."""
+    assert AttributeType.parse("STRING") == AttributeType.STRING
+    assert AttributeType.parse("Bool") == AttributeType.BOOL
+    assert AttributeType.parse("  integer  ") == AttributeType.INTEGER
+
+
+def test_attribute_type_parse_pass_through() -> None:
+    """Test AttributeType.parse returns AttributeType as-is (idempotent)."""
+    assert AttributeType.parse(AttributeType.STRING) == AttributeType.STRING
+    assert AttributeType.parse(AttributeType.INTEGER) == AttributeType.INTEGER
+    assert AttributeType.parse(AttributeType.FLOAT) == AttributeType.FLOAT
+
+
+def test_attribute_type_parse_none_and_empty() -> None:
+    """Test AttributeType.parse returns None for empty/invalid input."""
+    assert AttributeType.parse(None) is None
+    assert AttributeType.parse("") is None
+    assert AttributeType.parse("   ") is None
+    assert AttributeType.parse("invalid") is None
+    assert AttributeType.parse("foo") is None
+
+
 def test_attribute_creation_from_dict() -> None:
     """Test creating attribute from dictionary data (as would come from JSON)."""
     # This mimics how attributes are created from JSON data in the annotation converter

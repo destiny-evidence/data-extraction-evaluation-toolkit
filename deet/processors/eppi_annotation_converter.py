@@ -7,7 +7,7 @@ from typing import Any
 
 from loguru import logger
 
-from deet.data_models.base import AnnotationType
+from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -200,7 +200,17 @@ class EppiAnnotationConverter:
             text_details
         )
 
-        output_data = " | ".join(extracted_texts) if extracted_texts else ""
+        output_data: str | bool = " | ".join(extracted_texts) if extracted_texts else ""
+
+        # Coerce empty string to False for BOOL attributes (backward compatibility
+        # when ItemAttributeFullTextDetails is absent)
+        attr = attributes_lookup.get(annotation.get("AttributeId", 0))
+        if (
+            attr is not None
+            and attr.output_data_type == AttributeType.BOOL
+            and output_data == ""
+        ):
+            output_data = False
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -228,7 +238,7 @@ class EppiAnnotationConverter:
             arm_id=annotation.get("ArmId"),
             arm_title=annotation.get("ArmTitle", ""),
             arm_description=annotation.get("ArmDescription", ""),
-            output_data=bool(output_data),
+            output_data=output_data,
             annotation_type=AnnotationType.HUMAN,
             item_attribute_full_text_details=item_attribute_details,
         )
