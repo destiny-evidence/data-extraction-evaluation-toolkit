@@ -1,14 +1,14 @@
 {
-  "csv_path": "example.csv",
-  "out_json_path": "example.json",
-
+  "csv_path": "out/ebmnlp_dev_10.csv",
+  "out_json_path": "out/ebmnlp_dev_10.json",
+  "categorical_columns": [],
   "write_md": true,
-  "md_dir": "example_md",
+  "md_dir": "out/example_md",
 
   "delimit_str": ";; ",
   "nlreplace": ";",
 
-  "ignore_columns": ["from_gold"],
+  "ignore_columns": ["from_gold", "rand"],
 
   "meta_variable_dict": {
     "ItemId": "pmid",
