@@ -149,7 +149,8 @@ def main() -> None:
         "-f",
         "--filter_attribute_ids",
         help="an optional list of attribute_ids to filter by.",
-        type=list,
+        type=int,
+        nargs="+",
         required=False,
     )
     parser.add_argument(

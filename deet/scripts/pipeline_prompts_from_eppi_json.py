@@ -136,6 +136,14 @@ def main() -> None:
         "-e", "--eppi_json_path", help="path to eppi json", type=Path, required=True
     )
     parser.add_argument(
+        "-f",
+        "--filter_attribute_ids",
+        help="an optional list of attribute_ids to filter by.",
+        type=int,
+        nargs="+",
+        required=False,
+    )
+    parser.add_argument(
         "-o",
         "--output_path",
         help=("path to save output JSON (auto-generated if not provided)"),
