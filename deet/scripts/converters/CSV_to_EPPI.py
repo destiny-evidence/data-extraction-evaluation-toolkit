@@ -1,26 +1,24 @@
 import argparse
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
 
 @dataclass(frozen=True)
 class Config:
-    """
-    Config variables
-    """
-
     csv_path: Path
     out_json_path: Path
     write_md: bool
-    md_dir: Path | None
+    md_dir: Optional[Path]
     delimit_str: str
     nlreplace: str
-    ignore_columns: list[str]
-    meta_variable_dict: dict[str, str]
+    ignore_columns: List[str]
+    meta_variable_dict: Dict[str, str]
+    categorical_columns: List[str]
 
 
 def _resolve_path(p: str, base_dir: Path) -> Path:
@@ -33,7 +31,8 @@ def _resolve_path(p: str, base_dir: Path) -> Path:
 
 def load_config(config_path: Path) -> Config:
     if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
+        fnf_msg=f"Config file not found: {config_path}"
+        raise FileNotFoundError(fnf_msg)
 
     base_dir = config_path.parent.resolve()
     raw = json.loads(config_path.read_text(encoding="utf-8"))
@@ -51,14 +50,17 @@ def load_config(config_path: Path) -> Config:
     nlreplace = str(raw.get("nlreplace", ";"))
     ignore_columns = list(raw.get("ignore_columns", []))
     meta_variable_dict = dict(raw.get("meta_variable_dict", {}))
-
+    categorical_columns = list(raw.get("categorical_columns", []))
     # Basic validation
     if "ItemId" not in meta_variable_dict:
-        raise ValueError("meta_variable_dict must include an 'ItemId' mapping.")
+        id_msg="meta_variable_dict must include an 'ItemId' mapping."
+        raise ValueError(id_msg)
     if not isinstance(ignore_columns, list):
-        raise TypeError("ignore_columns must be a list of column names.")
+        col_msg="ignore_columns must be a list of column names."
+        raise TypeError(col_msg)
     if not isinstance(meta_variable_dict, dict):
-        raise TypeError("meta_variable_dict must be an object/dict.")
+        meta_msg="meta_variable_dict must be an object/dict."
+        raise TypeError(meta_msg)
 
     return Config(
         csv_path=csv_path,
@@ -69,31 +71,32 @@ def load_config(config_path: Path) -> Config:
         nlreplace=nlreplace,
         ignore_columns=ignore_columns,
         meta_variable_dict=meta_variable_dict,
+        categorical_columns=categorical_columns
+
     )
 
 
-def get_metadata(
-    row: dict, i: int, meta_variable_dict: dict[str, str], nlreplace: str
-) -> dict[str, Any]:
+def get_metadata(row, i: int, meta_variable_dict: Dict[str, str], nlreplace: str) -> Dict[str, Any]:
     """
-    Read one row of data from the CSV and create a reference from it
-    :param row:
-    :param i:
-    :param meta_variable_dict:
-    :param nlreplace:
-    :return:
+    Formatting metadata for json.
+    :param row: 
+    :param i: 
+    :param meta_variable_dict: 
+    :param nlreplace: 
+    :return: 
     """
     mycols = row.keys()
-    refdict: dict[str, Any] = {"Codes": [], "Outcomes": []}
+    refdict: Dict[str, Any] = {"Codes": [], "Outcomes": []}
 
     try:
-        unique_id_int = int(row[meta_variable_dict["ItemId"]])
-        refdict["ItemId"] = unique_id_int
-    except:  # use sequential numbering
+        unique_ID_int = int(row[meta_variable_dict["ItemId"]])
+        refdict["ItemId"] = unique_ID_int
+    except Exception:
+        #print("Unable to retrieve int ID, using index instead")
         refdict["ItemId"] = i
 
     # iterate through all required fields and fill them if possible from the row data
-    for cvar in meta_variable_dict:
+    for cvar in meta_variable_dict.keys():
         if cvar == "ItemId":
             continue
 
@@ -105,11 +108,23 @@ def get_metadata(
             refdict[cvar] = mv
         else:
             refdict[cvar] = ""
+    try:
+        refdict["Year"] = str(int(refdict["Year"].replace(".0", "")))
+        if refdict["TypeName"]=="":
+            refdict["TypeName"]= "Journal, Article"
+    except:
+        pass
 
     return refdict
 
 
-def add_md(refdict: dict[str, Any], md_dir: Path) -> None:
+def add_md(refdict: Dict[str, Any], md_dir: Path) -> None:
+    """
+    Add markdown output.
+    :param refdict: 
+    :param md_dir: 
+    :return: 
+    """
     md_dir.mkdir(parents=True, exist_ok=True)
     out_path = md_dir / f"{refdict['ItemId']}.md"
     with out_path.open("w", encoding="utf-8") as f:
@@ -123,45 +138,74 @@ def custom_json(
     csv_path: Path,
     out_json_path: Path,
     write_md: bool,
-    md_dir: Path | None,
-    meta_variable_dict: dict[str, str],
-    ignore_columns: list[str],
+    md_dir: Optional[Path],
+    meta_variable_dict: Dict[str, str],
+    ignore_columns: List[str],
     delimit_str: str,
     nlreplace: str,
+    categorical_data: List[str]
 ) -> None:
     """
-    Create an EPPI-Json file based on a CSV input file
-    :param csv_path:
-    :param out_json_path:
-    :param write_md:
-    :param md_dir:
-    :param meta_variable_dict:
-    :param ignore_columns:
-    :param delimit_str:
-    :param nlreplace:
-    :return:
+    Create cusom json file.
+    :param csv_path: 
+    :param out_json_path: 
+    :param write_md: 
+    :param md_dir: 
+    :param meta_variable_dict: 
+    :param ignore_columns: 
+    :param delimit_str: 
+    :param nlreplace: 
+    :param categorical_data: 
+    :return: 
     """
-    df_data = pd.read_csv(csv_path, encoding="utf-8").fillna("")
+    df = pd.read_csv(csv_path, encoding="utf-8").fillna("")
 
-    reflist: list[dict[str, Any]] = []
-    attributeslist: list[dict[str, Any]] = []
+    reflist: List[Dict[str, Any]] = []
+    attributeslist: List[Dict[str, Any]] = []
 
     remove_set = set(ignore_columns) | set(meta_variable_dict.values())
-    mapping_vars = [x for x in df_data.columns if x not in remove_set]
+    mapping_vars = [x for x in df.columns if x not in remove_set]
 
+    #print(f"Transferring data from the following columns into JSON attributes: {mapping_vars}")
     # Collect all codes and assign new ids as discovered
-    attributes: dict[str, dict[str, int]] = {k: {} for k in mapping_vars}
+    attributes: Dict[str, Dict[str, int]] = {k: {} for k in mapping_vars}
     cnt = 1  # attribute ID counter (for leaf attribute values)
 
-    for i, row in df_data.iterrows():
-        myattributes: list[int] = []
+    # Pre-assign attribute IDs for non-categorical columns
+    # Each non-categorical column gets ONE attribute ID
+    for mvar in mapping_vars:
+        if mvar not in categorical_data:
+            # Use the column name itself as the key for the single attribute
+            attributes[mvar][mvar] = cnt
+            cnt += 1
 
-        for mvar in mapping_vars:
+    for i, row in df.iterrows():
+        myattributes: List[int] = []
+        attr_names: List[str]=[]
+        my_codelist=[]
+        for mvar in mapping_vars:#any binary or string where there is a tickbox
+
+            ###Code for adding non-categorical attributes here
+            if mvar not in categorical_data:
+                # Get the cell value and convert to string
+                value = str(row[mvar]).strip()
+
+                # Check if value is "1" or longer than 1 character
+                if value and (value == "1" or len(value) > 1):
+                    # Add the attribute ID for this column
+                    attr_id = attributes[mvar][mvar]
+                    myattributes.append(attr_id)
+                    # Store the actual cell value as AdditionalText
+                    attr_names.append(value)
+
+        for mvar in categorical_data:#now do the categorical ones
             thisvar = str(row[mvar])
             thiscodes = [s.strip() for s in thisvar.split(delimit_str)]
             thiscodes = [c for c in thiscodes if c]  # remove empty
 
             for c in thiscodes:
+                attr_names.append(c)
+
                 if c not in attributes[mvar]:
                     attributes[mvar][c] = cnt
                     myattributes.append(cnt)
@@ -169,31 +213,47 @@ def custom_json(
                 else:
                     myattributes.append(attributes[mvar][c])
 
-        refdict = get_metadata(dict(row), i, meta_variable_dict, nlreplace=nlreplace)
+        refdict = get_metadata(row, i, meta_variable_dict, nlreplace=nlreplace)
 
         if write_md:
             if md_dir is None:
-                raise ValueError(
-                    "write_md is true but md_dir was not provided in config."
-                )
+                ve_msg = "write_md is true but md_dir was not provided in config."
+                raise ValueError(ve_msg)
             add_md(refdict, md_dir)
 
         # Reformat reference-level attribute list
-        codelist = [
-            {"AttributeId": att, "ItemAttributeFullTextDetails": []}
-            for att in myattributes
-        ]
+        codelist = [{"AttributeId": att,
+                     "AdditionalText": attr_names[my_index],
+                     "ItemAttributeFullTextDetails": [],
+                     "ArmId":0,
+                    "ArmTitle":""
+                     } for my_index, att in enumerate(myattributes)]
+
         refdict["Codes"] = codelist
         reflist.append(refdict)
 
     # Reformat global-level attributes list
     for key, value in attributes.items():
-        thisattributes = [
-            {"AttributeId": v, "AttributeName": k} for k, v in value.items()
-        ]
+        thisattributes = [{"AttributeId": v,
+                           "AttributeName": k,
+                           "AttributeType":"Selectable (show checkbox)",
+                           "AttributeDescription": "",
+                           "ExtURL": "",
+                           "ExtType": "",
+                           "OriginalAttributeID": 0,
+                           "AttributeSetId": 0,
+                           "AttributeTypeId": 2,
+                           } for k, v in value.items()]
         adict = {
             "AttributeId": cnt,
             "AttributeName": key,
+            "AttributeType": "Not selectable (no checkbox)",
+            "AttributeDescription": "",
+            "ExtURL": "",
+            "ExtType": "",
+            "OriginalAttributeID": 0,
+            "AttributeSetId": 0,
+            "AttributeTypeId": 1,
             "Attributes": {"AttributesList": thisattributes},
         }
         attributeslist.append(adict)
@@ -203,6 +263,12 @@ def custom_json(
         "CodeSets": [
             {
                 "SetName": "Mapping tool",
+                "ReviewSetId": 1,
+                "SetId": 1,
+                "SetType": {
+                    "SetTypeName": "Standard",
+                    "SetTypeDescription": "The Standard codeset type is used for regular coding such as keywording or data-extraction. This codeset type can contain multiple levels of child codes but cannot contain the special code types \"Include\" and \"Exclude\"."
+                },
                 "Attributes": {"AttributesList": attributeslist},
             }
         ],
@@ -213,15 +279,12 @@ def custom_json(
     with out_json_path.open("w", encoding="utf-8") as f:
         json.dump(final_json, f, ensure_ascii=False, indent=4)
 
+    # print(f"Wrote JSON: {out_json_path}")
+    # if write_md and md_dir:
+    #     print(f"Wrote MD files to: {md_dir}")
 
 def parse_args() -> argparse.Namespace:
-    """
-    Parsing argument input
-    :return:
-    """
-    parser = argparse.ArgumentParser(
-        description="Convert a CSV into EPPI-style JSON with coded attributes."
-    )
+    parser = argparse.ArgumentParser(description="Convert a CSV into EPPI-style JSON with coded attributes.")
     parser.add_argument(
         "--config",
         "-c",
@@ -233,10 +296,6 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    """
-    Main function
-    :return:
-    """
     args = parse_args()
     cfg = load_config(args.config)
 
@@ -249,6 +308,7 @@ def main() -> int:
         ignore_columns=cfg.ignore_columns,
         delimit_str=cfg.delimit_str,
         nlreplace=cfg.nlreplace,
+        categorical_data=cfg.categorical_columns
     )
     return 0
 
