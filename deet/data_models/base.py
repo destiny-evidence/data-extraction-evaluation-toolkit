@@ -10,6 +10,8 @@ from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
 
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+
 MAX_PROMPT_LENGTH = 500
 # ruff: noqa: T201, FURB105
 
@@ -67,6 +69,19 @@ class AttributeType(StrEnum):
             AttributeType.LIST: {"type": "array"},
             AttributeType.DICT: {"type": "object"},
         }
+        return mapping[self]
+
+
+class SupportedImportFormat(StrEnum):
+    """Supported formats to import gold standard annotation data from."""
+
+    EPPI_JSON = auto()
+
+    def get_annotation_converter(
+        self,
+    ) -> EppiAnnotationConverter:  # This should be a generic version
+        """Return the parser for the given data type."""
+        mapping = {SupportedImportFormat.EPPI_JSON: EppiAnnotationConverter()}
         return mapping[self]
 
 

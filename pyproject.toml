@@ -33,6 +33,7 @@ dependencies = [
     "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
     "tabulate>=0.9.0",
+    "typer>=0.21.2",
     "types-pyyaml>=6.0.12.20250915",
 ]
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
@@ -47,6 +48,7 @@ DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
 DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
 DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
 DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
+deet = "deet.scripts.cli:main"
 
 [tool.coverage.report]
 # This section is optional but good practice
