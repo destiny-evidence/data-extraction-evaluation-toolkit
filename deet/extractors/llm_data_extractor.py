@@ -207,10 +207,11 @@ class LLMDataExtractor:
         )
         return annotations, messages
 
-    def extract_from_documents(
+    def extract_from_documents(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
         markdown_dir: Path,
+        filter_attribute_ids: list[int] | None = None,
         output_file: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
         prompt_outfile: Path | None = None,
@@ -251,7 +252,8 @@ class LLMDataExtractor:
             logger.info(f"Processing file: {input_file.name} ({input_file})")
             try:
                 result, messages = self.extract_from_document(
-                    attributes,
+                    attributes=attributes,
+                    filter_attribute_ids=filter_attribute_ids,
                     md_path=input_file,
                     context_type=context_type,
                 )

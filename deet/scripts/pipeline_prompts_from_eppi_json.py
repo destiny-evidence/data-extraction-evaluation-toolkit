@@ -79,7 +79,7 @@ def llm_data_extraction(
     markdown_dir: Path,
     attributes_file_path: Path,
     output_path: Path,
-    filter_by_attribute_ids: list[int] | None = None,
+    filter_attribute_ids: list[int] | None = None,
     prompt_outfile: Path | None = None,
 ) -> dict[str, list[GoldStandardAnnotation]]:
     """
@@ -92,7 +92,6 @@ def llm_data_extraction(
         markdown_dir: Directory of markdown files.
         attributes_file_path: Path to attributes JSON file.
         output_path: Path to save combined output JSON.
-        pdf_dir: Directory of PDFs (optional); when set, lists inputs from here.
         filter_by_attribute_ids: Optional list of attribute IDs to filter.
         prompt_outfile: Optional path to write prompt payload for debugging.
 
@@ -102,15 +101,12 @@ def llm_data_extraction(
     """
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
-    if filter_by_attribute_ids:
-        attributes = [
-            a for a in attributes if a.attribute_id in filter_by_attribute_ids
-        ]
 
     return data_extractor.extract_from_documents(
         attributes=attributes,
         markdown_dir=markdown_dir,
         output_file=output_path,
+        filter_attribute_ids=filter_attribute_ids,
         context_type=ContextType.FULL_DOCUMENT,
         prompt_outfile=prompt_outfile,
     )
@@ -214,6 +210,7 @@ def main() -> None:
                 "attributes_file_path": args.output_path
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,
+                "filter_attribute_ids": args.filter_attribute_ids,
                 "output_path": args.output_path / "llm_extractions.json",
                 "prompt_outfile": args.output_path / "full_prompt_payload.json",
             },
