@@ -1,19 +1,23 @@
 ---
-name: Bug report issue template
-about: Issues which specifically relate to bugs in `deet`.
+name: Bug Report
+about: Create a report to help us improve
 title: ''
 labels: ''
 assignees: ''
-
 ---
+
 ## Describe the bug
 
 A clear and concise description of what the bug is.
 
 ## To Reproduce
 
-Either paste relevant files/data/commands here, ideally wrapping them in a \``` \``` block, OR, reference/describe files you have attached to the issue.
-Include everything that doesn't come with the repo out of the box.
+Steps to reproduce the behavior:
+
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
 ## Expected behavior
 
@@ -21,14 +25,14 @@ A clear and concise description of what you expected to happen.
 
 ## Screenshots/Video
 
-If applicable, add screenshots/video to help explain your problem. Remember to mark the area in the application thats impacted.
+If applicable, add screenshots or video to help explain your problem.
 
 ## System setup/context
 
-- OS: [e.g. Windows 10.11.6]
-- branch name [e.g. `main`]
-- Python version
-- uv version
-- [anything else you feel might be relevant, perhaps relating to LLM config]
+- OS: [e.g. macOS, Linux, Windows]
+- Python version: [e.g. 3.12]
+- Package version: [e.g. 0.1.0]
 
-## Add any other context about the problem here
+## Additional context
+
+Add any other context about the problem here.

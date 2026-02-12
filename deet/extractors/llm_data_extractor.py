@@ -2,9 +2,10 @@
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import litellm
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from deet.data_models.base import (
     AnnotationType,
@@ -15,13 +16,15 @@ from deet.data_models.base import (
     LLMResponseSchema,
 )
 from deet.logger import logger
-from deet.settings import get_settings
+from deet.settings import LLMProvider, get_settings
 
 settings = get_settings()
 
 
 class PromptConfig(BaseModel):
     """Configuration for prompts used in data extraction."""
+
+    model_config = ConfigDict()
 
     system_prompt: str | Path = Field(
         description="System prompt that defines the task and role",
@@ -69,8 +72,11 @@ class PromptConfig(BaseModel):
 class DataExtractionConfig(BaseModel):
     """Configuration for data extraction tasks."""
 
+    model_config = ConfigDict()
+
     # LLM
     model: str = settings.llm_model
+    provider: LLMProvider = settings.llm_provider
     temperature: float = settings.llm_temperature
     max_tokens: int | None = settings.llm_max_tokens
 
@@ -130,9 +136,20 @@ class LLMDataExtractor:
         """
         self.config = config
         self.custom_system_prompt_file = custom_system_prompt_file
-        self.model = f"azure/{settings.azure_deployment}"
-        self.azure_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
-        self.azure_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+        if settings.llm_provider == LLMProvider.AZURE:
+            self.model = f"azure/{settings.azure_deployment}"
+            self.llm_api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
+        elif settings.llm_provider == LLMProvider.OLLAMA:
+            self.model = f"ollama/{settings.llm_model}"
+            self.llm_api_key = None
+            self.api_base = None
+        else:
+            error_message = f"Unsupported LLM provider: {settings.llm_provider}"
+            raise ValueError(error_message)
+
+        logger.info(f"Using {settings.llm_provider} with model: {self.model}")
+
         if show_litellm_debug_messages:
             litellm._turn_on_debug()  # noqa: SLF001
 
@@ -149,27 +166,46 @@ class LLMDataExtractor:
     def extract_from_document(
         self,
         attributes: list[Attribute],
-        payload: str,
-        context_type: ContextType | None,
-        prompt_outfile: Path | None = None,
-    ) -> list[GoldStandardAnnotation]:
+        *,
+        payload: str | None = None,
+        md_path: Path | None = None,
+        context_type: ContextType | None = None,
+    ) -> tuple[list[GoldStandardAnnotation], list[dict[str, Any]]]:
         """
         Extract data from a single document.
 
+        Call with either payload (document text) or md_path (path to markdown file).
+        If md_path is provided, the file is read and used as the payload.
+        Prompt payloads are not written here; the batch entry point
+        extract_from_documents writes them to prompt_outfile when provided.
+
         Args:
-            attributes: List of attributes to extract
-            payload: str with the actual contents of the document to be analysed.
-            context_type: Type of context to use (ContextType enum)
-            prompt_outfile: path to write whole prompt to, optional.
+            attributes: List of attributes to extract.
+            payload: Document text to extract from. Required if md_path not set.
+            md_path: Path to a markdown file to read as payload.
+                Required if payload not set.
+            context_type: Override config context type; if None, use config default.
 
         Returns:
-            List of annotations for the document
+            Tuple of (list of annotations for the document, messages sent to the LLM).
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
+            ValueError: If neither payload nor md_path provided, or both provided.
 
         """
-        # Convert config's selected_attribute_ids (list[str]) to list[int] for filtering
+        if (payload is None and md_path is None) or (
+            payload is not None and md_path is not None
+        ):
+            msg = "Exactly one of payload or md_path must be provided"
+            raise ValueError(msg)
+        if md_path is not None:
+            if not md_path.exists():
+                msg = f"Markdown file not found: {md_path}"
+                raise FileNotFoundError(msg)
+            payload = md_path.read_text(encoding="utf-8")
+        payload = cast("str", payload)
+
         filter_ids: list[int] | None = None
         if self.config.selected_attribute_ids:
             try:
@@ -177,7 +213,6 @@ class LLMDataExtractor:
                     int(attr_id) for attr_id in self.config.selected_attribute_ids
                 ]
             except (ValueError, TypeError):
-                # If conversion fails, set to empty list so no attributes match
                 logger.warning(
                     f"Invalid attribute IDs in config: "
                     f"{self.config.selected_attribute_ids}. "
@@ -196,51 +231,93 @@ class LLMDataExtractor:
         prompt = self._generate_user_message_json(
             payload=context, attributes=selected_attributes
         )
-        llm_response = self._call_llm(prompt=prompt, prompt_outfile=prompt_outfile)
-
-        return self._parse_llm_response(
+        llm_response, messages = self._call_llm(prompt=prompt)
+        annotations = self._parse_llm_response(
             response_content=llm_response, attributes=selected_attributes
         )
+        return annotations, messages
 
     def extract_from_documents(
         self,
-        payload: str,  # change to list[str] once we run for multiple pdfs.
         attributes: list[Attribute],
+        markdown_dir: Path,
         output_file: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
         prompt_outfile: Path | None = None,
-    ) -> list[GoldStandardAnnotation]:
+    ) -> dict[str, list[GoldStandardAnnotation]]:
         """
-        Extract data from multiple documents.
+        Extract data from all documents in a directory.
 
-        NOTE: placeholder, as we're still only working
-        on one doc.
+        Loops over files in markdown_dir. For each file, calls
+        extract_from_document with md_path and context_type. Results are
+        merged into one dict; optional combined JSON is written to output_file.
 
         Args:
-            attributes: List of attributes to extract
-            payload: the document(s) from which to extract data.
-            output_file: Optional file to save parsed LLM response.
-            context: a ContextType enum.
-            prompt_outfile: optional path to write out complete prompt config.
+            attributes: List of attributes to extract.
+            markdown_dir: Directory of markdown files (required).
+            output_file: Optional path to save combined results JSON.
+            context_type: Override config context type for each document.
+            prompt_outfile: Optional path to write a single JSON object:
+                keys are document (PDF) paths, values are prompt payload (messages).
 
 
         Returns:
-            List of annotations for all documents and attributes
+            Dictionary mapping file paths to lists of annotations.
 
         """
-        all_annotations = []
-        document_annotations = self.extract_from_document(
-            attributes,
-            payload=payload,
-            context_type=context_type,
-            prompt_outfile=prompt_outfile,
-        )
-        all_annotations.extend(document_annotations)
+        if not markdown_dir.exists() or not markdown_dir.is_dir():
+            msg = f"markdown_dir must be an existing directory: {markdown_dir}"
+            raise ValueError(msg)
 
-        if output_file:
-            self._save_results(all_annotations, output_file)
+        all_results: dict[str, list[GoldStandardAnnotation]] = {}
+        prompt_payloads: dict[str, Any] = {}
 
-        return all_annotations
+        input_files = [f for f in markdown_dir.iterdir() if f.suffix == ".md"]
+        if not input_files:
+            missing_files = f"no files in dir {markdown_dir}"
+            raise ValueError(missing_files)
+
+        for input_file in sorted(input_files):
+            logger.info(f"Processing file: {input_file.name} ({input_file})")
+            try:
+                result, messages = self.extract_from_document(
+                    attributes,
+                    md_path=input_file,
+                    context_type=context_type,
+                )
+
+                all_results[input_file.name] = result
+                prompt_payloads[input_file.name] = messages
+
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Failed to process {input_file}: {e}")
+                logger.debug("Error details", exc_info=True)
+
+        if output_file is not None:
+            self._save_results(all_results, output_file)
+            logger.info(f"Combined LLM classifications written to: {output_file}")
+
+        if prompt_outfile is not None:
+            prompt_outfile.write_text(
+                json.dumps(prompt_payloads, indent=2), encoding="utf-8"
+            )
+            logger.info(f"Prompt payloads saved to: {prompt_outfile}")
+
+        return all_results
+
+    def _write_json_if_path(
+        self, data: dict[str, Any] | list[Any], path: Path | None
+    ) -> None:
+        """
+        Write data as JSON to path if path is not None; otherwise no-op.
+
+        Args:
+            data: Dict or list to serialize as JSON.
+            path: Optional file path; when None, nothing is written.
+
+        """
+        if path is not None:
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def _filter_attributes(
         self, attributes: list[Attribute], filter_ids: list[int] | None = None
@@ -273,35 +350,25 @@ class LLMDataExtractor:
         )
         return filtered
 
-    def _prepare_context(  # type: ignore[mypy-note]
-        # mypy incorrectly flags 'context' as possibly unbound;
-        # all ContextType branches assign it before use.
+    def _prepare_context(
         self,
-        payload: str | list[str],  # NOTE: payload may be a single document (str)
-        # or multiple documents/snippets (list[str]).
+        payload: str,
         context_type: ContextType | None = None,
     ) -> str:
-        """Prepare context/payload based on context type."""
-        if context_type is None:
-            logger.debug("custom `context_type` not provided, using config-level.")
-            context_type = self.config.context_type
-
-        if context_type == ContextType.FULL_DOCUMENT:
+        """Prepare context based on context type."""
+        ctx = context_type if context_type is not None else self.config.context_type
+        logger.debug(f"Using context type: {ctx}")
+        if ctx == ContextType.FULL_DOCUMENT:
             context = payload
             logger.debug(f"Using full document context (length: {len(str(context))})")
-        # elif self.config.context_type == ContextType.ABSTRACT_ONLY:
-        #     context = document.context  # type: ignore[assignment]
-        #     logger.debug(f"Using abstract context (length: {len(str(context))})")
-        elif context_type == ContextType.RAG_SNIPPETS:
+        elif ctx == ContextType.RAG_SNIPPETS:
             rag_not_impl = "rag-snippets context type is not implemented."
             raise NotImplementedError(rag_not_impl)
-        elif context_type == ContextType.CUSTOM:
+        elif ctx == ContextType.CUSTOM:
             custom_not_impl = "custom context type is not implemented."
             raise NotImplementedError(custom_not_impl)
         else:
-            other_not_allowed = (
-                f"{self.config.context_type} context type is not allowed."
-            )
+            other_not_allowed = f"{ctx} context type is not allowed."
             raise ValueError(other_not_allowed)
 
         if isinstance(context, list):
@@ -365,21 +432,18 @@ class LLMDataExtractor:
 
         return prompt_json
 
-    def _call_llm(self, prompt: str, prompt_outfile: Path | None = None) -> str:
+    def _call_llm(self, prompt: str) -> tuple[str, list[dict[str, Any]]]:
         """
         Call the LLM with the given prompt.
 
         Args:
-            prompt (str): the prompt
-            prompt_outfile (Path | None, optional): a path to
-            write the whole prompt (sys prompt + user message + context) as json.
-            Defaults to None.
+            prompt: The user prompt (with context and attributes).
 
         Returns:
-            str: the llm's response, to be parsed.
+            Tuple of (LLM response text to be parsed, messages list sent to the API).
 
         """
-        messages: list[dict] = [
+        messages: list[dict[str, Any]] = [
             {"role": "system", "content": self.config.prompt_config.system_prompt},
             {"role": "user", "content": prompt},
         ]
@@ -389,13 +453,10 @@ class LLMDataExtractor:
         logger.debug(f" sys message: {messages[0]['content'][:1000]}")
         logger.debug(f"user msg{messages[1]['content'][:1000]}")
 
-        if prompt_outfile:
-            prompt_outfile.write_text(json.dumps(messages))
-
         response = litellm.completion(
             model=self.model,
-            api_key=self.azure_key,
-            api_base=self.azure_base,
+            api_key=self.llm_api_key,
+            api_base=self.api_base,
             messages=messages,
             temperature=self.config.temperature,
             response_format={
@@ -412,7 +473,7 @@ class LLMDataExtractor:
         response_content = response.choices[0].message.content
         logger.debug(f"raw response: {response_content}")
 
-        return response_content
+        return response_content, messages
 
     def _parse_llm_response(
         self,
@@ -493,9 +554,21 @@ class LLMDataExtractor:
         return annotations
 
     def _save_results(
-        self, annotations: list[GoldStandardAnnotation], output_file: Path
+        self,
+        results: dict[str, list[GoldStandardAnnotation]],
+        output_file: Path,
     ) -> None:
-        """Save results to file."""
-        annotations_json = [x.model_dump() for x in annotations]
-        output_file.write_text(json.dumps(annotations_json))
+        """
+        Save results to file.
+
+        Args:
+            results: Dictionary mapping file paths to lists of annotations.
+            output_file: Path to save results.
+
+        """
+        results_json: dict[str, list[dict[str, Any]]] = {
+            file_path: [ann.model_dump() for ann in annotations]
+            for file_path, annotations in results.items()
+        }
+        output_file.write_text(json.dumps(results_json, indent=2))
         logger.info(f"Results saved to: {output_file}")
