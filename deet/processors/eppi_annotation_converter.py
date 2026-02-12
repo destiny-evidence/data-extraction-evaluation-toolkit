@@ -98,7 +98,7 @@ class EppiAnnotationConverter:
 
         for attr in attributes_list:
             # extract children before modifying  dict
-            child_attributes = attr.get("Attributes", {}).get("AttributesList", [])
+            child_attributes = (attr.get("Attributes") or {}).get("AttributesList", [])
 
             attr["hierarchy_path"] = parent_path
             attr["hierarchy_level"] = (
@@ -382,9 +382,9 @@ class EppiAnnotationConverter:
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            " {len(documents_by_title)} documents, "
+            f" {len(documents_by_title)} documents, "
             f"{len(all_annotations)} annotations,"
-            " {len(annotated_documents)} annotated documents"
+            f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(
