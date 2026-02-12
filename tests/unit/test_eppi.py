@@ -69,6 +69,16 @@ def test_eppi_attribute_with_eppi_fields() -> None:
     assert attr.attribute_selection_type == EppiAttributeSelectionType.SELECTABLE
 
 
+def eppi_attribute_selection_type_case_insensitivity() -> None:
+    """Test the custom case-insensitivity for our attribute selection enum."""
+    outcome_a = EppiAttributeSelectionType("outcome")
+    outcome_b = EppiAttributeSelectionType("OUTCOME")
+    outcome_c = EppiAttributeSelectionType("ouTCoMe")
+    assert outcome_a == EppiAttributeSelectionType.OUTCOME
+    assert outcome_b == EppiAttributeSelectionType.OUTCOME
+    assert outcome_c == EppiAttributeSelectionType.OUTCOME
+
+
 def test_eppi_attribute_with_different_output_types() -> None:
     """Test EppiAttribute with different output_data_type values."""
     # Test with str type

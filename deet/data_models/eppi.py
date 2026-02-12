@@ -114,6 +114,15 @@ class EppiAttributeSelectionType(StrEnum):
     INTERVENTION = "Intervention"
     NOT_SELECTABLE = "Not Selectable (no checkbox)"
 
+    @classmethod
+    def _missing_(cls, value: object) -> "EppiAttributeSelectionType | None":
+        """Handle case-insensitive assignment & lookup."""
+        if isinstance(value, str):
+            for member in cls:
+                if member.value.lower() == value.lower():
+                    return member
+        return None
+
 
 class EppiAttribute(Attribute):
     """
@@ -162,12 +171,6 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    # attribute_selection_type: EppiAttributeSelectionType | None = Field(
-    #     description="Whether the attribute is Selectable in the "
-    #     " EPPI-Reviewer interface or not",
-    #     default=None,
-    #     alias="AttributeType",
-    # )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
         default=None,
