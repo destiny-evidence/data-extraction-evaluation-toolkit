@@ -329,7 +329,9 @@ class EppiAnnotationConverter:
         return doc_annotations
 
     def process_annotation_file(
-        self, file_path: str | Path, set_attribute_type: AttributeType | None = None
+        self,
+        file_path: str | Path,
+        set_attribute_type: str | AttributeType | None = None,
     ) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
@@ -351,6 +353,8 @@ class EppiAnnotationConverter:
 
         all_attributes_raw = self._extract_attributes_from_codesets(raw_data)
 
+        if isinstance(set_attribute_type, str):
+            set_attribute_type = AttributeType(set_attribute_type)
         attributes = self.convert_to_eppi_attributes(
             flattened_attributes=all_attributes_raw,
             set_attribute_type=set_attribute_type,
