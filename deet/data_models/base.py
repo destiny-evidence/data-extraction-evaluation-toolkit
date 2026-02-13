@@ -71,35 +71,6 @@ class AttributeType(StrEnum):
         }
         return mapping[self]
 
-    @classmethod
-    def parse(cls, value: str | AttributeType | None) -> AttributeType | None:
-        """
-        Parse a value into AttributeType.
-
-        Accepts string (CSV/JSON/config), an existing AttributeType (pass-through),
-        or None. Returns None for empty or invalid input so callers can use
-        `if attr_type := AttributeType.parse(...): ...`.
-
-        Args:
-            value: String like "string", "bool", "integer"; an AttributeType; or None.
-
-        Returns:
-            The matching AttributeType, or None if empty/invalid.
-
-        """
-        if value is None:
-            return None
-        if isinstance(value, cls):
-            return value
-        if isinstance(value, str):
-            if not (normalized := value.strip().lower()):
-                return None
-            for member in cls:
-                if member.value.lower() == normalized:
-                    return member
-            return None
-        return None
-
 
 class DocumentIDSource(StrEnum):
     """
