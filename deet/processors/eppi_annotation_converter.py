@@ -219,13 +219,12 @@ class EppiAnnotationConverter:
 
         # Coerce empty string to False for BOOL attributes (backward compatibility
         # when ItemAttributeFullTextDetails is absent)
+        # NOTE @sagaruprety this (modified to coerce all bools to bool) is OK
+        # for eppi as we're only expecting bool/str, but we need to implement
+        # elsewhere a functionality that auto-maps output_data to the correct data type.
         attr = attributes_lookup.get(annotation.get("AttributeId", 0))
-        if (
-            attr is not None
-            and attr.output_data_type == AttributeType.BOOL
-            and output_data == ""
-        ):
-            output_data = False
+        if attr is not None and attr.output_data_type == AttributeType.BOOL:
+            output_data = bool(output_data)
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
