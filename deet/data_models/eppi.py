@@ -29,6 +29,7 @@ eppi_destiny_parser = EPPIParser(tags=["deet"])
 DOI_REGEX = re.compile(
     r"(10\.\d{4,9}/[-._;()/:a-zA-Z0-9%<>\[\]+&]+)"
 )  # for sanitising DOIs
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
@@ -137,7 +138,7 @@ class EppiAttribute(Attribute):
         )
     )
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: AttributeType = AttributeType.BOOL
+    output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
@@ -435,7 +436,7 @@ class ProcessedAnnotationData(BaseModel):
                         f"Error processing row for attribute {attribute_id}: {e}"
                         "setting attribute type to bool."
                     )
-                    matching_attribute.output_data_type = AttributeType.BOOL
+                    matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
 
