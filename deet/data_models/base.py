@@ -1,13 +1,11 @@
 """Core data models for document processing and annotation."""
 
-from __future__ import annotations
-
 import csv
 from enum import StrEnum, auto
-from pathlib import Path  # noqa: TC003
+from pathlib import Path
 from typing import Any, Literal
 
-from destiny_sdk.references import ReferenceFileInput  # noqa: TC002
+from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
