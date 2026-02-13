@@ -121,8 +121,16 @@ class EppiAnnotationConverter:
 
         return flattened
 
+    def _extract_attributes_from_codesets(
+        self, raw_data: EppiRawData
+    ) -> list[dict[str, Any]]:
+        """Extract and flatten attributes from CodeSets using structured models."""
+        return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
+
     def convert_to_eppi_attributes(
-        self, flattened_attributes: list[dict[str, Any]]
+        self,
+        flattened_attributes: list[dict[str, Any]],
+        set_attribute_type: AttributeType | None = None,
     ) -> list[EppiAttribute]:
         """
         Convert flattened attribute data to EppiAttribute models.
@@ -138,7 +146,14 @@ class EppiAnnotationConverter:
         for att_dict in flattened_attributes:
             if "AttributeId" not in att_dict:
                 att_dict["AttributeId"] = 0
-            out.append(EppiAttribute(**att_dict))
+            new_attribute = EppiAttribute(**att_dict)
+            if set_attribute_type:
+                logger.debug(
+                    f"setting custom attribute type {set_attribute_type.value} "
+                    f"for attribute {new_attribute.attribute_id}"
+                )
+                new_attribute.output_data_type = set_attribute_type
+            out.append(new_attribute)
         return out
 
     def _process_text_details(
@@ -270,12 +285,6 @@ class EppiAnnotationConverter:
             for annotation in annotations_data
         ]
 
-    def _extract_attributes_from_codesets(
-        self, raw_data: EppiRawData
-    ) -> list[dict[str, Any]]:
-        """Extract and flatten attributes from CodeSets using structured models."""
-        return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
-
     def _create_pdf_to_title_mapping(
         self, references: list[dict[str, Any]]
     ) -> dict[str, str]:
@@ -319,12 +328,15 @@ class EppiAnnotationConverter:
 
         return doc_annotations
 
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
+    def process_annotation_file(
+        self, file_path: str | Path, set_attribute_type: AttributeType | None = None
+    ) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
 
         Args:
             file_path: Path to the JSON annotation file
+            set_attribute_type: custom AttributeType to set for incoming annotations.
 
         Returns:
             ProcessedAnnotationData containing all processed data
@@ -339,7 +351,10 @@ class EppiAnnotationConverter:
 
         all_attributes_raw = self._extract_attributes_from_codesets(raw_data)
 
-        attributes = self.convert_to_eppi_attributes(all_attributes_raw)
+        attributes = self.convert_to_eppi_attributes(
+            flattened_attributes=all_attributes_raw,
+            set_attribute_type=set_attribute_type,
+        )
 
         attributes_lookup: dict[int, EppiAttribute] = {
             attr.attribute_id: attr for attr in attributes
@@ -384,7 +399,6 @@ class EppiAnnotationConverter:
 
                 payload["annotations"] = annotations
 
-                # annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
                 annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
 
                 annotated_documents.append(annotated_doc)
