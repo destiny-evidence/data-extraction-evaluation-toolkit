@@ -406,7 +406,11 @@ class ProcessedAnnotationData(BaseModel):
             rows_processed = 0
             for row in reader:
                 # find attribute_id match
-                attribute_id = int(row["attribute_id"])
+                try:
+                    attribute_id = int(row.get("attribute_id"))  # type:ignore[arg-type]
+                except ValueError as e:
+                    logger.warning(e)
+                    continue
                 matching_attribute = None
 
                 for attribute in self.attributes:
@@ -421,17 +425,17 @@ class ProcessedAnnotationData(BaseModel):
                     continue
 
                 # populate prompt using the Attribute method
+                matching_attribute.populate_prompt_from_dict(row, overwrite=overwrite)
                 try:
-                    matching_attribute.populate_prompt_from_dict(
-                        row, overwrite=overwrite
-                    )
-                    if attr_type := AttributeType.parse(row.get("output_data_type")):
-                        matching_attribute.output_data_type = attr_type
+                    csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
+                    matching_attribute.output_data_type = csv_attr_type
                     rows_processed += 1
                 except ValueError as e:
                     logger.error(
                         f"Error processing row for attribute {attribute_id}: {e}"
+                        "setting attribute type to bool."
                     )
+                    matching_attribute.output_data_type = AttributeType.BOOL
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
 
