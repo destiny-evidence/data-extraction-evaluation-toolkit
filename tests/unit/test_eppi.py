@@ -1,6 +1,8 @@
 """Tests for EPPI-specific models."""
 
+import json
 from pathlib import Path
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -277,10 +279,6 @@ def test_import_prompts_csv_updates_output_data_type(
     sample_eppi_data: dict, tmp_path: Path
 ) -> None:
     """Test that populate_custom_prompts from CSV updates output_data_type."""
-    import json
-    from unittest.mock import mock_open, patch
-
-    # Use sample with empty Codes to avoid annotation validation issues
     data_no_codes = {**sample_eppi_data}
     for ref in data_no_codes.get("References", []):
         ref["Codes"] = []
@@ -295,7 +293,9 @@ def test_import_prompts_csv_updates_output_data_type(
     # Should have attributes with default output_data_type=BOOL
     assert len(result.attributes) > 0
     first_attr = result.attributes[0]
-    assert all([attr.output_data_type == AttributeType.BOOL for attr in results])
+    assert all(
+        [attr.output_data_type == AttributeType.BOOL for attr in result.attributes]  # noqa: C419
+    )
 
     # Create CSV with output_data_type=string for first attribute
     csv_path = tmp_path / "prompts.csv"
