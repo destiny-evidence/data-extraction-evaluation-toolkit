@@ -295,7 +295,7 @@ def test_import_prompts_csv_updates_output_data_type(
     # Should have attributes with default output_data_type=BOOL
     assert len(result.attributes) > 0
     first_attr = result.attributes[0]
-    assert first_attr.output_data_type == AttributeType.BOOL
+    assert all([attr.output_data_type == AttributeType.BOOL for attr in results])
 
     # Create CSV with output_data_type=string for first attribute
     csv_path = tmp_path / "prompts.csv"
