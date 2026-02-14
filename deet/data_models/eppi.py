@@ -419,9 +419,11 @@ class ProcessedAnnotationData(BaseModel):
                     )
                     continue
 
-                # populate prompt using the Attribute method
-                matching_attribute.populate_prompt_from_dict(row, overwrite=overwrite)
                 try:
+                    # populate prompt using the Attribute method
+                    matching_attribute.populate_prompt_from_dict(
+                        row, overwrite=overwrite
+                    )
                     csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
                     matching_attribute.output_data_type = csv_attr_type
                     rows_processed += 1
