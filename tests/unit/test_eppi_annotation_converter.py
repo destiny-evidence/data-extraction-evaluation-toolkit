@@ -72,12 +72,10 @@ def test_convert_to_eppi_attributes_custom_attribute_type(sample_eppi_data) -> N
         all_attributes_raw, set_attribute_type=AttributeType.STRING
     )
     assert len(attributes) > 0
-
-    first_attr = attributes[0]
-    assert hasattr(first_attr, "attribute_id")
-    assert hasattr(first_attr, "attribute_label")
-    assert hasattr(first_attr, "output_data_type")
-    assert first_attr.output_data_type == AttributeType.STRING
+    assert all(hasattr(attr, "attribute_id") for attr in attributes)
+    assert all(hasattr(attr, "attribute_label") for attr in attributes)
+    assert all(hasattr(attr, "output_data_type") for attr in attributes)
+    assert all(attr.output_data_type == AttributeType.STRING for attr in attributes)
 
 
 def test_convert_to_eppi_attributes_field_population(
