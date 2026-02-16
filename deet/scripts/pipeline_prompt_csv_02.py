@@ -86,7 +86,11 @@ def parse_pdf(
 
 
 def ingest_gold_standard_func(
-    eppi_json_path: Path, output_dir: Path, csv_path: Path
+    eppi_json_path: Path,
+    output_dir: Path,
+    csv_path: Path,
+    *,
+    retain_only_csv_attributes: bool = True,
 ) -> None:
     """Convert EPPI JSON to DEET data models and import prompts from CSV."""
     out = converter.process_annotation_file(eppi_json_path)
@@ -94,7 +98,11 @@ def ingest_gold_standard_func(
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
 
-    out.populate_custom_prompts(method="file", filepath=csv_path)
+    out.populate_custom_prompts(
+        method="file",
+        filepath=csv_path,
+        retain_only_csv_attributes=retain_only_csv_attributes,
+    )
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
@@ -166,6 +174,14 @@ def main() -> None:
         required=True,
     )
     parser.add_argument(
+        "-a",
+        "--all_attributes",
+        help="is flag is set, use all attributes, regardless of "
+        "whether prompt field is populated or not.",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
         "-f",
         "--filter_attribute_ids",
         help="an optional list of attribute_ids to filter by.",
@@ -189,6 +205,7 @@ def main() -> None:
     output_path: Path = args.output_path
     filter_attribute_ids: list[int] | None = args.filter_attribute_ids or None
     csv_path: Path = args.csv_path
+    retain_all_attributes: bool = args.all_attributes
 
     if not args.pdf_path and not args.markdown_path:
         error_msg = (
@@ -241,6 +258,7 @@ def main() -> None:
                 "eppi_json_path": eppi_json_path,
                 "output_dir": output_path,
                 "csv_path": csv_path,
+                "retain_only_csv_attributes": retain_all_attributes,
             },
         )(ingest_gold_standard_func)
     )
