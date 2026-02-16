@@ -1,6 +1,9 @@
 """Tests for EPPI-specific models."""
 
 import csv
+import json
+from pathlib import Path
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -13,6 +16,7 @@ from deet.data_models.eppi import (
     EppiRawData,
     ProcessedAnnotationData,
 )
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
 @pytest.fixture
@@ -325,7 +329,42 @@ def test_eppi_raw_data_with_codesets() -> None:
     assert raw_data.code_sets[0].attributes is not None
     assert "AttributesList" in raw_data.code_sets[0].attributes
     assert len(raw_data.code_sets[0].attributes["AttributesList"]) == 1
-    assert len(raw_data.code_sets[0].attributes["AttributesList"]) == 1
+
+
+def test_import_prompts_csv_updates_output_data_type(
+    sample_eppi_data: dict, tmp_path: Path
+) -> None:
+    """Test that populate_custom_prompts from CSV updates output_data_type."""
+    data_no_codes = {**sample_eppi_data}
+    for ref in data_no_codes.get("References", []):
+        ref["Codes"] = []
+
+    converter = EppiAnnotationConverter()
+    with patch(
+        "pathlib.Path.open",
+        mock_open(read_data=json.dumps(data_no_codes)),
+    ):
+        result = converter.process_annotation_file(tmp_path / "fake.json")
+
+    # Should have attributes with default output_data_type=BOOL
+    assert len(result.attributes) > 0
+    first_attr = result.attributes[0]
+    assert all(
+        [attr.output_data_type == AttributeType.BOOL for attr in result.attributes]  # noqa: C419
+    )
+
+    # Create CSV with output_data_type=string for first attribute
+    csv_path = tmp_path / "prompts.csv"
+    csv_path.write_text(
+        "attribute_id,prompt,output_data_type\n"
+        f"{first_attr.attribute_id},Test prompt,string\n",
+        encoding="utf-8",
+    )
+
+    result.populate_custom_prompts(method="file", filepath=csv_path)
+
+    assert first_attr.output_data_type == AttributeType.STRING
+    assert len(result.raw_data.code_sets[0].attributes["AttributesList"]) == 1  # type:ignore[index]
 
 
 # minimal tests for csv import

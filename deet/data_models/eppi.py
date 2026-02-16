@@ -29,6 +29,7 @@ eppi_destiny_parser = EPPIParser(tags=["deet"])
 DOI_REGEX = re.compile(
     r"(10\.\d{4,9}/[-._;()/:a-zA-Z0-9%<>\[\]+&]+)"
 )  # for sanitising DOIs
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
@@ -146,7 +147,7 @@ class EppiAttribute(Attribute):
         )
     )
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: AttributeType = AttributeType.BOOL
+    output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
@@ -417,7 +418,11 @@ class ProcessedAnnotationData(BaseModel):
             rows_processed = 0
             for row in reader:
                 # find attribute_id match
-                attribute_id = int(row["attribute_id"])
+                try:
+                    attribute_id = int(row.get("attribute_id"))  # type:ignore[arg-type]
+                except ValueError as e:
+                    logger.warning(e)
+                    continue
                 csv_attribute_ids.add(attribute_id)
                 matching_attribute = None
 
@@ -432,16 +437,20 @@ class ProcessedAnnotationData(BaseModel):
                     )
                     continue
 
-                # populate prompt using the Attribute method
                 try:
+                    # populate prompt using the Attribute method
                     matching_attribute.populate_prompt_from_dict(
                         row, overwrite=overwrite
                     )
+                    csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
+                    matching_attribute.output_data_type = csv_attr_type
                     rows_processed += 1
                 except ValueError as e:
                     logger.error(
                         f"Error processing row for attribute {attribute_id}: {e}"
+                        "setting attribute type to bool."
                     )
+                    matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
 
