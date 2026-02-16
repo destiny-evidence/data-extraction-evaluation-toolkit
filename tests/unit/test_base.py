@@ -769,6 +769,15 @@ def test_gold_standard_annotation_bool_type_invalid() -> None:
 def test_gold_standard_annotated_document_creation() -> None:
     """Test creating a gold standard annotated document."""
     citation = ReferenceFileInput()
+    document: Document = Document(
+        name="Test Document",
+        citation=citation,
+        context="This is test content",
+        context_type=ContextType.FULL_DOCUMENT,
+        document_id=1,
+        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+        filename="test.pdf",
+    )
 
     attr = Attribute(
         question_target="Test question",
@@ -784,16 +793,11 @@ def test_gold_standard_annotated_document_creation() -> None:
     )
 
     doc: GoldStandardAnnotatedDocument = GoldStandardAnnotatedDocument(
-        name="Test Document 3",
-        citation=citation,
-        context="Test content",
-        context_type=ContextType.FULL_DOCUMENT,
-        document_id=3,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+        document=document,
         annotations=[annotation],
     )
-    assert doc.name == "Test Document 3"
-    assert doc.document_id == 3
+    assert doc.document.name == "Test Document 3"
+    assert doc.document.document_id == 3
     assert len(doc.annotations) == 1
     assert doc.annotations[0].output_data is True
 
