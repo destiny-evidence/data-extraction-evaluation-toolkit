@@ -341,7 +341,7 @@ class ProcessedAnnotationData(BaseModel):
     documents: list[EppiDocument]
     annotations: list[EppiGoldStandardAnnotation]
     annotated_documents: list[EppiGoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[int, str] | None
+    attribute_id_to_label: dict[int, str]
     raw_data: EppiRawData | None
 
     def _custom_prompts_cli(self) -> None:

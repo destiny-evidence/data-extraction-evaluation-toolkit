@@ -22,6 +22,7 @@ def test_load_eppi_json_annotations(
     )  # @harryjmoss is this the right way to use non-`unittest` mocking?
     result = converter.process_annotation_file("fake_path.json")
     assert hasattr(result, "raw_data")
+    assert result.raw_data is not None
     assert len(result.raw_data.code_sets) == 2
     assert len(result.raw_data.references) > 0
 

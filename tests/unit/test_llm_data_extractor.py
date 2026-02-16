@@ -209,9 +209,8 @@ def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     """Test _prepare_context with ABSTRACT_ONLY type."""
     payload = "This is the full text."
     llm_extractor.config.context_type = ContextType.ABSTRACT_ONLY
-    # ABSTRACT_ONLY is currently commented out, so this will raise ValueError
-    with pytest.raises(ValueError, match="context type is not allowed"):
-        llm_extractor._prepare_context(payload=payload)
+    context = llm_extractor._prepare_context(payload=payload)
+    assert context == payload
 
 
 def test_prepare_context_truncation(llm_extractor, sample_eppi_document):
