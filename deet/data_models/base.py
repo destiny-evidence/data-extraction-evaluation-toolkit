@@ -70,6 +70,14 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
+class PromptPopulationMethod(StrEnum):
+    """Methods of populating prompts."""
+
+    FILE = auto()
+    CLI = auto()
+    ATTRIBUTEFILE = auto()
+
+
 class DocumentIDSource(StrEnum):
     """
     Sources for a given document_id. Can be e.g. eppi_item_id.

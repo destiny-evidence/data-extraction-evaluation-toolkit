@@ -5,7 +5,7 @@ import re
 from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
 from destiny_sdk.parsers import EPPIParser
@@ -22,6 +22,7 @@ from deet.data_models.base import (  # ContextType,
     Document,
     DocumentIDSource,
     GoldStandardAnnotation,
+    PromptPopulationMethod,
 )
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
@@ -211,6 +212,10 @@ class EppiDocument(Document):
         if not isinstance(data, dict):
             return data
 
+        citation = data.get("citation")
+        if citation is not None and "enhancements" in citation:
+            return data
+
         citation = parse_citation_to_destiny(reference=data)
         data["citation"] = citation
 
@@ -336,8 +341,8 @@ class ProcessedAnnotationData(BaseModel):
     documents: list[EppiDocument]
     annotations: list[EppiGoldStandardAnnotation]
     annotated_documents: list[EppiGoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[int, str]
-    raw_data: EppiRawData
+    attribute_id_to_label: dict[int, str] | None
+    raw_data: EppiRawData | None
 
     def _custom_prompts_cli(self) -> None:
         """
@@ -434,26 +439,28 @@ class ProcessedAnnotationData(BaseModel):
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
 
     def populate_custom_prompts(
-        self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
+        self, method: PromptPopulationMethod, filepath: Path | None = None, **kwargs
     ) -> None:
         """
         Populate custom prompts.
 
         Args:
-            method (Literal["cli", "file"])
+            method (PromptPopulationMethod)
             filepath (Path | None): infile path.
 
         Raises:
             FileNotFoundError: if method is file and there's no filepath.
 
         """
-        if method == "cli":
+        if method == PromptPopulationMethod.CLI:
             self._custom_prompts_cli()
-        elif method == "file":
+        elif method == PromptPopulationMethod.FILE:
             if filepath is None:
                 missing_filepath = "please specify a filepath!"
                 raise FileNotFoundError(missing_filepath)
             self._import_prompts_csv_file(filepath=filepath, **kwargs)
+        elif method == PromptPopulationMethod.ATTRIBUTEFILE:
+            pass
         else:
             not_impl = f"method {method} is not implemented. use cli or file."
             raise NotImplementedError(not_impl)

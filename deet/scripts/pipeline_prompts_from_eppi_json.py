@@ -14,11 +14,11 @@ from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from deet.processors.eppi_annotation_converter import (
+from deet.processors.base_converter import (
     DEFAULT_ATTRIBUTES_FILENAME,
     DEFAULT_BASE_OUTPUT_DIR,
-    EppiAnnotationConverter,
 )
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()

@@ -361,6 +361,9 @@ class LLMDataExtractor:
         if ctx == ContextType.FULL_DOCUMENT:
             context = payload
             logger.debug(f"Using full document context (length: {len(str(context))})")
+        elif ctx == ContextType.ABSTRACT_ONLY:
+            context = payload
+            logger.debug(f"Using abstract context (length: {len(str(context))})")
         elif ctx == ContextType.RAG_SNIPPETS:
             rag_not_impl = "rag-snippets context type is not implemented."
             raise NotImplementedError(rag_not_impl)

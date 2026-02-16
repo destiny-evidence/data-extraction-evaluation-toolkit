@@ -21,15 +21,20 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
+from deet.data_models.base import (
+    Attribute,
+    ContextType,
+    GoldStandardAnnotation,
+    PromptPopulationMethod,
+)
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
-from deet.processors.eppi_annotation_converter import (
+from deet.processors.base_converter import (
     DEFAULT_ATTRIBUTES_FILENAME,
     DEFAULT_BASE_OUTPUT_DIR,
-    EppiAnnotationConverter,
 )
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 from deet.processors.parser import DocumentParser
 
 parser = DocumentParser()
@@ -94,7 +99,7 @@ def ingest_gold_standard_func(
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
 
-    out.populate_custom_prompts(method="file", filepath=csv_path)
+    out.populate_custom_prompts(method=PromptPopulationMethod.FILE, filepath=csv_path)
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 

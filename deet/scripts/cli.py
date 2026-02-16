@@ -1,13 +1,30 @@
 """A CLI app to run DEET pipelines."""
 
+import json
 from pathlib import Path
+from uuid import uuid4
 
 import typer
+import yaml
+from destiny_sdk.enhancements import EnhancementType
+from ftfy import fix_text
+from pydantic import TypeAdapter
 
-from deet.data_models.base import Attribute, AttributeType
-from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
+from deet.data_models.base import (
+    Attribute,
+    AttributeType,
+    GoldStandardAnnotatedDocument,
+    PromptPopulationMethod,
+)
+from deet.data_models.eppi import EppiDocument, ProcessedAnnotationData
+from deet.extractors.llm_data_extractor import (
+    ContextType,
+    DataExtractionConfig,
+    LLMDataExtractor,
+)
 from deet.logger import logger
-from deet.processors.base_converter import SupportedImportFormat
+from deet.processors.base_converter import Outfiles
+from deet.processors.converter_register import SupportedImportFormat
 from deet.settings import get_settings
 
 settings = get_settings()
@@ -15,12 +32,149 @@ settings = get_settings()
 app = typer.Typer()
 
 
+def get_abstract(document: EppiDocument) -> str:
+    """Return the abstract of a reference. Will be replaced by feature/linking."""
+    for e in document.citation.enhancements or []:
+        if e.content.enhancement_type == EnhancementType.ABSTRACT:
+            return fix_text(e.content.abstract)
+    return ""
+
+
 @app.command()
-def import_data(gs_data_path: Path, gs_data_format: SupportedImportFormat) -> None:
-    """Import gold standard annotation data from a supported format."""
+def export_default_config(
+    output_path: Path = Path("default_extraction_config.yaml"),
+) -> None:
+    """Export the default DataExtractionConfig to a YAML file."""
+    config = DataExtractionConfig()
+    output_path.write_text(
+        yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False)
+    )
+    typer.echo(f"Default config exported to {output_path}")
+
+
+@app.command()
+def import_data(
+    gs_data_path: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    output_dir: Path = Path(),
+) -> ProcessedAnnotationData:
+    """
+    Import gold standard annotation data from a supported format.
+
+    Args:
+        gs_data_path (Path): A path to a file or directory containing gold
+        standard annotations
+        gs_data_format (SupportedImportFormat): Format of the input data.
+        This determines which converter to use. Defaults to SupportedImportFormat.DEET
+        output_dir (Path): Directory where processed data files will be
+        written if the input is not DEET. Defaults to the current working
+        directory.
+
+    Returns:
+        ProcessedAnnotationData: A structured object containing the
+        parsed annotation data.
+
+    Notes:
+        - If `gs_data_format` is DEET, the processed data will not be written to
+          disk (as we assume we are just reading in data that has already been
+          converted from another format and written to disk.)
+
+    """
     converter = gs_data_format.get_annotation_converter()
     out = converter.process_annotation_file(gs_data_path)
     logger.info(f"Imported data: {len(out.annotated_documents)} annotated documents.")
+    if gs_data_format != SupportedImportFormat.DEET:
+        converter.write_processed_data_to_file(
+            processed_data=out, output_dir=output_dir, outfiles_to_write=list(Outfiles)
+        )
+    return out
+
+
+@app.command()
+def write_prompt_csv(
+    gs_data_path: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    csv_path: Path = Path("prompt_definitions.csv"),
+) -> None:
+    """Write a prompt csv."""
+    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+    if csv_path.exists():
+        message = (
+            "Prompt definition csv already exists. Proceeding will "
+            "overwrite this and you may lose work. Do you want to continue?"
+        )
+        proceed = typer.confirm(message)
+        if proceed:
+            logger.info("Proceeding to overwrite prompt definition csv")
+            csv_path.unlink()
+        else:
+            raise typer.Abort()  # noqa: RSE102
+    out.export_attributes_csv_file(filepath=csv_path)
+
+
+@app.command()
+def data_extraction(
+    config_path: Path,
+    gs_data_path: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    prompt_population: PromptPopulationMethod = PromptPopulationMethod.ATTRIBUTEFILE,
+    csv_path: Path | None = None,
+) -> None:
+    """Extract data from documents."""
+    # Data Extraction config
+    config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
+
+    # Read data in
+    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+
+    # Filter attributes
+    if config.selected_attribute_ids:
+        out.attributes = [
+            att
+            for att in out.attributes
+            if att.attribute_id in config.selected_attribute_ids
+        ]
+
+    # Populate prompts
+    if prompt_population == PromptPopulationMethod.FILE and not csv_path:
+        message = "CSV prompt popluation selected without specifying csv_path"
+        raise ValueError(message)
+    out.populate_custom_prompts(method=prompt_population, filepath=csv_path)
+
+    data_extractor = LLMDataExtractor(config=config)
+
+    # Do data extraction
+    # This will all be replaced by data_extractor.extract_from_documents() once
+    # linked documents is working. This should ideally return a list of
+    # GoldStandardAnnotatedDocuments.
+    if config.context_type != ContextType.ABSTRACT_ONLY:
+        message = "Extraction with contexts other than abstract not supported"
+        raise ValueError(message)
+    llm_annotated_documents: list[GoldStandardAnnotatedDocument] = []
+
+    for document in out.documents:
+        abstract = get_abstract(document)
+
+        if abstract is None:
+            logger.warning(
+                f"Not processing document {document.document_id} "
+                "with missing abstract."
+            )
+            continue
+        annotations, messages = data_extractor.extract_from_document(
+            attributes=TypeAdapter(list[Attribute]).validate_python(out.attributes),
+            payload=abstract,
+        )
+        gold_standard_annotated_document = GoldStandardAnnotatedDocument(
+            **document.model_dump(mode="python"), annotations=annotations
+        )
+        llm_annotated_documents.append(gold_standard_annotated_document)
+        break
+
+    out_dir = gs_data_path / str(uuid4())
+    out_dir.mkdir()
+    json_data = [x.model_dump(mode="json") for x in llm_annotated_documents]
+    (out_dir / "annotated_documents.json").write_text(json.dumps(json_data, indent=2))
 
 
 @app.command()
