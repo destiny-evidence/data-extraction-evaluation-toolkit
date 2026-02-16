@@ -274,9 +274,12 @@ GoldStandardAnnotationTypeVar = TypeVar(
 )
 
 
-class GoldStandardAnnotatedDocument(Document, Generic[GoldStandardAnnotationTypeVar]):
+class GoldStandardAnnotatedDocument(
+    BaseModel, Generic[DocumentTypeVar, GoldStandardAnnotationTypeVar]
+):
     """A document with its gold standard annotations."""
 
+    document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
 
 
@@ -458,7 +461,9 @@ class ProcessedAnnotationData(
 
     def get_documents_with_annotations(self) -> list[Document]:
         """Get only documents that have annotations."""
-        annotated_doc_ids = {doc.document_id for doc in self.annotated_documents}
+        annotated_doc_ids = {
+            doc.document.document_id for doc in self.annotated_documents
+        }
         return [doc for doc in self.documents if doc.document_id in annotated_doc_ids]
 
     def get_annotations_by_type(

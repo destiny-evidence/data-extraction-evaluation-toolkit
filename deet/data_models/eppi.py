@@ -258,7 +258,7 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
 
 
 class EppiGoldStandardAnnotatedDocument(
-    GoldStandardAnnotatedDocument[EppiGoldStandardAnnotation]
+    GoldStandardAnnotatedDocument[EppiDocument, EppiGoldStandardAnnotation]
 ):
     """EPPI-specific gold standard annotated document."""
 
