@@ -21,6 +21,16 @@ class AnnotationType(StrEnum):
     LLM = auto()
 
 
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
+
+
 class AttributeType(StrEnum):
     """Enum of permitted attribute data types."""
 
@@ -47,15 +57,20 @@ class AttributeType(StrEnum):
         }
         return mapping[self]
 
+    def to_json_type(self) -> dict[str, str]:
+        """Map AttributeType to JS types for the JSON schema."""
+        mapping = {
+            AttributeType.STRING: {"type": "string"},
+            AttributeType.INTEGER: {"type": "integer"},
+            AttributeType.FLOAT: {"type": "number"},
+            AttributeType.BOOL: {"type": "boolean"},
+            AttributeType.LIST: {"type": "array"},
+            AttributeType.DICT: {"type": "object"},
+        }
+        return mapping[self]
 
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
 
-    EMPTY = auto()
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 class DocumentIDSource(StrEnum):
@@ -75,6 +90,8 @@ class Attribute(BaseModel):
 
     Represents a single piece of information to be extracted from documents.
     """
+
+    model_config = ConfigDict()
 
     prompt: str | None = None  # an optional prompt.
     question_target: str  # 'How many patients were recruited?' - the prompt/question
@@ -220,6 +237,8 @@ class Document(BaseModel):
     linking to a gold standard annotations document with references.
     """
 
+    model_config = ConfigDict()
+
     name: str
     citation: ReferenceFileInput
     context: str | list[str]
@@ -234,6 +253,8 @@ DocumentTypeVar = TypeVar("DocumentTypeVar", bound=Document)
 
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
+
+    model_config = ConfigDict()
 
     attribute: Attribute
     output_data: Any
@@ -278,6 +299,8 @@ class GoldStandardAnnotatedDocument(
     BaseModel, Generic[DocumentTypeVar, GoldStandardAnnotationTypeVar]
 ):
     """A document with its gold standard annotations."""
+
+    model_config = ConfigDict()
 
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
@@ -327,13 +350,19 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         logger.info(f"wrote attributes to file {filepath}.")
 
     def _import_prompts_csv_file(
-        self, filepath: Path, *, overwrite: bool = True
+        self,
+        filepath: Path,
+        *,
+        retain_only_csv_attributes: bool = True,
+        overwrite: bool = True,
     ) -> None:
         """
         Import prompts from a csv file.
 
         Args:
             filepath (Path): attribute/prompt input file.
+            retain_only_csv_attributes (bool, optional): if True, filter self.attributes
+                to only include attributes with ids found in csv. Defaults to True.
             overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
 
         """
@@ -344,6 +373,8 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         if filepath.suffix != ".csv":
             bad_suffix = "File must have .csv extension"
             raise ValueError(bad_suffix)
+
+        csv_attribute_ids = set()
 
         with filepath.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -365,7 +396,12 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
             rows_processed = 0
             for row in reader:
                 # find attribute_id match
-                attribute_id = int(row["attribute_id"])
+                try:
+                    attribute_id = int(row.get("attribute_id"))  # type:ignore[arg-type]
+                except ValueError as e:
+                    logger.warning(e)
+                    continue
+                csv_attribute_ids.add(attribute_id)
                 matching_attribute = None
 
                 for attribute in self.attributes:
@@ -379,18 +415,34 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
                     )
                     continue
 
-                # populate prompt using the Attribute method
                 try:
+                    # populate prompt using the Attribute method
                     matching_attribute.populate_prompt_from_dict(
                         row, overwrite=overwrite
                     )
+                    csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
+                    matching_attribute.output_data_type = csv_attr_type
                     rows_processed += 1
                 except ValueError as e:
                     logger.error(
                         f"Error processing row for attribute {attribute_id}: {e}"
+                        "setting attribute type to bool."
                     )
+                    matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
+
+        if retain_only_csv_attributes:
+            original_count = len(self.attributes)
+            self.attributes = [
+                attr
+                for attr in self.attributes
+                if attr.attribute_id in csv_attribute_ids
+            ]
+            logger.info(
+                f"filtered attributes from {original_count} to {len(self.attributes)} "
+                f"(retained only those in CSV)"
+            )
 
     def populate_custom_prompts(
         self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
@@ -459,6 +511,14 @@ class ProcessedAnnotationData(
         """Total number of documents with annotations."""
         return len(self.annotated_documents)
 
+    def get_attributes_by_attribute_type(
+        self, attribute_type: AttributeType
+    ) -> list[AttributeTypeVar]:
+        """Get all attributes of a specific type."""
+        return [
+            attr for attr in self.attributes if attr.output_data_type == attribute_type
+        ]
+
     def get_documents_with_annotations(self) -> list[Document]:
         """Get only documents that have annotations."""
         annotated_doc_ids = {
@@ -466,9 +526,9 @@ class ProcessedAnnotationData(
         }
         return [doc for doc in self.documents if doc.document_id in annotated_doc_ids]
 
-    def get_annotations_by_type(
+    def get_annotations_by_annotation_type(
         self, annotation_type: AnnotationType
-    ) -> list[GoldStandardAnnotation]:
+    ) -> list[GoldStandardAnnotationTypeVar]:
         """Get all annotations of a specific type (human/llm)."""
         return [
             ann for ann in self.annotations if ann.annotation_type == annotation_type
@@ -530,7 +590,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    output_data: Any
     additional_text: str | None = Field(
         ...,
         description=(

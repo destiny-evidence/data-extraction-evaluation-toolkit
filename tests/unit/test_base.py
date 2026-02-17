@@ -30,6 +30,14 @@ def test_attribute_type_to_python_type_population() -> None:
     assert deet_type_bool.to_python_type() is bool
 
 
+@pytest.mark.parametrize("attr_type", list(AttributeType))
+def test_to_python_type_is_defined_for_all_enum_members(attr_type):
+    """Ensure every AttributeType has a Python type mapping."""
+    python_type = attr_type.to_python_type()
+
+    assert isinstance(python_type, type)
+
+
 def test_attribute_creation_from_dict() -> None:
     """Test creating attribute from dictionary data (as would come from JSON)."""
     # This mimics how attributes are created from JSON data in the annotation converter

@@ -7,10 +7,13 @@ from typing import Any
 
 from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
 from destiny_sdk.parsers import EPPIParser
+from destiny_sdk.parsers.exceptions import ExternalIdentifierNotFoundError
 from destiny_sdk.references import ReferenceFileInput
+from loguru import logger
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
-from deet.data_models.base import (
+from deet.data_models.base import (  # ContextType,
+    DEFAULT_ATTRIBUTE_TYPE,
     Attribute,
     AttributeType,
     ContextType,
@@ -28,13 +31,19 @@ DOI_REGEX = re.compile(
 )  # for sanitising DOIs
 
 
-def sanitise_doi(doi_candidate: str) -> str:
+def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
     """Clean DOI strings in EPPI jsons."""
     doi = DOI_REGEX.search(doi_candidate)
     if doi and isinstance(doi, re.Match):
         return doi[0]
-    bad_doi = f"doi {doi} is bad."
-    raise ValueError(bad_doi)
+    if raise_on_fail:
+        bad_doi = f"doi {doi} is bad."
+        raise ValueError(bad_doi)
+    logger.debug(
+        "not found a valid DOI, returning empty string."
+        " to modify this behavioru, set raise_on_fail=True"
+    )
+    return ""
 
 
 def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
@@ -76,17 +85,23 @@ def parse_citation_to_destiny(reference: dict[str, Any]) -> ReferenceFileInput:
         EnhancementFileInput(
             source=eppi_destiny_parser.parser_source,
             visibility=Visibility.PUBLIC,
-            content=content[0],  # the enhancement
-            enhancement_type=content[1],  # the correct enhancement type
+            content=content[0],  # type:ignore[arg-type]
+            enhancement_type=content[1],  # type:ignore[call-arg]
         )
         for content in raw_enhancement_content
     ]
 
+    destiny_ids = None
+    try:
+        destiny_ids = eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
+            ref_to_import=reference
+        )
+    except ExternalIdentifierNotFoundError as e:
+        logger.warning(f"no identifier for reference. storing `None`. error: {e}")
+
     return ReferenceFileInput(
         visibility=Visibility.PUBLIC,
-        identifiers=eppi_destiny_parser._parse_identifiers(  # noqa: SLF001
-            ref_to_import=reference
-        ),
+        identifiers=destiny_ids,
         enhancements=enhancements,
     )
 
@@ -98,6 +113,15 @@ class EppiAttributeSelectionType(StrEnum):
     OUTCOME = "Outcome"
     INTERVENTION = "Intervention"
     NOT_SELECTABLE = "Not Selectable (no checkbox)"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "EppiAttributeSelectionType | None":
+        """Handle case-insensitive assignment & lookup."""
+        if isinstance(value, str):
+            for member in cls:
+                if member.value.lower() == value.lower():
+                    return member
+        return None
 
 
 class EppiAttribute(Attribute):
@@ -122,7 +146,7 @@ class EppiAttribute(Attribute):
         )
     )
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: AttributeType = AttributeType.BOOL
+    output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
@@ -147,12 +171,6 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    # attribute_selection_type: EppiAttributeSelectionType | None = Field(
-    #     description="Whether the attribute is Selectable in the "
-    #     " EPPI-Reviewer interface or not",
-    #     default=None,
-    #     alias="AttributeType",
-    # )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
         default=None,
@@ -175,9 +193,6 @@ class EppiDocument(Document):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    # EPPI-specific fields - these map automatically from camelCase JSON
-    # item_id: int
-    # title: str
     parent_title: str | None = None
     short_title: str | None = None
     date_created: str | None = None

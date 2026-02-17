@@ -20,7 +20,7 @@ authors = [
     {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
 dependencies = [
-    "destiny-sdk>=0.3.0",
+    "destiny-sdk[labs]>=0.9.1",
     "litellm>=1.77.4",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
@@ -59,9 +59,6 @@ omit = [
 ]
 source = ["deet"]
 
-[tool.mypy]
-plugins = ["pydantic.mypy"]
-
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "pypandoc.*"
@@ -84,6 +81,9 @@ module = "tabulate.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
+filterwarnings = [
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+]
 pythonpath = "."
 testpaths = ["tests"]
 
