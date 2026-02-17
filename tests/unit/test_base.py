@@ -778,11 +778,11 @@ def test_gold_standard_annotated_document_creation() -> None:
     """Test creating a gold standard annotated document."""
     citation = ReferenceFileInput()
     document: Document = Document(
-        name="Test Document",
+        name="Test Document 3",
         citation=citation,
         context="This is test content",
         context_type=ContextType.FULL_DOCUMENT,
-        document_id=1,
+        document_id=3,
         document_id_source=DocumentIDSource.EPPI_ITEM_ID,
         filename="test.pdf",
     )
