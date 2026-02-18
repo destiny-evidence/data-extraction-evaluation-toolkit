@@ -86,7 +86,11 @@ def parse_pdf(
 
 
 def ingest_gold_standard_func(
-    eppi_json_path: Path, output_dir: Path, csv_path: Path
+    eppi_json_path: Path,
+    output_dir: Path,
+    csv_path: Path,
+    *,
+    retain_only_csv_attributes: bool = True,
 ) -> None:
     """Convert EPPI JSON to DEET data models and import prompts from CSV."""
     out = converter.process_annotation_file(eppi_json_path)
@@ -94,7 +98,11 @@ def ingest_gold_standard_func(
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
 
-    out.populate_custom_prompts(method="file", filepath=csv_path)
+    out.populate_custom_prompts(
+        method="file",
+        filepath=csv_path,
+        retain_only_csv_attributes=retain_only_csv_attributes,
+    )
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
@@ -102,7 +110,7 @@ def llm_data_extraction(
     markdown_dir: Path,
     attributes_file_path: Path,
     output_path: Path,
-    filter_by_attribute_ids: list[int] | None = None,
+    filter_attribute_ids: list[int] | None = None,
     prompt_outfile: Path | None = None,
 ) -> dict[str, list[GoldStandardAnnotation]]:
     """
@@ -115,7 +123,6 @@ def llm_data_extraction(
         markdown_dir: Directory of markdown files.
         attributes_file_path: Path to attributes JSON file.
         output_path: Path to save combined output JSON.
-        pdf_dir: Directory of PDFs (optional); when set, lists inputs from here.
         filter_by_attribute_ids: Optional list of attribute IDs to filter.
         prompt_outfile: Optional path to write prompt payload for debugging.
 
@@ -125,15 +132,12 @@ def llm_data_extraction(
     """
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
-    if filter_by_attribute_ids:
-        attributes = [
-            a for a in attributes if a.attribute_id in filter_by_attribute_ids
-        ]
 
     return data_extractor.extract_from_documents(
         attributes=attributes,
         markdown_dir=markdown_dir,
         output_file=output_path,
+        filter_attribute_ids=filter_attribute_ids,
         context_type=ContextType.FULL_DOCUMENT,
         prompt_outfile=prompt_outfile,
     )
@@ -170,6 +174,22 @@ def main() -> None:
         required=True,
     )
     parser.add_argument(
+        "-a",
+        "--all_attributes",
+        help="is flag is set, use all attributes, regardless of "
+        "whether prompt field is populated or not.",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "-f",
+        "--filter_attribute_ids",
+        help="an optional list of attribute_ids to filter by.",
+        type=int,
+        nargs="+",
+        required=False,
+    )
+    parser.add_argument(
         "-o",
         "--output_path",
         help=("path to save output JSON (auto-generated if not provided)"),
@@ -183,7 +203,9 @@ def main() -> None:
     markdown_path = Path()
     eppi_json_path: Path = args.eppi_json_path
     output_path: Path = args.output_path
+    filter_attribute_ids: list[int] | None = args.filter_attribute_ids or None
     csv_path: Path = args.csv_path
+    retain_all_attributes: bool = args.all_attributes
 
     if not args.pdf_path and not args.markdown_path:
         error_msg = (
@@ -236,6 +258,7 @@ def main() -> None:
                 "eppi_json_path": eppi_json_path,
                 "output_dir": output_path,
                 "csv_path": csv_path,
+                "retain_only_csv_attributes": retain_all_attributes,
             },
         )(ingest_gold_standard_func)
     )
@@ -248,6 +271,7 @@ def main() -> None:
                 "attributes_file_path": output_path
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,
+                "filter_attribute_ids": filter_attribute_ids,
                 "output_path": output_path / "llm_extractions.json",
                 "prompt_outfile": output_path / "full_prompt_payload.json",
             },

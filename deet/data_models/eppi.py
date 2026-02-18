@@ -29,6 +29,7 @@ eppi_destiny_parser = EPPIParser(tags=["deet"])
 DOI_REGEX = re.compile(
     r"(10\.\d{4,9}/[-._;()/:a-zA-Z0-9%<>\[\]+&]+)"
 )  # for sanitising DOIs
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
@@ -114,6 +115,15 @@ class EppiAttributeSelectionType(StrEnum):
     INTERVENTION = "Intervention"
     NOT_SELECTABLE = "Not Selectable (no checkbox)"
 
+    @classmethod
+    def _missing_(cls, value: object) -> "EppiAttributeSelectionType | None":
+        """Handle case-insensitive assignment & lookup."""
+        if isinstance(value, str):
+            for member in cls:
+                if member.value.lower() == value.lower():
+                    return member
+        return None
+
 
 class EppiAttribute(Attribute):
     """
@@ -137,7 +147,7 @@ class EppiAttribute(Attribute):
         )
     )
     question_target: str = ""  # Always empty for EPPI
-    output_data_type: AttributeType = AttributeType.BOOL
+    output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
@@ -162,12 +172,6 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    # attribute_selection_type: EppiAttributeSelectionType | None = Field(
-    #     description="Whether the attribute is Selectable in the "
-    #     " EPPI-Reviewer interface or not",
-    #     default=None,
-    #     alias="AttributeType",
-    # )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
         default=None,
@@ -368,13 +372,19 @@ class ProcessedAnnotationData(BaseModel):
         logger.info(f"wrote attributes to file {filepath}.")
 
     def _import_prompts_csv_file(
-        self, filepath: Path, *, overwrite: bool = True
+        self,
+        filepath: Path,
+        *,
+        retain_only_csv_attributes: bool = True,
+        overwrite: bool = True,
     ) -> None:
         """
         Import prompts from a csv file.
 
         Args:
             filepath (Path): attribute/prompt input file.
+            retain_only_csv_attributes (bool, optional): if True, filter self.attributes
+                to only include attributes with ids found in csv. Defaults to True.
             overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
 
         """
@@ -385,6 +395,8 @@ class ProcessedAnnotationData(BaseModel):
         if filepath.suffix != ".csv":
             bad_suffix = "File must have .csv extension"
             raise ValueError(bad_suffix)
+
+        csv_attribute_ids = set()
 
         with filepath.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -406,7 +418,12 @@ class ProcessedAnnotationData(BaseModel):
             rows_processed = 0
             for row in reader:
                 # find attribute_id match
-                attribute_id = int(row["attribute_id"])
+                try:
+                    attribute_id = int(row.get("attribute_id"))  # type:ignore[arg-type]
+                except ValueError as e:
+                    logger.warning(e)
+                    continue
+                csv_attribute_ids.add(attribute_id)
                 matching_attribute = None
 
                 for attribute in self.attributes:
@@ -420,20 +437,34 @@ class ProcessedAnnotationData(BaseModel):
                     )
                     continue
 
-                # populate prompt using the Attribute method
                 try:
+                    # populate prompt using the Attribute method
                     matching_attribute.populate_prompt_from_dict(
                         row, overwrite=overwrite
                     )
-                    if attr_type := AttributeType.parse(row.get("output_data_type")):
-                        matching_attribute.output_data_type = attr_type
+                    csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
+                    matching_attribute.output_data_type = csv_attr_type
                     rows_processed += 1
                 except ValueError as e:
                     logger.error(
                         f"Error processing row for attribute {attribute_id}: {e}"
+                        "setting attribute type to bool."
                     )
+                    matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
+
+        if retain_only_csv_attributes:
+            original_count = len(self.attributes)
+            self.attributes = [
+                attr
+                for attr in self.attributes
+                if attr.attribute_id in csv_attribute_ids
+            ]
+            logger.info(
+                f"filtered attributes from {original_count} to {len(self.attributes)} "
+                f"(retained only those in CSV)"
+            )
 
     def populate_custom_prompts(
         self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
