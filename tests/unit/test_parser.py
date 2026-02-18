@@ -69,7 +69,9 @@ def mock_pypandoc(monkeypatch):
     """Stub `pypandoc.convert_file`."""
     monkeypatch.setattr(
         "deet.processors.parser.pypandoc.convert_file",
-        lambda file, to, format: f"converted {file} to {to} ({format})",
+        lambda file,
+        to,
+        **kwargs: f"converted {file} to {to} ({kwargs.get('format', '')})",
     )
 
 
@@ -311,7 +313,9 @@ def test_parse_jats_xml_string(monkeypatch, mock_check_language):
     # simulate xml/jats as str in memory
     monkeypatch.setattr(
         "deet.processors.parser.pypandoc.convert_text",
-        lambda text, to, format: f"converted string to {to} ({format})",  # noqa: ARG005
+        lambda text, to, **kwargs: (  # noqa: ARG005
+            f"converted string to {to} ({kwargs.get('format', '')})"
+        ),
     )
     parser = DocumentParser()
     jats_string = "<article><body>JATS content</body></article>"
@@ -327,7 +331,9 @@ def test_parse_jats_xml_string(monkeypatch, mock_check_language):
 def test_parse_jats_xml_string_missing_filetype(monkeypatch, mock_check_language):
     monkeypatch.setattr(
         "deet.processors.parser.pypandoc.convert_text",
-        lambda text, to, format: f"converted string to {to} ({format})",  # noqa: ARG005
+        lambda text, to, **kwargs: (  # noqa: ARG005
+            f"converted string to {to} ({kwargs.get('format', '')})"
+        ),
     )
     parser = DocumentParser()
     jats_string = "<article><body>JATS content</body></article>"

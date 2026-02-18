@@ -185,12 +185,12 @@ def test_extract_from_document_bad_filter_list(
     Test extract_from_document raises ValueError if the filter list cannot
     entirely be cast to integers.
     """
-    full_text = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = filter_ids
+    payload = "This is the full text of the document."
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
             attributes=sample_eppi_attributes,
-            payload=full_text,
+            payload=payload,
+            filter_attribute_ids=filter_ids,
             context_type=ContextType.FULL_DOCUMENT,
         )
 
@@ -199,38 +199,26 @@ def test_prepare_context_full_document_context_in_config(
     llm_extractor, sample_eppi_document
 ):
     """Test _prepare_context with FULL_DOCUMENT type."""
-    full_text = "This is the full text."
-    llm_extractor.config.context_type = ContextType.FULL_DOCUMENT
-    context = llm_extractor._prepare_context(payload=full_text)
-    assert context == full_text
-
-
-def test_prepare_context_full_document_context_as_arg(
-    llm_extractor, sample_eppi_document
-):
-    """Test _prepare_context with FULL_DOCUMENT type."""
-    full_text = "This is the full text."
-
-    context = llm_extractor._prepare_context(
-        payload=full_text, context_type=ContextType.FULL_DOCUMENT
-    )
-    assert context == full_text
+    payload = "This is the full text."
+    llm_extractor.config.default_context_type = ContextType.FULL_DOCUMENT
+    context = llm_extractor._prepare_context(payload=payload)
+    assert context == payload
 
 
 def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     """Test _prepare_context with ABSTRACT_ONLY type."""
-    full_text = "This is the full text."
-    llm_extractor.config.context_type = ContextType.ABSTRACT_ONLY
+    payload = "This is the full text."
+    llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
     # ABSTRACT_ONLY is currently commented out, so this will raise ValueError
     with pytest.raises(ValueError, match="context type is not allowed"):
-        llm_extractor._prepare_context(payload=full_text)
+        llm_extractor._prepare_context(payload=payload)
 
 
 def test_prepare_context_truncation(llm_extractor, sample_eppi_document):
     """Test that context is truncated if it exceeds max length."""
-    full_text = "This is the very long full text of the document."
+    payload = "This is the very long full text of the document."
     llm_extractor.config.max_context_length = 10
-    context = llm_extractor._prepare_context(payload=full_text)
+    context = llm_extractor._prepare_context(payload=payload)
     assert len(context) <= 13  # 10 chars + "..."
     assert context.endswith("...")
 
@@ -239,10 +227,10 @@ def test_prepare_context_not_implemented(
     llm_extractor: LLMDataExtractor, sample_eppi_document
 ):
     """Test that RAG and CUSTOM context types raise NotImplementedError."""
-    full_text = "This is the full text."
-    llm_extractor.config.context_type = ContextType.RAG_SNIPPETS
+    payload = "This is the full text."
+    llm_extractor.config.default_context_type = ContextType.RAG_SNIPPETS
     with pytest.raises(NotImplementedError):
-        llm_extractor._prepare_context(payload=full_text)
+        llm_extractor._prepare_context(payload=payload)
 
 
 def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
@@ -277,7 +265,7 @@ def test_call_llm(mock_litellm_completion, default_config, mock_settings, llm_pr
     mock_settings.llm_provider = llm_provider
     if llm_provider in [member.value for member in LLMProvider]:
         llm_extractor = create_llm_extractor(default_config, mock_settings)
-        response = llm_extractor._call_llm(prompt)
+        response, messages = llm_extractor._call_llm(prompt)
 
         mock_litellm_completion.assert_called_once()
         call_args = mock_litellm_completion.call_args
@@ -286,7 +274,7 @@ def test_call_llm(mock_litellm_completion, default_config, mock_settings, llm_pr
                 call_args.kwargs["model"] == f"azure/{mock_settings.azure_deployment}"
             )
         elif mock_settings.llm_provider == LLMProvider.OLLAMA:
-            assert call_args.kwargs["model"] == mock_settings.llm_model
+            assert call_args.kwargs["model"] == f"ollama/{mock_settings.llm_model}"
         else:
             assert mock_settings.llm_provider in LLMProvider
         assert call_args.kwargs["response_format"]["type"] == "json_schema"
@@ -295,6 +283,8 @@ def test_call_llm(mock_litellm_completion, default_config, mock_settings, llm_pr
             in call_args.kwargs["response_format"]["json_schema"]["name"]
         )
         assert response is not None
+        assert isinstance(messages, list)
+        assert len(messages) >= 1
     else:
         with pytest.raises(
             ValueError, match="Unsupported LLM provider: unsupported_provider"
@@ -362,13 +352,15 @@ def test_extract_from_document(
     mock_litellm_completion,
 ):
     """Test the end-to-end flow of extract_from_document."""
-    full_text = "This is the full text of the document."
-    annotations = llm_extractor.extract_from_document(
+    payload = "This is the full text of the document."
+    annotations, messages = llm_extractor.extract_from_document(
         sample_eppi_attributes,
-        payload=full_text,
+        payload=payload,
         context_type=ContextType.FULL_DOCUMENT,
     )
     assert len(annotations) == 1
+    assert isinstance(messages, list)
+    assert len(messages) >= 1
     assert annotations[0].attribute.attribute_id == 1234
     mock_litellm_completion.assert_called_once()
 
@@ -377,12 +369,12 @@ def test_extract_from_document_no_attributes(
     llm_extractor, sample_eppi_document, sample_eppi_attributes
 ):
     """Test extract_from_document raises ValueError if no attributes are selected."""
-    full_text = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = [999999]
+    payload = "This is the full text of the document."
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
             sample_eppi_attributes,
-            payload=full_text,
+            filter_attribute_ids=[999999],
+            payload=payload,
             context_type=ContextType.FULL_DOCUMENT,
         )
 
@@ -392,12 +384,14 @@ def test_extract_from_documents(
     sample_eppi_document,
     sample_eppi_attributes,
     mock_litellm_completion,
+    tmp_path,
 ):
-    """Test extracting from multiple documents."""
+    """Test extracting from multiple documents (directory mode)."""
     full_text = "This is the full text of the document."
+    (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
     all_annotations = llm_extractor.extract_from_documents(
-        payload=full_text,
         attributes=sample_eppi_attributes,
+        markdown_dir=tmp_path,
         context_type=ContextType.FULL_DOCUMENT,
     )
     assert len(all_annotations) == 1
@@ -409,15 +403,16 @@ def test_extract_from_documents_continues_on_error(
     sample_eppi_document,
     sample_eppi_attributes,
     mock_litellm_completion,
+    tmp_path,
 ):
-    """Test that processing continues if one document fails."""
-    # Note: extract_from_documents now processes a single extraction
-    # The error handling test is less relevant now, but we test that it raises
+    """Test that when one file fails, processing continues and returns empty dict."""
     full_text = "This is the full text of the document."
+    (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
     mock_litellm_completion.side_effect = ValueError("LLM call failed")
-    with pytest.raises(ValueError, match="LLM call failed"):
-        llm_extractor.extract_from_documents(
-            payload=full_text,
-            attributes=sample_eppi_attributes,
-            context_type=ContextType.FULL_DOCUMENT,
-        )
+    all_annotations = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        markdown_dir=tmp_path,
+        context_type=ContextType.FULL_DOCUMENT,
+    )
+    assert all_annotations == {}
+    assert mock_litellm_completion.call_count == 1

@@ -549,7 +549,7 @@ def stage_from_job(
     input_file: Path | None = None,
     logfile: Path | None = None,
     *,
-    skip_jobs_if_failed: bool = True,
+    skip_jobs_if_failed: bool = False,
 ) -> PipelineStage | Callable[[Job], PipelineStage]:
     """
     Create a PipelineStage from a single Job.
