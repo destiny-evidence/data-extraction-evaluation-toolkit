@@ -398,7 +398,7 @@ def test_import_prompts_with_csv_missing_prompt(test_csv_file, processed_data) -
 def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     test_csv_file, processed_data
 ) -> None:
-    """Test csv with one row missing prompts."""
+    """Test csv with one row missing prompts and retain_only_csv_attributes=False."""
     with test_csv_file.open(mode="a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
         writer.writerow({"attribute_id": "4", "prompt": ""})
@@ -411,7 +411,7 @@ def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     )
     processed_data.attributes.append(attr4)
 
-    # note the added arg
+    # note the added arg - this means we keep all original attributes
     processed_data._import_prompts_csv_file(
         test_csv_file, retain_only_csv_attributes=False
     )
@@ -420,4 +420,5 @@ def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     assert processed_data.attributes[0].prompt == "Test prompt 1"
     assert processed_data.attributes[1].prompt == "Test prompt 2"
     assert processed_data.attributes[2].prompt == "Test prompt 3"
-    assert processed_data.attributes[3].prompt == ""
+    # attr4's prompt was not updated because CSV had empty prompt for ID 4
+    assert processed_data.attributes[3].prompt is None
