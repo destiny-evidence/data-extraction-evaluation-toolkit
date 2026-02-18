@@ -205,7 +205,7 @@ def main() -> None:
     output_path: Path = args.output_path
     filter_attribute_ids: list[int] | None = args.filter_attribute_ids or None
     csv_path: Path = args.csv_path
-    retain_all_attributes: bool = args.all_attributes
+    retain_all_attributes: bool = not args.all_attributes
 
     if not args.pdf_path and not args.markdown_path:
         error_msg = (
