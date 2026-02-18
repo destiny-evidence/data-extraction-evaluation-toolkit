@@ -519,7 +519,7 @@ class ProcessedAnnotationData(
             attr for attr in self.attributes if attr.output_data_type == attribute_type
         ]
 
-    def get_documents_with_annotations(self) -> list[Document]:
+    def get_documents_with_annotations(self) -> list[DocumentTypeVar]:
         """Get only documents that have annotations."""
         annotated_doc_ids = {
             doc.document.document_id for doc in self.annotated_documents
