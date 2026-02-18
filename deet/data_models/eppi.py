@@ -487,7 +487,8 @@ class ProcessedAnnotationData(BaseModel):
         Args:
             filepath (Path): attribute/prompt input file.
             retain_only_csv_attributes (bool, optional): if True, filter self.attributes
-                to only include attributes with ids found in csv. Defaults to True.
+                to only include attributes with ids & a non-null prompt found in csv.
+                Defaults to True.
             overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
 
         """
