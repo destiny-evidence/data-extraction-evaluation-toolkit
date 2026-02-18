@@ -397,12 +397,10 @@ class EppiAnnotationConverter:
                     attributes_lookup,
                     attribute_id_to_label,
                 )
-                payload = doc.model_dump(mode="python")
-                annotations = [json.loads(ann.model_dump_json()) for ann in annotations]
 
-                payload["annotations"] = annotations
-
-                annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
+                annotated_doc = EppiGoldStandardAnnotatedDocument(
+                    document=doc, annotations=annotations
+                )
 
                 annotated_documents.append(annotated_doc)
                 all_annotations.extend(annotations)
