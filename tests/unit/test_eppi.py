@@ -1,6 +1,8 @@
 """Tests for EPPI-specific models."""
 
+import json
 from pathlib import Path
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -277,9 +279,6 @@ def test_import_prompts_csv_updates_output_data_type(
     sample_eppi_data: dict, tmp_path: Path
 ) -> None:
     """Test that populate_custom_prompts from CSV updates output_data_type."""
-    import json
-    from unittest.mock import mock_open, patch
-
     # Use sample with empty Codes to avoid annotation validation issues
     data_no_codes = {**sample_eppi_data}
     for ref in data_no_codes.get("References", []):

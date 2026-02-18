@@ -3,6 +3,7 @@
 import json
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
+from io import StringIO
 from os import PathLike
 from pathlib import Path
 
@@ -11,6 +12,10 @@ from loguru import logger
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+from pdfminer.pdfpage import PDFPage
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -25,6 +30,30 @@ from deet.utils.assess_text_quality import check_language
 # init marker converter
 artifact_dict = create_model_dict()
 converter = PdfConverter(artifact_dict=artifact_dict)
+
+
+def _parse_with_pdfminer(pdf_path: str) -> str:
+    """
+    Extract text from a PDF using pdfminer.six (no OCR).
+
+    Uses the standard converter API so it works across pdfminer.six versions.
+
+    Args:
+        pdf_path: Absolute path to the PDF file.
+
+    Returns:
+        Plain text string for the full document.
+
+    """
+    rsrcmgr = PDFResourceManager()
+    out = StringIO()
+    device = TextConverter(rsrcmgr, out, laparams=LAParams())
+    with Path(pdf_path).open("rb") as f:
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        for page in PDFPage.get_pages(f):
+            interpreter.process_page(page)
+    device.close()
+    return out.getvalue() or ""
 
 
 class InputFileType(StrEnum):
@@ -160,6 +189,30 @@ class MarkerParser(ParserLibrary):
         return ParsedOutput(**out)
 
 
+class PdfminerParser(ParserLibrary):
+    """Parser with pdfminer.six backend. Fast text extraction, no images or metadata."""
+
+    name = "pdfminer"
+    input_types = [InputFileType.PDF]
+    output_file_types = [OutputFileType.MD]
+
+    @classmethod
+    def parse(
+        cls,
+        input_: str | PathLike,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,  # noqa: ARG003
+    ) -> ParsedOutput:
+        """Parse file using pdfminer.six."""
+        if return_metadata or return_images:
+            msg = "PdfminerParser can't produce images or metadata."
+            raise InvalidOutputFileTypeError(msg)
+        text = _parse_with_pdfminer(str(input_))
+        return ParsedOutput(text=text)
+
+
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
@@ -213,7 +266,7 @@ class DocumentParser:
     """Parse documents from target format to other target format."""
 
     DEFAULT_PARSERS: dict[str, type[ParserLibrary]] = {
-        "pdf": MarkerParser,
+        "pdf": PdfminerParser,
         "epub": PandocParser,
         "html": PandocParser,
         "xml": PandocParser,

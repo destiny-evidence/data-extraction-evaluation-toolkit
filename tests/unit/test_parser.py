@@ -16,6 +16,7 @@ from deet.processors.parser import (
     MarkerParser,
     PandocParser,
     ParsedOutput,
+    PdfminerParser,
 )
 from deet.utils.assess_text_quality import check_language
 
@@ -81,6 +82,15 @@ def mock_check_language(monkeypatch):
     monkeypatch.setattr(
         "deet.processors.parser.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
+    )
+
+
+@pytest.fixture
+def mock_parse_with_pdfminer(monkeypatch):
+    """Stub `deet.processors.parser._parse_with_pdfminer`."""
+    monkeypatch.setattr(
+        "deet.processors.parser._parse_with_pdfminer",
+        lambda _: "dummy pdfminer text",
     )
 
 
@@ -172,6 +182,37 @@ def test_markerparser_returns_metadata_and_images(
     assert isinstance(result.images, dict)  # images
     for img in result.images.values():
         assert isinstance(img, Image.Image)
+
+
+def test_pdfminerparser_success(mock_parse_with_pdfminer, mock_check_language):
+    """When PdfminerParser is used for a PDF, the returned text matches the stub."""
+    parser = DocumentParser()
+    parsed_out = parser("any.pdf", parser=PdfminerParser)
+    assert isinstance(parsed_out, ParsedOutput)
+    assert isinstance(parsed_out.text, str)
+    assert parsed_out.text == "dummy pdfminer text"
+    assert parsed_out.images is None
+    assert parsed_out.metadata is None
+
+
+def test_pdfminerparser_raises_on_metadata_or_images(
+    mock_parse_with_pdfminer, mock_check_language
+):
+    """PdfminerParser raises when return_metadata or return_images requested."""
+    parser = DocumentParser()
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("any.pdf", parser=PdfminerParser, return_metadata=True)
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("any.pdf", parser=PdfminerParser, return_images=True)
+
+
+def test_documentparser_default_pdf_uses_pdfminer(
+    mock_parse_with_pdfminer, mock_check_language
+):
+    """When no parser is supplied for a PDF, the default PdfminerParser is used."""
+    parser = DocumentParser()
+    parsed_out = parser("doc.pdf")
+    assert parsed_out.text == "dummy pdfminer text"
 
 
 def test_parse_epub_success(mock_pypandoc, mock_check_language):
