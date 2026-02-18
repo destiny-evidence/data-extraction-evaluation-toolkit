@@ -2,7 +2,7 @@
 
 import csv
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
@@ -371,6 +371,109 @@ class ProcessedAnnotationData(BaseModel):
 
         logger.info(f"wrote attributes to file {filepath}.")
 
+    @staticmethod
+    def _validate_csv_file(filepath: Path) -> None:
+        """Validate csv file exists and has correct extension."""
+        if not filepath.exists():
+            no_file = f"CSV file not found: {filepath}"
+            raise FileNotFoundError(no_file)
+
+        if filepath.suffix != ".csv":
+            bad_suffix = "File must have .csv extension"
+            raise ValueError(bad_suffix)
+
+    @staticmethod
+    def _validate_csv_headers(fieldnames: Sequence[str] | None) -> None:
+        """Validate csv has required headers."""
+        if fieldnames is None:
+            empty_csv = "csv file is empty or has no headers"
+            raise ValueError(empty_csv)
+
+        required_fields = ["attribute_id", "prompt"]
+        for field in required_fields:
+            if field not in fieldnames:
+                csv_missing_fields = (
+                    f"csv must contain '{field}' column. "
+                    f"Found columns: {', '.join(fieldnames)}"
+                )
+                raise ValueError(csv_missing_fields)
+
+    def _process_csv_row(
+        self,
+        row: dict[str, Any],
+        csv_attribute_ids_with_prompts: set[int],
+        *,
+        overwrite: bool = True,
+    ) -> bool:
+        """
+        Process a single csv row and update the matching attribute.
+
+        Returns:
+            bool: True if row was processed successfully, False otherwise
+
+        """
+        try:
+            attribute_id = int(row.get("attribute_id"))  # type:ignore[arg-type]
+        except ValueError as e:
+            logger.warning(e)
+            return False
+
+        if (row.get("prompt") == "") or (row.get("prompt") is None):
+            logger.debug(
+                "prompt field is empty, "
+                f"so we don't want this attribute {attribute_id}."
+            )
+            return False
+
+        # Track attribute IDs that have non-empty prompts
+        csv_attribute_ids_with_prompts.add(attribute_id)
+
+        matching_attribute = None
+        for attribute in self.attributes:
+            if attribute.attribute_id == attribute_id:
+                matching_attribute = attribute
+                break
+
+        if matching_attribute is None:
+            logger.warning(f"No attribute found with ID {attribute_id}, skipping row")
+            return False
+
+        # Update attribute with prompt and data type
+        try:
+            matching_attribute.populate_prompt_from_dict(row, overwrite=overwrite)
+            csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
+            matching_attribute.output_data_type = csv_attr_type
+
+        except ValueError as e:
+            logger.error(
+                f"Error processing row for attribute {attribute_id}: {e}"
+                "setting attribute type to bool."
+            )
+            matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
+            return False
+        else:
+            return True
+
+    def _filter_attributes_by_csv(
+        self,
+        csv_attribute_ids_with_prompts: set[int],
+        *,
+        retain_only_csv_attributes: bool = True,
+    ) -> None:
+        """Filter attributes based on CSV content and retention policy."""
+        if retain_only_csv_attributes:
+            original_count = len(self.attributes)
+            # Only keep attributes that are in CSV AND have non-empty prompts
+            self.attributes = [
+                attr
+                for attr in self.attributes
+                if attr.attribute_id in csv_attribute_ids_with_prompts
+            ]
+            logger.info(
+                f"filtered attributes from {original_count} to {len(self.attributes)} "
+                f"(retained only those in CSV with non-empty prompts)"
+            )
+
     def _import_prompts_csv_file(
         self,
         filepath: Path,
@@ -384,87 +487,34 @@ class ProcessedAnnotationData(BaseModel):
         Args:
             filepath (Path): attribute/prompt input file.
             retain_only_csv_attributes (bool, optional): if True, filter self.attributes
-                to only include attributes with ids found in csv. Defaults to True.
+                to only include attributes with ids & a non-null prompt found in csv.
+                Defaults to True.
             overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
 
         """
-        if not filepath.exists():
-            no_file = f"CSV file not found: {filepath}"
-            raise FileNotFoundError(no_file)
+        self._validate_csv_file(filepath)
 
-        if filepath.suffix != ".csv":
-            bad_suffix = "File must have .csv extension"
-            raise ValueError(bad_suffix)
-
-        csv_attribute_ids = set()
+        csv_attribute_ids_with_prompts: set[int] = set()
+        rows_processed = 0
 
         with filepath.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
+            self._validate_csv_headers(reader.fieldnames)
 
-            if reader.fieldnames is None:
-                empty_csv = "CSV file is empty or has no headers"
-                raise ValueError(empty_csv)
-
-            required_fields = ["attribute_id", "prompt"]
-            for field in required_fields:
-                if field not in reader.fieldnames:
-                    csv_missing_fields = (
-                        f"CSV must contain '{field}' column. "
-                        f"Found columns: {', '.join(reader.fieldnames)}"
-                    )
-
-                    raise ValueError(csv_missing_fields)
-
-            rows_processed = 0
             for row in reader:
-                # find attribute_id match
-                try:
-                    attribute_id = int(row.get("attribute_id"))  # type:ignore[arg-type]
-                except ValueError as e:
-                    logger.warning(e)
-                    continue
-                csv_attribute_ids.add(attribute_id)
-                matching_attribute = None
-
-                for attribute in self.attributes:
-                    if attribute.attribute_id == attribute_id:
-                        matching_attribute = attribute
-                        break
-
-                if matching_attribute is None:
-                    logger.warning(
-                        f"No attribute found with ID {attribute_id}, skipping row"
-                    )
-                    continue
-
-                try:
-                    # populate prompt using the Attribute method
-                    matching_attribute.populate_prompt_from_dict(
-                        row, overwrite=overwrite
-                    )
-                    csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
-                    matching_attribute.output_data_type = csv_attr_type
+                if self._process_csv_row(
+                    row=row,
+                    csv_attribute_ids_with_prompts=csv_attribute_ids_with_prompts,
+                    overwrite=overwrite,
+                ):
                     rows_processed += 1
-                except ValueError as e:
-                    logger.error(
-                        f"Error processing row for attribute {attribute_id}: {e}"
-                        "setting attribute type to bool."
-                    )
-                    matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
 
             logger.info(f"Processed {rows_processed} prompts from {filepath}")
 
-        if retain_only_csv_attributes:
-            original_count = len(self.attributes)
-            self.attributes = [
-                attr
-                for attr in self.attributes
-                if attr.attribute_id in csv_attribute_ids
-            ]
-            logger.info(
-                f"filtered attributes from {original_count} to {len(self.attributes)} "
-                f"(retained only those in CSV)"
-            )
+        self._filter_attributes_by_csv(
+            csv_attribute_ids_with_prompts=csv_attribute_ids_with_prompts,
+            retain_only_csv_attributes=retain_only_csv_attributes,
+        )
 
     def populate_custom_prompts(
         self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
