@@ -401,7 +401,6 @@ class ProcessedAnnotationData(BaseModel):
     def _process_csv_row(
         self,
         row: dict[str, Any],
-        csv_attribute_ids: set[int],
         csv_attribute_ids_with_prompts: set[int],
         *,
         overwrite: bool = True,
@@ -418,8 +417,6 @@ class ProcessedAnnotationData(BaseModel):
         except ValueError as e:
             logger.warning(e)
             return False
-
-        csv_attribute_ids.add(attribute_id)
 
         if (row.get("prompt") == "") or (row.get("prompt") is None):
             logger.debug(
@@ -496,7 +493,6 @@ class ProcessedAnnotationData(BaseModel):
         """
         self._validate_csv_file(filepath)
 
-        csv_attribute_ids: set[int] = set()
         csv_attribute_ids_with_prompts: set[int] = set()
         rows_processed = 0
 
@@ -507,7 +503,6 @@ class ProcessedAnnotationData(BaseModel):
             for row in reader:
                 if self._process_csv_row(
                     row=row,
-                    csv_attribute_ids=csv_attribute_ids,
                     csv_attribute_ids_with_prompts=csv_attribute_ids_with_prompts,
                     overwrite=overwrite,
                 ):
