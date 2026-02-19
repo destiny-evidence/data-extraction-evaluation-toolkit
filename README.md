@@ -4,6 +4,8 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 
 ## tl, dr
 
+[Look here if you just want help running default pipelines](#default-pipelines).
+
 A key innovation of the [Destiny project](https://destiny-evidence.github.io/website/) is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
 
 This software enables this end-to-end process for data extraction and evaluation tasks. **`data-extraction-evaluation-toolkit`**; or **`deet`** is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
@@ -85,6 +87,34 @@ All these scripts will require:
 - paths to other relevant files, e.g. csvs containing prompts.
 These scripts will then produce a file `llm_extractions.json` containing llm classifications for each of the files contained in the directory.
 
+So, you might want to run something like this:
+
+```python
+python deet/scripts/pipeline_interactive_prompt_generation.py -m path/to/my/markdown/files -e path/to/eppi.json -o path/to/write/out/files
+```
+
+If you're unsure what kind of arguments a given script might required, you can always run something with the `-h` or `--help` flag, to get more info:
+
+```python
+python deet/scripts/pipeline_interactive_prompt_generation.py -h
+
+usage: pipeline_interactive_prompt_population.py [-h] [-p PDF_PATH] [-m MARKDOWN_PATH] -e EPPI_JSON_PATH
+                                                 [-f FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...]] [-o OUTPUT_PATH]
+
+options:
+  -h, --help            show this help message and exit
+  -p PDF_PATH, --pdf_path PDF_PATH
+                        directory containing PDF files
+  -m MARKDOWN_PATH, --markdown_path MARKDOWN_PATH
+                        directory containing or for markdown files
+  -e EPPI_JSON_PATH, --eppi_json_path EPPI_JSON_PATH
+                        path to eppi json
+  -f FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...], --filter_attribute_ids FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...]
+                        an optional list of attribute_ids to filter by.
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                        path to save output JSON (auto-generated if not provided)
+```
+
 ## Contributing
 
 If you want to contribute to this project -- awesome, everyone's welcome.
@@ -98,4 +128,4 @@ Tests are written using `pytest`. You can run the tests locally using
 pytest
 ```
 
-Unit tests are automatically run in [Continuous Integration](https://en.m.wikipedia.org/wiki/Continuous_integration) (CI) using github actions (see `.github/workflows/tests.yml`) on Pull Requests or merges into `main` or `development`. Integration tests are also run for pushes/PRs into `main` (Note: these will take approx 1-2h to complete, so consider a cup of coffee while you wait).
+Unit tests are automatically run in [Continuous Integration](https://en.m.wikipedia.org/wiki/Continuous_integration) (CI) using github actions (see `.github/workflows/tests.yml`) on Pull Requests or merges into `main` or `development`.
