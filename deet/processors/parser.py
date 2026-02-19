@@ -20,6 +20,7 @@ from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from deet.exceptions import (
+    EmptyPdfExtractionError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
@@ -30,30 +31,6 @@ from deet.utils.assess_text_quality import check_language
 # init marker converter
 artifact_dict = create_model_dict()
 converter = PdfConverter(artifact_dict=artifact_dict)
-
-
-def _parse_with_pdfminer(pdf_path: str) -> str:
-    """
-    Extract text from a PDF using pdfminer.six (no OCR).
-
-    Uses the standard converter API so it works across pdfminer.six versions.
-
-    Args:
-        pdf_path: Absolute path to the PDF file.
-
-    Returns:
-        Plain text string for the full document.
-
-    """
-    rsrcmgr = PDFResourceManager()
-    out = StringIO()
-    device = TextConverter(rsrcmgr, out, laparams=LAParams())
-    with Path(pdf_path).open("rb") as f:
-        interpreter = PDFPageInterpreter(rsrcmgr, device)
-        for page in PDFPage.get_pages(f):
-            interpreter.process_page(page)
-    device.close()
-    return out.getvalue() or ""
 
 
 class InputFileType(StrEnum):
@@ -195,6 +172,7 @@ class PdfminerParser(ParserLibrary):
     name = "pdfminer"
     input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD]
+    _LAPARAMS = LAParams()
 
     @classmethod
     def parse(
@@ -205,11 +183,21 @@ class PdfminerParser(ParserLibrary):
         return_images: bool = False,
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
-        """Parse file using pdfminer.six."""
+        """Parse file using pdfminer.six (no OCR)."""
         if return_metadata or return_images:
             msg = "PdfminerParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(msg)
-        text = _parse_with_pdfminer(str(input_))
+        rsrcmgr = PDFResourceManager()
+        out = StringIO()
+        device = TextConverter(rsrcmgr, out, laparams=cls._LAPARAMS)
+        with Path(input_).open("rb") as f:
+            interpreter = PDFPageInterpreter(rsrcmgr, device)
+            for page in PDFPage.get_pages(f):
+                interpreter.process_page(page)
+        device.close()
+        text = out.getvalue() or ""
+        if not text.strip():
+            raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
         return ParsedOutput(text=text)
 
 

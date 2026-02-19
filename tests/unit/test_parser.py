@@ -5,6 +5,7 @@ from PIL import Image
 from pydantic import ValidationError
 
 from deet.exceptions import (
+    EmptyPdfExtractionError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
@@ -86,11 +87,22 @@ def mock_check_language(monkeypatch):
 
 
 @pytest.fixture
-def mock_parse_with_pdfminer(monkeypatch):
-    """Stub `deet.processors.parser._parse_with_pdfminer`."""
+def mock_pdfminerparser_parse(monkeypatch):
+    """Stub PdfminerParser.parse to avoid actual PDF parsing."""
+
+    def _stub_parse(
+        cls,
+        input_,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,
+    ) -> ParsedOutput:
+        return ParsedOutput(text="dummy pdfminer text")
+
     monkeypatch.setattr(
-        "deet.processors.parser._parse_with_pdfminer",
-        lambda _: "dummy pdfminer text",
+        "deet.processors.parser.PdfminerParser.parse",
+        classmethod(_stub_parse),
     )
 
 
@@ -184,7 +196,7 @@ def test_markerparser_returns_metadata_and_images(
         assert isinstance(img, Image.Image)
 
 
-def test_pdfminerparser_success(mock_parse_with_pdfminer, mock_check_language):
+def test_pdfminerparser_success(mock_pdfminerparser_parse, mock_check_language):
     """When PdfminerParser is used for a PDF, the returned text matches the stub."""
     parser = DocumentParser()
     parsed_out = parser("any.pdf", parser=PdfminerParser)
@@ -195,8 +207,25 @@ def test_pdfminerparser_success(mock_parse_with_pdfminer, mock_check_language):
     assert parsed_out.metadata is None
 
 
+def test_pdfminerparser_raises_on_empty_extraction(tmp_path):
+    """PdfminerParser raises EmptyPdfExtractionError when PDF has no text."""
+    # Minimal valid PDF (empty page) - PDF Association smallest-possible-pdf-1.0
+    minimal_pdf_bytes = (
+        b"%PDF-1.0\n"
+        b"1 0 obj<< /Type/Catalog/Pages 2 0 R>>endobj\n"
+        b"2 0 obj<< /Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+        b"3 0 obj<< /Type/Page/Parent 2 0 R/Resources<<>>/MediaBox[0 0 9 9]>>endobj\n"
+        b"xref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000052 00000 n \n"
+        b"0000000101 00000 n \ntrailer<< /Root 1 0 R/Size 4>>\nstartxref\n174\n%%EOF"
+    )
+    empty_pdf = tmp_path / "empty.pdf"
+    empty_pdf.write_bytes(minimal_pdf_bytes)
+    with pytest.raises(EmptyPdfExtractionError, match="no extractable text"):
+        PdfminerParser.parse(input_=empty_pdf)
+
+
 def test_pdfminerparser_raises_on_metadata_or_images(
-    mock_parse_with_pdfminer, mock_check_language
+    mock_pdfminerparser_parse, mock_check_language
 ):
     """PdfminerParser raises when return_metadata or return_images requested."""
     parser = DocumentParser()
@@ -207,7 +236,7 @@ def test_pdfminerparser_raises_on_metadata_or_images(
 
 
 def test_documentparser_default_pdf_uses_pdfminer(
-    mock_parse_with_pdfminer, mock_check_language
+    mock_pdfminerparser_parse, mock_check_language
 ):
     """When no parser is supplied for a PDF, the default PdfminerParser is used."""
     parser = DocumentParser()
