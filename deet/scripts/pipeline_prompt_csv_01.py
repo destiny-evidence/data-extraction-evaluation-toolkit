@@ -51,7 +51,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
+    eppi_json_dir = Path(args.eppi_json_path).stem
     eppi_out_path = (
         Path(args.eppi_json_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
     )

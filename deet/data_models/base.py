@@ -64,6 +64,8 @@ class Attribute(BaseModel):
     Represents a single piece of information to be extracted from documents.
     """
 
+    model_config = ConfigDict()
+
     prompt: str | None = None  # an optional prompt.
     question_target: str  # 'How many patients were recruited?' - the prompt/question
     output_data_type: AttributeType  # One of the defined output data types
@@ -197,6 +199,8 @@ class Attribute(BaseModel):
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
 
+    model_config = ConfigDict()
+
     attribute: Attribute
     output_data: Any
     annotation_type: AnnotationType
@@ -279,7 +283,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    output_data: Any
     additional_text: str | None = Field(
         ...,
         description=(
