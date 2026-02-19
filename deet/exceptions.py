@@ -49,3 +49,18 @@ class MalformedLanguageError(Exception):
         Exception (_type_): _description_
 
     """
+
+
+class EmptyPdfExtractionError(Exception):
+    """
+    Raise when PDF parsing yields no extractable text.
+
+    Occurs when the PDF has no mappable text (e.g. image-only) or when text
+    is represented in a way pdfminer cannot decode.
+
+    """
+
+    DEFAULT_MESSAGE = (
+        "PDF contained no extractable text (e.g. image-only or text in "
+        "unsupported encoding)."
+    )
