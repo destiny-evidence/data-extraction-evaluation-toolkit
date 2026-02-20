@@ -9,6 +9,7 @@ Last updated: NL, 2025-02-19
 - By default, PRs should point to the `development` branch, where they can be stress-tested before getting merged into `main`.
   - However, a lot of PRs will likely point towards other fix/feature branches.
 - PRs will only be merged into `development` once they have been approved by at least one reviewer. This is peer review -- ask your fellow contributors to review your code, it won't happen automatically.
+- In the spirit of atomicity, keep in mind the reviewer's time when putting together your PR. This should reflect both a manageable complexity and length of the new feature.
 - Some people enjoy using AI-assisted coding, and that's cool. But the notion that tools like Cursor, Claude Code, Copilot etc. will __10x__ your software development chops are debateable, at best. For the purpose of contributing to `deet`, please ensure that you've self-reviewed your AI code to the degree that you're 100% sure it's the absolute best it can be before asking for review. Do _not_ throw end-to-end AI code to a human reviewer, as this simply externalises the effort onto the review process.
 - __BEFORE ASKING FOR REVIEW__, please ensure the following:
   - all existing and new tests are passing, both locally and in Continuous integration (CI)
@@ -17,6 +18,7 @@ Last updated: NL, 2025-02-19
   - your contribution is well-documented, to the point that the PR summary itemises the changes you've made.
 - Note that you can't expect your colleagues to include running your code in the context of reviewing it. __The onus of ensuring a) that your code works and b) that it doesn't break existing functionality is ___on you___.__
 - Copilot can be a decent PR reviewer, especially before you ask a fellow contributor for a review. Copilot alone should typically not be sufficient for allowing a PR to be merged however.
+- Once a PR is approved and ready for review, the original author should merge the commit into the target branch.
 
 ## Have you found a bug you want to report?
 
