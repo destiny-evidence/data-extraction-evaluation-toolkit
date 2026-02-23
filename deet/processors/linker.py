@@ -44,12 +44,12 @@ class DocumentReferenceMapping(BaseModel):
 
     @field_validator("document_id", mode="before")
     @classmethod
-    def ensure_valid_doc_id(cls, v: int) -> int:
+    def ensure_valid_doc_id(cls, value: int) -> int:
         """Ensure supplied document_id has 8 digits."""
-        if len(str(v)) != DOCUMENT_ID_N_DIGITS:
-            val_err = f'`document_id` must have 8 digits. supplied" {v}'
+        if len(str(value)) != DOCUMENT_ID_N_DIGITS:
+            val_err = f'`document_id` must have 8 digits. supplied" {value}'
             raise ValueError(val_err)
-        return v
+        return value
 
     @model_validator(mode="after")
     def ensure_file_exists(self) -> Self:
