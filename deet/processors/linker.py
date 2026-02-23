@@ -13,6 +13,7 @@ from pydantic import BaseModel, field_validator, model_validator
 
 from deet.data_models.base import ContextType
 from deet.data_models.documents import Document, LinkedDocument
+from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
 
@@ -182,7 +183,7 @@ class MappingImporter:
 
         else:
             bad_json = "json must be either a list(array) or dict format."
-            raise TypeError(bad_json)  # is this the right error?
+            raise JsonStyleError(bad_json)
 
         return result
 

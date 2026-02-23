@@ -85,3 +85,14 @@ class BadDocumentIdError(Exception):
         Exception (_type_): _description_
 
     """
+
+
+class JsonStyleError(Exception):
+    """
+    Raise when a json containing document-reference-linkages
+    is incorrectly formatted.
+
+    Args:
+        Exception (_type_): _description_
+
+    """
