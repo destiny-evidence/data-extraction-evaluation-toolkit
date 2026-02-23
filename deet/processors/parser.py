@@ -2,6 +2,7 @@
 
 import json
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from enum import StrEnum, auto
 from io import StringIO
 from os import PathLike
@@ -75,6 +76,7 @@ class ParsedOutput(BaseModel):
     text: str
     images: dict[str, Image] | None = None
     metadata: dict | None = None
+    timestamp: datetime = datetime.now(tz=UTC)
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True
