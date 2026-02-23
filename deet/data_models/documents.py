@@ -278,6 +278,14 @@ class Document(BaseModel):
             or self.document_identity.first_author is None
             or self.document_identity.year is None
         ):
+            whats_what = f"self.document_identity: {self.document_identity}; "
+            if self.document_identity is not None:
+                whats_what += (
+                    "self.document_identity.first_author: "
+                    f"{self.document_identity.first_author}; "
+                    f"self.document_identity.year: {self.document_identity.year}."
+                )
+            logger.warning(whats_what)
             raise ValueError
         author_name = self.document_identity.first_author
         year = self.document_identity.year
