@@ -17,7 +17,11 @@ from PIL import Image
 from pydantic import BaseModel, model_validator
 
 from deet.data_models.base import ContextType, GoldStandardAnnotation
-from deet.exceptions import BadDocumentIdError, MissingCitationElementError
+from deet.exceptions import (
+    BadDocumentIdError,
+    MissingCitationElementError,
+    NoAbstractError,
+)
 from deet.processors.parser import ParsedOutput
 from deet.utils.identifier_utils import (
     DOCUMENT_ID_N_DIGITS,
@@ -294,6 +298,19 @@ class Document(BaseModel):
         longest_component = max(name_components, key=len)
 
         return f"{longest_component.lower()}_{year}"
+
+    def set_abstract_context(self) -> None:
+        """Set the abstract, contained in `citation` field, as context."""
+        abstract = LabsReference(reference=self.citation).abstract
+        if abstract is not None:
+            self.context_type = ContextType.ABSTRACT_ONLY
+            self.context = abstract
+            logger.info(
+                "set context type to ABSTRACT_ONLY; set context to abstract."
+                f" snippet: {abstract[:20]}"
+            )
+        no_abstract = "No abstract found"
+        raise NoAbstractError(no_abstract)
 
     def link_parsed_document(
         self,

@@ -96,3 +96,13 @@ class JsonStyleError(Exception):
         Exception (_type_): _description_
 
     """
+
+
+class NoAbstractError(Exception):
+    """
+    Raise when we can't find an abstract in our citation info.
+
+    Args:
+        Exception (_type_): _description_
+
+    """
