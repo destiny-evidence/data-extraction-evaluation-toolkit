@@ -40,7 +40,7 @@ def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
         raise ValueError(bad_doi)
     logger.debug(
         "not found a valid DOI, returning empty string."
-        " to modify this behavioru, set raise_on_fail=True"
+        " to modify this behaviour, set raise_on_fail=True"
     )
     return ""
 
