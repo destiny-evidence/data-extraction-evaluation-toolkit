@@ -128,7 +128,7 @@ class DocumentIdentity(BaseModel):
         if len(attempted_sources) == len(hierarchy):
             max_attempts = 10
             attempts = 0
-            while True:
+            for _ in range(max_attempts):
                 potential_id = self._random_int_id()
                 if potential_id not in existing_ids:
                     self.document_id = potential_id
@@ -138,11 +138,8 @@ class DocumentIdentity(BaseModel):
                         f"using {id_source}"
                     )
                     return
-                attempts += 1
-                if attempts == max_attempts:
-                    err_msg += f" plus {attempts} randint attempts."
-                    break
 
+        err_msg += f" plus {attempts} randint attempts."
         raise BadDocumentIdError(err_msg)
 
     def _create_id_factory(self, id_source: DocumentIDSource) -> Callable:
