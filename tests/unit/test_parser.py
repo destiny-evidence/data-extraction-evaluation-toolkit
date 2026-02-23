@@ -5,6 +5,7 @@ from PIL import Image
 from pydantic import ValidationError
 
 from deet.exceptions import (
+    EmptyPdfExtractionError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
@@ -16,6 +17,7 @@ from deet.processors.parser import (
     MarkerParser,
     PandocParser,
     ParsedOutput,
+    PdfminerParser,
 )
 from deet.utils.assess_text_quality import check_language
 
@@ -81,6 +83,26 @@ def mock_check_language(monkeypatch):
     monkeypatch.setattr(
         "deet.processors.parser.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
+    )
+
+
+@pytest.fixture
+def mock_pdfminerparser_parse(monkeypatch):
+    """Stub PdfminerParser.parse to avoid actual PDF parsing."""
+
+    def _stub_parse(
+        cls,
+        input_,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,
+    ) -> ParsedOutput:
+        return ParsedOutput(text="dummy pdfminer text")
+
+    monkeypatch.setattr(
+        "deet.processors.parser.PdfminerParser.parse",
+        classmethod(_stub_parse),
     )
 
 
@@ -172,6 +194,54 @@ def test_markerparser_returns_metadata_and_images(
     assert isinstance(result.images, dict)  # images
     for img in result.images.values():
         assert isinstance(img, Image.Image)
+
+
+def test_pdfminerparser_success(mock_pdfminerparser_parse, mock_check_language):
+    """When PdfminerParser is used for a PDF, the returned text matches the stub."""
+    parser = DocumentParser()
+    parsed_out = parser("any.pdf", parser=PdfminerParser)
+    assert isinstance(parsed_out, ParsedOutput)
+    assert isinstance(parsed_out.text, str)
+    assert parsed_out.text == "dummy pdfminer text"
+    assert parsed_out.images is None
+    assert parsed_out.metadata is None
+
+
+def test_pdfminerparser_raises_on_empty_extraction(tmp_path):
+    """PdfminerParser raises EmptyPdfExtractionError when PDF has no text."""
+    # Minimal valid PDF (empty page) - PDF Association smallest-possible-pdf-1.0
+    minimal_pdf_bytes = (
+        b"%PDF-1.0\n"
+        b"1 0 obj<< /Type/Catalog/Pages 2 0 R>>endobj\n"
+        b"2 0 obj<< /Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+        b"3 0 obj<< /Type/Page/Parent 2 0 R/Resources<<>>/MediaBox[0 0 9 9]>>endobj\n"
+        b"xref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000052 00000 n \n"
+        b"0000000101 00000 n \ntrailer<< /Root 1 0 R/Size 4>>\nstartxref\n174\n%%EOF"
+    )
+    empty_pdf = tmp_path / "empty.pdf"
+    empty_pdf.write_bytes(minimal_pdf_bytes)
+    with pytest.raises(EmptyPdfExtractionError, match="no extractable text"):
+        PdfminerParser.parse(input_=empty_pdf)
+
+
+def test_pdfminerparser_raises_on_metadata_or_images(
+    mock_pdfminerparser_parse, mock_check_language
+):
+    """PdfminerParser raises when return_metadata or return_images requested."""
+    parser = DocumentParser()
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("any.pdf", parser=PdfminerParser, return_metadata=True)
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("any.pdf", parser=PdfminerParser, return_images=True)
+
+
+def test_documentparser_default_pdf_uses_pdfminer(
+    mock_pdfminerparser_parse, mock_check_language
+):
+    """When no parser is supplied for a PDF, the default PdfminerParser is used."""
+    parser = DocumentParser()
+    parsed_out = parser("doc.pdf")
+    assert parsed_out.text == "dummy pdfminer text"
 
 
 def test_parse_epub_success(mock_pypandoc, mock_check_language):
