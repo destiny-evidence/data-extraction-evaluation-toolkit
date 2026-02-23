@@ -77,6 +77,7 @@ class ParsedOutput(BaseModel):
     images: dict[str, Image] | None = None
     metadata: dict | None = None
     timestamp: datetime = datetime.now(tz=UTC)
+    parser_library: str
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True
@@ -165,7 +166,7 @@ class MarkerParser(ParserLibrary):
             out["metadata"] = rendered.metadata
         if return_images:
             out["images"] = images
-        return ParsedOutput(**out)
+        return ParsedOutput(**out, parser_library=cls.name)
 
 
 class PdfminerParser(ParserLibrary):
@@ -200,7 +201,7 @@ class PdfminerParser(ParserLibrary):
         text = out.getvalue() or ""
         if not text.strip():
             raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
-        return ParsedOutput(text=text)
+        return ParsedOutput(text=text, parser_library=cls.name)
 
 
 class PandocParser(ParserLibrary):
@@ -249,7 +250,7 @@ class PandocParser(ParserLibrary):
                 format=input_type,
             )
         }
-        return ParsedOutput(**out)
+        return ParsedOutput(**out, parser_library=cls.name)
 
 
 class DocumentParser:
