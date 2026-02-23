@@ -337,8 +337,10 @@ class LinkedDocument(Document):
     @model_validator(mode="after")
     def set_context_from_parsed(self) -> Self:
         """Symlink context to parsed_document.text."""
-        if self.parsed_document and self.parsed_document.text:
+        if self.parsed_document.text:
             self.context = self.parsed_document.text
+        else:
+            logger.warning("no text in parsed_document!")
         return self
 
     def save(self, path: Path) -> None:
