@@ -72,6 +72,8 @@ class ParsedOutput(BaseModel):
         text, str: md-formatted parsed text (required)
         images, pillow.img: pillow-formatted image(s) (optional)
         metadata, dict: metadata json (optional)
+        timestamp: datetime: auto-populates with _now_
+        parser_library: str: name of the ParserLibrary implementation used
     """
 
     text: str
