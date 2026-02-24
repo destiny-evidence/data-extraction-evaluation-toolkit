@@ -282,7 +282,7 @@ class DocumentParser:
     """Parse documents from target format to other target format."""
 
     DEFAULT_PARSERS: dict[str, type[ParserLibrary]] = {
-        "pdf": MarkerParser,
+        "pdf": PdfminerParser,
         "epub": PandocParser,
         "html": PandocParser,
         "xml": PandocParser,
