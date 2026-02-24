@@ -216,5 +216,5 @@ deet/annotations/raw/
 .DS_Store
 .keys
 
-# marker-cache
-deet/.marker_cache/*
+# caches, mainly for parser.
+deet/.cache/*

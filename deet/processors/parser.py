@@ -30,7 +30,7 @@ from deet.utils.assess_text_quality import check_language
 from deet.utils.file_utils import get_package_root
 
 # CACHE init
-CACHE_DIR = get_package_root() / ".marker_cache"
+CACHE_DIR = get_package_root() / ".cache" / "marker_parser"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 parser_cache = Cache(str(CACHE_DIR))
 
@@ -282,7 +282,7 @@ class DocumentParser:
     """Parse documents from target format to other target format."""
 
     DEFAULT_PARSERS: dict[str, type[ParserLibrary]] = {
-        "pdf": PdfminerParser,
+        "pdf": MarkerParser,
         "epub": PandocParser,
         "html": PandocParser,
         "xml": PandocParser,

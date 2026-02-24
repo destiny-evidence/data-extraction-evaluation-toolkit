@@ -3,9 +3,14 @@
 import re
 from enum import Enum
 
-from nltk import download
-from nltk.corpus import brown
-from nltk.data import find
+from diskcache import Cache
+
+from deet.utils.file_utils import get_package_root
+
+# CACHE init
+CACHE_DIR = get_package_root() / ".cache" / "nltk"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+nltk_cache = Cache(str(CACHE_DIR))
 
 
 class Language(Enum):
@@ -14,11 +19,23 @@ class Language(Enum):
     ENGLISH = "en"
 
 
-try:
-    find("corpora/brown")
-except LookupError:
-    download("brown")
-bc_brown = {x.lower() for x in brown.words()}
+@nltk_cache.memoize(typed=True, expire=None, tag="nltk-brown-words")
+def get_bc_brown_words() -> set:
+    """Get bc_brown words, cached."""
+    from nltk.corpus import brown
+    from nltk.data import find
+
+    try:
+        find("corpora/brown")
+    except LookupError:
+        from nltk import download
+
+        download("brown")
+
+    return {x.lower() for x in brown.words()}
+
+
+bc_brown = get_bc_brown_words()
 
 
 class EmptyTextError(Exception):
