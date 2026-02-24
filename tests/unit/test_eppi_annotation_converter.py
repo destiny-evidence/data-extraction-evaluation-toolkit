@@ -13,8 +13,8 @@ from deet.data_models.eppi import (
     EppiAttributeSelectionType,
     EppiDocument,
     EppiRawData,
-    ProcessedEppiAnnotationData,
 )
+from deet.data_models.processed import ProcessedEppiAnnotationData
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 

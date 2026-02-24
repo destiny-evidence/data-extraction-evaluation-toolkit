@@ -15,8 +15,8 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
-    ProcessedEppiAnnotationData,
 )
+from deet.data_models.processed import ProcessedEppiAnnotationData
 
 DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_eppi")
 DEFAULT_ATTRIBUTES_FILENAME = "attributes.json"
