@@ -215,3 +215,6 @@ deet/annotations/processed/
 deet/annotations/raw/
 .DS_Store
 .keys
+
+# marker-cache
+deet/.marker_cache/*
