@@ -5,10 +5,10 @@ from enum import Enum
 
 from diskcache import Cache
 
-from deet.utils.file_utils import get_package_root
+from deet.settings import get_settings
 
 # CACHE init
-CACHE_DIR = get_package_root() / ".cache" / "nltk"
+CACHE_DIR = get_settings().base_disk_cache_dir / "nltk_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 nltk_cache = Cache(str(CACHE_DIR))
 

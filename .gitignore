@@ -215,6 +215,3 @@ deet/annotations/processed/
 deet/annotations/raw/
 .DS_Store
 .keys
-
-# caches, mainly for parser.
-deet/.cache/*

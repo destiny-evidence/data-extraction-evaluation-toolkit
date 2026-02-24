@@ -26,11 +26,11 @@ from deet.exceptions import (
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
+from deet.settings import get_settings
 from deet.utils.assess_text_quality import check_language
-from deet.utils.file_utils import get_package_root
 
 # CACHE init
-CACHE_DIR = get_package_root() / ".cache" / "marker_parser"
+CACHE_DIR = get_settings().base_disk_cache_dir / "marker_parser_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 parser_cache = Cache(str(CACHE_DIR))
 
