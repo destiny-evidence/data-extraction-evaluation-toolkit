@@ -7,6 +7,7 @@ from enum import StrEnum, auto
 from io import StringIO
 from os import PathLike
 from pathlib import Path
+from typing import Literal
 
 import pypandoc
 from loguru import logger
@@ -18,7 +19,7 @@ from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from deet.exceptions import (
     EmptyPdfExtractionError,
@@ -76,8 +77,10 @@ class ParsedOutput(BaseModel):
     text: str
     images: dict[str, Image] | None = None
     metadata: dict | None = None
-    timestamp: datetime = datetime.now(tz=UTC)
-    parser_library: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
+    parser_library: Literal[
+        "pandoc", "marker", "pdfminer"
+    ]  # extend when adding new parsers
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True
@@ -145,7 +148,7 @@ class ParserLibrary(ABC):
 class MarkerParser(ParserLibrary):
     """Parser with `marker` backend."""
 
-    name = "marker"
+    name: Literal["marker"] = "marker"
     input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
 
@@ -172,7 +175,7 @@ class MarkerParser(ParserLibrary):
 class PdfminerParser(ParserLibrary):
     """Parser with pdfminer.six backend. Fast text extraction, no images or metadata."""
 
-    name = "pdfminer"
+    name: Literal["pdfminer"] = "pdfminer"
     input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD]
     _LAPARAMS = LAParams()
@@ -207,7 +210,7 @@ class PdfminerParser(ParserLibrary):
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
-    name = "pandoc"
+    name: Literal["pandoc"] = "pandoc"
     input_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
     output_file_types = [OutputFileType.MD]
 
