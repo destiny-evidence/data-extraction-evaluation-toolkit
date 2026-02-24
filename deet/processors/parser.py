@@ -2,10 +2,12 @@
 
 import json
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from enum import StrEnum, auto
 from io import StringIO
 from os import PathLike
 from pathlib import Path
+from typing import Literal
 
 import pypandoc
 from loguru import logger
@@ -17,7 +19,7 @@ from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from deet.exceptions import (
     EmptyPdfExtractionError,
@@ -70,11 +72,17 @@ class ParsedOutput(BaseModel):
         text, str: md-formatted parsed text (required)
         images, pillow.img: pillow-formatted image(s) (optional)
         metadata, dict: metadata json (optional)
+        timestamp: datetime: auto-populates with _now_
+        parser_library: str: name of the ParserLibrary implementation used
     """
 
     text: str
     images: dict[str, Image] | None = None
     metadata: dict | None = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
+    parser_library: Literal[
+        "pandoc", "marker", "pdfminer"
+    ]  # extend when adding new parsers
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True
@@ -142,7 +150,7 @@ class ParserLibrary(ABC):
 class MarkerParser(ParserLibrary):
     """Parser with `marker` backend."""
 
-    name = "marker"
+    name: Literal["marker"] = "marker"
     input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
 
@@ -163,13 +171,13 @@ class MarkerParser(ParserLibrary):
             out["metadata"] = rendered.metadata
         if return_images:
             out["images"] = images
-        return ParsedOutput(**out)
+        return ParsedOutput(**out, parser_library=cls.name)
 
 
 class PdfminerParser(ParserLibrary):
     """Parser with pdfminer.six backend. Fast text extraction, no images or metadata."""
 
-    name = "pdfminer"
+    name: Literal["pdfminer"] = "pdfminer"
     input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD]
     _LAPARAMS = LAParams()
@@ -198,13 +206,13 @@ class PdfminerParser(ParserLibrary):
         text = out.getvalue() or ""
         if not text.strip():
             raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
-        return ParsedOutput(text=text)
+        return ParsedOutput(text=text, parser_library=cls.name)
 
 
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
-    name = "pandoc"
+    name: Literal["pandoc"] = "pandoc"
     input_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
     output_file_types = [OutputFileType.MD]
 
@@ -247,7 +255,7 @@ class PandocParser(ParserLibrary):
                 format=input_type,
             )
         }
-        return ParsedOutput(**out)
+        return ParsedOutput(**out, parser_library=cls.name)
 
 
 class DocumentParser:
