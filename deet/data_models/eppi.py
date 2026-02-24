@@ -16,12 +16,12 @@ from deet.data_models.base import (  # ContextType,
     DEFAULT_ATTRIBUTE_TYPE,
     Attribute,
     AttributeType,
+    GoldStandardAnnotation,
+)
+from deet.data_models.documents import (
     ContextType,
     Document,
-    DocumentIDSource,
     GoldStandardAnnotatedDocument,
-    GoldStandardAnnotation,
-    ProcessedAnnotationData,
 )
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
@@ -41,7 +41,7 @@ def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
         raise ValueError(bad_doi)
     logger.debug(
         "not found a valid DOI, returning empty string."
-        " to modify this behavioru, set raise_on_fail=True"
+        " to modify this behaviour, set raise_on_fail=True"
     )
     return ""
 
@@ -189,7 +189,6 @@ class EppiDocument(Document):
     context: str = ""
     context_type: ContextType = ContextType.EMPTY
     document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
-    document_id_source: DocumentIDSource = DocumentIDSource.EPPI_ITEM_ID
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
@@ -325,24 +324,6 @@ class EppiRawData(BaseModel):
                 flattened = flatten_hierarchy_func(attributes_list)
                 all_attributes.extend(flattened)
         return all_attributes
-
-
-class ProcessedEppiAnnotationData(
-    ProcessedAnnotationData[
-        EppiAttribute,
-        EppiDocument,
-        EppiGoldStandardAnnotation,
-        EppiGoldStandardAnnotatedDocument,
-    ]
-):
-    """
-    Structured result from EPPI annotation processing.
-
-    This differs from Base ProcessedAnnotationData by specifying raw_data as an
-    EppiRawData object
-    """
-
-    raw_data: EppiRawData
 
 
 class AttributeAnswerCoT(BaseModel):
