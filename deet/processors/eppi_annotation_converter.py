@@ -215,16 +215,19 @@ class EppiAnnotationConverter:
             text_details
         )
 
-        output_data: str | bool = " | ".join(extracted_texts) if extracted_texts else ""
+        output_data: str | bool | int | float | list | dict = (
+            " | ".join(extracted_texts) if extracted_texts else ""
+        )
 
-        # Coerce empty string to False for BOOL attributes (backward compatibility
-        # when ItemAttributeFullTextDetails is absent)
-        # NOTE @sagaruprety this (modified to coerce all bools to bool) is OK
-        # for eppi as we're only expecting bool/str, but we need to implement
-        # elsewhere a functionality that auto-maps output_data to the correct data type.
+        # Coerce output_data to match attribute's output_data_type. Required because
+        # EppiGoldStandardAnnotation validates type. When ItemAttributeFullTextDetails
+        # is absent, use type-appropriate defaults. For BOOL with text, use truthiness.
         attr = attributes_lookup.get(annotation.get("AttributeId", 0))
-        if attr is not None and attr.output_data_type == AttributeType.BOOL:
-            output_data = bool(output_data)
+        if attr is not None:
+            if not extracted_texts:
+                output_data = attr.output_data_type.to_python_type()()
+            elif attr.output_data_type == AttributeType.BOOL:
+                output_data = bool(output_data)
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -284,13 +287,11 @@ class EppiAnnotationConverter:
             for annotation in annotations_data
         ]
 
-    def _extract_attributes_from_codesets(
-        self, raw_data: EppiRawData
-    ) -> list[dict[str, Any]]:
-        """Extract and flatten attributes from CodeSets using structured models."""
-        return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
-
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
+    def process_annotation_file(
+        self,
+        file_path: str | Path,
+        set_attribute_type: AttributeType | str | None = None,
+    ) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
 
