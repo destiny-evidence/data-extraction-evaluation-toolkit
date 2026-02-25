@@ -14,7 +14,7 @@ from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from PIL import Image
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from deet.data_models.base import GoldStandardAnnotation
 from deet.exceptions import (
@@ -238,10 +238,12 @@ class Document(BaseModel):
     linking to a gold standard annotations document with references.
     """
 
+    model_config = ConfigDict(extra="allow")  # allowing extra fields.
+
     name: str
     citation: ReferenceFileInput
     context: str | None = None  # new defaults, empty
-    context_type: ContextType | None = None
+    context_type: ContextType | None = ContextType.EMPTY
     document_id: int | None = None
     document_identity: DocumentIdentity | None = None
 
@@ -354,6 +356,8 @@ class Document(BaseModel):
 class LinkedDocument(Document):
     """A document linked to an actual context/body, usually derived from a pdf."""
 
+    model_config = ConfigDict(extra="allow")
+
     context_type: ContextType
     document_id: int
     document_identity: DocumentIdentity
@@ -366,6 +370,7 @@ class LinkedDocument(Document):
         """Symlink context to parsed_document.text."""
         if self.parsed_document.text:
             self.context = self.parsed_document.text
+            self.context_type = ContextType.FULL_DOCUMENT
         else:
             logger.warning("no text in parsed_document!")
         return self

@@ -57,7 +57,6 @@ class Attribute(BaseModel):
     model_config = ConfigDict()
 
     prompt: str | None = None  # an optional prompt.
-    question_target: str  # 'How many patients were recruited?' - the prompt/question
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
@@ -188,8 +187,6 @@ class Attribute(BaseModel):
 
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
-
-    model_config = ConfigDict()
 
     attribute: Attribute
     output_data: Any

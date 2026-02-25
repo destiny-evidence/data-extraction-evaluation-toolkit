@@ -81,7 +81,7 @@ class ParsedOutput(BaseModel):
     metadata: dict | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
     parser_library: Literal[
-        "pandoc", "marker", "pdfminer"
+        "pandoc", "marker", "pdfminer", "unknown"
     ]  # extend when adding new parsers
 
     model_config = ConfigDict(
