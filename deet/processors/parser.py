@@ -190,7 +190,7 @@ class MarkerParser(ParserLibrary):
     @classmethod
     def clear_cache(cls) -> None:
         """Clear the cached converter."""
-        parser_cache.delete("marker-converter")
+        parser_cache.clear()
         logger.info("Marker converter cache cleared")
 
 
