@@ -40,7 +40,7 @@ If multiple passages are relevant, include the single most direct citation
 
 Please explain the reasoning behind each answer. You should also cite text from the academic paper to support your answer. So, for each question, your output should contain: Answer, Reasoning, Additional_text
 
-Leave additional_text as an empty string (“”) if the answer is not present in the academic paper
+Leave additional_text as an empty string ("") if the answer is not present in the academic paper
 
 Output Format
 
