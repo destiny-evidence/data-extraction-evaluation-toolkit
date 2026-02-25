@@ -47,16 +47,6 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    EMPTY = auto()
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
-
-
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.

@@ -16,7 +16,7 @@ from loguru import logger
 from PIL import Image
 from pydantic import BaseModel, model_validator
 
-from deet.data_models.base import ContextType, GoldStandardAnnotation
+from deet.data_models.base import GoldStandardAnnotation
 from deet.exceptions import (
     BadDocumentIdError,
     MissingCitationElementError,
@@ -29,6 +29,16 @@ from deet.utils.identifier_utils import (
     MIN_DOCUMENT_ID,
     hash_n_strings_to_eight_digit_int,
 )
+
+
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
 
 
 class DocumentIDSource(StrEnum):
