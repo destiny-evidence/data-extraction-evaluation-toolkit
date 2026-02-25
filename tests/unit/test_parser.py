@@ -514,7 +514,7 @@ def test_parsed_output_timestamp_preserved_across_parsers(
     parser = DocumentParser()
 
     result1 = parser("test1.pdf", parser=MarkerParser)
-    sleep(0.01)  # Small delay to ensure different timestamps
+    sleep(0.1)  # increasing delay so as to work better on windows
     result2 = parser("test2.epub", parser=PandocParser)
 
     assert result1.timestamp != result2.timestamp
