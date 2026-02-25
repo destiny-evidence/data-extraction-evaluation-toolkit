@@ -26,45 +26,50 @@ from deet.utils.assess_text_quality import check_language
 
 @pytest.fixture
 def fake_converter(monkeypatch):
-    """
-    Stub the global `converter` that comes from `marker.converters.pdf`.
-    It should return an object that `text_from_rendered` can consume.
-    """
+    """Stub MarkerParser._get_converter to return a mock converter."""
 
-    # The real converter returns a dict; we only need the text part.
     class DummyRendered:
         metadata = {"author": "Nik", "year": 2025}
 
-    dummy = DummyRendered()
-    # `converter(file)` simply returns the dummy object
+    class MockConverter:
+        def __call__(self, file):  # noqa: ANN204
+            return DummyRendered()
+
     monkeypatch.setattr(
-        "deet.processors.parser.converter",
-        lambda _: dummy,
+        MarkerParser,
+        "_get_converter",
+        classmethod(lambda _: MockConverter()),
     )
-    return dummy
 
 
 @pytest.fixture
 def mock_text_from_rendered(monkeypatch):
     """Stub `marker.output.text_from_rendered`."""
-    # It returns (text, extension, images)
+
+    # Mock it at the import location (marker.output module)
+    def fake_text_from_rendered(rendered):  # noqa: ANN202
+        return ("dummy markdown text", "md", [])
+
     monkeypatch.setattr(
-        "deet.processors.parser.text_from_rendered",
-        lambda _: ("dummy markdown text", "md", []),
+        "marker.output.text_from_rendered",
+        fake_text_from_rendered,
     )
 
 
 @pytest.fixture
 def mock_text_from_rendered_img_meta(monkeypatch):
-    """Stub `marker.output.text_from_rendered`."""
-    dummy_img = Image.new("RGB", (10, 10))
+    """Stub `marker.output.text_from_rendered` with metadata and images."""
+
+    def fake_text_from_rendered(rendered):  # noqa: ANN202
+        images = {
+            "image1.jpg": Image.new("RGB", (10, 10)),
+            "image2.jpg": Image.new("RGB", (20, 20)),
+        }
+        return ("dummy markdown text", "md", images)
+
     monkeypatch.setattr(
-        "deet.processors.parser.text_from_rendered",
-        lambda _: (
-            "dummy markdown text",
-            "md",
-            {"img1.jpg": dummy_img, "img2.jpg": dummy_img},
-        ),
+        "marker.output.text_from_rendered",
+        fake_text_from_rendered,
     )
 
 
@@ -180,6 +185,7 @@ def test_markerparser_success(
     assert parsed_out.text == "dummy markdown text"
     assert parsed_out.images is None
     assert parsed_out.metadata is None
+    assert parsed_out.parser_library == "marker"
 
 
 def test_markerparser_returns_metadata_and_images(
@@ -508,7 +514,7 @@ def test_parsed_output_timestamp_preserved_across_parsers(
     parser = DocumentParser()
 
     result1 = parser("test1.pdf", parser=MarkerParser)
-    sleep(0.01)  # Small delay to ensure different timestamps
+    sleep(0.1)  # increasing delay so as to work better on windows
     result2 = parser("test2.epub", parser=PandocParser)
 
     assert result1.timestamp != result2.timestamp
