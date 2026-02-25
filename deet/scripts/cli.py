@@ -1,5 +1,6 @@
 """A CLI app to run DEET pipelines."""
 
+import csv
 import json
 from pathlib import Path
 from uuid import uuid4
@@ -13,10 +14,16 @@ from pydantic import TypeAdapter
 from deet.data_models.base import (
     Attribute,
     AttributeType,
-    GoldStandardAnnotatedDocument,
     PromptPopulationMethod,
 )
-from deet.data_models.eppi import EppiDocument, ProcessedAnnotationData
+from deet.data_models.documents import (
+    GoldStandardAnnotatedDocument,
+)
+from deet.data_models.eppi import EppiDocument
+from deet.data_models.processed import (
+    BaseProcessedAnnotationData,
+    ProcessedEppiAnnotationData,
+)
 from deet.extractors.llm_data_extractor import (
     ContextType,
     DataExtractionConfig,
@@ -25,6 +32,7 @@ from deet.extractors.llm_data_extractor import (
 from deet.logger import logger
 from deet.processors.base_converter import Outfiles
 from deet.processors.converter_register import SupportedImportFormat
+from deet.processors.linker import DocumentReferenceLinker
 from deet.settings import get_settings
 
 settings = get_settings()
@@ -57,7 +65,7 @@ def import_data(
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     output_dir: Path = Path(),
-) -> ProcessedAnnotationData:
+) -> BaseProcessedAnnotationData | ProcessedEppiAnnotationData:
     """
     Import gold standard annotation data from a supported format.
 
@@ -89,6 +97,48 @@ def import_data(
         )
     return out
 
+
+@app.command()
+def create_link_map(
+    gs_data_path: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    link_map_path: Path = Path("link_map.csv"),
+) -> None:
+    """Create a mapping to link documents and the full texts."""
+    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+
+    with link_map_path.open("w") as f:
+        writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
+        writer.writeheader()
+        for d in out.documents:
+            d.init_document_identity()
+            if d.document_identity is None:
+                raise RuntimeError(f"document_identity was not set for document {d}")
+            writer.writerow(
+                {
+                    "document_id": d.document_identity.document_id,
+                    "name": d.name,
+                    "file_path": None,
+                }
+            )
+
+
+@app.command()
+def link_documents(
+    gs_data_path: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    pdf_dir: Path = Path("pdfs"),
+    link_map_path: Path | None = None,
+) -> None:
+    """Link documents to their fulltexts."""
+    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+
+    linker = DocumentReferenceLinker(
+        references=out.documents,
+        document_base_dir=pdf_dir,
+        document_reference_mapping=link_map_path,
+    )
+    linked_documents = linker.link_many_references_parsed_documents()
 
 @app.command()
 def write_prompt_csv(

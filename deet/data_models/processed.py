@@ -14,10 +14,13 @@ from deet.data_models.base import (
     Attribute,
     AttributeType,
     AttributeTypeVar,
+    GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
 )
 from deet.data_models.documents import (
+    Document,
     DocumentTypeVar,
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentTypeVar,
 )
 from deet.data_models.eppi import (
@@ -308,6 +311,11 @@ class ProcessedAnnotationData(
             if attr.attribute_id == attribute_id:
                 return attr
         return None
+
+
+BaseProcessedAnnotationData = ProcessedAnnotationData[
+    Attribute, Document, GoldStandardAnnotation, GoldStandardAnnotatedDocument
+]
 
 
 class ProcessedEppiAnnotationData(
