@@ -31,30 +31,6 @@ class PromptConfig(BaseModel):
         default_factory=lambda: Path(__file__).parent.parent.parent
         / "prompts/system_prompt.txt",
     )
-    attribute_specific_prompt: str = Field(
-        description="Prompt template for attribute-specific extraction",
-        default=(
-            "Analyse this research document and answer questions about "
-            "specific attributes. For each attribute, determine if it is "
-            "present (True/False), provide reasoning, and include citations."
-        ),
-    )
-    single_attribute_prompt: str = Field(
-        description="Prompt template for single attribute extraction",
-        default=(
-            "Analyse this research document for the following attribute: "
-            "{attribute_label}. Determine if it is present (True/False), "
-            "provide reasoning, and include citations."
-        ),
-    )
-    batch_attribute_prompt: str = Field(
-        description="Prompt template for batch attribute extraction",
-        default=(
-            "Analyse this research document and answer questions about the "
-            "following attributes. For each attribute, determine if it's "
-            "present (True/False), provide reasoning, and include citations."
-        ),
-    )
 
     @model_validator(mode="after")
     def load_system_prompt_file(self) -> "PromptConfig":
@@ -81,16 +57,12 @@ class DataExtractionConfig(BaseModel):
     max_tokens: int | None = settings.llm_max_tokens
 
     # Context
-    context_type: ContextType = Field(
+    default_context_type: ContextType = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
     max_context_length: int = Field(
         default=200000,
         description="Maximum context length for LLM CHARACTERS? ",  # fix with tokens!
-    )
-
-    selected_attribute_ids: list[int] = Field(
-        default=[], description="Specific attribute IDs to extract"
     )
 
     # Prompt
@@ -166,6 +138,7 @@ class LLMDataExtractor:
     def extract_from_document(
         self,
         attributes: list[Attribute],
+        filter_attribute_ids: list[int] | None = None,
         *,
         payload: str | None = None,
         md_path: Path | None = None,
@@ -206,21 +179,18 @@ class LLMDataExtractor:
             payload = md_path.read_text(encoding="utf-8")
         payload = cast("str", payload)
 
-        filter_ids: list[int] | None = None
-        if self.config.selected_attribute_ids:
+        selected_attributes = attributes
+        if filter_attribute_ids and len(filter_attribute_ids) > 0:
             try:
-                filter_ids = [
-                    int(attr_id) for attr_id in self.config.selected_attribute_ids
-                ]
+                selected_attributes = self._filter_attributes(
+                    selected_attributes, filter_ids=filter_attribute_ids
+                )
             except (ValueError, TypeError):
                 logger.warning(
                     f"Invalid attribute IDs in config: "
-                    f"{self.config.selected_attribute_ids}. "
+                    f"{filter_attribute_ids}. "
                     "No attributes will be selected."
                 )
-                filter_ids = []
-
-        selected_attributes = self._filter_attributes(attributes, filter_ids=filter_ids)
 
         if not selected_attributes:
             msg = "No attributes selected for extraction"
@@ -237,10 +207,11 @@ class LLMDataExtractor:
         )
         return annotations, messages
 
-    def extract_from_documents(
+    def extract_from_documents(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
         markdown_dir: Path,
+        filter_attribute_ids: list[int] | None = None,
         output_file: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
         prompt_outfile: Path | None = None,
@@ -281,7 +252,8 @@ class LLMDataExtractor:
             logger.info(f"Processing file: {input_file.name} ({input_file})")
             try:
                 result, messages = self.extract_from_document(
-                    attributes,
+                    attributes=attributes,
+                    filter_attribute_ids=filter_attribute_ids,
                     md_path=input_file,
                     context_type=context_type,
                 )
@@ -356,7 +328,11 @@ class LLMDataExtractor:
         context_type: ContextType | None = None,
     ) -> str:
         """Prepare context based on context type."""
-        ctx = context_type if context_type is not None else self.config.context_type
+        ctx = (
+            context_type
+            if context_type is not None
+            else self.config.default_context_type
+        )
         logger.debug(f"Using context type: {ctx}")
         if ctx == ContextType.FULL_DOCUMENT:
             context = payload

@@ -186,11 +186,11 @@ def test_extract_from_document_bad_filter_list(
     entirely be cast to integers.
     """
     payload = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = filter_ids
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
             attributes=sample_eppi_attributes,
             payload=payload,
+            filter_attribute_ids=filter_ids,
             context_type=ContextType.FULL_DOCUMENT,
         )
 
@@ -200,7 +200,7 @@ def test_prepare_context_full_document_context_in_config(
 ):
     """Test _prepare_context with FULL_DOCUMENT type."""
     payload = "This is the full text."
-    llm_extractor.config.context_type = ContextType.FULL_DOCUMENT
+    llm_extractor.config.default_context_type = ContextType.FULL_DOCUMENT
     context = llm_extractor._prepare_context(payload=payload)
     assert context == payload
 
@@ -208,9 +208,10 @@ def test_prepare_context_full_document_context_in_config(
 def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     """Test _prepare_context with ABSTRACT_ONLY type."""
     payload = "This is the full text."
-    llm_extractor.config.context_type = ContextType.ABSTRACT_ONLY
-    context = llm_extractor._prepare_context(payload=payload)
-    assert context == payload
+    llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
+    # ABSTRACT_ONLY is currently commented out, so this will raise ValueError
+    with pytest.raises(ValueError, match="context type is not allowed"):
+        llm_extractor._prepare_context(payload=payload)
 
 
 def test_prepare_context_truncation(llm_extractor, sample_eppi_document):
@@ -227,7 +228,7 @@ def test_prepare_context_not_implemented(
 ):
     """Test that RAG and CUSTOM context types raise NotImplementedError."""
     payload = "This is the full text."
-    llm_extractor.config.context_type = ContextType.RAG_SNIPPETS
+    llm_extractor.config.default_context_type = ContextType.RAG_SNIPPETS
     with pytest.raises(NotImplementedError):
         llm_extractor._prepare_context(payload=payload)
 
@@ -369,10 +370,10 @@ def test_extract_from_document_no_attributes(
 ):
     """Test extract_from_document raises ValueError if no attributes are selected."""
     payload = "This is the full text of the document."
-    llm_extractor.config.selected_attribute_ids = [999999]
     with pytest.raises(ValueError, match="No attributes selected"):
         llm_extractor.extract_from_document(
             sample_eppi_attributes,
+            filter_attribute_ids=[999999],
             payload=payload,
             context_type=ContextType.FULL_DOCUMENT,
         )

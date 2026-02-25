@@ -26,6 +26,7 @@ dependencies = [
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",
     "openai>=1.0.0",
+    "pdfminer.six>=20221105",
     "pillow>=10.4.0",
     "pydantic-extra-types>=2.10.5",
     "pydantic-settings>=2.10.1",
@@ -71,6 +72,10 @@ module = "marker.*"
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "nltk.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "pdfminer.*"
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true

@@ -10,8 +10,8 @@ from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
     EppiGoldStandardAnnotatedDocument,
-    ProcessedAnnotationData,
 )
+from deet.data_models.processed import ProcessedAnnotationData
 from deet.logger import logger
 
 DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_eppi")
@@ -105,7 +105,6 @@ class AnnotationConverter:
             annotations=[],  # or derive from loaded_data if applicable
             annotated_documents=loaded_data[Outfiles.ANNOTATED_DOCUMENTS],
             attribute_id_to_label=loaded_data[Outfiles.ATTRIBUTE_LABEL_MAPPING],
-            raw_data=None,
         )
 
     def write_processed_data_to_file(

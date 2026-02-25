@@ -1,11 +1,10 @@
-"""Core data models for document processing and annotation."""
+"""Core data models regarding annotations."""
 
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 
-from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
@@ -19,16 +18,6 @@ class AnnotationType(StrEnum):
 
     HUMAN = auto()
     LLM = auto()
-
-
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    EMPTY = auto()
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
 
 
 class AttributeType(StrEnum):
@@ -57,17 +46,8 @@ class AttributeType(StrEnum):
         }
         return mapping[self]
 
-    def to_json_type(self) -> dict[str, str]:
-        """Map AttributeType to JS types for the JSON schema."""
-        mapping = {
-            AttributeType.STRING: {"type": "string"},
-            AttributeType.INTEGER: {"type": "integer"},
-            AttributeType.FLOAT: {"type": "number"},
-            AttributeType.BOOL: {"type": "boolean"},
-            AttributeType.LIST: {"type": "array"},
-            AttributeType.DICT: {"type": "object"},
-        }
-        return mapping[self]
+
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 class PromptPopulationMethod(StrEnum):
@@ -78,15 +58,14 @@ class PromptPopulationMethod(StrEnum):
     ATTRIBUTEFILE = auto()
 
 
-class DocumentIDSource(StrEnum):
-    """
-    Sources for a given document_id. Can be e.g. eppi_item_id.
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
 
-    To be extended if e.g. we start working with
-    non-eppi gold standard references.
-    """
-
-    EPPI_ITEM_ID = auto()
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
 
 
 class Attribute(BaseModel):
@@ -228,26 +207,7 @@ class Attribute(BaseModel):
                 continue
 
 
-class Document(BaseModel):
-    """
-    Represents a document.
-
-    This can be used both for references itemised
-    in a document listing gold standard annotations (e.g. eppi.json)
-    AND
-    for a document coming from a file (e.g. pdf) without
-    linking to a gold standard annotations document with references.
-    """
-
-    model_config = ConfigDict()
-
-    name: str
-    citation: ReferenceFileInput
-    context: str | list[str]
-    context_type: ContextType
-    document_id: int
-    document_id_source: DocumentIDSource
-    filename: str | None = None
+AttributeTypeVar = TypeVar("AttributeTypeVar", bound=Attribute)
 
 
 class GoldStandardAnnotation(BaseModel):
@@ -289,12 +249,9 @@ class GoldStandardAnnotation(BaseModel):
         return data
 
 
-class GoldStandardAnnotatedDocument(Document):
-    """A document with its gold standard annotations."""
-
-    model_config = ConfigDict()
-
-    annotations: list[GoldStandardAnnotation]
+GoldStandardAnnotationTypeVar = TypeVar(
+    "GoldStandardAnnotationTypeVar", bound=GoldStandardAnnotation
+)
 
 
 # models specifically for interfacing with the LLM below

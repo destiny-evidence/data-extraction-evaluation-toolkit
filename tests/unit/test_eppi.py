@@ -1,5 +1,10 @@
 """Tests for EPPI-specific models."""
 
+import csv
+import json
+from pathlib import Path
+from unittest.mock import mock_open, patch
+
 import pytest
 
 from deet.data_models.base import AnnotationType, AttributeType
@@ -9,7 +14,53 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
+    ProcessedAnnotationData,
 )
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+
+
+@pytest.fixture
+def test_csv_file(tmp_path):
+    """Create a test CSV file with 3 attributes."""
+    csv_file = tmp_path / "prompts.csv"
+    with csv_file.open(mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
+        writer.writeheader()
+        writer.writerow({"attribute_id": "1", "prompt": "Test prompt 1"})
+        writer.writerow({"attribute_id": "2", "prompt": "Test prompt 2"})
+        writer.writerow({"attribute_id": "3", "prompt": "Test prompt 3"})
+    return csv_file
+
+
+@pytest.fixture
+def processed_data():
+    """Create ProcessedAnnotationData with test attributes."""
+    attr1 = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=1,
+        attribute_label="Attribute 1",
+        output_data_type=AttributeType.BOOL,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    attr2 = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=2,
+        attribute_label="Attribute 2",
+        output_data_type=AttributeType.BOOL,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    attr3 = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=3,
+        attribute_label="Attribute 3",
+        output_data_type=AttributeType.BOOL,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    return ProcessedAnnotationData(
+        attributes=[attr1, attr2, attr3],
+        documents=[],
+        annotations=[],
+        annotated_documents=[],
+        attribute_id_to_label={1: "Attribute 1", 2: "Attribute 2", 3: "Attribute 3"},
+        raw_data=EppiRawData(),
+    )
 
 
 def test_eppi_attribute_creation_from_json_data() -> None:
@@ -67,6 +118,16 @@ def test_eppi_attribute_with_eppi_fields() -> None:
     assert attr.is_leaf is False
     assert attr.parent_attribute_id == 123
     assert attr.attribute_selection_type == EppiAttributeSelectionType.SELECTABLE
+
+
+def eppi_attribute_selection_type_case_insensitivity() -> None:
+    """Test the custom case-insensitivity for our attribute selection enum."""
+    outcome_a = EppiAttributeSelectionType("outcome")
+    outcome_b = EppiAttributeSelectionType("OUTCOME")
+    outcome_c = EppiAttributeSelectionType("ouTCoMe")
+    assert outcome_a == EppiAttributeSelectionType.OUTCOME
+    assert outcome_b == EppiAttributeSelectionType.OUTCOME
+    assert outcome_c == EppiAttributeSelectionType.OUTCOME
 
 
 def test_eppi_attribute_with_different_output_types() -> None:
@@ -268,3 +329,96 @@ def test_eppi_raw_data_with_codesets() -> None:
     assert raw_data.code_sets[0].attributes is not None
     assert "AttributesList" in raw_data.code_sets[0].attributes
     assert len(raw_data.code_sets[0].attributes["AttributesList"]) == 1
+
+
+def test_import_prompts_csv_updates_output_data_type(
+    sample_eppi_data: dict, tmp_path: Path
+) -> None:
+    """Test that populate_custom_prompts from CSV updates output_data_type."""
+    data_no_codes = {**sample_eppi_data}
+    for ref in data_no_codes.get("References", []):
+        ref["Codes"] = []
+
+    converter = EppiAnnotationConverter()
+    with patch(
+        "pathlib.Path.open",
+        mock_open(read_data=json.dumps(data_no_codes)),
+    ):
+        result = converter.process_annotation_file(tmp_path / "fake.json")
+
+    # Should have attributes with default output_data_type=BOOL
+    assert len(result.attributes) > 0
+    first_attr = result.attributes[0]
+    assert all(
+        [attr.output_data_type == AttributeType.BOOL for attr in result.attributes]  # noqa: C419
+    )
+
+    # Create CSV with output_data_type=string for first attribute
+    csv_path = tmp_path / "prompts.csv"
+    csv_path.write_text(
+        "attribute_id,prompt,output_data_type\n"
+        f"{first_attr.attribute_id},Test prompt,string\n",
+        encoding="utf-8",
+    )
+
+    result.populate_custom_prompts(method="file", filepath=csv_path)
+
+    assert first_attr.output_data_type == AttributeType.STRING
+    assert len(result.raw_data.code_sets[0].attributes["AttributesList"]) == 1  # type:ignore[index]
+
+
+# minimal tests for csv import
+def test_import_prompts_csv_file_comprehensive(test_csv_file, processed_data) -> None:
+    """Test CSV import functionality."""
+    processed_data._import_prompts_csv_file(test_csv_file)
+
+    assert len(processed_data.attributes) == 3
+
+    assert processed_data.attributes[0].prompt == "Test prompt 1"
+    assert processed_data.attributes[1].prompt == "Test prompt 2"
+    assert processed_data.attributes[2].prompt == "Test prompt 3"
+
+
+def test_import_prompts_with_csv_missing_prompt(test_csv_file, processed_data) -> None:
+    """Test csv with one row missing prompts."""
+    with test_csv_file.open(mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
+        writer.writerow({"attribute_id": "4", "prompt": ""})
+
+    processed_data._import_prompts_csv_file(test_csv_file)
+    # we should now have 3 attributes in processed_data as
+    # attribute_id==4 is missing a prompt.
+    assert len(processed_data.attributes) == 3
+
+    assert processed_data.attributes[0].prompt == "Test prompt 1"
+    assert processed_data.attributes[1].prompt == "Test prompt 2"
+    assert processed_data.attributes[2].prompt == "Test prompt 3"
+
+
+def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
+    test_csv_file, processed_data
+) -> None:
+    """Test csv with one row missing prompts and retain_only_csv_attributes=False."""
+    with test_csv_file.open(mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
+        writer.writerow({"attribute_id": "4", "prompt": ""})
+
+    attr4 = EppiAttribute(  # type:ignore[call-arg]
+        attribute_id=4,
+        output_data_type=AttributeType.BOOL,
+        attribute_selection_type=EppiAttributeSelectionType.INTERVENTION,
+        attribute_label="yes",
+    )
+    processed_data.attributes.append(attr4)
+
+    # note the added arg - this means we keep all original attributes
+    processed_data._import_prompts_csv_file(
+        test_csv_file, retain_only_csv_attributes=False
+    )
+    assert len(processed_data.attributes) == 4
+
+    assert processed_data.attributes[0].prompt == "Test prompt 1"
+    assert processed_data.attributes[1].prompt == "Test prompt 2"
+    assert processed_data.attributes[2].prompt == "Test prompt 3"
+    # attr4's prompt was not updated because CSV had empty prompt for ID 4
+    assert processed_data.attributes[3].prompt is None
