@@ -375,8 +375,19 @@ class EppiAnnotationConverter:
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
+            # NL: really, the existing_ids thing is quite redundant here,
+            # as we assume we're getting our eppi item ids as document_ids.
+            # however, a) it demonstrates the desired functionality of
+            # checking against a set of already populated ids, and
+            # b) there is a world where eppi.jsons contain invalid item ids.
+            existing_ids: set[int] = set()
             if doc_title and doc_title not in documents_by_title:
+                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
                 document = EppiDocument(**reference)
+                # init doc id
+                new_id = document.init_document_identity(existing_ids=existing_ids)
+                if new_id:
+                    existing_ids.add(new_id)
                 documents_by_title[doc_title] = document
 
         pdf_to_title_mapping = self._create_pdf_to_title_mapping(

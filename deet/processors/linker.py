@@ -10,7 +10,7 @@ from typing import Literal, Self
 from loguru import logger
 from pydantic import BaseModel, field_validator, model_validator
 
-from deet.data_models.documents import ContextType, Document, LinkedDocument
+from deet.data_models.documents import Document
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
@@ -261,14 +261,17 @@ class DocumentReferenceLinker:
         linking_strategies: list[LinkingStrategy] | None = None,
     ) -> None:
         """Initialise DocumentReferenceLinker class."""
+        # deep copies to ensure lookup tables don't modify validators
+        # on our existing reference docuemnts.
+        tmp_refs = [doc.model_copy(deep=True) for doc in references]
         self.documents_references = references
 
         # lookup dics for O(1) id & author_year based lookup
         self._references_by_id: dict[int, Document] = {
-            doc.document_id: doc for doc in references if doc.document_id is not None
+            doc.document_id: doc for doc in tmp_refs if doc.document_id is not None
         }
         self._references_by_author_year: dict[str, Document] = {
-            doc.author_year_from_document_identity(): doc for doc in references
+            doc.author_year_from_document_identity(): doc for doc in tmp_refs
         }
 
         self.document_base_dir = document_base_dir
@@ -445,7 +448,7 @@ class DocumentReferenceLinker:
         reference: Document,
         parsed_output: ParsedOutput,
         original_filepath: Path | None = None,
-    ) -> LinkedDocument:
+    ) -> Document:
         """
         Link a reference, in `Document` format with a parsed document,
         in ParsedOutput format.
@@ -456,15 +459,18 @@ class DocumentReferenceLinker:
             original_filepath (Path | None, optional): Defaults to None.
 
         Returns:
-            LinkedDocument: a full LinkedDocument with
-            all required fields populated.
+            Document: a linked Document with
+            all required fields populated, and is_linked==True,
+            and required fields' presence validated.
 
         """
-        logger.debug(
-            "initialising document identity for "
-            f"reference with id {reference.document_id}."
-        )
-        reference.init_document_identity()
+        if not reference.document_identity:
+            logger.debug(
+                "initialising document identity for "
+                f"reference with id {reference.document_id}."
+            )
+
+            reference.init_document_identity()
 
         logger.debug(
             f"adding parsed_output to reference with id {reference.document_id}."
@@ -474,17 +480,23 @@ class DocumentReferenceLinker:
             original_doc_filepath=original_filepath,
         )
 
-        # set context-type
-        reference.context_type = ContextType.FULL_DOCUMENT
+        # set context & context-type
+        reference.set_context_from_parsed()
+        # reference.context_type = ContextType.FULL_DOCUMENT
 
-        return LinkedDocument(**reference.model_dump())
+        # set is_linked -- this will raise a ValidationError
+        # if min requirements are not met
+        reference.is_final = True
+        reference.is_linked = True
+
+        return reference
 
     def link_many_references_parsed_documents(
         self,
         *,
         return_images: bool = False,
         return_metadata: bool = False,
-    ) -> list[LinkedDocument]:
+    ) -> list[Document]:
         """
         Link multiple references to parsed
         documents using available LinkingStrategy(s).
@@ -494,20 +506,20 @@ class DocumentReferenceLinker:
         each reference-doc to its corresponding file.
 
         If required, parses files.
-        Creates LinkedDocument objects.
+        Creates Document objects where is_linked=True.
 
         Args:
             return_images: Whether to include images in parsed output
             return_metadata: Whether to include metadata in parsed output
 
         Returns:
-            List of LinkedDocument objects successfully linked and parsed
+            List of Document objects successfully linked and parsed
 
         """
         linked_documents = []
         processed_doc_ids = set()
 
-        for strategy in self.linking_strategies:
+        for i, strategy in enumerate(self.linking_strategies):
             logger.info(f"Attempting linking strategy: {strategy}")
 
             try:
@@ -557,8 +569,10 @@ class DocumentReferenceLinker:
                     )
 
             except (TypeError, ValueError) as e:
+                # if i + 1 < len(self.linking_strategies):
                 logger.error(f"Error with linking strategy {strategy}: {e}")
                 continue
+                # raise
 
         total_refs = len(self.documents_references)
         linked_count = len(linked_documents)

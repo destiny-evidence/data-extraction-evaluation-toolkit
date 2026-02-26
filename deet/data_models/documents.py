@@ -68,7 +68,7 @@ class DocumentIdentity(BaseModel):
 
     def populate_id(
         self,
-        existing_ids: list[int] | None = None,
+        existing_ids: set[int] | None = None,
         hierarchy: list[DocumentIDSource] | None = None,
     ) -> None:
         """
@@ -94,7 +94,7 @@ class DocumentIdentity(BaseModel):
 
         """
         if existing_ids is None:
-            existing_ids = []
+            existing_ids = set()
 
         if hierarchy is None:
             hierarchy = list(DocumentIDSource)  # retain the order from the enum
@@ -237,7 +237,12 @@ class Document(BaseModel):
     linking to a gold standard annotations document with references.
     """
 
-    model_config = ConfigDict(extra="allow")  # allowing extra fields.
+    # `extra` allows extra fields, e.g. for EppiDocument.
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    # `validate_assignment` runs model/field validators
+    # not only on instantiation, but also when we change values,
+    # e.g. when we set is_linked=True, thereby preventing
+    # us from saying something is linked if it isn't.
 
     name: str
     citation: ReferenceFileInput
@@ -251,7 +256,52 @@ class Document(BaseModel):
         None  # NOTE -- add S3/blob support when required.
     )
 
-    def init_document_identity(self) -> None:
+    is_final: bool = False
+    is_linked: bool = False
+
+    @model_validator(mode="after")
+    def validate_linking_complete(self) -> Self:
+        """Validate linking is completed if `is_linked=True`."""
+        base_err_msg = "requirements not met for linking: "
+        if self.is_linked:
+            if self.context is None:
+                no_context_err = base_err_msg + "`context` is empty."
+                raise ValueError(no_context_err)
+            if self.document_identity is None:
+                no_doc_id_err = (
+                    base_err_msg + "`document_identity` is empty.  "
+                    "run `init_document_identity() to populate."
+                )
+                raise ValueError(no_doc_id_err)
+            if self.parsed_document is None:
+                no_parsed_doc_err = base_err_msg + "`parsed_document` is empty. "
+                raise ValueError(no_parsed_doc_err)
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_final(self) -> Self:
+        """Validate Document is permitted to be `is_final`."""
+        base_err_msg = "requirements not met for `Document().is_final`: "
+        if self.is_final:
+            if self.context is None:
+                no_context_err = base_err_msg + "`context` is empty."
+                raise ValueError(no_context_err)
+            if self.document_identity is None:
+                no_doc_id_err = (
+                    base_err_msg + "`document_identity` is empty.  "
+                    "run `init_document_identity() to populate."
+                )
+                raise ValueError(no_doc_id_err)
+
+        return self
+
+    def init_document_identity(
+        self,
+        existing_ids: set[int] | None = None,
+        *,
+        return_id: bool = True,
+    ) -> int | None:
         """Initialise document_identity field using available metadata."""
         labs_ref = LabsReference(reference=self.citation)  # convert for easy access
         self.document_identity = DocumentIdentity(
@@ -262,13 +312,17 @@ class Document(BaseModel):
         )
 
         logger.info("populating id & id source...")
-        self.document_identity.populate_id()
+        self.document_identity.populate_id(existing_ids=existing_ids)
         if self.document_id is None:
             logger.info(
                 "populating Document-level `document_id` field with "
                 f"newly populated id {self.document_identity.document_id}... "
             )
             self.document_id = self.document_identity.document_id
+
+        if return_id:
+            return self.document_identity.document_id
+        return None
 
     def author_year_from_document_identity(self) -> str:
         """
@@ -345,22 +399,9 @@ class Document(BaseModel):
             original_doc_filepath = None
         self.original_doc_filepath = original_doc_filepath
 
-
-class LinkedDocument(Document):
-    """A document linked to an actual context/body, usually derived from a pdf."""
-
-    model_config = ConfigDict(extra="allow")
-
-    context_type: ContextType
-    document_id: int
-    document_identity: DocumentIdentity
-
-    parsed_document: ParsedOutput
-
-    @model_validator(mode="after")
     def set_context_from_parsed(self) -> Self:
         """Symlink context to parsed_document.text."""
-        if self.parsed_document.text:
+        if self.parsed_document and self.parsed_document.text:
             self.context = self.parsed_document.text
             self.context_type = ContextType.FULL_DOCUMENT
         else:
@@ -377,7 +418,7 @@ class LinkedDocument(Document):
         # suggestions as to how to validate/circumvent.
         # however, we do control what goes in and out,
         # so the danger here might be overstated.
-        if self.parsed_document.images:
+        if self.parsed_document and self.parsed_document.images:
             images_b64 = {}
             for key, img in self.parsed_document.images.items():
                 buffer = BytesIO()
@@ -392,7 +433,7 @@ class LinkedDocument(Document):
         logger.info(f"Saved LinkedDocument to {path}")
 
     @classmethod
-    def load(cls, path: Path) -> "LinkedDocument":
+    def load(cls, path: Path) -> "Document":
         """Load linked document from .json."""
         with path.open("r") as f:
             data: dict = json.load(f)
