@@ -255,7 +255,7 @@ class Document(BaseModel):
 
     @property
     def safe_identity(self) -> DocumentIdentity:
-        """Return an identity, or raise an error if this is not possible."""
+        """Definitely Return an identity, or raise an error if this is not possible."""
         if self.document_identity is None:
             self.init_document_identity()
         if self.document_identity is None:
