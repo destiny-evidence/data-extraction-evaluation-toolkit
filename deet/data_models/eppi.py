@@ -28,7 +28,7 @@ from deet.data_models.base import (  # ContextType,
     AttributeType,
     GoldStandardAnnotation,
 )
-from deet.data_models.documents import ContextType, Document
+from deet.data_models.documents import Document
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
 
@@ -247,7 +247,11 @@ class EppiDocument(Document):
         Populate the `citation` field with a Destiny
         reference derived from the EPPI data.
         """
-        if not isinstance(data, dict):
+        # if not isinstance(data, dict):
+        #     return data
+        if "citation" in data:
+            # we have already created citation,
+            # no need to do it again
             return data
 
         citation = parse_citation_to_destiny(reference=data)
