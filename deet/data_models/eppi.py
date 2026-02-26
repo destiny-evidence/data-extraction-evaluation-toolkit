@@ -237,8 +237,23 @@ class EppiDocument(Document):
         if isinstance(value, datetime):
             return value
         if isinstance(value, str):
-            return datetime.strptime(value, "%d/%m/%Y").replace(tzinfo=UTC)
-        return value
+            # add as we encounter other formats, if ever relevant
+            formats = [
+                "%d/%m/%Y",  # OG EPPI
+                "%Y-%m-%d %H:%M:%S%z",  # ISO format with timezone,
+                # result of dumping is_final EppiDocument to json
+                "%Y-%m-%d",  # simple ISO date
+            ]
+
+            for fmt in formats:
+                try:
+                    return datetime.strptime(value, fmt).replace(tzinfo=UTC)
+                except ValueError:
+                    continue
+            no_parsage = "unable to parse date_created."
+            raise ValueError(no_parsage)
+
+        return None
 
     @model_validator(mode="before")
     @classmethod

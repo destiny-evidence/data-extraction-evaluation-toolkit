@@ -373,6 +373,7 @@ class Document(BaseModel):
                 "set context type to ABSTRACT_ONLY; set context to abstract."
                 f" snippet: {abstract[:20]}"
             )
+            return
         no_abstract = "No abstract found"
         raise NoAbstractError(no_abstract)
 
@@ -435,8 +436,7 @@ class Document(BaseModel):
     @classmethod
     def load(cls, path: Path) -> "Document":
         """Load linked document from .json."""
-        with path.open("r") as f:
-            data: dict = json.load(f)
+        data = json.loads(path.read_text(encoding="utf-8"))
 
         # convert base64 back to PIL img
         if data.get("parsed_document", {}).get("images"):
@@ -446,7 +446,7 @@ class Document(BaseModel):
                 images[key] = Image.open(BytesIO(img_bytes))
             data["parsed_document"]["images"] = images
 
-        return cls(**data)
+        return Document(**data)
 
 
 class GoldStandardAnnotatedDocument(Document):
