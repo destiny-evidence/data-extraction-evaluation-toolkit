@@ -21,6 +21,7 @@ authors = [
 ]
 dependencies = [
     "destiny-sdk[labs]>=0.9.1",
+    "diskcache>=5.6.3",
     "litellm>=1.77.4",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
@@ -43,11 +44,6 @@ requires-python = ">=3.12.11"
 version = "0.2.0"
 
 [project.scripts]
-DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
-DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
-DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
-DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
-DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
 deet = "deet.scripts.cli:main"
 
 [tool.coverage.report]
@@ -72,6 +68,10 @@ module = "marker.*"
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "nltk.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "diskcache.*"
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
