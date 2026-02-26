@@ -6,11 +6,8 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from deet.data_models.eppi import (
-    EppiAttribute,
-    EppiDocument,
-    EppiGoldStandardAnnotatedDocument,
-)
+from deet.data_models.base import Attribute
+from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
 from deet.data_models.processed import ProcessedAnnotationData
 from deet.logger import logger
 
@@ -33,12 +30,12 @@ class Outfiles(StrEnum):
 OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]] = {
     Outfiles.ATTRIBUTES: (
         DEFAULT_ATTRIBUTES_FILENAME,
-        TypeAdapter(list[EppiAttribute]),
+        TypeAdapter(list[Attribute]),
     ),
-    Outfiles.DOCUMENTS: (DEFAULT_DOCUMENTS_FILENAME, TypeAdapter(list[EppiDocument])),
+    Outfiles.DOCUMENTS: (DEFAULT_DOCUMENTS_FILENAME, TypeAdapter(list[Document])),
     Outfiles.ANNOTATED_DOCUMENTS: (
         DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
-        TypeAdapter(list[EppiGoldStandardAnnotatedDocument]),
+        TypeAdapter(list[GoldStandardAnnotatedDocument]),
     ),
     Outfiles.ATTRIBUTE_LABEL_MAPPING: (
         DEFAULT_ATTRIBUTE_MAPPING_FILENAME,

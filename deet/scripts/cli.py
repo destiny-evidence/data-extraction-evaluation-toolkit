@@ -16,10 +16,7 @@ from deet.data_models.base import (
     AttributeType,
     PromptPopulationMethod,
 )
-from deet.data_models.documents import (
-    GoldStandardAnnotatedDocument,
-)
-from deet.data_models.eppi import EppiDocument
+from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
 from deet.data_models.processed import (
     BaseProcessedAnnotationData,
     ProcessedEppiAnnotationData,
@@ -40,7 +37,7 @@ settings = get_settings()
 app = typer.Typer()
 
 
-def get_abstract(document: EppiDocument) -> str:
+def get_abstract(document: Document) -> str:
     """Return the abstract of a reference. Will be replaced by feature/linking."""
     for e in document.citation.enhancements or []:
         if e.content.enhancement_type == EnhancementType.ABSTRACT:
@@ -113,7 +110,8 @@ def create_link_map(
         for d in out.documents:
             d.init_document_identity()
             if d.document_identity is None:
-                raise RuntimeError(f"document_identity was not set for document {d}")
+                message = f"document_identity was not set for document {d}"
+                raise RuntimeError(message)
             writer.writerow(
                 {
                     "document_id": d.document_identity.document_id,
@@ -129,6 +127,7 @@ def link_documents(
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     pdf_dir: Path = Path("pdfs"),
     link_map_path: Path | None = None,
+    output_path: Path = Path("linked_documents"),
 ) -> None:
     """Link documents to their fulltexts."""
     out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
@@ -139,6 +138,12 @@ def link_documents(
         document_reference_mapping=link_map_path,
     )
     linked_documents = linker.link_many_references_parsed_documents()
+    for linked_document in linked_documents:
+        file_path = (
+            output_path / f"{linked_document.document_identity.document_id}.json"
+        )
+        linked_document.save(file_path)
+
 
 @app.command()
 def write_prompt_csv(
@@ -233,7 +238,6 @@ def test_llmconfig() -> None:
     config = DataExtractionConfig()
     data_extractor = LLMDataExtractor(config=config)
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
