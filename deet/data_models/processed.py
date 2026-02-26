@@ -2,8 +2,9 @@
 
 import csv
 from collections.abc import Sequence
+from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Generic, Literal
+from typing import Any, Generic
 
 from loguru import logger
 from pydantic import BaseModel
@@ -30,6 +31,14 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiRawData,
 )
+
+
+class PromptPopulationMethod(StrEnum):
+    """Methods of populating prompts."""
+
+    FILE = auto()
+    CLI = auto()
+    ATTRIBUTEFILE = auto()
 
 
 class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
@@ -216,13 +225,13 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         )
 
     def populate_custom_prompts(
-        self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
+        self, method: PromptPopulationMethod, filepath: Path | None = None, **kwargs
     ) -> None:
         """
         Populate custom prompts.
 
         Args:
-            method (Literal["cli", "file"])
+            method (PromptPopulationMethod)
             filepath (Path | None): infile path.
 
         Raises:

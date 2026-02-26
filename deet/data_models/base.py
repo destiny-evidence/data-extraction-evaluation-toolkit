@@ -50,14 +50,6 @@ class AttributeType(StrEnum):
 DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
-class PromptPopulationMethod(StrEnum):
-    """Methods of populating prompts."""
-
-    FILE = auto()
-    CLI = auto()
-    ATTRIBUTEFILE = auto()
-
-
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.

@@ -14,12 +14,12 @@ from pydantic import TypeAdapter
 from deet.data_models.base import (
     Attribute,
     AttributeType,
-    PromptPopulationMethod,
 )
 from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
 from deet.data_models.processed import (
     BaseProcessedAnnotationData,
     ProcessedEppiAnnotationData,
+    PromptPopulationMethod,
 )
 from deet.extractors.llm_data_extractor import (
     ContextType,
