@@ -3,7 +3,6 @@
 import csv
 import json
 from collections.abc import Callable, Generator
-from datetime import UTC, datetime
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Literal, Self
@@ -445,7 +444,6 @@ class DocumentReferenceLinker:
     def link_reference_parsed_document(
         reference: Document,
         parsed_output: ParsedOutput,
-        parse_timestamp: datetime | None = None,
         original_filepath: Path | None = None,
     ) -> LinkedDocument:
         """
@@ -455,7 +453,6 @@ class DocumentReferenceLinker:
         Args:
             reference (Document): the reference, e.g. 'document' from eppi json.
             parsed_output (ParsedOutput): parser output.
-            parse_timestamp (datetime | None, optional): Defaults to None.
             original_filepath (Path | None, optional): Defaults to None.
 
         Returns:
@@ -475,7 +472,6 @@ class DocumentReferenceLinker:
         reference.link_parsed_document(
             parsed_document=parsed_output,
             original_doc_filepath=original_filepath,
-            parse_timestamp=parse_timestamp,
         )
 
         # set context-type
@@ -548,7 +544,6 @@ class DocumentReferenceLinker:
                     linked_doc = self.link_reference_parsed_document(
                         reference=interim_payload.unlinked_document,
                         parsed_output=parsed_output,
-                        parse_timestamp=datetime.now(tz=UTC),
                         original_filepath=interim_payload.file_path,
                     )
 

@@ -3,7 +3,6 @@
 import base64
 import json
 from collections.abc import Callable
-from datetime import UTC, datetime
 from enum import StrEnum, auto
 from io import BytesIO
 from pathlib import Path
@@ -248,7 +247,6 @@ class Document(BaseModel):
     document_identity: DocumentIdentity | None = None
 
     parsed_document: ParsedOutput | None = None
-    parse_timestamp: datetime | None = None
     original_doc_filepath: Path | None = (
         None  # NOTE -- add S3/blob support when required.
     )
@@ -328,7 +326,6 @@ class Document(BaseModel):
         self,
         parsed_document: ParsedOutput,
         original_doc_filepath: Path | None = None,
-        parse_timestamp: datetime | None = None,
     ) -> None:
         """
         Link parsed document and document metadata/`reference`.
@@ -336,7 +333,6 @@ class Document(BaseModel):
         Args:
             parsed_document (ParsedOutput): the output from the parser
             original_doc_filepath (Path): full filepath to the original doc.
-            parse_timestamp (datetime): a timestamp when file was parsed
 
         """
         self.parsed_document = parsed_document
@@ -348,9 +344,6 @@ class Document(BaseModel):
             )
             original_doc_filepath = None
         self.original_doc_filepath = original_doc_filepath
-        if parse_timestamp is None:
-            parse_timestamp = datetime.now(tz=UTC)
-        self.parse_timestamp = parse_timestamp
 
 
 class LinkedDocument(Document):
@@ -363,7 +356,6 @@ class LinkedDocument(Document):
     document_identity: DocumentIdentity
 
     parsed_document: ParsedOutput
-    parse_timestamp: datetime
 
     @model_validator(mode="after")
     def set_context_from_parsed(self) -> Self:
