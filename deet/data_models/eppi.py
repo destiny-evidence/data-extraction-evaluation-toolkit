@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Callable
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -10,7 +11,14 @@ from destiny_sdk.parsers import EPPIParser
 from destiny_sdk.parsers.exceptions import ExternalIdentifierNotFoundError
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from deet.data_models.base import (  # ContextType,
     DEFAULT_ATTRIBUTE_TYPE,
@@ -19,7 +27,6 @@ from deet.data_models.base import (  # ContextType,
     GoldStandardAnnotation,
 )
 from deet.data_models.documents import (
-    ContextType,
     Document,
     GoldStandardAnnotatedDocument,
 )
@@ -145,7 +152,6 @@ class EppiAttribute(Attribute):
             "AttributeType", "attribute_type", "attribute_selection_type"
         )
     )
-    question_target: str = ""  # Always empty for EPPI
     output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
 
@@ -186,22 +192,53 @@ class EppiDocument(Document):
     """
 
     name: str = Field(default="", validation_alias=AliasChoices("Title", "name"))
-    context: str = ""
-    context_type: ContextType = ContextType.EMPTY
     document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    parent_title: str | None = None
-    short_title: str | None = None
-    date_created: str | None = None
-    edited_by: str | None = None
-    year: str | None = None
-    month: str | None = None
-    abstract: str | None = None
-    authors: str | None = None
-    keywords: str | None = None
+    parent_title: str | None = Field(
+        default=None, validation_alias=AliasChoices("ParentTitle", "parent_title")
+    )
+    short_title: str | None = Field(
+        default=None, validation_alias=AliasChoices("ShortTitle", "short_title")
+    )
+    date_created: datetime | None = Field(
+        default=None, validation_alias=AliasChoices("DateCreated", "date_created")
+    )
+    created_by: str | None = Field(
+        default=None, validation_alias=AliasChoices("CreatedBy", "created_by")
+    )
+    edited_by: str | None = Field(
+        default=None, validation_alias=AliasChoices("EditedBy", "edited_by")
+    )
+    year: int | None = Field(
+        default=None, validation_alias=AliasChoices("Year", "year")
+    )
+    month: str | None = Field(
+        default=None, validation_alias=AliasChoices("Month", "month")
+    )
+    abstract: str | None = Field(
+        default=None, validation_alias=AliasChoices("Abstract", "abstract")
+    )
+    authors: str | None = Field(
+        default=None, validation_alias=AliasChoices("Authors", "authors")
+    )
+    keywords: str | None = Field(
+        default=None, validation_alias=AliasChoices("Keywords", "keywords")
+    )
     doi: str | None = Field(default=None, validation_alias=AliasChoices("DOI", "doi"))
+
+    @field_validator("date_created", mode="before")
+    @classmethod
+    def parse_date_string(cls, value: str) -> datetime | None:
+        """Parse a string datetime to native datetime."""
+        if value is None or value == "":
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            return datetime.strptime(value, "%d/%m/%Y").replace(tzinfo=UTC)
+        return value
 
     @model_validator(mode="before")
     @classmethod

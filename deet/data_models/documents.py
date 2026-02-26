@@ -16,7 +16,7 @@ from loguru import logger
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from deet.data_models.base import ContextType, GoldStandardAnnotationTypeVar
+from deet.data_models.base import GoldStandardAnnotationTypeVar
 from deet.exceptions import (
     BadDocumentIdError,
     MissingCitationElementError,
@@ -29,6 +29,16 @@ from deet.utils.identifier_utils import (
     MIN_DOCUMENT_ID,
     hash_n_strings_to_eight_digit_int,
 )
+
+
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
 
 
 class DocumentIDSource(StrEnum):
@@ -228,10 +238,12 @@ class Document(BaseModel):
     linking to a gold standard annotations document with references.
     """
 
+    model_config = ConfigDict(extra="allow")  # allowing extra fields.
+
     name: str
     citation: ReferenceFileInput
     context: str | None = None  # new defaults, empty
-    context_type: ContextType | None = None
+    context_type: ContextType | None = ContextType.EMPTY
     document_id: int | None = None
     document_identity: DocumentIdentity | None = None
 
@@ -344,6 +356,8 @@ class Document(BaseModel):
 class LinkedDocument(Document):
     """A document linked to an actual context/body, usually derived from a pdf."""
 
+    model_config = ConfigDict(extra="allow")
+
     context_type: ContextType
     document_id: int
     document_identity: DocumentIdentity
@@ -356,6 +370,7 @@ class LinkedDocument(Document):
         """Symlink context to parsed_document.text."""
         if self.parsed_document.text:
             self.context = self.parsed_document.text
+            self.context_type = ContextType.FULL_DOCUMENT
         else:
             logger.warning("no text in parsed_document!")
         return self

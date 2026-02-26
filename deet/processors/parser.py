@@ -10,10 +10,8 @@ from pathlib import Path
 from typing import Literal
 
 import pypandoc
+from diskcache import Cache
 from loguru import logger
-from marker.converters.pdf import PdfConverter
-from marker.models import create_model_dict
-from marker.output import text_from_rendered
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
@@ -28,11 +26,13 @@ from deet.exceptions import (
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
+from deet.settings import get_settings
 from deet.utils.assess_text_quality import check_language
 
-# init marker converter
-artifact_dict = create_model_dict()
-converter = PdfConverter(artifact_dict=artifact_dict)
+# CACHE init
+CACHE_DIR = get_settings().base_disk_cache_dir / "marker_parser_cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+parser_cache = Cache(str(CACHE_DIR))
 
 
 class InputFileType(StrEnum):
@@ -81,7 +81,7 @@ class ParsedOutput(BaseModel):
     metadata: dict | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
     parser_library: Literal[
-        "pandoc", "marker", "pdfminer"
+        "pandoc", "marker", "pdfminer", "unknown"
     ]  # extend when adding new parsers
 
     model_config = ConfigDict(
@@ -155,6 +155,17 @@ class MarkerParser(ParserLibrary):
     output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
 
     @classmethod
+    @parser_cache.memoize(typed=True, expire=None, tag="marker-converter")
+    def _get_converter(cls):  # noqa: ANN206 no return type hint as we don't know PdfConverter yet
+        """Lazy initialization of marker converter with disk caching."""
+        logger.debug("Initializing marker converter...")
+        from marker.converters.pdf import PdfConverter
+        from marker.models import create_model_dict
+
+        artifact_dict = create_model_dict()
+        return PdfConverter(artifact_dict=artifact_dict)
+
+    @classmethod
     def parse(
         cls,
         input_: str | PathLike,
@@ -164,6 +175,9 @@ class MarkerParser(ParserLibrary):
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using marker."""
+        from marker.output import text_from_rendered
+
+        converter = cls._get_converter()
         rendered = converter(str(input_))
         text, extension, images = text_from_rendered(rendered)
         out = {"text": text}
@@ -172,6 +186,12 @@ class MarkerParser(ParserLibrary):
         if return_images:
             out["images"] = images
         return ParsedOutput(**out, parser_library=cls.name)
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clear the cached converter."""
+        parser_cache.clear()
+        logger.info("Marker converter cache cleared")
 
 
 class PdfminerParser(ParserLibrary):

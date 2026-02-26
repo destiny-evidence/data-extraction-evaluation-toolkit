@@ -11,8 +11,7 @@ from typing import Literal, Self
 from loguru import logger
 from pydantic import BaseModel, field_validator, model_validator
 
-from deet.data_models.base import ContextType
-from deet.data_models.documents import Document, LinkedDocument
+from deet.data_models.documents import ContextType, Document, LinkedDocument
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
@@ -535,7 +534,8 @@ class DocumentReferenceLinker:
                         )
                     elif interim_payload.format == "md":
                         parsed_output = ParsedOutput(
-                            text=interim_payload.file_path.read_text(encoding="utf-8")
+                            text=interim_payload.file_path.read_text(encoding="utf-8"),
+                            parser_library="unknown",
                         )
                     else:
                         logger.warning(

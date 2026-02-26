@@ -10,11 +10,11 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
-    ContextType,
     GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
 )
+from deet.documents import ContextType
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
 

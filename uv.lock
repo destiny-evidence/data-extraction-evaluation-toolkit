@@ -456,6 +456,7 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "destiny-sdk" },
+    { name = "diskcache" },
     { name = "litellm" },
     { name = "loguru" },
     { name = "marker-pdf" },
@@ -486,6 +487,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "destiny-sdk", extras = ["labs"], specifier = ">=0.9.1" },
+    { name = "diskcache", specifier = ">=5.6.3" },
     { name = "litellm", specifier = ">=1.77.4" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "marker-pdf", specifier = ">=1.9.1" },
@@ -528,6 +530,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d8/36/4d89557d839b0757c91f37a1b291b274914fdf9eeadc6edf6f3c2dbfb28a/destiny_sdk-0.9.1.tar.gz", hash = "sha256:e911d812e664c83d58ed630085f89e3fa418d4f70d28873207aee2fc49c31e93", size = 112056, upload-time = "2026-02-05T06:58:41.178Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/c6/f8334be91997248e0129bad29057a401afad78da03e03e9227f054a7df7a/destiny_sdk-0.9.1-py3-none-any.whl", hash = "sha256:440b9943f818e56cf6416f61a7c0d1594169549b34d1dee3a30d9e2142a8af1b", size = 34175, upload-time = "2026-02-05T06:58:39.16Z" },
+]
+
+[[package]]
+name = "diskcache"
+version = "5.6.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/21/1c1ffc1a039ddcc459db43cc108658f32c57d271d7289a2794e401d0fdb6/diskcache-5.6.3.tar.gz", hash = "sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc", size = 67916, upload-time = "2023-08-31T06:12:00.316Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/27/4570e78fc0bf5ea0ca45eb1de3818a23787af9b390c0b0a0033a1b8236f9/diskcache-5.6.3-py3-none-any.whl", hash = "sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19", size = 45550, upload-time = "2023-08-31T06:11:58.822Z" },
 ]
 
 [[package]]
