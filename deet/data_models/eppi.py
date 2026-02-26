@@ -237,6 +237,10 @@ class EppiDocument(Document):
         if isinstance(value, datetime):
             return value
         if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                pass
             return datetime.strptime(value, "%d/%m/%Y").replace(tzinfo=UTC)
         return value
 
