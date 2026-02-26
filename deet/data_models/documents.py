@@ -16,7 +16,11 @@ from loguru import logger
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from deet.data_models.base import GoldStandardAnnotationTypeVar
+from deet.data_models.base import (
+    Attribute,
+    AttributeType,
+    GoldStandardAnnotationTypeVar,
+)
 from deet.exceptions import (
     BadDocumentIdError,
     MissingCitationElementError,
@@ -440,7 +444,65 @@ class GoldStandardAnnotatedDocument(
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
 
+    def get_attribute_value(
+        self, attribute: Attribute
+    ) -> str | int | float | bool | list | dict:
+        """Get the value of the annotation of the corresponding attribute."""
+        result = None
+        for annotation in self.annotations:
+            if annotation.attribute.attribute_id == attribute.attribute_id:
+                if result is not None:
+                    multiple_matches = "More than one annotation found for "
+                    f"attribute: {attribute.attribute_label}. We don't know how to"
+                    "interpret which is the canonical version."
+                    raise ValueError(multiple_matches)
+                result = annotation.output_data
+
+        if result is None:
+            if attribute.output_data_type == AttributeType.BOOL:
+                return False
+            if attribute.output_data_type == AttributeType.LIST:
+                return []
+            not_found = "Attribute not found in annotations."
+            " Don't know how to interpret this when attribute is of type "
+            f"{attribute.output_data_type}"
+            raise ValueError(not_found)
+
+        return result
+
 
 GoldStandardAnnotatedDocumentTypeVar = TypeVar(
     "GoldStandardAnnotatedDocumentTypeVar", bound=GoldStandardAnnotatedDocument
 )
+
+
+class GoldStandardAnnotatedDocumentList(
+    BaseModel, Generic[GoldStandardAnnotatedDocumentTypeVar]
+):
+    """A list of GoldStandardAnnotatedDocuments (or subclasses thereof)."""
+
+    gold_standard_annotations: list[GoldStandardAnnotatedDocumentTypeVar]
+
+    def get_by_id(
+        self, document_identity: DocumentIdentity
+    ) -> GoldStandardAnnotatedDocumentTypeVar:
+        """
+        Get GoldStandardAnnotatedDocument where document.document_identity
+        matches document_identity.
+        """
+        result = None
+
+        for doc in self.gold_standard_annotations:
+            if doc.document.safe_identity == document_identity:
+                if result is not None:
+                    multiple_matches = "Multiple matches for document with "
+                    " ID: {document_identity.document_id}!"
+                    raise ValueError(multiple_matches)
+                result = doc
+
+        if result is None:
+            not_found = f"Document with ID: {document_identity.document_id} "
+            "not found!"
+            raise ValueError(not_found)
+
+        return result

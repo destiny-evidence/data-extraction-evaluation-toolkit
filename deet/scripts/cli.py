@@ -2,19 +2,18 @@
 
 import csv
 from pathlib import Path
+from uuid import UUID
 
 import typer
 import yaml
-from destiny_sdk.enhancements import EnhancementType
-from ftfy import fix_text
+from pydantic import TypeAdapter
 from uuid6 import uuid7
 
-from deet.data_models.base import (
-    Attribute,
-    AttributeType,
-)
+from deet.data_models.base import Attribute, AttributeType, GoldStandardAnnotation
 from deet.data_models.documents import (
     Document,
+    GoldStandardAnnotatedDocument,
+    GoldStandardAnnotatedDocumentList,
     LinkedDocument,
 )
 from deet.data_models.processed import (
@@ -32,18 +31,12 @@ from deet.processors.base_converter import Outfiles
 from deet.processors.converter_register import SupportedImportFormat
 from deet.processors.linker import DocumentReferenceLinker
 from deet.settings import get_settings
+from deet.utils.cli_utils import get_last_pipeline_run
+from deet.utils.evaluation_utils import display_metrics, evaluate_llm_annotations
 
 settings = get_settings()
 
 app = typer.Typer()
-
-
-def get_abstract(document: Document) -> str:
-    """Return the abstract of a reference. Will be replaced by feature/linking."""
-    for e in document.citation.enhancements or []:
-        if e.content.enhancement_type == EnhancementType.ABSTRACT:
-            return fix_text(e.content.abstract)
-    return ""
 
 
 @app.command()
@@ -223,6 +216,38 @@ def data_extraction(  # noqa: PLR0913
     config_out.write_text(
         yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
     )
+
+
+@app.command()
+def evaluate(
+    gs_data_path: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    pipeline: UUID | None = None,
+) -> None:
+    """Evaluate a pipeline run, and print a table of evaluation metrics."""
+    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+
+    if pipeline is None:
+        pipeline, pipeline_dir = get_last_pipeline_run(Path("pipeline_runs"))
+    else:
+        pipeline_dir = Path("pipeline_runs") / str(pipeline)
+
+    adapter = TypeAdapter(
+        list[GoldStandardAnnotatedDocument[Document, GoldStandardAnnotation]]
+    )
+    llm_annotation_file = pipeline_dir / "annotated_docs.json"
+    llm_annotation_list = GoldStandardAnnotatedDocumentList(
+        gold_standard_annotations=adapter.validate_json(llm_annotation_file.read_text())
+    )
+
+    metrics = evaluate_llm_annotations(
+        reference_documents=out.annotated_documents,
+        attributes=out.attributes,
+        llm_annotation_list=llm_annotation_list,
+        pipeline_run_id=pipeline,
+    )
+
+    display_metrics(metrics)
 
 
 @app.command()
