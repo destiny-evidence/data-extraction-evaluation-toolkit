@@ -26,7 +26,16 @@ def hash_n_strings_to_eight_digit_int(string_list: list[str]) -> int:
     # convert first 8 hex chars to integer and map to 8-digit range
     hash_int = int(hash_hex[:8], 16)
 
-    return (hash_int % MAX_DOCUMENT_ID) + MIN_DOCUMENT_ID
+    # calculate range size and use modulo to stay within bounds
+    range_size = MAX_DOCUMENT_ID - MIN_DOCUMENT_ID + 1
+
+    # runtime check to ensure we have an 8-digit ID
+    # overkill, but better safe than sorry.
+    id_ = (hash_int % range_size) + MIN_DOCUMENT_ID
+    if len(str(abs(id_))) != DOCUMENT_ID_N_DIGITS:
+        bad_id = f"id {id_} is bad, it should have 8 digits!"
+        raise ValueError(bad_id)
+    return id_
 
 
 def check_if_id_exists(new_id: int, id_list: list[int]) -> bool:
