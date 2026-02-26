@@ -2,12 +2,12 @@
 
 import csv
 from pathlib import Path
-from uuid import uuid4
 
 import typer
 import yaml
 from destiny_sdk.enhancements import EnhancementType
 from ftfy import fix_text
+from uuid6 import uuid7
 
 from deet.data_models.base import (
     Attribute,
@@ -182,7 +182,7 @@ def data_extraction(  # noqa: PLR0913
     config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
 
     if out_dir is None:
-        out_dir = Path("pipeline_runs") / str(uuid4())
+        out_dir = Path("pipeline_runs") / str(uuid7())
         out_dir.mkdir(parents=True)
     elif out_dir.exists():
         out_dir_exists = "out_dir already exists. Exiting, so as not to overwrite data"
@@ -216,6 +216,12 @@ def data_extraction(  # noqa: PLR0913
         attributes=out.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
+        output_file=out_dir / "annotated_docs.json",
+    )
+
+    config_out = out_dir / "config.yaml"
+    config_out.write_text(
+        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
     )
 
 

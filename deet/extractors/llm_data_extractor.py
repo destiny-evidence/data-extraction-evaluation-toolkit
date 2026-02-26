@@ -6,7 +6,14 @@ from pathlib import Path
 from typing import Any, cast
 
 import litellm
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 
 from deet.data_models.base import (
     AnnotationType,
@@ -15,7 +22,12 @@ from deet.data_models.base import (
     LLMInputSchema,
     LLMResponseSchema,
 )
-from deet.data_models.documents import ContextType, Document, LinkedDocument
+from deet.data_models.documents import (
+    ContextType,
+    Document,
+    GoldStandardAnnotatedDocument,
+    LinkedDocument,
+)
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
 
@@ -216,7 +228,7 @@ class LLMDataExtractor:
         output_file: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
         prompt_outfile: Path | None = None,
-    ) -> dict[str, list[GoldStandardAnnotation]]:
+    ) -> list[GoldStandardAnnotatedDocument]:
         """
         Extract data from all documents.
 
@@ -236,8 +248,9 @@ class LLMDataExtractor:
             Dictionary mapping file paths to lists of annotations.
 
         """
-        all_results: dict[str, list[GoldStandardAnnotation]] = {}
         prompt_payloads: dict[str, Any] = {}
+
+        llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
 
         for document in documents:
             logger.info(f"Processing document: {document.name}")
@@ -262,7 +275,9 @@ class LLMDataExtractor:
                     context_type=context_type,
                 )
 
-                all_results[str(document.safe_identity.document_id)] = result
+                llm_annotated_docs.append(
+                    GoldStandardAnnotatedDocument(document=document, annotations=result)
+                )
                 prompt_payloads[str(document.safe_identity.document_id)] = messages
 
             except Exception as e:  # noqa: BLE001
@@ -270,7 +285,7 @@ class LLMDataExtractor:
                 logger.debug("Error details", exc_info=True)
 
         if output_file is not None:
-            self._save_results(all_results, output_file)
+            self._save_results(llm_annotated_docs, output_file)
             logger.info(f"Combined LLM classifications written to: {output_file}")
 
         if prompt_outfile is not None:
@@ -279,7 +294,7 @@ class LLMDataExtractor:
             )
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
-        return all_results
+        return llm_annotated_docs
 
     def _write_json_if_path(
         self, data: dict[str, Any] | list[Any], path: Path | None
@@ -538,7 +553,7 @@ class LLMDataExtractor:
 
     def _save_results(
         self,
-        results: dict[str, list[GoldStandardAnnotation]],
+        results: list[GoldStandardAnnotatedDocument],
         output_file: Path,
     ) -> None:
         """
@@ -549,9 +564,5 @@ class LLMDataExtractor:
             output_file: Path to save results.
 
         """
-        results_json: dict[str, list[dict[str, Any]]] = {
-            file_path: [ann.model_dump() for ann in annotations]
-            for file_path, annotations in results.items()
-        }
-        output_file.write_text(json.dumps(results_json, indent=2))
-        logger.info(f"Results saved to: {output_file}")
+        adapter = TypeAdapter(list[GoldStandardAnnotatedDocument])
+        output_file.write_text(adapter.dump_json(results, indent=2).decode())
