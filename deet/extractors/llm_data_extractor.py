@@ -14,7 +14,7 @@ from deet.data_models.base import (
     LLMInputSchema,
     LLMResponseSchema,
 )
-from deet.documents import ContextType
+from deet.data_models.documents import ContextType
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
 
