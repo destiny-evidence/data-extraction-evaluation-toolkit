@@ -1,7 +1,6 @@
 """A CLI app to run DEET pipelines."""
 
 import csv
-import json
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,13 +8,15 @@ import typer
 import yaml
 from destiny_sdk.enhancements import EnhancementType
 from ftfy import fix_text
-from pydantic import TypeAdapter
 
 from deet.data_models.base import (
     Attribute,
     AttributeType,
 )
-from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
+from deet.data_models.documents import (
+    Document,
+    LinkedDocument,
+)
 from deet.data_models.processed import (
     BaseProcessedAnnotationData,
     ProcessedEppiAnnotationData,
@@ -168,29 +169,27 @@ def write_prompt_csv(
 
 
 @app.command()
-def data_extraction(
-    config_path: Path,
+def data_extraction(  # noqa: PLR0913
+    config_path: Path = Path("default_extraction_config.yaml"),
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     prompt_population: PromptPopulationMethod = PromptPopulationMethod.ATTRIBUTEFILE,
     csv_path: Path | None = None,
+    linked_document_path: Path = Path("linked_documents"),
+    out_dir: Path | None = None,
 ) -> None:
     """Extract data from documents."""
-    # Data Extraction config
     config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
 
-    # Read data in
+    if out_dir is None:
+        out_dir = Path("pipeline_runs") / str(uuid4())
+        out_dir.mkdir(parents=True)
+    elif out_dir.exists():
+        out_dir_exists = "out_dir already exists. Exiting, so as not to overwrite data"
+        raise typer.Abort(out_dir_exists)
+
     out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
 
-    # Filter attributes
-    if config.selected_attribute_ids:
-        out.attributes = [
-            att
-            for att in out.attributes
-            if att.attribute_id in config.selected_attribute_ids
-        ]
-
-    # Populate prompts
     if prompt_population == PromptPopulationMethod.FILE and not csv_path:
         message = "CSV prompt popluation selected without specifying csv_path"
         raise ValueError(message)
@@ -198,38 +197,26 @@ def data_extraction(
 
     data_extractor = LLMDataExtractor(config=config)
 
-    # Do data extraction
-    # This will all be replaced by data_extractor.extract_from_documents() once
-    # linked documents is working. This should ideally return a list of
-    # GoldStandardAnnotatedDocuments.
-    if config.context_type != ContextType.ABSTRACT_ONLY:
-        message = "Extraction with contexts other than abstract not supported"
-        raise ValueError(message)
-    llm_annotated_documents: list[GoldStandardAnnotatedDocument] = []
+    if config.default_context_type == ContextType.ABSTRACT_ONLY:
+        documents = out.documents
+    elif config.default_context_type == ContextType.FULL_DOCUMENT:
+        if linked_document_path.exists():
+            documents = [
+                LinkedDocument.load(f) for f in linked_document_path.glob("*.json")
+            ]
+        else:
+            message = f"context type {config.default_context_type} selected"
+            " but no linked_document_path supplied"
+            raise typer.Abort(message)
+    else:
+        message = f"context type {config.default_context_type} not supported"
+        raise typer.Abort(message)
 
-    for document in out.documents:
-        abstract = get_abstract(document)
-
-        if abstract is None:
-            logger.warning(
-                f"Not processing document {document.document_id} "
-                "with missing abstract."
-            )
-            continue
-        annotations, messages = data_extractor.extract_from_document(
-            attributes=TypeAdapter(list[Attribute]).validate_python(out.attributes),
-            payload=abstract,
-        )
-        gold_standard_annotated_document = GoldStandardAnnotatedDocument(
-            **document.model_dump(mode="python"), annotations=annotations
-        )
-        llm_annotated_documents.append(gold_standard_annotated_document)
-        break
-
-    out_dir = gs_data_path / str(uuid4())
-    out_dir.mkdir()
-    json_data = [x.model_dump(mode="json") for x in llm_annotated_documents]
-    (out_dir / "annotated_documents.json").write_text(json.dumps(json_data, indent=2))
+    data_extractor.extract_from_documents(
+        attributes=out.attributes,
+        documents=documents,
+        context_type=data_extractor.config.default_context_type,
+    )
 
 
 @app.command()

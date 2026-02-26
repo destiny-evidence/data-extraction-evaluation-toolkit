@@ -253,6 +253,16 @@ class Document(BaseModel):
         None  # NOTE -- add S3/blob support when required.
     )
 
+    @property
+    def safe_identity(self) -> DocumentIdentity:
+        """Return an identity, or raise an error if this is not possible."""
+        if self.document_identity is None:
+            self.init_document_identity()
+        if self.document_identity is None:
+            no_id = "Failed to initialize document identity"
+            raise RuntimeError(no_id)
+        return self.document_identity
+
     def init_document_identity(self) -> None:
         """Initialise document_identity field using available metadata."""
         labs_ref = LabsReference(reference=self.citation)  # convert for easy access
@@ -321,6 +331,7 @@ class Document(BaseModel):
                 "set context type to ABSTRACT_ONLY; set context to abstract."
                 f" snippet: {abstract[:20]}"
             )
+            return
         no_abstract = "No abstract found"
         raise NoAbstractError(no_abstract)
 

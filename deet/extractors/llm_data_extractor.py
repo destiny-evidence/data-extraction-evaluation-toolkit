@@ -1,6 +1,7 @@
 """Generalisable data extraction module for LLM-based document analysis."""
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -14,7 +15,7 @@ from deet.data_models.base import (
     LLMInputSchema,
     LLMResponseSchema,
 )
-from deet.data_models.documents import ContextType
+from deet.data_models.documents import ContextType, Document, LinkedDocument
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
 
@@ -108,16 +109,16 @@ class LLMDataExtractor:
         """
         self.config = config
         self.custom_system_prompt_file = custom_system_prompt_file
-        if settings.llm_provider == LLMProvider.AZURE:
-            self.model = f"azure/{settings.azure_deployment}"
+        if self.config.provider == LLMProvider.AZURE:
+            self.model = f"azure/{self.config.model}"
             self.llm_api_key = settings.azure_api_key.get_secret_value()  # type: ignore[union-attr]
             self.api_base = settings.azure_api_base.get_secret_value()  # type: ignore[union-attr]
-        elif settings.llm_provider == LLMProvider.OLLAMA:
-            self.model = f"ollama/{settings.llm_model}"
+        elif self.config.provider == LLMProvider.OLLAMA:
+            self.model = f"ollama/{self.config.model}"
             self.llm_api_key = None
             self.api_base = None
         else:
-            error_message = f"Unsupported LLM provider: {settings.llm_provider}"
+            error_message = f"Unsupported LLM provider: {self.config.provider}"
             raise ValueError(error_message)
 
         logger.info(f"Using {settings.llm_provider} with model: {self.model}")
@@ -210,22 +211,21 @@ class LLMDataExtractor:
     def extract_from_documents(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
-        markdown_dir: Path,
+        documents: Sequence[Document],
         filter_attribute_ids: list[int] | None = None,
         output_file: Path | None = None,
         context_type: ContextType = ContextType.FULL_DOCUMENT,
         prompt_outfile: Path | None = None,
     ) -> dict[str, list[GoldStandardAnnotation]]:
         """
-        Extract data from all documents in a directory.
+        Extract data from all documents.
 
-        Loops over files in markdown_dir. For each file, calls
-        extract_from_document with md_path and context_type. Results are
-        merged into one dict; optional combined JSON is written to output_file.
+        Loops over documents (or LinkedDocuments - required for full text context)
+        and extracts data using list of attributes.
 
         Args:
             attributes: List of attributes to extract.
-            markdown_dir: Directory of markdown files (required).
+            documents: Sequence of Document/LinkedDocument instances (required).
             output_file: Optional path to save combined results JSON.
             context_type: Override config context type for each document.
             prompt_outfile: Optional path to write a single JSON object:
@@ -236,33 +236,37 @@ class LLMDataExtractor:
             Dictionary mapping file paths to lists of annotations.
 
         """
-        if not markdown_dir.exists() or not markdown_dir.is_dir():
-            msg = f"markdown_dir must be an existing directory: {markdown_dir}"
-            raise ValueError(msg)
-
         all_results: dict[str, list[GoldStandardAnnotation]] = {}
         prompt_payloads: dict[str, Any] = {}
 
-        input_files = [f for f in markdown_dir.iterdir() if f.suffix == ".md"]
-        if not input_files:
-            missing_files = f"no files in dir {markdown_dir}"
-            raise ValueError(missing_files)
+        for document in documents:
+            logger.info(f"Processing document: {document.name}")
 
-        for input_file in sorted(input_files):
-            logger.info(f"Processing file: {input_file.name} ({input_file})")
+            if self.config.default_context_type == ContextType.ABSTRACT_ONLY:
+                document.set_abstract_context()
+            elif isinstance(document, LinkedDocument):
+                document.context = document.parsed_document.text
+            else:
+                message = (
+                    f"Tried to execute full text extraction on document {document}"
+                    " please use a LinkedDocument, or extract with default_context_type"
+                    " set to ABSTRACT_ONLY"
+                )
+
+                raise ValueError(message)
             try:
                 result, messages = self.extract_from_document(
                     attributes=attributes,
                     filter_attribute_ids=filter_attribute_ids,
-                    md_path=input_file,
+                    payload=document.context,
                     context_type=context_type,
                 )
 
-                all_results[input_file.name] = result
-                prompt_payloads[input_file.name] = messages
+                all_results[str(document.safe_identity.document_id)] = result
+                prompt_payloads[str(document.safe_identity.document_id)] = messages
 
             except Exception as e:  # noqa: BLE001
-                logger.error(f"Failed to process {input_file}: {e}")
+                logger.error(f"Failed to process {document.name}: {e}")
                 logger.debug("Error details", exc_info=True)
 
         if output_file is not None:
