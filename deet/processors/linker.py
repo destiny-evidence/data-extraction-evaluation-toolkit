@@ -152,7 +152,7 @@ class MappingImporter:
         }
 
         Raises:
-            TypeError: if bad json style.
+            JsonStyleError: if bad json style.
 
         Returns:
             dict[int, Path]: the pre-validation object.
