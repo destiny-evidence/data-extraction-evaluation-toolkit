@@ -411,7 +411,7 @@ class Document(BaseModel):
 
     def save(self, path: Path) -> None:
         """Save linked document to .json."""
-        data = self.model_dump()
+        data = self.model_dump(by_alias=False)
 
         # convert images to base64 for json serialization
         # NOTE @all -- we leave ourselves open to
@@ -430,13 +430,15 @@ class Document(BaseModel):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w") as f:
             json.dump(data, f, indent=2, default=str)
-
         logger.info(f"Saved LinkedDocument to {path}")
 
     @classmethod
-    def load(cls, path: Path) -> "Document":
+    def load(cls, path: Path) -> Self:
         """Load linked document from .json."""
         data = json.loads(path.read_text(encoding="utf-8"))
+        logger.debug(data)
+        if "citation" in data:
+            logger.debug("we have a citationf ield")
 
         # convert base64 back to PIL img
         if data.get("parsed_document", {}).get("images"):
@@ -446,7 +448,7 @@ class Document(BaseModel):
                 images[key] = Image.open(BytesIO(img_bytes))
             data["parsed_document"]["images"] = images
 
-        return Document(**data)
+        return cls(**data)
 
 
 class GoldStandardAnnotatedDocument(Document):
