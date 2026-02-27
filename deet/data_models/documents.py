@@ -7,7 +7,7 @@ from enum import StrEnum, auto
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Self
+from typing import Literal, Self
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -267,6 +267,14 @@ class Document(BaseModel):
             if self.context is None:
                 no_context_err = base_err_msg + "`context` is empty."
                 raise ValueError(no_context_err)
+            if (
+                self.context_type is None
+                or self.context_type != ContextType.FULL_DOCUMENT
+            ):
+                no_context_type_err = (
+                    base_err_msg + "`context_type` is not FULL_DOCUMENT."
+                )
+                raise ValueError(no_context_type_err)
             if self.document_identity is None:
                 no_doc_id_err = (
                     base_err_msg + "`document_identity` is empty.  "
@@ -287,6 +295,11 @@ class Document(BaseModel):
             if self.context is None:
                 no_context_err = base_err_msg + "`context` is empty."
                 raise ValueError(no_context_err)
+            if self.context_type is None or self.context_type == ContextType.EMPTY:
+                bad_context_type_err = (
+                    base_err_msg + "`context_type` musnt be None or EMPTY."
+                )
+                raise ValueError(bad_context_type_err)
             if self.document_identity is None:
                 no_doc_id_err = (
                     base_err_msg + "`document_identity` is empty.  "
@@ -324,7 +337,9 @@ class Document(BaseModel):
             return self.document_identity.document_id
         return None
 
-    def author_year_from_document_identity(self) -> str:
+    def author_year_from_document_identity(
+        self, substring_strategy: Literal["longest", "last"]
+    ) -> str:
         """
         Create lower-case `author_year` guess from a Document's
         DocumentIdentity field.
@@ -359,9 +374,17 @@ class Document(BaseModel):
         year = self.document_identity.year
 
         name_components = author_name.split(" ")
-        longest_component = max(name_components, key=len)
+        if substring_strategy == "longest":
+            name_guess = max(name_components, key=len)
+        elif substring_strategy == "last":
+            name_guess = name_components[-1]
+        else:
+            missing_name_guess_method_err = (
+                f"method {substring_strategy} is not implemented."
+            )
+            raise NotImplementedError(missing_name_guess_method_err)
 
-        return f"{longest_component.lower()}_{year}"
+        return f"{name_guess.lower()}_{year}"
 
     def set_abstract_context(self) -> None:
         """Set the abstract, contained in `citation` field, as context."""
@@ -400,14 +423,13 @@ class Document(BaseModel):
             original_doc_filepath = None
         self.original_doc_filepath = original_doc_filepath
 
-    def set_context_from_parsed(self) -> Self:
+    def set_context_from_parsed(self) -> None:
         """Symlink context to parsed_document.text."""
         if self.parsed_document and self.parsed_document.text:
             self.context = self.parsed_document.text
             self.context_type = ContextType.FULL_DOCUMENT
         else:
             logger.warning("no text in parsed_document!")
-        return self
 
     def save(self, path: Path) -> None:
         """Save linked document to .json."""
