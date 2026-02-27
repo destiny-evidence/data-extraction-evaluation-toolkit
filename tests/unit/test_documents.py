@@ -1,4 +1,4 @@
-"""Tests for deet/data_models.py."""
+"""Unit tests for deet/data_models.py."""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
