@@ -516,10 +516,14 @@ class DocumentReferenceLinker:
             List of Document objects successfully linked and parsed
 
         """
-        linked_documents = []
+        linked_documents: list[Document] = []
         processed_doc_ids = set()
+        n_docs_to_link = len(self.documents_references)
 
-        for i, strategy in enumerate(self.linking_strategies):
+        for strategy in self.linking_strategies:
+            if len(linked_documents) == n_docs_to_link:
+                logger.info("all linking jobs completed.")
+                break
             logger.info(f"Attempting linking strategy: {strategy}")
 
             try:
