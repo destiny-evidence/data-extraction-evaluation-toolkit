@@ -460,7 +460,7 @@ class Document(BaseModel):
         data = json.loads(path.read_text(encoding="utf-8"))
         logger.debug(data)
         if "citation" in data:
-            logger.debug("we have a citationf ield")
+            logger.debug("we have a citation field")
 
         # convert base64 back to PIL img
         if data.get("parsed_document", {}).get("images"):
