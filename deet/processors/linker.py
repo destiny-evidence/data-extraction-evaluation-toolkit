@@ -5,7 +5,7 @@ import json
 from collections.abc import Callable, Generator
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal, Self, cast
 
 from loguru import logger
 from pydantic import BaseModel, field_validator, model_validator
@@ -377,10 +377,13 @@ class DocumentReferenceLinker:
                     f"no reference document found for id {author_year_guess}. next!"
                 )
                 continue
+            if unlinked_doc.document_identity is None:
+                unlinked_doc.init_document_identity()
+
             yield LinkedInterimPayload(
-                document_id=unlinked_doc.document_id,
+                document_id=unlinked_doc.document_identity.document_id,  # type:ignore[union-attr, arg-type]
                 file_path=file,
-                format=file.suffix[1:],
+                format=cast("Literal['md', 'pdf']", file.suffix[1:]),
                 unlinked_document=unlinked_doc,
             )
 
@@ -406,10 +409,12 @@ class DocumentReferenceLinker:
             if unlinked_doc is None:
                 logger.debug(f"no reference document found for id {id_guess}. next!")
                 continue
+            if unlinked_doc.document_identity is None:
+                unlinked_doc.init_document_identity()
             yield LinkedInterimPayload(
-                document_id=unlinked_doc.document_id,
+                document_id=unlinked_doc.document_identity.document_id,  # type:ignore[union-attr, arg-type]
                 file_path=file,
-                format=file.suffix[1:],
+                format=cast("Literal['md', 'pdf']", file.suffix[1:]),
                 unlinked_document=unlinked_doc,
             )
 
