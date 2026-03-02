@@ -3,6 +3,7 @@
 import json
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
+from io import StringIO
 from os import PathLike
 from pathlib import Path
 
@@ -11,10 +12,15 @@ from loguru import logger
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+from pdfminer.pdfpage import PDFPage
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from deet.exceptions import (
+    EmptyPdfExtractionError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
@@ -160,6 +166,41 @@ class MarkerParser(ParserLibrary):
         return ParsedOutput(**out)
 
 
+class PdfminerParser(ParserLibrary):
+    """Parser with pdfminer.six backend. Fast text extraction, no images or metadata."""
+
+    name = "pdfminer"
+    input_types = [InputFileType.PDF]
+    output_file_types = [OutputFileType.MD]
+    _LAPARAMS = LAParams()
+
+    @classmethod
+    def parse(
+        cls,
+        input_: str | PathLike,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,  # noqa: ARG003
+    ) -> ParsedOutput:
+        """Parse file using pdfminer.six (no OCR)."""
+        if return_metadata or return_images:
+            msg = "PdfminerParser can't produce images or metadata."
+            raise InvalidOutputFileTypeError(msg)
+        rsrcmgr = PDFResourceManager()
+        out = StringIO()
+        device = TextConverter(rsrcmgr, out, laparams=cls._LAPARAMS)
+        with Path(input_).open("rb") as f:
+            interpreter = PDFPageInterpreter(rsrcmgr, device)
+            for page in PDFPage.get_pages(f):
+                interpreter.process_page(page)
+        device.close()
+        text = out.getvalue() or ""
+        if not text.strip():
+            raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
+        return ParsedOutput(text=text)
+
+
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
@@ -213,7 +254,7 @@ class DocumentParser:
     """Parse documents from target format to other target format."""
 
     DEFAULT_PARSERS: dict[str, type[ParserLibrary]] = {
-        "pdf": MarkerParser,
+        "pdf": PdfminerParser,
         "epub": PandocParser,
         "html": PandocParser,
         "xml": PandocParser,
