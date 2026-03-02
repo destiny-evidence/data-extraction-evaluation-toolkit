@@ -9,6 +9,7 @@ from destiny_sdk.references import ReferenceFileInput
 from pydantic import ValidationError
 
 from deet.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
+from deet.data_models.documents import ContextType
 from deet.data_models.eppi import (
     AttributeType,
     EppiAttribute,
@@ -16,7 +17,6 @@ from deet.data_models.eppi import (
     EppiDocument,
 )
 from deet.extractors.llm_data_extractor import (
-    ContextType,
     DataExtractionConfig,
     LLMDataExtractor,
     PromptConfig,
