@@ -9,11 +9,18 @@ import pytest
 from destiny_sdk.references import ReferenceFileInput
 from PIL import Image
 
+from deet.data_models.base import (
+    AnnotationType,
+    Attribute,
+    AttributeType,
+    GoldStandardAnnotation,
+)
 from deet.data_models.documents import (
     ContextType,
     Document,
     DocumentIdentity,
     DocumentIDSource,
+    GoldStandardAnnotatedDocument,
 )
 from deet.exceptions import (
     BadDocumentIdError,
@@ -904,3 +911,43 @@ def test_document_save_load_roundtrip(tmp_path):
     assert loaded.context == original.context
     assert loaded.context_type == original.context_type
     assert loaded.document_id == original.document_id
+
+
+# gold standard annotated doc
+def test_gold_standard_annotated_document_multiple_annotations():
+    """Test creating document with multiple annotations."""
+    citation = ReferenceFileInput()
+
+    attr1 = Attribute(
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Boolean Attribute",
+    )
+    attr2 = Attribute(
+        output_data_type=AttributeType.STRING,
+        attribute_id=2345,
+        attribute_label="String Attribute",
+    )
+
+    annotations = [
+        GoldStandardAnnotation(
+            attribute=attr1,
+            output_data=True,
+            annotation_type=AnnotationType.HUMAN,
+        ),
+        GoldStandardAnnotation(
+            attribute=attr2,
+            output_data="Test string value",
+            annotation_type=AnnotationType.LLM,
+        ),
+    ]
+
+    doc = GoldStandardAnnotatedDocument(
+        name="Test Document",
+        citation=citation,
+        context="Test content",
+        annotations=annotations,
+    )
+    assert len(doc.annotations) == 2
+    assert doc.annotations[0].output_data is True
+    assert doc.annotations[1].output_data == "Test string value"
