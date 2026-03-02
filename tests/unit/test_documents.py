@@ -1,10 +1,13 @@
 """Unit tests for deet/data_models.py."""
 
+import base64
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from destiny_sdk.references import ReferenceFileInput
+from PIL import Image
 
 from deet.data_models.documents import (
     ContextType,
@@ -770,3 +773,134 @@ def test_document_set_context_from_parsed_no_parsed_doc():
 
 
 # save/load methods
+def test_document_save(tmp_path):
+    """Test saving document to JSON file."""
+    citation = ReferenceFileInput()
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+        context="Test content",
+        context_type=ContextType.FULL_DOCUMENT,
+    )
+
+    save_path = tmp_path / "doc.json"
+    doc.save(save_path)
+
+    assert save_path.exists()
+    with save_path.open("r") as f:
+        data = json.load(f)
+    assert data["name"] == "Test Document"
+    assert data["context"] == "Test content"
+
+
+def test_document_save_creates_parent_directories(tmp_path):
+    """Test that save creates parent directories if they don't exist."""
+    citation = ReferenceFileInput()
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+    )
+
+    save_path = tmp_path / "subdir1" / "subdir2" / "doc.json"
+    doc.save(save_path)
+
+    assert save_path.exists()
+    assert save_path.parent.exists()
+
+
+def test_document_save_with_images(tmp_path):
+    """Test saving document with images in parsed_document."""
+    citation = ReferenceFileInput()
+
+    img = Image.new("RGB", (100, 100), color="red")
+
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+        parsed_document=ParsedOutput(
+            text="Text with images", images={"img1": img}, parser_library="unknown"
+        ),
+    )
+
+    save_path = tmp_path / "doc.json"
+    doc.save(save_path)
+
+    with save_path.open("r") as f:
+        data = json.load(f)
+
+    assert "parsed_document" in data
+    assert "images" in data["parsed_document"]
+    assert "img1" in data["parsed_document"]["images"]
+    # try decoding, verifying base64
+    base64.b64decode(data["parsed_document"]["images"]["img1"])
+
+
+def test_document_load(tmp_path):
+    """Test loading document from JSON file."""
+    citation = ReferenceFileInput()
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+        context="Test content",
+        context_type=ContextType.FULL_DOCUMENT,
+    )
+
+    save_path = tmp_path / "doc.json"
+    doc.save(save_path)
+
+    loaded_doc = Document.load(save_path)
+    assert loaded_doc.name == "Test Document"
+    assert loaded_doc.context == "Test content"
+
+
+def test_document_load_with_images(tmp_path):
+    """Test loading document with images from JSON file."""
+    citation = ReferenceFileInput()
+
+    img = Image.new("RGB", (100, 100), color="blue")
+
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+        parsed_document=ParsedOutput(
+            text="Text with images",
+            images={"img1": img},
+            parser_library="unknown",
+        ),
+    )
+
+    save_path = tmp_path / "doc.json"
+    doc.save(save_path)
+
+    loaded_doc = Document.load(save_path)
+    assert loaded_doc.parsed_document is not None
+    assert loaded_doc.parsed_document.images is not None
+    assert "img1" in loaded_doc.parsed_document.images
+    assert isinstance(loaded_doc.parsed_document.images["img1"], Image.Image)
+
+
+def test_document_save_load_roundtrip(tmp_path):
+    """Test full save/load roundtrip preserves data."""
+    original = Document(
+        name="Test Document",
+        citation=ReferenceFileInput(),
+        context="Test content",
+        context_type=ContextType.FULL_DOCUMENT,
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            doi="10.1000/test",
+            first_author="Smith",
+            year="2024",
+        ),
+    )
+
+    save_path = tmp_path / "doc.json"
+    original.save(save_path)
+    loaded = Document.load(save_path)
+
+    assert loaded.name == original.name
+    assert loaded.context == original.context
+    assert loaded.context_type == original.context_type
+    assert loaded.document_id == original.document_id

@@ -459,11 +459,11 @@ class Document(BaseModel):
         """Load linked document from .json."""
         data = json.loads(path.read_text(encoding="utf-8"))
         logger.debug(data)
-        if "citation" in data:
-            logger.debug("we have a citation field")
 
         # convert base64 back to PIL img
-        if data.get("parsed_document", {}).get("images"):
+        if data.get("parsed_document") is not None and data.get(
+            "parsed_document", {}
+        ).get("images"):
             images = {}
             for key, img_b64 in data["parsed_document"]["images"].items():
                 img_bytes = base64.b64decode(img_b64)
