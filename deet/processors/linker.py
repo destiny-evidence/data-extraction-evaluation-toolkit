@@ -644,7 +644,7 @@ class DocumentReferenceLinker:
 
                     logger.info(
                         f"successfully linked document {interim_payload.document_id} "
-                        f"with file {interim_payload.file_path}"
+                        f"with file {interim_payload.file_path} "
                         f"using {strategy}"
                     )
 

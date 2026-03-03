@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from destiny_sdk.references import ReferenceFileInput
@@ -1089,199 +1089,169 @@ def test_linker_link_many_tries_next_strategy_on_error(tmp_path):
     assert len(results) == 1
 
 
-# def test_linker_link_many_no_matches():
-#     """Test linking returns empty list when no matches found."""
-#     citation = ReferenceFileInput()
-#     doc = Document(name="Test", citation=citation, document_id=12345678)
-#     doc.init_document_identity()
+def test_linker_link_many_no_matches():
+    """Test linking returns empty list when no matches found."""
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
 
-#     linker = DocumentReferenceLinker(
-#         references=[doc],
-#         linking_strategies=[LinkingStrategy.MAPPING_FILE],
-#     )
+    linker = DocumentReferenceLinker(
+        references=[doc],
+        linking_strategies=[LinkingStrategy.MAPPING_FILE],
+    )
 
-#     results = linker.link_many_references_parsed_documents()
-#     assert len(results) == 0
-
-
-# def test_linker_link_many_with_pdf_parsing(tmp_path):
-#     """Test linking parses PDF files."""
-#     docs_dir = tmp_path / "docs"
-#     docs_dir.mkdir()
-#     pdf_file = docs_dir / "12345678.pdf"
-#     pdf_file.write_text("fake pdf")
-
-#     citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
-#     doc = Document(name="Test", citation=citation, document_id=12345678)
-#     doc.init_document_identity()
-
-#     linker = DocumentReferenceLinker(
-#         references=[doc],
-#         document_base_dir=docs_dir,
-#         linking_strategies=[LinkingStrategy.FILENAME_ID],
-#     )
-
-#     mock_parsed = ParsedOutput(text="Parsed PDF content", parser_library="docling")
-
-#     with patch.object(DocumentReferenceLinker, "_parse_pdf", return_value=mock_parsed):
-#         results = linker.link_many_references_parsed_documents()
-
-#     assert len(results) == 1
-#     assert results[0].context == "Parsed PDF content"
+    results = linker.link_many_references_parsed_documents()
+    assert len(results) == 0
 
 
-# def test_linker_link_many_multiple_documents(tmp_path):
-#     """Test linking multiple documents."""
-#     docs_dir = tmp_path / "docs"
-#     docs_dir.mkdir()
-#     md1 = docs_dir / "12345678.md"
-#     md1.write_text("# Doc 1")
-#     md2 = docs_dir / "87654321.md"
-#     md2.write_text("# Doc 2")
+def test_linker_link_many_with_pdf_parsing(tmp_path):
+    """Test linking parses PDF files."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    pdf_file = docs_dir / "12345678.pdf"
+    pdf_file.write_text("fake pdf")
 
-#     citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
-#     doc1 = Document(name="Doc 1", citation=citation, document_id=12345678)
-#     doc1.init_document_identity()
-#     doc2 = Document(name="Doc 2", citation=citation, document_id=87654321)
-#     doc2.init_document_identity()
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678, first_author="Smith", year="2024", doi="10.1000/test"
+        ),
+    )
 
-#     linker = DocumentReferenceLinker(
-#         references=[doc1, doc2],
-#         document_base_dir=docs_dir,
-#         linking_strategies=[LinkingStrategy.FILENAME_ID],
-#     )
+    linker = DocumentReferenceLinker(
+        references=[doc],
+        document_base_dir=docs_dir,
+        linking_strategies=[LinkingStrategy.FILENAME_ID],
+    )
 
-#     results = linker.link_many_references_parsed_documents()
+    mock_parsed = ParsedOutput(text="Parsed PDF content", parser_library="unknown")
 
-#     assert len(results) == 2
+    with patch.object(DocumentReferenceLinker, "_parse_pdf", return_value=mock_parsed):
+        results = linker.link_many_references_parsed_documents()
 
-
-# def test_linker_link_many_partial_success(tmp_path):
-#     """Test linking succeeds for some documents and fails for others."""
-#     docs_dir = tmp_path / "docs"
-#     docs_dir.mkdir()
-#     md1 = docs_dir / "12345678.md"
-#     md1.write_text("# Doc 1")
-#     # no file for doc2
-
-#     citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
-#     doc1 = Document(name="Doc 1", citation=citation, document_id=12345678)
-#     doc1.init_document_identity()
-#     doc2 = Document(name="Doc 2", citation=citation, document_id=87654321)
-#     doc2.init_document_identity()
-
-#     linker = DocumentReferenceLinker(
-#         references=[doc1, doc2],
-#         document_base_dir=docs_dir,
-#         linking_strategies=[LinkingStrategy.FILENAME_ID],
-#     )
-
-#     results = linker.link_many_references_parsed_documents()
-
-#     assert len(results) == 1
-#     assert results[0].document_id == 12345678
+    assert len(results) == 1
+    assert results[0].context == "Parsed PDF content"
 
 
-# def test_linker_link_many_stops_when_all_linked(tmp_path):
-#     """Test linking stops trying strategies when all documents are linked."""
-#     docs_dir = tmp_path / "docs"
-#     docs_dir.mkdir()
-#     md_file = docs_dir / "12345678.md"
-#     md_file.write_text("# Content")
+def test_linker_link_many_multiple_documents(tmp_path):
+    """Test linking multiple documents."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    md1 = docs_dir / "12345678.md"
+    md1.write_text("# Doc 1")
+    md2 = docs_dir / "87654321.md"
+    md2.write_text("# Doc 2")
 
-#     citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
-#     doc = Document(name="Test", citation=citation, document_id=12345678)
-#     doc.init_document_identity()
+    citation = ReferenceFileInput(
+        doi="10.1000/test", authors="Smith", year="2024"
+    )  # see the note at the top of this file
+    doc1 = Document(name="Doc 1", citation=citation, document_id=12345678)
+    doc1.init_document_identity()
+    doc2 = Document(name="Doc 2", citation=citation, document_id=87654321)
+    doc2.init_document_identity()
 
-#     mapping = DocumentReferenceMapping(document_id=12345678, file_path=md_file)
+    linker = DocumentReferenceLinker(
+        references=[doc1, doc2],
+        document_base_dir=docs_dir,
+        linking_strategies=[LinkingStrategy.FILENAME_ID],
+    )
 
-#     mock_link_by_id = MagicMock()
+    results = linker.link_many_references_parsed_documents()
 
-#     linker = DocumentReferenceLinker(
-#         references=[doc],
-#         document_reference_mapping=[mapping],
-#         document_base_dir=docs_dir,
-#         linking_strategies=[
-#             LinkingStrategy.MAPPING_FILE,
-#             LinkingStrategy.FILENAME_ID,
-#         ],
-#     )
-
-#     with patch.object(linker, "_get_linkages_filename_id", mock_link_by_id):
-#         results = linker.link_many_references_parsed_documents()
-
-#     # FILENAME_ID should not be called since MAPPING_FILE succeeded
-#     mock_link_by_id.assert_not_called()
-#     assert len(results) == 1
+    assert len(results) == 2
 
 
-# def test_linker_link_many_with_images_and_metadata(tmp_path):
-#     """Test linking passes image and metadata flags."""
-#     docs_dir = tmp_path / "docs"
-#     docs_dir.mkdir()
-#     pdf_file = docs_dir / "12345678.pdf"
-#     pdf_file.write_text("fake pdf")
+def test_linker_link_many_partial_success(tmp_path):
+    """Test linking succeeds for some documents and fails for others."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    md1 = docs_dir / "12345678.md"
+    md1.write_text("# Doc 1")
+    # no file for doc2
 
-#     citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
-#     doc = Document(name="Test", citation=citation, document_id=12345678)
-#     doc.init_document_identity()
+    citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
+    doc1 = Document(name="Doc 1", citation=citation, document_id=12345678)
+    doc1.init_document_identity()
+    doc2 = Document(name="Doc 2", citation=citation, document_id=87654321)
+    doc2.init_document_identity()
 
-#     linker = DocumentReferenceLinker(
-#         references=[doc],
-#         document_base_dir=docs_dir,
-#         linking_strategies=[LinkingStrategy.FILENAME_ID],
-#     )
+    linker = DocumentReferenceLinker(
+        references=[doc1, doc2],
+        document_base_dir=docs_dir,
+        linking_strategies=[LinkingStrategy.FILENAME_ID],
+    )
 
-#     mock_parsed = ParsedOutput(text="Parsed", parser_library="docling")
+    results = linker.link_many_references_parsed_documents()
 
-#     with patch.object(
-#         DocumentReferenceLinker,
-#         "_parse_pdf",
-#         return_value=mock_parsed,
-#     ) as mock_parse:
-#         linker.link_many_references_parsed_documents(
-#             return_images=True,
-#             return_metadata=True,
-#         )
-
-#     mock_parse.assert_called_once_with(
-#         pdf_file,
-#         return_images=True,
-#         return_metadata=True,
-#     )
+    assert len(results) == 1
+    assert results[0].document_id == 12345678
 
 
-# def test_linker_link_many_unsupported_format_skipped(tmp_path):
-#     """Test linking skips files with unsupported format."""
-#     docs_dir = tmp_path / "docs"
-#     docs_dir.mkdir()
+def test_linker_link_many_stops_when_all_linked(tmp_path):
+    """Test linking stops trying strategies when all documents are linked."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    md_file = docs_dir / "12345678.md"
+    md_file.write_text("# Content")
 
-#     citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
-#     doc = Document(name="Test", citation=citation, document_id=12345678)
-#     doc.init_document_identity()
+    citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
+    doc = Document(name="Test", citation=citation, document_id=12345678)
+    doc.init_document_identity()
 
-#     # create a payload with unsupported format
-#     txt_file = docs_dir / "12345678.txt"
-#     txt_file.write_text("text")
+    mapping = DocumentReferenceMapping(document_id=12345678, file_path=md_file)
 
-#     linker = DocumentReferenceLinker(
-#         references=[doc],
-#         document_base_dir=docs_dir,
-#     )
+    mock_link_by_id = MagicMock()
 
-#     # manually inject a payload with bad format
-#     def bad_generator():
-#         yield LinkedInterimPayload(
-#             document_id=12345678,
-#             file_path=docs_dir / "12345678.md",  # need valid extension for model
-#             format=None,  # simulate unsupported
-#             unlinked_document=doc,
-#         )
+    linker = DocumentReferenceLinker(
+        references=[doc],
+        document_reference_mapping=[mapping],
+        document_base_dir=docs_dir,
+        linking_strategies=[
+            LinkingStrategy.MAPPING_FILE,
+            LinkingStrategy.FILENAME_ID,
+        ],
+    )
 
-#     # create the md file to make model validation pass
-#     (docs_dir / "12345678.md").write_text("# content")
+    with patch.object(linker, "_get_linkages_filename_id", mock_link_by_id):
+        results = linker.link_many_references_parsed_documents()
 
-#     with patch.object(linker, "_create_linking_factory", return_value=bad_generator):
-#         with patch.object(linker, "_get_linkages_mapping_file", bad_generator):
-#             # this should handle the None format gracefully
-#             pass
+    # FILENAME_ID should not be called since MAPPING_FILE succeeded
+    mock_link_by_id.assert_not_called()
+    assert len(results) == 1
+
+
+def test_linker_link_many_with_images_and_metadata(tmp_path):
+    """Test linking passes image and metadata flags."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    pdf_file = docs_dir / "12345678.pdf"
+    pdf_file.write_text("fake pdf")
+
+    citation = ReferenceFileInput(doi="10.1000/test", authors="Smith", year="2024")
+    doc = Document(name="Test", citation=citation, document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(
+        references=[doc],
+        document_base_dir=docs_dir,
+        linking_strategies=[LinkingStrategy.FILENAME_ID],
+    )
+
+    mock_parsed = ParsedOutput(text="This is parsed text.", parser_library="unknown")
+
+    with patch.object(
+        DocumentReferenceLinker,
+        "_parse_pdf",
+        return_value=mock_parsed,
+    ) as mock_parse:
+        linker.link_many_references_parsed_documents(
+            return_images=True,
+            return_metadata=True,
+        )
+
+    mock_parse.assert_called_once_with(
+        pdf_file,
+        return_images=True,
+        return_metadata=True,
+    )
