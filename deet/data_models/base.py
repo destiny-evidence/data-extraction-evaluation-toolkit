@@ -103,7 +103,26 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
-DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
+class ContextType(StrEnum):
+    """Types of context that can be provided to the LLM."""
+
+    EMPTY = auto()
+    FULL_DOCUMENT = auto()
+    ABSTRACT_ONLY = auto()
+    RAG_SNIPPETS = auto()
+    CUSTOM = auto()
+
+
+class DocumentIDSource(StrEnum):
+    """
+    Sources for a given document_id. Can be e.g. eppi_item_id.
+
+    To be extended if e.g. we start working with
+    non-eppi gold standard references.
+    """
+
+    EPPI_ITEM_ID = auto()
+    COVIDENCE_ITEM_ID = auto()
 
 
 class Attribute(BaseModel):
