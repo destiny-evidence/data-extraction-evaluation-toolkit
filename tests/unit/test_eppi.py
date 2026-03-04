@@ -20,8 +20,8 @@ from deet.data_models.eppi import (
     parse_citation_to_destiny,
 )
 from deet.data_models.processed_gold_standard_annotations import (
+    CustomPromptPopulationMethod,
     ProcessedEppiAnnotationData,
-    PromptPopulationMethod,
 )
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
@@ -366,7 +366,7 @@ def test_import_prompts_csv_updates_output_data_type(
     )
 
     result.populate_custom_prompts(
-        method=PromptPopulationMethod.FILE, filepath=csv_path
+        method=CustomPromptPopulationMethod.FILE, filepath=csv_path
     )
 
     assert first_attr.output_data_type == AttributeType.STRING

@@ -17,8 +17,8 @@ from deet.data_models.documents import (
 )
 from deet.data_models.processed_gold_standard_annotations import (
     BaseProcessedAnnotationData,
+    CustomPromptPopulationMethod,
     ProcessedEppiAnnotationData,
-    PromptPopulationMethod,
 )
 from deet.extractors.llm_data_extractor import (
     ContextType,
@@ -169,7 +169,7 @@ def extract_data(  # noqa: PLR0913
     config_path: Path = Path("default_extraction_config.yaml"),
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
-    prompt_population: PromptPopulationMethod = PromptPopulationMethod.ATTRIBUTEFILE,
+    prompt_population: CustomPromptPopulationMethod | None = None,
     csv_path: Path | None = None,
     linked_document_path: Path = Path("linked_documents"),
     out_dir: Path | None = None,
@@ -196,10 +196,11 @@ def extract_data(  # noqa: PLR0913
         gs_data_path=gs_data_path, gs_data_format=gs_data_format
     )
 
-    if prompt_population == PromptPopulationMethod.FILE and not csv_path:
+    if prompt_population == CustomPromptPopulationMethod.FILE and not csv_path:
         message = "CSV prompt popluation selected without specifying csv_path"
         raise ValueError(message)
-    out.populate_custom_prompts(method=prompt_population, filepath=csv_path)
+    if prompt_population is not None:
+        out.populate_custom_prompts(method=prompt_population, filepath=csv_path)
 
     data_extractor = LLMDataExtractor(config=config)
 

@@ -33,12 +33,11 @@ from deet.data_models.eppi import (
 )
 
 
-class PromptPopulationMethod(StrEnum):
+class CustomPromptPopulationMethod(StrEnum):
     """Methods of populating prompts."""
 
     FILE = auto()
     CLI = auto()
-    ATTRIBUTEFILE = auto()
 
 
 class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
@@ -225,7 +224,10 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         )
 
     def populate_custom_prompts(
-        self, method: PromptPopulationMethod, filepath: Path | None = None, **kwargs
+        self,
+        method: CustomPromptPopulationMethod,
+        filepath: Path | None = None,
+        **kwargs,
     ) -> None:
         """
         Populate custom prompts.
