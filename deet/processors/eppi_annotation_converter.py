@@ -7,7 +7,7 @@ from typing import Any
 
 from loguru import logger
 
-from deet.data_models.base import AnnotationType
+from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -121,8 +121,16 @@ class EppiAnnotationConverter:
 
         return flattened
 
+    def _extract_attributes_from_codesets(
+        self, raw_data: EppiRawData
+    ) -> list[dict[str, Any]]:
+        """Extract and flatten attributes from CodeSets using structured models."""
+        return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
+
     def convert_to_eppi_attributes(
-        self, flattened_attributes: list[dict[str, Any]]
+        self,
+        flattened_attributes: list[dict[str, Any]],
+        set_attribute_type: AttributeType | None = None,
     ) -> list[EppiAttribute]:
         """
         Convert flattened attribute data to EppiAttribute models.
@@ -138,7 +146,14 @@ class EppiAnnotationConverter:
         for att_dict in flattened_attributes:
             if "AttributeId" not in att_dict:
                 att_dict["AttributeId"] = 0
-            out.append(EppiAttribute(**att_dict))
+            new_attribute = EppiAttribute(**att_dict)
+            if set_attribute_type:
+                logger.debug(
+                    f"setting custom attribute type {set_attribute_type.value} "
+                    f"for attribute {new_attribute.attribute_id}"
+                )
+                new_attribute.output_data_type = set_attribute_type
+            out.append(new_attribute)
         return out
 
     def _process_text_details(
@@ -200,7 +215,16 @@ class EppiAnnotationConverter:
             text_details
         )
 
-        output_data = " | ".join(extracted_texts) if extracted_texts else ""
+        output_data: str | bool = " | ".join(extracted_texts) if extracted_texts else ""
+
+        # Coerce empty string to False for BOOL attributes (backward compatibility
+        # when ItemAttributeFullTextDetails is absent)
+        # NOTE @sagaruprety this (modified to coerce all bools to bool) is OK
+        # for eppi as we're only expecting bool/str, but we need to implement
+        # elsewhere a functionality that auto-maps output_data to the correct data type.
+        attr = attributes_lookup.get(annotation.get("AttributeId", 0))
+        if attr is not None and attr.output_data_type == AttributeType.BOOL:
+            output_data = bool(output_data)
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -228,7 +252,7 @@ class EppiAnnotationConverter:
             arm_id=annotation.get("ArmId"),
             arm_title=annotation.get("ArmTitle", ""),
             arm_description=annotation.get("ArmDescription", ""),
-            output_data=bool(output_data),
+            output_data=output_data,
             annotation_type=AnnotationType.HUMAN,
             item_attribute_full_text_details=item_attribute_details,
         )
@@ -259,12 +283,6 @@ class EppiAnnotationConverter:
             )
             for annotation in annotations_data
         ]
-
-    def _extract_attributes_from_codesets(
-        self, raw_data: EppiRawData
-    ) -> list[dict[str, Any]]:
-        """Extract and flatten attributes from CodeSets using structured models."""
-        return raw_data.extract_all_attributes(self.flatten_attributes_hierarchy)
 
     def _create_pdf_to_title_mapping(
         self, references: list[dict[str, Any]]
@@ -309,12 +327,17 @@ class EppiAnnotationConverter:
 
         return doc_annotations
 
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
+    def process_annotation_file(
+        self,
+        file_path: str | Path,
+        set_attribute_type: str | AttributeType | None = None,
+    ) -> ProcessedAnnotationData:
         """
         Process a complete annotation file and return structured data.
 
         Args:
             file_path: Path to the JSON annotation file
+            set_attribute_type: custom AttributeType to set for incoming annotations.
 
         Returns:
             ProcessedAnnotationData containing all processed data
@@ -329,7 +352,12 @@ class EppiAnnotationConverter:
 
         all_attributes_raw = self._extract_attributes_from_codesets(raw_data)
 
-        attributes = self.convert_to_eppi_attributes(all_attributes_raw)
+        if isinstance(set_attribute_type, str):
+            set_attribute_type = AttributeType(set_attribute_type)
+        attributes = self.convert_to_eppi_attributes(
+            flattened_attributes=all_attributes_raw,
+            set_attribute_type=set_attribute_type,
+        )
 
         attributes_lookup: dict[int, EppiAttribute] = {
             attr.attribute_id: attr for attr in attributes
@@ -347,8 +375,19 @@ class EppiAnnotationConverter:
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
+            # NL: really, the existing_ids thing is quite redundant here,
+            # as we assume we're getting our eppi item ids as document_ids.
+            # however, a) it demonstrates the desired functionality of
+            # checking against a set of already populated ids, and
+            # b) there is a world where eppi.jsons contain invalid item ids.
+            existing_ids: set[int] = set()
             if doc_title and doc_title not in documents_by_title:
+                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
                 document = EppiDocument(**reference)
+                # init doc id
+                new_id = document.init_document_identity(existing_ids=existing_ids)
+                if new_id:
+                    existing_ids.add(new_id)
                 documents_by_title[doc_title] = document
 
         pdf_to_title_mapping = self._create_pdf_to_title_mapping(
@@ -369,22 +408,20 @@ class EppiAnnotationConverter:
                     attributes_lookup,
                     attribute_id_to_label,
                 )
-                payload = doc.model_dump(mode="python")
-                annotations = [json.loads(ann.model_dump_json()) for ann in annotations]
 
-                payload["annotations"] = annotations
-
-                # annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
-                annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
+                # Use model_construct to bypass validation and preserve all fields
+                annotated_doc = EppiGoldStandardAnnotatedDocument.model_construct(
+                    **{**doc.__dict__, "annotations": annotations}
+                )
 
                 annotated_documents.append(annotated_doc)
                 all_annotations.extend(annotations)
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            " {len(documents_by_title)} documents, "
+            f" {len(documents_by_title)} documents, "
             f"{len(all_annotations)} annotations,"
-            " {len(annotated_documents)} annotated documents"
+            f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(

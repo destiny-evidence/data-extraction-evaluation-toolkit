@@ -20,14 +20,14 @@ authors = [
     {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
 dependencies = [
-    "destiny-sdk>=0.3.0",
-    "ipython>=9.10.0",
+    "destiny-sdk[labs]>=0.9.1",
+    "diskcache>=5.6.3",
     "litellm>=1.77.4",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",
     "openai>=1.0.0",
-    "pandas>=3.0.0",
+    "pdfminer.six>=20221105",
     "pillow>=10.4.0",
     "pydantic-extra-types>=2.10.5",
     "pydantic-settings>=2.10.1",
@@ -44,11 +44,6 @@ requires-python = ">=3.12.11"
 version = "0.2.0"
 
 [project.scripts]
-DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
-DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
-DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
-DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
-DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
 
 [tool.coverage.report]
 # This section is optional but good practice
@@ -60,9 +55,6 @@ omit = [
     "deet/scripts/*",
 ]
 source = ["deet"]
-
-[tool.mypy]
-plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -78,6 +70,14 @@ module = "nltk.*"
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
+module = "diskcache.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "pdfminer.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
 module = "loguru.*"
 
 [[tool.mypy.overrides]]
@@ -86,6 +86,9 @@ module = "tabulate.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
+filterwarnings = [
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+]
 pythonpath = "."
 testpaths = ["tests"]
 

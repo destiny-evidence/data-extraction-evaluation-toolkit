@@ -17,9 +17,9 @@ def test_load_eppi_json_annotations(
 ) -> None:
     """Test loading EPPI JSON annotations via process_annotation_file."""
     converter = EppiAnnotationConverter()
-    mocker.patch.object(  # @sagaruprety note i've removed the json.loads wrapper
+    mocker.patch.object(
         Path, "open", mocker.mock_open(read_data=json.dumps(sample_eppi_data))
-    )  # @harryjmoss is this the right way to use non-`unittest` mocking?
+    )
     result = converter.process_annotation_file("fake_path.json")
     assert hasattr(result, "raw_data")
     assert len(result.raw_data.code_sets) == 2
@@ -40,7 +40,7 @@ def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
         assert len(result.documents) > 0
 
 
-def test_convert_to_eppi_attributes(sample_eppi_data: dict) -> None:
+def test_convert_to_eppi_attributes_default(sample_eppi_data: dict) -> None:
     """Test converting to EPPI attributes."""
     converter = EppiAnnotationConverter()
     raw_data = EppiRawData.model_validate(sample_eppi_data)
@@ -58,7 +58,23 @@ def test_convert_to_eppi_attributes(sample_eppi_data: dict) -> None:
     assert (
         first_attr.output_data_type == AttributeType.BOOL.value
     ), "Should be bool for EPPI"
-    assert first_attr.question_target == "", "Should be empty for EPPI"
+
+
+def test_convert_to_eppi_attributes_custom_attribute_type(sample_eppi_data) -> None:
+    """Test converting to EPPI attributes /w custom attribute type."""
+    converter = EppiAnnotationConverter()
+    raw_data = EppiRawData.model_validate(sample_eppi_data)
+
+    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)
+
+    attributes = converter.convert_to_eppi_attributes(
+        all_attributes_raw, set_attribute_type=AttributeType.STRING
+    )
+    assert len(attributes) > 0
+    assert all(hasattr(attr, "attribute_id") for attr in attributes)
+    assert all(hasattr(attr, "attribute_label") for attr in attributes)
+    assert all(hasattr(attr, "output_data_type") for attr in attributes)
+    assert all(attr.output_data_type == AttributeType.STRING for attr in attributes)
 
 
 def test_convert_to_eppi_attributes_field_population(
@@ -80,7 +96,6 @@ def test_convert_to_eppi_attributes_field_population(
         assert attr.attribute_id is not None
         assert attr.attribute_label is not None
         assert attr.output_data_type == AttributeType.BOOL.value
-        assert attr.question_target == ""
 
         # EPPI-specific fields should be populated
         # (not None unless explicitly None in JSON)
@@ -225,7 +240,6 @@ def test_process_attribute_data(
 
     assert len(attributes) == 1
     attr = attributes[0]
-    assert attr.question_target == ""  # empty for EPPI
     assert attr.output_data_type == AttributeType.BOOL  # bool for EPPI
 
 
@@ -242,7 +256,7 @@ def test_create_document_from_reference_data(
     assert doc.citation is not None
 
 
-def test_integration_full_workflow(sample_eppi_data: dict) -> None:
+def test_full_workflow(sample_eppi_data: dict) -> None:
     """Test full integration workflow."""
     converter = EppiAnnotationConverter()
     with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
@@ -270,9 +284,52 @@ def test_integration_full_workflow(sample_eppi_data: dict) -> None:
         assert hasattr(first_doc, "document_id")
         assert hasattr(first_doc, "citation")
 
-        # NOTE: This fixture does not include the data needed for
-        # `process_annotation_file()` to attach annotations to documents.
-        # Attribute-label resolution is tested separately.
+
+@pytest.mark.parametrize(
+    ("attribute_type_str", "expected_type"),
+    [
+        ("string", AttributeType.STRING),
+        ("integer", AttributeType.INTEGER),
+        ("bool", AttributeType.BOOL),
+        ("list", AttributeType.LIST),
+        ("dict", AttributeType.DICT),
+    ],
+)
+def test_full_workflow_custom_att_type_str_valid(
+    sample_eppi_data, attribute_type_str: str, expected_type: AttributeType
+) -> None:
+    """Testing full workflow with valid custom att type as string."""
+    converter = EppiAnnotationConverter()
+    with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
+        result = converter.process_annotation_file(
+            "fake_path.json", set_attribute_type=attribute_type_str
+        )
+        first_attr = result.attributes[0]
+        assert first_attr.output_data_type == expected_type
+
+
+@pytest.mark.parametrize(
+    "attribute_type_str",
+    [
+        "STRING",
+        "custom",
+        "foo",
+        "!bar",
+    ],
+)
+def test_full_workflow_custom_att_type_str_invalid(
+    sample_eppi_data,
+    attribute_type_str: str,
+) -> None:
+    """Testing full workflow with invalid custom att type as string."""
+    converter = EppiAnnotationConverter()
+    with (
+        patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))),
+        pytest.raises(ValueError, match="is not a valid AttributeType"),
+    ):
+        converter.process_annotation_file(
+            "fake_path.json", set_attribute_type=attribute_type_str
+        )
 
 
 def test_convert_to_eppi_annotations_uses_codeset_attribute_label(

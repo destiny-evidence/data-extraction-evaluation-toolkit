@@ -1,11 +1,10 @@
-"""Core data models for document processing and annotation."""
+"""Core data models regarding annotations."""
 
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal
 
-from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from tabulate import tabulate
@@ -48,28 +47,6 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    EMPTY = auto()
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
-
-
-class DocumentIDSource(StrEnum):
-    """
-    Sources for a given document_id. Can be e.g. eppi_item_id.
-
-    To be extended if e.g. we start working with
-    non-eppi gold standard references.
-    """
-
-    EPPI_ITEM_ID = auto()
-    CSV_ITEM_ID = auto()
-
-
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.
@@ -77,8 +54,9 @@ class Attribute(BaseModel):
     Represents a single piece of information to be extracted from documents.
     """
 
+    model_config = ConfigDict()
+
     prompt: str | None = None  # an optional prompt.
-    question_target: str  # 'How many patients were recruited?' - the prompt/question
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
@@ -207,26 +185,6 @@ class Attribute(BaseModel):
                 continue
 
 
-class Document(BaseModel):
-    """
-    Represents a document.
-
-    This can be used both for references itemised
-    in a document listing gold standard annotations (e.g. eppi.json)
-    AND
-    for a document coming from a file (e.g. pdf) without
-    linking to a gold standard annotations document with references.
-    """
-
-    name: str
-    citation: ReferenceFileInput
-    context: str | list[str]
-    context_type: ContextType
-    document_id: int
-    document_id_source: DocumentIDSource
-    filename: str | None = None
-
-
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
 
@@ -262,12 +220,6 @@ class GoldStandardAnnotation(BaseModel):
             )
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
-
-
-class GoldStandardAnnotatedDocument(Document):
-    """A document with its gold standard annotations."""
-
-    annotations: list[GoldStandardAnnotation]
 
 
 # models specifically for interfacing with the LLM below
@@ -318,7 +270,7 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any = Field(..., description="The LLM's annotation.")
+    output_data: Any
     additional_text: str | None = Field(
         ...,
         description=(

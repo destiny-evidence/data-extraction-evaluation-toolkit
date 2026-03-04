@@ -21,7 +21,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from deet.data_models.base import Attribute, ContextType, GoldStandardAnnotation
+from deet.data_models.base import Attribute, GoldStandardAnnotation
+from deet.data_models.documents import ContextType
 from deet.data_models.eppi import EppiAttribute
 from deet.data_models.pipeline import JobType, Pipeline, jobify, stage_from_job
 from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
@@ -49,63 +50,96 @@ def parse_pdf(
     skip_if_md_exists: bool = True,
 ) -> None:
     """
-    Parse pdf to Markdown.
+    Parse all PDFs in pdf_path (dir) to markdown files in out_path (dir).
+
+    No-op if pdf_path or out_path is None (e.g. when only markdown dir is given).
 
     Args:
-        pdf_path (Path): location of input pdf.
-        out_path (Path): location to write markdown file to.
-        skip_if_md_exists (bool, optional): set to true if you want to skip this stage
-                                            if markdown already exists.
-                                            NOTE: you are responsible for ensuring md
-                                            file matches the pdf. Defaults to True.
+        pdf_path: Directory containing PDF files.
+        out_path: Directory to write markdown files to.
+        skip_if_md_exists: If True, skip parsing when markdown already exists.
+            You are responsible for ensuring the md file matches the pdf.
+            Defaults to True.
 
     """
-    if skip_if_md_exists and out_path.exists() and out_path.is_file():
+    if pdf_path is None or out_path is None:
         logger.info(
-            f"`skip_if_md_exists` has been set to True, and {str(out_path)}  exists. "  # noqa: RUF010
-            "skipping parsing..."
+            "pdf_path or out_path not provided; skipping parse_pdf stage (no-op)."
         )
         return
-    parser(input_=pdf_path, out_path=out_path)
+    if not pdf_path.is_dir():
+        missing_paths = "must specify a pdf_path that is an existing directory"
+        raise ValueError(missing_paths)
+
+    out_path.mkdir(parents=True, exist_ok=True)
+    pdf_files = [
+        f for f in pdf_path.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"
+    ]
+    for single_pdf in sorted(pdf_files):
+        md_path = out_path / f"{single_pdf.stem}.md"
+        if skip_if_md_exists and md_path.exists() and md_path.is_file():
+            logger.info(
+                f"`skip_if_md_exists` has been set to True, and {md_path!s} "
+                "exists. skipping parsing..."
+            )
+            continue
+        parser(input_=single_pdf, out_path=md_path)
 
 
-def ingest_gold_standard_import_csv_func(
-    eppi_json_path: Path, output_dir: Path, csv_path: Path
+def ingest_gold_standard_func(
+    eppi_json_path: Path,
+    output_dir: Path,
+    csv_path: Path,
+    *,
+    retain_only_csv_attributes: bool = True,
 ) -> None:
-    """Convert EPPI JSON to DEET data models."""
+    """Convert EPPI JSON to DEET data models and import prompts from CSV."""
     out = converter.process_annotation_file(eppi_json_path)
 
-    # import prompts from csv for attribute population.
     if csv_path.parent == Path("."):  # noqa: PTH201
         csv_path = output_dir / csv_path
 
-    out.populate_custom_prompts(method="file", filepath=csv_path)
+    out.populate_custom_prompts(
+        method="file",
+        filepath=csv_path,
+        retain_only_csv_attributes=retain_only_csv_attributes,
+    )
     converter.write_processed_data_to_file(processed_data=out, output_dir=output_dir)
 
 
 def llm_data_extraction(
-    full_text_path: Path,
+    markdown_dir: Path,
     attributes_file_path: Path,
     output_path: Path,
-    filter_by_attribute_ids: list[int] | None = None,
+    filter_attribute_ids: list[int] | None = None,
     prompt_outfile: Path | None = None,
-) -> list[GoldStandardAnnotation]:
-    """Run LLM data extraction."""
-    full_text = full_text_path.read_text(encoding="utf-8")
+) -> dict[str, list[GoldStandardAnnotation]]:
+    """
+    Run LLM data extraction for all files in the markdown dir.
 
+    Delegates to LLMDataExtractor.extract_from_documents (loop over files
+    inside the extractor).
+
+    Args:
+        markdown_dir: Directory of markdown files.
+        attributes_file_path: Path to attributes JSON file.
+        output_path: Path to save combined output JSON.
+        filter_by_attribute_ids: Optional list of attribute IDs to filter.
+        prompt_outfile: Optional path to write prompt payload for debugging.
+
+    Returns:
+        Dictionary mapping file paths to lists of annotations.
+
+    """
     attributes_raw = json.loads(attributes_file_path.read_text(encoding="utf-8"))
-
     attributes: list[Attribute] = [EppiAttribute(**record) for record in attributes_raw]
-    if filter_by_attribute_ids:
-        attributes = [
-            a for a in attributes if a.attribute_id in filter_by_attribute_ids
-        ]
 
     return data_extractor.extract_from_documents(
-        payload=full_text,
         attributes=attributes,
-        context_type=ContextType.FULL_DOCUMENT,
+        markdown_dir=markdown_dir,
         output_file=output_path,
+        filter_attribute_ids=filter_attribute_ids,
+        context_type=ContextType.FULL_DOCUMENT,
         prompt_outfile=prompt_outfile,
     )
 
@@ -114,81 +148,142 @@ def main() -> None:
     """Run main part of script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--pdf_path", help="incoming pdf file", required=True, type=Path
+        "-p",
+        "--pdf_path",
+        help="directory containing PDF files to process",
+        type=Path,
+        required=False,
     )
     parser.add_argument(
         "-m",
         "--markdown_path",
-        help="path to save markdown at",
+        help=(
+            "directory containing markdown files "
+            "(for checking existing markdowns or processing markdowns directly)"
+        ),
         type=Path,
         required=False,
     )
     parser.add_argument(
         "-e", "--eppi_json_path", help="path to eppi json", type=Path, required=True
     )
-
     parser.add_argument(
         "-c",
         "--csv_path",
-        help="path you want to write prompt editing csv to.",
+        help="path you want to ingest manually populated pomrpt csv from.",
         type=Path,
         required=True,
+    )
+    parser.add_argument(
+        "-a",
+        "--all_attributes",
+        help="is flag is set, use all attributes, regardless of "
+        "whether prompt field is populated or not.",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "-f",
+        "--filter_attribute_ids",
+        help="an optional list of attribute_ids to filter by.",
+        type=int,
+        nargs="+",
+        required=False,
+    )
+    parser.add_argument(
+        "-o",
+        "--output_path",
+        help=("path to save output JSON (auto-generated if not provided)"),
+        type=Path,
+        required=False,
     )
 
     args = parser.parse_args()
 
-    eppi_json_dir = str(Path(args.eppi_json_path).name).split(".")[:-1][0]
-    eppi_out_path = (
-        Path(args.pdf_path).parent / "tmp_parsed_eppi" / eppi_json_dir / "eppi"
-    )
+    pdf_path = Path()
+    markdown_path = Path()
+    eppi_json_path: Path = args.eppi_json_path
+    output_path: Path = args.output_path
+    filter_attribute_ids: list[int] | None = args.filter_attribute_ids or None
+    csv_path: Path = args.csv_path
+    retain_all_attributes: bool = not args.all_attributes
 
-    logger.debug(eppi_out_path)
-    if not args.markdown_path:
-        args.markdown_path = Path(str(args.pdf_path).split(".")[:-1][0] + ".md")
+    if not args.pdf_path and not args.markdown_path:
+        error_msg = (
+            "At least one of -p/--pdf_path or -m/--markdown_path must be provided"
+        )
+        raise ValueError(error_msg)
 
-    # Create stages by wrapping the jobified functions
-    logger.debug("decorating our functions as Jobs and PipelineStages")
+    if args.pdf_path:
+        if not args.pdf_path.exists():
+            error_msg = f"PDF directory does not exist: {args.pdf_path}"
+            raise ValueError(error_msg)
+        if not args.pdf_path.is_dir():
+            error_msg = f"PDF path must be a directory, not a file: {args.pdf_path}"
+            raise ValueError(error_msg)
+        pdf_path = args.pdf_path
+
+    if args.markdown_path:
+        if not args.markdown_path.exists():
+            error_msg = f"Markdown directory does not exist: {args.markdown_path}"
+            raise ValueError(error_msg)
+        if not args.markdown_path.is_dir():
+            error_msg = (
+                f"Markdown path must be a directory, not a file: {args.markdown_path}"
+            )
+            raise ValueError(error_msg)
+        markdown_path = args.markdown_path
+
+    if not args.output_path:
+        args.output_path = eppi_json_path.parent
+        logger.info(f"Auto-generated output path: {args.output_path}")
+    output_path = args.output_path
+
+    if markdown_path is None and pdf_path is not None:
+        markdown_path = pdf_path / "markdown"
+        markdown_path.mkdir(parents=True, exist_ok=True)
+
     parse_pdf_stage = stage_from_job(
         jobify(
             name="parse_pdf",
             func_kwargs={
-                "pdf_path": args.pdf_path,
-                "out_path": args.markdown_path,
+                "pdf_path": pdf_path,
+                "out_path": markdown_path,
             },
-        )(parse_pdf)  # Apply jobify decorator to function
+        )(parse_pdf)
     )
-
-    ingest_gs_csv_stage = stage_from_job(
+    ingest_gs_stage = stage_from_job(
         jobify(
-            name="ingest_gs_csv_import",
+            name="ingest_gs",
             func_kwargs={
-                "eppi_json_path": args.eppi_json_path,
-                "output_dir": eppi_out_path,
-                "csv_path": args.csv_path,
+                "eppi_json_path": eppi_json_path,
+                "output_dir": output_path,
+                "csv_path": csv_path,
+                "retain_only_csv_attributes": retain_all_attributes,
             },
-        )(ingest_gold_standard_import_csv_func)
+        )(ingest_gold_standard_func)
     )
     llm_extraction_stage = stage_from_job(
         jobify(
             name="llm_extraction",
             job_type=JobType.EXTRACTION,
             func_kwargs={
-                "full_text_path": args.markdown_path,
-                "attributes_file_path": eppi_out_path
+                "markdown_dir": markdown_path,
+                "attributes_file_path": output_path
                 / DEFAULT_BASE_OUTPUT_DIR
                 / DEFAULT_ATTRIBUTES_FILENAME,
-                "output_path": eppi_out_path / "llm_extractions.json",
-                "prompt_outfile": eppi_out_path / "full_prompt_payload.json",
+                "filter_attribute_ids": filter_attribute_ids,
+                "output_path": output_path / "llm_extractions.json",
+                "prompt_outfile": output_path / "full_prompt_payload.json",
             },
         )(llm_data_extraction)
     )
 
-    my_beautiful_pipeline = Pipeline(
-        name="test_pipeline",
-        stages=[parse_pdf_stage, ingest_gs_csv_stage, llm_extraction_stage],
+    pipeline = Pipeline(
+        name="csv_02_batch_extraction",
+        stages=[parse_pdf_stage, ingest_gs_stage, llm_extraction_stage],
     )
-
-    my_beautiful_pipeline.run()
+    pipeline.run()
 
 
 if __name__ == "__main__":

@@ -4,9 +4,11 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 
 ## tl, dr
 
-A key innovation the Destiny project seeks to deliver is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
+[Look here if you just want help running default pipelines](#default-pipelines).
 
-This software enables this end-to-end process for data extraction and evaluation tasks. `data-extraction-evaluation-toolkit` is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
+A key innovation of the [Destiny project](https://destiny-evidence.github.io/website/) is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
+
+This software enables this end-to-end process for data extraction and evaluation tasks. **`data-extraction-evaluation-toolkit`**; or **`deet`** is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
 
 ## Installation
 
@@ -33,6 +35,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Once uv is installed, install dependencies:
 
 ```sh
+git clone git@github.com:destiny-evidence/data-extraction-evaluation-toolkit.git # SSH
+# or
+git clone https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git # HTTPS
+cd data-extraction-evaluation-toolkit
 uv sync
 ```
 
@@ -50,65 +56,69 @@ Install `pre-commit` locally (in your activated `venv`) to aid code consistency 
 pre-commit install
 ```
 
-## Using `DEET`
+## Using `deet`
 
-The `data-extraction-evaluation-toolkit` (`DEET`) contains mutliple modules which can be leveraged alone, or orchestrated together to form a `Pipeline`. The goal of `DEET` is to be modular and extensible, allowing users to customise a specific pipeline or workflow to their needs.
+The `data-extraction-evaluation-toolkit` (`deet`) contains mutliple modules which can be leveraged alone, or orchestrated together to form a `Pipeline`. The goal of `DEET` is to be modular and extensible, allowing users to customise a specific pipeline or workflow to their needs.
 
 Currently, the app covers the following tools:
 
 - **Document parsing** (from a range of formats; typically into `markdown`)
-- **Gold standard data ingestion and standardisation** (currently only `EPPI-json` datasets are supported)
+- **Gold standard data ingestion and standardisation** (currently only `eppi.json` datasets are supported out of the box, for other datasets, use the data models in `data_models/base.py` to ingest your gold standard references.)
 - **LLM-powered data extraction**
 - **Orchetration of tools into `Pipeline`s** (these tools can be existing `DEET` modules, custom python functions, or scripts (`R`, `python`, `bash` currently suppported.))
 
 Our roadmap for future development contains:
 
+- **Linking of gold standard references & pdf-derived parsed documents**
+- **A fully-fledged cli for typical `deet` tasks**
+- **A framework for repeatable pipeline runs with slight modifications for comparison**
 - **Comparison & evaluation of LLM vs human annotations**
-- **Support for LLM prompts and SQL code**
+- **Support for prompt versioning tool**
 
-## Document parsing
+### Default pipelines
 
-The first time you run anything from `deet/parser.py`, you will likely have to wait for a considerable (5-15 minutes) amount of time, as dependencies will collect and install. These dependencies include machine learning libraries and pre-trained models.
+Default pipelines leverage the included modules to chain typical, often-used data tasks.
+Currently, they are implemented as scripts, but will soon be moved into a `cli`.
+See available scripts prefixed with `pipeline_` in `deet/scripts/`.
+All these scripts will require:
 
-## Data Processing
+- a path to a directory of input files, `.md` or `.pdf`
+- a path to a `eppi.json`
+- paths to other relevant files, e.g. csvs containing prompts.
+These scripts will then produce a file `llm_extractions.json` containing llm classifications for each of the files contained in the directory.
 
-### Annotation Converter
+So, you might want to run something like this:
 
-The annotation converter can be used to convert raw EPPI-Reviewer data into structured format.
-
-**Usage:**
-
-```bash
-uv run python deet/scripts/annotation_converter_cli.py <input_file> <output_dir>
+```python
+python deet/scripts/pipeline_interactive_prompt_generation.py -m path/to/my/markdown/files -e path/to/eppi.json -o path/to/write/out/files
 ```
 
-**Example:**
+If you're unsure what kind of arguments a given script might required, you can always run something with the `-h` or `--help` flag, to get more info:
 
-```bash
-uv run python deet/scripts/annotation_converter_cli.py deet/annotations/raw/eppi/sample_eppi.json output/processed
+```python
+python deet/scripts/pipeline_interactive_prompt_generation.py -h
+
+usage: pipeline_interactive_prompt_population.py [-h] [-p PDF_PATH] [-m MARKDOWN_PATH] -e EPPI_JSON_PATH
+                                                 [-f FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...]] [-o OUTPUT_PATH]
+
+options:
+  -h, --help            show this help message and exit
+  -p PDF_PATH, --pdf_path PDF_PATH
+                        directory containing PDF files
+  -m MARKDOWN_PATH, --markdown_path MARKDOWN_PATH
+                        directory containing or for markdown files
+  -e EPPI_JSON_PATH, --eppi_json_path EPPI_JSON_PATH
+                        path to eppi json
+  -f FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...], --filter_attribute_ids FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...]
+                        an optional list of attribute_ids to filter by.
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                        path to save output JSON (auto-generated if not provided)
 ```
-
-This creates an organized directory structure:
-
-```text
-output/processed/eppi/{filename_without_extension}/
-├── attributes.json
-├── documents.json
-├── annotated_documents.json
-└── attribute_id_to_label_mapping.json
-```
-
-For example, processing `sample_eppi.json` creates `output/processed/eppi/sample_eppi/` with the JSON files inside.
-
-## LLM-powered data extraction
-
-## Orchastration into `Pipeline`s
 
 ## Contributing
 
 If you want to contribute to this project -- awesome, everyone's welcome.
-Please check existing issues, and perhaps pick something from there? Please create a new branch off `development`.
-Once you're ready for your code to be reviewed, submit a PR into `development.
+Please see the [contributing guidelines](CONTRIBUTING.md) for details on how best to contribute.
 
 ## Tests
 
@@ -118,4 +128,4 @@ Tests are written using `pytest`. You can run the tests locally using
 pytest
 ```
 
-Unit tests are automatically run in [Continuous Integration](https://en.m.wikipedia.org/wiki/Continuous_integration) (CI) using github actions (see `.github/workflows/tests.yml`) on Pull Requests or merges into `main` or `development`. Integration tests are also run for pushes/PRs into `main` (Note: these will take approx 1-2h to complete, so consider a cup of coffee while you wait).
+Unit tests are automatically run in [Continuous Integration](https://en.m.wikipedia.org/wiki/Continuous_integration) (CI) using github actions (see `.github/workflows/tests.yml`) on Pull Requests or merges into `main` or `development`.

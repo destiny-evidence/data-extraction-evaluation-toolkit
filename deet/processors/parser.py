@@ -2,29 +2,37 @@
 
 import json
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from enum import StrEnum, auto
+from io import StringIO
 from os import PathLike
 from pathlib import Path
+from typing import Literal
 
 import pypandoc
+from diskcache import Cache
 from loguru import logger
-from marker.converters.pdf import PdfConverter
-from marker.models import create_model_dict
-from marker.output import text_from_rendered
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+from pdfminer.pdfpage import PDFPage
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from deet.exceptions import (
+    EmptyPdfExtractionError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
     InvalidOutputFileTypeError,
 )
+from deet.settings import get_settings
 from deet.utils.assess_text_quality import check_language
 
-# init marker converter
-artifact_dict = create_model_dict()
-converter = PdfConverter(artifact_dict=artifact_dict)
+# CACHE init
+CACHE_DIR = get_settings().base_disk_cache_dir / "marker_parser_cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+parser_cache = Cache(str(CACHE_DIR))
 
 
 class InputFileType(StrEnum):
@@ -64,11 +72,17 @@ class ParsedOutput(BaseModel):
         text, str: md-formatted parsed text (required)
         images, pillow.img: pillow-formatted image(s) (optional)
         metadata, dict: metadata json (optional)
+        timestamp: datetime: auto-populates with _now_
+        parser_library: str: name of the ParserLibrary implementation used
     """
 
     text: str
     images: dict[str, Image] | None = None
     metadata: dict | None = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
+    parser_library: Literal[
+        "pandoc", "marker", "pdfminer", "unknown"
+    ]  # extend when adding new parsers
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True
@@ -136,9 +150,20 @@ class ParserLibrary(ABC):
 class MarkerParser(ParserLibrary):
     """Parser with `marker` backend."""
 
-    name = "marker"
+    name: Literal["marker"] = "marker"
     input_types = [InputFileType.PDF]
     output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
+
+    @classmethod
+    @parser_cache.memoize(typed=True, expire=None, tag="marker-converter")
+    def _get_converter(cls):  # noqa: ANN206 no return type hint as we don't know PdfConverter yet
+        """Lazy initialization of marker converter with disk caching."""
+        logger.debug("Initializing marker converter...")
+        from marker.converters.pdf import PdfConverter
+        from marker.models import create_model_dict
+
+        artifact_dict = create_model_dict()
+        return PdfConverter(artifact_dict=artifact_dict)
 
     @classmethod
     def parse(
@@ -150,6 +175,9 @@ class MarkerParser(ParserLibrary):
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using marker."""
+        from marker.output import text_from_rendered
+
+        converter = cls._get_converter()
         rendered = converter(str(input_))
         text, extension, images = text_from_rendered(rendered)
         out = {"text": text}
@@ -157,13 +185,54 @@ class MarkerParser(ParserLibrary):
             out["metadata"] = rendered.metadata
         if return_images:
             out["images"] = images
-        return ParsedOutput(**out)
+        return ParsedOutput(**out, parser_library=cls.name)
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clear the cached converter."""
+        parser_cache.clear()
+        logger.info("Marker converter cache cleared")
+
+
+class PdfminerParser(ParserLibrary):
+    """Parser with pdfminer.six backend. Fast text extraction, no images or metadata."""
+
+    name: Literal["pdfminer"] = "pdfminer"
+    input_types = [InputFileType.PDF]
+    output_file_types = [OutputFileType.MD]
+    _LAPARAMS = LAParams()
+
+    @classmethod
+    def parse(
+        cls,
+        input_: str | PathLike,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,  # noqa: ARG003
+    ) -> ParsedOutput:
+        """Parse file using pdfminer.six (no OCR)."""
+        if return_metadata or return_images:
+            msg = "PdfminerParser can't produce images or metadata."
+            raise InvalidOutputFileTypeError(msg)
+        rsrcmgr = PDFResourceManager()
+        out = StringIO()
+        device = TextConverter(rsrcmgr, out, laparams=cls._LAPARAMS)
+        with Path(input_).open("rb") as f:
+            interpreter = PDFPageInterpreter(rsrcmgr, device)
+            for page in PDFPage.get_pages(f):
+                interpreter.process_page(page)
+        device.close()
+        text = out.getvalue() or ""
+        if not text.strip():
+            raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
+        return ParsedOutput(text=text, parser_library=cls.name)
 
 
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
-    name = "pandoc"
+    name: Literal["pandoc"] = "pandoc"
     input_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
     output_file_types = [OutputFileType.MD]
 
@@ -206,14 +275,14 @@ class PandocParser(ParserLibrary):
                 format=input_type,
             )
         }
-        return ParsedOutput(**out)
+        return ParsedOutput(**out, parser_library=cls.name)
 
 
 class DocumentParser:
     """Parse documents from target format to other target format."""
 
     DEFAULT_PARSERS: dict[str, type[ParserLibrary]] = {
-        "pdf": MarkerParser,
+        "pdf": PdfminerParser,
         "epub": PandocParser,
         "html": PandocParser,
         "xml": PandocParser,

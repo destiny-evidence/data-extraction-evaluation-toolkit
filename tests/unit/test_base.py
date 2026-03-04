@@ -5,16 +5,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributeType,
-    ContextType,
-    Document,
-    DocumentIDSource,
-    GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
     LLMInputSchema,
 )
@@ -30,17 +25,23 @@ def test_attribute_type_to_python_type_population() -> None:
     assert deet_type_bool.to_python_type() is bool
 
 
+@pytest.mark.parametrize("attr_type", list(AttributeType))
+def test_to_python_type_is_defined_for_all_enum_members(attr_type):
+    """Ensure every AttributeType has a Python type mapping."""
+    python_type = attr_type.to_python_type()
+
+    assert isinstance(python_type, type)
+
+
 def test_attribute_creation_from_dict() -> None:
     """Test creating attribute from dictionary data (as would come from JSON)."""
     # This mimics how attributes are created from JSON data in the annotation converter
     attr_data = {
-        "question_target": "Is this a test?",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": 12345,
         "attribute_label": "Test Boolean Attribute",
     }
     attr = Attribute.model_validate(attr_data)
-    assert attr.question_target == "Is this a test?"
     assert attr.output_data_type.to_python_type() is bool
     assert attr.attribute_id == 12345
     assert attr.attribute_label == "Test Boolean Attribute"
@@ -50,7 +51,6 @@ def test_attribute_creation_with_different_types() -> None:
     """Test creating attributes with different output_data_type values from dict."""
     # Test with str type
     attr_data_str = {
-        "question_target": "What is the name?",
         "output_data_type": AttributeType.STRING.value,
         "attribute_id": 12345,
         "attribute_label": "Test String Attribute",
@@ -60,7 +60,6 @@ def test_attribute_creation_with_different_types() -> None:
 
     # Test with int type
     attr_data_int = {
-        "question_target": "How many items?",
         "output_data_type": AttributeType.INTEGER.value,
         "attribute_id": 123456,
         "attribute_label": "Test Integer Attribute",
@@ -70,7 +69,6 @@ def test_attribute_creation_with_different_types() -> None:
 
     # Test with list type
     attr_data_list = {
-        "question_target": "What are the items?",
         "output_data_type": AttributeType.LIST.value,
         "attribute_id": 1234567,
         "attribute_label": "Test List Attribute",
@@ -80,7 +78,6 @@ def test_attribute_creation_with_different_types() -> None:
 
     # Test with dict type
     attr_data_dict = {
-        "question_target": "What are the details?",
         "output_data_type": AttributeType.DICT.value,
         "attribute_id": 123,
         "attribute_label": "Test Dictionary Attribute",
@@ -90,7 +87,6 @@ def test_attribute_creation_with_different_types() -> None:
 
     # Test with float type
     attr_data_float = {
-        "question_target": "What is the value?",
         "output_data_type": AttributeType.FLOAT.value,
         "attribute_id": 5432,
         "attribute_label": "Test Float Attribute",
@@ -103,13 +99,11 @@ def test_attribute_validation_required_fields() -> None:
     """Test that required fields are validated when creating from dict data."""
     # Test that we can create attributes with valid data
     attr_data = {
-        "question_target": "Test",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": 12345,
         "attribute_label": "Test Label",
     }
     attr = Attribute.model_validate(attr_data)
-    assert attr.question_target == "Test"
     assert attr.attribute_id == 12345
     assert attr.attribute_label == "Test Label"
 
@@ -117,7 +111,6 @@ def test_attribute_validation_required_fields() -> None:
 def test_write_to_csv_creates_new_file(tmp_path) -> None:
     """Test writing attribute to new CSV file."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -135,20 +128,17 @@ def test_write_to_csv_creates_new_file(tmp_path) -> None:
         rows = list(reader)
         assert len(rows) == 1
         assert rows[0]["attribute_id"] == "1234"
-        assert rows[0]["question_target"] == "Test question"
         assert rows[0]["prompt"] == "Test prompt"
 
 
 def test_write_to_csv_appends_to_existing(tmp_path) -> None:
     """Test appending attribute to existing CSV file."""
     attr1 = Attribute(
-        question_target="Question 1",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Attribute 1",
     )
     attr2 = Attribute(
-        question_target="Question 2",
         output_data_type=AttributeType.STRING,
         attribute_id=2345,
         attribute_label="Attribute 2",
@@ -172,7 +162,6 @@ def test_write_to_csv_creates_parent_directories(tmp_path: Path) -> None:
     csv_file = tmp_path / "subdir1" / "subdir2" / "test.csv"
 
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -188,13 +177,11 @@ def test_write_to_csv_overwrites_with_w_mode(tmp_path: Path) -> None:
     csv_file = tmp_path / "test.csv"
 
     attr1 = Attribute(
-        question_target="Question 1",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Attribute 1",
     )
     attr2 = Attribute(
-        question_target="Question 2",
         output_data_type=AttributeType.STRING,
         attribute_id=2345,
         attribute_label="Attribute 2",
@@ -214,7 +201,6 @@ def test_write_to_csv_overwrites_with_w_mode(tmp_path: Path) -> None:
 def test_write_to_csv_with_none_prompt(tmp_path: Path) -> None:
     """Test writing attribute with None prompt value."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -234,7 +220,6 @@ def test_write_to_csv_with_none_prompt(tmp_path: Path) -> None:
 def test_write_to_csv_includes_all_fields(tmp_path: Path) -> None:
     """Test that all attribute fields are written to CSV."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.INTEGER,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -250,7 +235,6 @@ def test_write_to_csv_includes_all_fields(tmp_path: Path) -> None:
         row = rows[0]
 
         assert "prompt" in row
-        assert "question_target" in row
         assert "output_data_type" in row
         assert "attribute_id" in row
         assert "attribute_label" in row
@@ -259,7 +243,6 @@ def test_write_to_csv_includes_all_fields(tmp_path: Path) -> None:
 def test_populate_prompt_from_dict_success() -> None:
     """Test successfully populating prompt from dictionary."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -277,7 +260,6 @@ def test_populate_prompt_from_dict_success() -> None:
 def test_populate_prompt_from_dict_missing_attribute_id() -> None:
     """Test that missing attribute_id raises ValueError."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -294,7 +276,6 @@ def test_populate_prompt_from_dict_missing_attribute_id() -> None:
 def test_populate_prompt_from_dict_missing_prompt() -> None:
     """Test that missing prompt field raises ValueError."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -311,7 +292,6 @@ def test_populate_prompt_from_dict_missing_prompt() -> None:
 def test_populate_prompt_from_dict_empty_dict() -> None:
     """Test that empty dictionary raises ValueError."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -326,7 +306,6 @@ def test_populate_prompt_from_dict_empty_dict() -> None:
 def test_populate_prompt_from_dict_mismatched_id() -> None:
     """Test that mismatched attribute_id raises ValueError."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -344,7 +323,6 @@ def test_populate_prompt_from_dict_mismatched_id() -> None:
 def test_populate_prompt_from_dict_string_id() -> None:
     """Test that string attribute_id is converted to int for comparison."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -362,7 +340,6 @@ def test_populate_prompt_from_dict_string_id() -> None:
 def test_populate_prompt_overwrites_by_default() -> None:
     """Test that overwrite=True (default) overwrites existing prompt."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -381,7 +358,6 @@ def test_populate_prompt_overwrites_by_default() -> None:
 def test_populate_prompt_no_overwrite_with_existing() -> None:
     """Test that overwrite=False preserves existing prompt."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -400,7 +376,6 @@ def test_populate_prompt_no_overwrite_with_existing() -> None:
 def test_populate_prompt_no_overwrite_with_none() -> None:
     """Test that overwrite=False still populates if prompt is None."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -419,7 +394,6 @@ def test_populate_prompt_no_overwrite_with_none() -> None:
 def test_populate_prompt_with_extra_fields() -> None:
     """Test that extra fields in dict are ignored."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -446,7 +420,6 @@ def test_populate_prompt_with_empty_string() -> None:
     # string pass...
 
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -464,7 +437,6 @@ def test_populate_prompt_with_empty_string() -> None:
 def test_print_tabulated_outputs_table(capsys) -> None:
     """Test that print_tabulated outputs formatted table."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -475,8 +447,6 @@ def test_print_tabulated_outputs_table(capsys) -> None:
     captured = capsys.readouterr()
 
     # Check that output contains field names and values
-    assert "question_target" in captured.out
-    assert "Test question" in captured.out
     assert "attribute_id" in captured.out
     assert "1234" in captured.out
 
@@ -484,7 +454,6 @@ def test_print_tabulated_outputs_table(capsys) -> None:
 def test_print_tabulated_with_none_prompt(capsys) -> None:
     """Test print_tabulated with None prompt value."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -502,7 +471,6 @@ def test_print_tabulated_with_none_prompt(capsys) -> None:
 def test_print_tabulated_contains_all_fields(capsys) -> None:
     """Test that print_tabulated includes all attribute fields."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.STRING,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -513,7 +481,6 @@ def test_print_tabulated_contains_all_fields(capsys) -> None:
     captured = capsys.readouterr()
 
     assert "prompt" in captured.out
-    assert "question_target" in captured.out
     assert "output_data_type" in captured.out
     assert "attribute_id" in captured.out
     assert "attribute_label" in captured.out
@@ -523,7 +490,6 @@ def test_print_tabulated_contains_all_fields(capsys) -> None:
 def test_enter_custom_prompt_accepts_prompt(mock_input, capsys) -> None:
     """Test entering a custom prompt successfully."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -541,7 +507,6 @@ def test_enter_custom_prompt_accepts_prompt(mock_input, capsys) -> None:
 def test_enter_custom_prompt_user_cancelled(mock_input, capsys) -> None:
     """Test entering a custom prompt successfully."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -561,7 +526,6 @@ def test_enter_custom_prompt_user_cancelled(mock_input, capsys) -> None:
 def test_enter_custom_prompt_declines(mock_input) -> None:
     """Test declining to enter a custom prompt."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -575,7 +539,6 @@ def test_enter_custom_prompt_declines(mock_input) -> None:
 def test_enter_custom_prompt_declines_uppercase(mock_input) -> None:
     """Test declining with uppercase N."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -589,7 +552,6 @@ def test_enter_custom_prompt_declines_uppercase(mock_input) -> None:
 def test_enter_custom_prompt_invalid_then_decline(mock_input, capsys) -> None:
     """Test handling invalid input before declining."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -606,7 +568,6 @@ def test_enter_custom_prompt_invalid_then_decline(mock_input, capsys) -> None:
 def test_enter_custom_prompt_max_tries(mock_input) -> None:
     """Test that function returns after max_tries invalid inputs."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -620,7 +581,6 @@ def test_enter_custom_prompt_max_tries(mock_input) -> None:
 def test_enter_custom_prompt_case_insensitive(mock_input) -> None:
     """Test that 'Y' (uppercase) is accepted."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -634,7 +594,6 @@ def test_enter_custom_prompt_case_insensitive(mock_input) -> None:
 def test_enter_custom_prompt_strips_whitespace(mock_input) -> None:
     """Test that whitespace in y/n input is stripped."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -650,7 +609,6 @@ def test_enter_custom_prompt_empty_string(mock_input, capsys) -> None:
     # NOTE: same as above. may want to
     # raise an error if this occurs instead...
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -666,7 +624,6 @@ def test_enter_custom_prompt_empty_string(mock_input, capsys) -> None:
 def test_enter_custom_prompt_recovers_from_invalid(mock_input) -> None:
     """Test that function recovers from invalid input and accepts valid input."""
     attr = Attribute(
-        question_target="Test question",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Attribute",
@@ -676,43 +633,10 @@ def test_enter_custom_prompt_recovers_from_invalid(mock_input) -> None:
     assert attr.prompt == "My prompt"
 
 
-def test_document_creation() -> None:
-    """Test creating a document."""
-    citation = ReferenceFileInput()
-    doc = Document(
-        name="Test Document",
-        citation=citation,
-        context="This is test content",
-        context_type=ContextType.FULL_DOCUMENT,
-        document_id=1,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
-        filename="test.pdf",
-    )
-    assert doc.name == "Test Document"
-    assert doc.document_id == 1
-    assert doc.filename == "test.pdf"
-    assert doc.context == "This is test content"
-
-
-def test_document_creation_with_list_context() -> None:
-    """Test creating a document with list context."""
-    citation = ReferenceFileInput()
-    doc = Document(
-        name="Test Document 2",
-        citation=citation,
-        context=["Paragraph 1", "Paragraph 2"],
-        context_type=ContextType.RAG_SNIPPETS,
-        document_id=2,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
-    )
-    assert doc.context == ["Paragraph 1", "Paragraph 2"]
-
-
 def test_gold_standard_annotation_creation_from_dict() -> None:
     """Test creating a gold standard annotation from dictionary data."""
     # This mimics how annotations are created from JSON data
     attr_data = {
-        "question_target": "Test question",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": 1234,
         "attribute_label": "Test Attribute",
@@ -733,7 +657,6 @@ def test_gold_standard_annotation_creation_from_dict() -> None:
 def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
     """Test creating annotation with LLM type from dictionary data."""
     attr_data = {
-        "question_target": "Test question",
         "output_data_type": AttributeType.STRING.value,
         "attribute_id": 2345,
         "attribute_label": "Test Attribute 2",
@@ -752,7 +675,6 @@ def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
 def test_gold_standard_annotation_bool_type_invalid() -> None:
     """Test that wrong type for bool attribute raises ValueError."""
     attr = Attribute(
-        question_target="Is this valid?",
         output_data_type=AttributeType.BOOL,
         attribute_id=1234,
         attribute_label="Test Bool Attribute",
@@ -764,38 +686,6 @@ def test_gold_standard_annotation_bool_type_invalid() -> None:
             output_data="not a bool",
             annotation_type=AnnotationType.HUMAN,
         )
-
-
-def test_gold_standard_annotated_document_creation() -> None:
-    """Test creating a gold standard annotated document."""
-    citation = ReferenceFileInput()
-
-    attr = Attribute(
-        question_target="Test question",
-        output_data_type=AttributeType.BOOL,
-        attribute_id=1234,
-        attribute_label="Test Attribute 3",
-    )
-
-    annotation = GoldStandardAnnotation(
-        attribute=attr,
-        output_data=True,
-        annotation_type=AnnotationType.HUMAN,
-    )
-
-    doc = GoldStandardAnnotatedDocument(
-        name="Test Document 3",
-        citation=citation,
-        context="Test content",
-        context_type=ContextType.FULL_DOCUMENT,
-        document_id=3,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
-        annotations=[annotation],
-    )
-    assert doc.name == "Test Document 3"
-    assert doc.document_id == 3
-    assert len(doc.annotations) == 1
-    assert doc.annotations[0].output_data is True
 
 
 def test_llm_input_schema_with_prompt() -> None:
