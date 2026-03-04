@@ -16,9 +16,7 @@ from deet.data_models.eppi import (
     EppiRawData,
 )
 from deet.data_models.processed import ProcessedEppiAnnotationData
-from deet.processors.base_converter import (
-    AnnotationConverter,
-)
+from deet.processors.base_converter import AnnotationConverter
 
 
 class EppiAnnotationConverter(AnnotationConverter):
@@ -50,7 +48,7 @@ class EppiAnnotationConverter(AnnotationConverter):
 
         for attr in attributes_list:
             # extract children before modifying  dict
-            child_attributes = (attr.get("Attributes") or {}).get("AttributesList", [])
+            child_attributes = attr.get("Attributes", {}).get("AttributesList", [])
 
             attr["hierarchy_path"] = parent_path
             attr["hierarchy_level"] = (
@@ -319,35 +317,51 @@ class EppiAnnotationConverter(AnnotationConverter):
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
-        documents_by_item_id: dict[int, EppiDocument] = {}
+        all_annotations_raw = []
+        documents_by_title: dict[str, EppiDocument] = {}
+
+        for reference in data.get("References", []):
+            reference_codes = reference.get("Codes", [])
+            all_annotations_raw.extend(reference_codes)
+
+            doc_title = reference.get("Title", "")
+            # NL: really, the existing_ids thing is quite redundant here,
+            # as we assume we're getting our eppi item ids as document_ids.
+            # however, a) it demonstrates the desired functionality of
+            # checking against a set of already populated ids, and
+            # b) there is a world where eppi.jsons contain invalid item ids.
+            existing_ids: set[int] = set()
+            if doc_title and doc_title not in documents_by_title:
+                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
+                document = EppiDocument(**reference)
+                # init doc id
+                new_id = document.init_document_identity(existing_ids=existing_ids)
+                if new_id:
+                    existing_ids.add(new_id)
+                documents_by_title[doc_title] = document
+
+        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
+            data.get("References", [])
+        )
+
         annotated_documents = []
         all_annotations = []
 
-        # Process each reference with its annotations directly
-        # Annotations are already nested within their parent reference
-        for reference in data.get("References", []):
-            item_id = reference.get("ItemId")
-            if item_id is None:
-                continue
+        for doc_title, doc in documents_by_title.items():
+            doc_annotations = self._find_document_annotations(
+                all_annotations_raw, doc_title, pdf_to_title_mapping
+            )
 
-            # Create or retrieve document using ItemId as unique identifier
-            if item_id not in documents_by_item_id:
-                document = EppiDocument.model_validate(reference)
-                documents_by_item_id[item_id] = document
-            else:
-                document = documents_by_item_id[item_id]
-
-            # Get annotations directly from this reference's Codes array
-            reference_codes = reference.get("Codes", [])
-            if reference_codes:
+            if doc_annotations:
                 annotations = self.convert_to_eppi_annotations(
-                    reference_codes,
+                    doc_annotations,
                     attributes_lookup,
                     attribute_id_to_label,
                 )
 
-                annotated_doc = EppiGoldStandardAnnotatedDocument(
-                    document=document, annotations=annotations
+                # Use model_construct to bypass validation and preserve all fields
+                annotated_doc = EppiGoldStandardAnnotatedDocument.model_construct(
+                    **{**doc.__dict__, "annotations": annotations}
                 )
 
                 annotated_documents.append(annotated_doc)
@@ -355,14 +369,14 @@ class EppiAnnotationConverter(AnnotationConverter):
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            f" {len(documents_by_item_id)} documents, "
+            f" {len(documents_by_title)} documents, "
             f"{len(all_annotations)} annotations,"
             f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedEppiAnnotationData(
             attributes=attributes,
-            documents=list(documents_by_item_id.values()),
+            documents=list(documents_by_title.values()),
             annotations=all_annotations,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,

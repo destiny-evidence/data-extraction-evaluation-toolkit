@@ -26,7 +26,6 @@ from deet.data_models.documents import (
     ContextType,
     Document,
     GoldStandardAnnotatedDocument,
-    LinkedDocument,
 )
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
@@ -257,16 +256,9 @@ class LLMDataExtractor:
 
             if self.config.default_context_type == ContextType.ABSTRACT_ONLY:
                 document.set_abstract_context()
-            elif isinstance(document, LinkedDocument):
-                document.context = document.parsed_document.text
-            else:
-                message = (
-                    f"Tried to execute full text extraction on document {document}"
-                    " please use a LinkedDocument, or extract with default_context_type"
-                    " set to ABSTRACT_ONLY"
-                )
+            elif self.config.default_context_type == ContextType.FULL_DOCUMENT:
+                document.context = document.safe_parsed_document.text
 
-                raise ValueError(message)
             try:
                 result, messages = self.extract_from_document(
                     attributes=attributes,

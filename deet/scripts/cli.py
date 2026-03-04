@@ -14,7 +14,6 @@ from deet.data_models.documents import (
     Document,
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
-    LinkedDocument,
 )
 from deet.data_models.processed import (
     BaseProcessedAnnotationData,
@@ -133,9 +132,7 @@ def link_documents(
     )
     linked_documents = linker.link_many_references_parsed_documents()
     for linked_document in linked_documents:
-        file_path = (
-            output_path / f"{linked_document.document_identity.document_id}.json"
-        )
+        file_path = output_path / f"{linked_document.safe_identity.document_id}.json"
         linked_document.save(file_path)
 
 
@@ -194,9 +191,7 @@ def data_extraction(  # noqa: PLR0913
         documents = out.documents
     elif config.default_context_type == ContextType.FULL_DOCUMENT:
         if linked_document_path.exists():
-            documents = [
-                LinkedDocument.load(f) for f in linked_document_path.glob("*.json")
-            ]
+            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
         else:
             message = f"context type {config.default_context_type} selected"
             " but no linked_document_path supplied"
