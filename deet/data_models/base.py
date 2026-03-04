@@ -67,7 +67,7 @@ class DocumentIDSource(StrEnum):
     """
 
     EPPI_ITEM_ID = auto()
-    COVIDENCE_ITEM_ID = auto()
+    CSV_ITEM_ID = auto()
 
 
 class Attribute(BaseModel):
