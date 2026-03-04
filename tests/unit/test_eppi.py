@@ -17,8 +17,8 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
-    ProcessedAnnotationData,
 )
+from deet.data_models.processed import ProcessedEppiAnnotationData
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
@@ -37,7 +37,7 @@ def test_csv_file(tmp_path):
 
 @pytest.fixture
 def processed_data():
-    """Create ProcessedAnnotationData with test attributes."""
+    """Create ProcessedEppiAnnotationData with test attributes."""
     attr1 = EppiAttribute(  # type: ignore[call-arg]
         attribute_id=1,
         attribute_label="Attribute 1",
@@ -56,7 +56,7 @@ def processed_data():
         output_data_type=AttributeType.BOOL,
         attribute_type=EppiAttributeSelectionType.INTERVENTION,
     )
-    return ProcessedAnnotationData(
+    return ProcessedEppiAnnotationData(
         attributes=[attr1, attr2, attr3],
         documents=[],
         annotations=[],
