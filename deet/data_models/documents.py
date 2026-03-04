@@ -507,8 +507,6 @@ class GoldStandardAnnotatedDocument(
 ):
     """A document with its gold standard annotations."""
 
-    model_config = ConfigDict()
-
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
 
