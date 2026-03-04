@@ -125,9 +125,6 @@ class DocumentIDSource(StrEnum):
     CSV_ITEM_ID = auto()
 
 
-DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
-
-
 class Attribute(BaseModel):
     """
     Core attribute definition for data extraction tasks.
