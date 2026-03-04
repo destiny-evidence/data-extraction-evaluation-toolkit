@@ -653,5 +653,5 @@ class LLMDataExtractor:
                 "total_output_tokens": total_output_tokens,
                 "per_document": per_document_output_tokens,
             }
-        output_file.write_text(json.dumps(results_json, indent=2))
+        output_file.write_text(json.dumps(results_json, indent=2), encoding="utf-8")
         logger.info(f"Results saved to: {output_file}")
