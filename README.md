@@ -89,10 +89,10 @@ To test this run
 deet --help
 ```
 
-You should see a list of commands. To get more information on any of these (for example import-data), run
+You should see a list of commands. To get more information on any of these (for example import-gold-standard-data), run
 
 ```bash
-deet import-data --help
+deet import-gold-standard-data --help
 ```
 
 You can call these commands from anywhere where your virtual environment with deet installed is activated. It's a good idea to navigate into a new directory for each data extraction project, where you can store the outputs of running deet for your project.
@@ -104,7 +104,7 @@ To navigate to another directory use the `cd` command. `cd ..` will move up a le
 The first step to using `deet` is importing data. Currently, EPPIJson is the only supported external data format.
 
 ```bash
-deet import-data --help
+deet import-gold-standard-data --help
 ```
 
 shows the arguments you need to import data, along with their defaults. You will see that running this command defaults to import deet-structured data from the current directory.
@@ -112,27 +112,27 @@ shows the arguments you need to import data, along with their defaults. You will
 You could put the EPPIJson file you want to import inside your current directory. Assuming there is a file called `references.json` in your current directory, you could import it by running
 
 ```bash
-deet import-data --gs-data-path references.json --gs-data-format eppi_json
+deet import-gold-standard-data --gs-data-path references.json --gs-data-format eppi_json
 ```
 
-This will read the EPPIJson data and write it into the current directory in deet format. Running `deet import-data` again will read this data back in.
+This will read the EPPIJson data and write it into the current directory in deet format. Running `deet import-gold-standard-data` again will read this data back in.
 
 Once you have imported data, you may want to link the data contained in your EPPIJson to a set of pdfs.
 
 To do this, you can run
 
 ```bash
-deet link-documents
+deet link-documents-fulltexts
 ```
 
-If you want to, you can enter the same arguments as you did to import-data to specify the same EPPIJson file, otherwise it will default to reading the deet-structured data written by importing.
+If you want to, you can enter the same arguments as you did to import-gold-standard-data to specify the same EPPIJson file, otherwise it will default to reading the deet-structured data written by importing.
 
 Deet will look for pdfs in the folder specified by --pdf-dir, this defaults to `pdfs`.
 
-Deet will try to link documents to pdfs using IDs, authoryear, ..., but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet create-link-map` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
+Deet will try to link documents to pdfs using IDs, authoryear, ..., but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet init-linkage-mapping-file` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
 
 ```bash
-deet link-documents --link-map-path link_map.csv
+deet link-documents-fulltexts --link-map-path link_map.csv
 ```
 
 Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option `--output-path`. This defaults to `linked_documents`
@@ -141,11 +141,11 @@ Linking will parse the pdfs, and save the contents (along with the bibliographic
 
 Once you have imported data (and linked this data to pdfs if you are doing full text data extraction), you are ready to extract data from them.
 
-Use the command `deet data-extraction` to extract data from imported documents.
+Use the command `deet extract-data` to extract data from imported documents.
 
 You can set `--gs-data-path` and `--gs-data-format` to specify the EPPIJson you want to import from, or leave these blank to load data from a previous import.
 
-By default, data-extraction will try to extract attributes using prompts specified in the EPPIJson file.
+By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.
 
 If you want to edit the prompts used for data extraction, you can do this by setting the `--prompt-population` option to `cli`, to fill in prompts in the command line, or by setting `--prompt-population` to `file`, and pointing to a csv detailing a prompt for each attribute with `--csv-path`. To create a template for this csv, run `deet write-prompt-csv`.
 
@@ -155,7 +155,7 @@ To set further configuration options, you can supply a path to a configuration f
 deet export-default-config
 ```
 
-You can edit this file to change the configuration options for your data-extraction pipeline.
+You can edit this file to change the configuration options for your extract-data pipeline.
 
 ## Contributing
 

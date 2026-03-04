@@ -10,9 +10,9 @@ from deet.scripts.cli import (
     DataExtractionConfig,
     SupportedImportFormat,
     app,
-    export_default_config,
-    import_data,
-    write_prompt_csv,
+    export_config_template,
+    import_gold_standard_data,
+    init_prompt_csv,
 )
 
 runner = CliRunner()
@@ -22,14 +22,14 @@ def test_cli_help() -> None:
     """Make sure cli is callable."""
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "export-default-config" in result.output
-    assert "import-data" in result.output
+    assert "export-config-template" in result.output
+    assert "import-gold-standard-data" in result.output
 
 
 def test_export_default_config_writes_yaml(tmp_path: Path):
     """Make sure default config can be exported to yaml and read back."""
     output_file = tmp_path / "config.yaml"
-    export_default_config(output_path=output_file)
+    export_config_template(output_path=output_file)
 
     # File should exist
     assert output_file.exists()
@@ -53,7 +53,7 @@ def test_import_data_calls_converter_methods():
         "get_annotation_converter",
         return_value=fake_converter,
     ):
-        out = import_data(
+        out = import_gold_standard_data(
             gs_data_path=Path("dummy"), gs_data_format=SupportedImportFormat.DEET
         )
 
@@ -69,11 +69,11 @@ def test_write_prompt_csv_calls_export(tmp_path: Path):
     fake_out.export_attributes_csv_file = MagicMock()
 
     # Mock import_data to return our fake_out
-    with patch("deet.scripts.cli.import_data", return_value=fake_out):
+    with patch("deet.scripts.cli.import_gold_standard_data", return_value=fake_out):
         # Also mock Path.exists to simulate CSV file not existing
         csv_path = tmp_path / "prompt.csv"
         with patch.object(Path, "exists", return_value=False):
-            write_prompt_csv(
+            init_prompt_csv(
                 gs_data_path=tmp_path,
                 gs_data_format=SupportedImportFormat.DEET,
                 csv_path=csv_path,

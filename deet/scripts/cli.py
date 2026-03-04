@@ -39,7 +39,7 @@ app = typer.Typer()
 
 
 @app.command()
-def export_default_config(
+def export_config_template(
     output_path: Path = Path("default_extraction_config.yaml"),
 ) -> None:
     """Export the default DataExtractionConfig to a YAML file."""
@@ -51,7 +51,7 @@ def export_default_config(
 
 
 @app.command()
-def import_data(
+def import_gold_standard_data(
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     output_dir: Path = Path(),
@@ -89,13 +89,15 @@ def import_data(
 
 
 @app.command()
-def create_link_map(
+def init_linkage_mapping_file(
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     link_map_path: Path = Path("link_map.csv"),
 ) -> None:
     """Create a mapping to link documents and the full texts."""
-    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+    out = import_gold_standard_data(
+        gs_data_path=gs_data_path, gs_data_format=gs_data_format
+    )
 
     with link_map_path.open("w") as f:
         writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
@@ -115,7 +117,7 @@ def create_link_map(
 
 
 @app.command()
-def link_documents(
+def link_documents_fulltexts(
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     pdf_dir: Path = Path("pdfs"),
@@ -123,7 +125,9 @@ def link_documents(
     output_path: Path = Path("linked_documents"),
 ) -> None:
     """Link documents to their fulltexts."""
-    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+    out = import_gold_standard_data(
+        gs_data_path=gs_data_path, gs_data_format=gs_data_format
+    )
 
     linker = DocumentReferenceLinker(
         references=out.documents,
@@ -137,13 +141,15 @@ def link_documents(
 
 
 @app.command()
-def write_prompt_csv(
+def init_prompt_csv(
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     csv_path: Path = Path("prompt_definitions.csv"),
 ) -> None:
     """Write a prompt csv."""
-    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+    out = import_gold_standard_data(
+        gs_data_path=gs_data_path, gs_data_format=gs_data_format
+    )
     if csv_path.exists():
         message = (
             "Prompt definition csv already exists. Proceeding will "
@@ -159,7 +165,7 @@ def write_prompt_csv(
 
 
 @app.command()
-def data_extraction(  # noqa: PLR0913
+def extract_data(  # noqa: PLR0913
     config_path: Path = Path("default_extraction_config.yaml"),
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
@@ -178,14 +184,17 @@ def data_extraction(  # noqa: PLR0913
         )
         config = DataExtractionConfig()
 
+    pipeline_run_id = uuid7()
     if out_dir is None:
-        out_dir = Path("pipeline_runs") / str(uuid7())
+        out_dir = Path("pipeline_runs") / str(pipeline_run_id)
         out_dir.mkdir(parents=True)
     elif out_dir.exists():
         out_dir_exists = "out_dir already exists. Exiting, so as not to overwrite data"
         raise typer.Abort(out_dir_exists)
 
-    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+    out = import_gold_standard_data(
+        gs_data_path=gs_data_path, gs_data_format=gs_data_format
+    )
 
     if prompt_population == PromptPopulationMethod.FILE and not csv_path:
         message = "CSV prompt popluation selected without specifying csv_path"
@@ -219,15 +228,19 @@ def data_extraction(  # noqa: PLR0913
         yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
     )
 
+    evaluate_llm_to_gs(gs_data_path, gs_data_format, pipeline_run_id)
+
 
 @app.command()
-def evaluate(
+def evaluate_llm_to_gs(
     gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
     pipeline: UUID | None = None,
 ) -> None:
     """Evaluate a pipeline run, and print a table of evaluation metrics."""
-    out = import_data(gs_data_path=gs_data_path, gs_data_format=gs_data_format)
+    out = import_gold_standard_data(
+        gs_data_path=gs_data_path, gs_data_format=gs_data_format
+    )
 
     if pipeline is None:
         pipeline, pipeline_dir = get_last_pipeline_run(Path("pipeline_runs"))
@@ -253,7 +266,7 @@ def evaluate(
 
 
 @app.command()
-def test_llmconfig() -> None:
+def test_llm_config() -> None:
     """Test llm config."""
     config = DataExtractionConfig()
     data_extractor = LLMDataExtractor(config=config)
