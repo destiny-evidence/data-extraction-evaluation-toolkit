@@ -17,6 +17,7 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
+    parse_citation_to_destiny,
 )
 from deet.data_models.processed import (
     ProcessedEppiAnnotationData,
@@ -514,11 +515,8 @@ def test_populate_citation_field_from_reference(sample_eppi_data):
 
 def test_populate_citation_field_preserves_existing():
     """Test that existing citation field is not overwritten."""
-    existing_citation = ReferenceFileInput(
-        visibility="public",  # type:ignore[arg-type]
-        identifiers=None,
-        enhancements=[],
-    )
+    existing_citation = parse_citation_to_destiny({"abstract": "abstract"})
+
     doc = EppiDocument(
         document_id=123,
         name="Test Doc",

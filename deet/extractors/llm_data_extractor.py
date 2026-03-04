@@ -225,7 +225,7 @@ class LLMDataExtractor:
         documents: Sequence[Document],
         filter_attribute_ids: list[int] | None = None,
         output_file: Path | None = None,
-        context_type: ContextType = ContextType.FULL_DOCUMENT,
+        context_type: ContextType | None = None,
         prompt_outfile: Path | None = None,
     ) -> list[GoldStandardAnnotatedDocument]:
         """
@@ -238,7 +238,6 @@ class LLMDataExtractor:
             attributes: List of attributes to extract.
             documents: Sequence of Document/LinkedDocument instances (required).
             output_file: Optional path to save combined results JSON.
-            context_type: Override config context type for each document.
             prompt_outfile: Optional path to write a single JSON object:
                 keys are document (PDF) paths, values are prompt payload (messages).
 
@@ -247,6 +246,9 @@ class LLMDataExtractor:
             Dictionary mapping file paths to lists of annotations.
 
         """
+        if context_type is None:
+            context_type = self.config.default_context_type
+
         prompt_payloads: dict[str, Any] = {}
 
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
@@ -254,9 +256,9 @@ class LLMDataExtractor:
         for document in documents:
             logger.info(f"Processing document: {document.name}")
 
-            if self.config.default_context_type == ContextType.ABSTRACT_ONLY:
+            if context_type == ContextType.ABSTRACT_ONLY:
                 document.set_abstract_context()
-            elif self.config.default_context_type == ContextType.FULL_DOCUMENT:
+            elif context_type == ContextType.FULL_DOCUMENT:
                 document.context = document.safe_parsed_document.text
 
             try:

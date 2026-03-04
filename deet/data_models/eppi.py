@@ -262,15 +262,11 @@ class EppiDocument(Document):
         Populate the `citation` field with a Destiny
         reference derived from the EPPI data.
         """
-        # if not isinstance(data, dict):
-        #     return data
-        if "citation" in data:
-            # we have already created citation,
-            # no need to do it again
+        citation = data.get("citation")
+        if citation is not None and ("enhancements" in citation):
             return data
 
-        citation = data.get("citation")
-        if citation is not None and "enhancements" in citation:
+        if isinstance(citation, ReferenceFileInput) and citation.enhancements:
             return data
 
         citation = parse_citation_to_destiny(reference=data)
