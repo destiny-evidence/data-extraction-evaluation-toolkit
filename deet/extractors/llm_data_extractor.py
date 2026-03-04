@@ -502,7 +502,7 @@ class LLMDataExtractor:
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")
         logger.debug(f" sys message: {messages[0]['content'][:1000]}")
-        logger.debug(f"user msg{messages[1]['content'][:1000]}")
+        logger.debug(f" user message: {messages[1]['content'][:1000]}")
 
         try:
             input_tokens = litellm.token_counter(
