@@ -19,7 +19,7 @@ from deet.data_models.eppi import (
     EppiRawData,
     parse_citation_to_destiny,
 )
-from deet.data_models.processed import (
+from deet.data_models.processed_gold_standard_annotations import (
     ProcessedEppiAnnotationData,
     PromptPopulationMethod,
 )

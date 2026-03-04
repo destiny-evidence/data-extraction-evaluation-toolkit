@@ -15,7 +15,7 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
 )
-from deet.data_models.processed import (
+from deet.data_models.processed_gold_standard_annotations import (
     BaseProcessedAnnotationData,
     ProcessedEppiAnnotationData,
     PromptPopulationMethod,

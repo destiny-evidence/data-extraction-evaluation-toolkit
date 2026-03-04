@@ -8,7 +8,7 @@ from pydantic import TypeAdapter
 
 from deet.data_models.base import Attribute
 from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
-from deet.data_models.processed import ProcessedAnnotationData
+from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.logger import logger
 
 DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_eppi")

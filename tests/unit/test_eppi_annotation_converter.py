@@ -14,7 +14,9 @@ from deet.data_models.eppi import (
     EppiDocument,
     EppiRawData,
 )
-from deet.data_models.processed import ProcessedEppiAnnotationData
+from deet.data_models.processed_gold_standard_annotations import (
+    ProcessedEppiAnnotationData,
+)
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 

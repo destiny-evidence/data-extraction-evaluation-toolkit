@@ -15,7 +15,9 @@ from deet.data_models.eppi import (
     EppiItemAttributeFullTextDetails,
     EppiRawData,
 )
-from deet.data_models.processed import ProcessedEppiAnnotationData
+from deet.data_models.processed_gold_standard_annotations import (
+    ProcessedEppiAnnotationData,
+)
 from deet.processors.base_converter import AnnotationConverter
 
 
