@@ -169,7 +169,14 @@ def data_extraction(  # noqa: PLR0913
     out_dir: Path | None = None,
 ) -> None:
     """Extract data from documents."""
-    config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
+    if config_path.exists():
+        config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
+    else:
+        logger.warning(
+            f"Config file: {config_path} does not exist."
+            " Initialising config with default settings."
+        )
+        config = DataExtractionConfig()
 
     if out_dir is None:
         out_dir = Path("pipeline_runs") / str(uuid7())
