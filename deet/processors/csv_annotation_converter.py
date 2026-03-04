@@ -250,7 +250,7 @@ class CovidenceAnnotationConverter:
                     context="",
                     context_type=ContextType.EMPTY,
                     document_id=row["document_id"],
-                    document_id_source=DocumentIDSource.COVIDENCE_ITEM_ID,
+                    document_id_source=DocumentIDSource.CSV_ITEM_ID,
                 )
             except KeyError as e:
                 msg = f"Missing required document field {e} in row {row_idx}"
