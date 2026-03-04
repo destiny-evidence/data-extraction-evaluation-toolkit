@@ -478,7 +478,7 @@ class Document(BaseModel):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w") as f:
             json.dump(data, f, indent=2, default=str)
-        logger.info(f"Saved LinkedDocument to {path}")
+        logger.info(f"Saved Document fulltext link to {path}")
 
     @classmethod
     def load(cls, path: Path) -> Self:

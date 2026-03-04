@@ -231,12 +231,11 @@ class LLMDataExtractor:
         """
         Extract data from all documents.
 
-        Loops over documents (or LinkedDocuments - required for full text context)
-        and extracts data using list of attributes.
+        Loops over documents and extracts data using list of attributes.
 
         Args:
             attributes: List of attributes to extract.
-            documents: Sequence of Document/LinkedDocument instances (required).
+            documents: Sequence of Document instances (required).
             output_file: Optional path to save combined results JSON.
             prompt_outfile: Optional path to write a single JSON object:
                 keys are document (PDF) paths, values are prompt payload (messages).
