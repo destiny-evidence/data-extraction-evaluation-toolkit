@@ -15,18 +15,18 @@ from pathlib import Path
 from typing import Any
 
 from destiny_sdk.enhancements import Visibility
+from destiny_sdk.references import ReferenceFileInput
 from pydantic import BaseModel
 
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributeType,
-    ContextType,
-    Document,
-    DocumentIDSource,
-    GoldStandardAnnotatedDocument,
     GoldStandardAnnotation,
-    ReferenceFileInput,
+)
+from deet.data_models.documents import (
+    Document,
+    GoldStandardAnnotatedDocument,
 )
 from deet.logger import logger
 
@@ -222,7 +222,6 @@ class CovidenceAnnotationConverter:
         attributes = []
         for idx, (k, v) in enumerate(attribute_types.items()):
             attribute = Attribute(
-                question_target=k,
                 output_data_type=v,
                 attribute_id=idx,
                 attribute_label=k,
@@ -247,10 +246,7 @@ class CovidenceAnnotationConverter:
                 document = Document(
                     name=row["name"],
                     citation=ReferenceFileInput(visibility=Visibility.PUBLIC),
-                    context="",
-                    context_type=ContextType.EMPTY,
                     document_id=row["document_id"],
-                    document_id_source=DocumentIDSource.CSV_ITEM_ID,
                 )
             except KeyError as e:
                 msg = f"Missing required document field {e} in row {row_idx}"
@@ -293,10 +289,10 @@ class CovidenceAnnotationConverter:
 
     def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
         """
-        Process a complete annotation file and return structured data.
+        Process a complete CSV annotation file and return structured data.
 
         Args:
-            file_path: Path to the JSON annotation file
+            file_path: Path to the CSV annotation file
 
         Returns:
             ProcessedAnnotationData containing all processed data
@@ -317,18 +313,17 @@ class CovidenceAnnotationConverter:
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
+        logger.info(
+            f"Processed {len(attributes)} attributes, {{len(documents)}} documents, "
+            " {len(annotated_documents)} annotated documents"
+        )
+
         return ProcessedAnnotationData(
             attributes=attributes,
             documents=documents,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,
         )
-
-    #     logger.info(
-    #         f"Processed {len(attributes)} attributes, {{len(documents)}} documents, "
-    #         # f"{len(all_annotations)} annotations,"
-    #         # " {len(annotated_documents)} annotated documents"
-    #     )
 
     def write_processed_data_to_file(
         self,
