@@ -370,6 +370,7 @@ def test_import_prompts_csv_updates_output_data_type(
     )
 
     assert first_attr.output_data_type == AttributeType.STRING
+    assert result.raw_data is not None
     assert len(result.raw_data.code_sets[0].attributes["AttributesList"]) == 1  # type:ignore[index]
 
 

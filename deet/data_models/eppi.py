@@ -230,7 +230,7 @@ class EppiDocument(Document):
 
     @field_validator("date_created", mode="before")
     @classmethod
-    def parse_date_string(cls, value: str) -> datetime | None:
+    def parse_date_string(cls, value: str) -> datetime | None | str:
         """Parse a string datetime to native datetime."""
         if value is None or value == "":
             return None
@@ -242,6 +242,8 @@ class EppiDocument(Document):
                 "%d/%m/%Y",  # OG EPPI
                 "%Y-%m-%d %H:%M:%S%z",  # ISO format with timezone,
                 # result of dumping is_final EppiDocument to json
+                # MC: dumped data is not handled properly, but works if we let
+                # pydantic handle it.
                 "%Y-%m-%d",  # simple ISO date
             ]
 
@@ -250,8 +252,8 @@ class EppiDocument(Document):
                     return datetime.strptime(value, fmt).replace(tzinfo=UTC)
                 except ValueError:
                     continue
-            no_parsage = "unable to parse date_created."
-            raise ValueError(no_parsage)
+
+            return value
 
         return None
 

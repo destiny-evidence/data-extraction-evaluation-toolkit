@@ -53,8 +53,8 @@ def export_config_template(
 @app.command()
 def import_gold_standard_data(
     gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
-    output_dir: Path = Path(),
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
+    output_dir: Path | None = Path(),
 ) -> BaseProcessedAnnotationData | ProcessedEppiAnnotationData:
     """
     Import gold standard annotation data from a supported format.
@@ -63,7 +63,8 @@ def import_gold_standard_data(
         gs_data_path (Path): A path to a file or directory containing gold
         standard annotations
         gs_data_format (SupportedImportFormat): Format of the input data.
-        This determines which converter to use. Defaults to SupportedImportFormat.DEET
+        This determines which converter to use. Defaults to
+        SupportedImportFormat.EPPI_JSON
         output_dir (Path): Directory where processed data files will be
         written if the input is not DEET. Defaults to the current working
         directory.
@@ -79,9 +80,13 @@ def import_gold_standard_data(
 
     """
     converter = gs_data_format.get_annotation_converter()
-    out = converter.process_annotation_file(gs_data_path)
+    if gs_data_path.is_dir():
+        out = converter.reload_output(gs_data_path)
+    else:
+        out = converter.process_annotation_file(gs_data_path)
+
     logger.info(f"Imported data: {len(out.annotated_documents)} annotated documents.")
-    if gs_data_format != SupportedImportFormat.DEET:
+    if output_dir is not None:
         converter.write_processed_data_to_file(
             processed_data=out, output_dir=output_dir, outfiles_to_write=list(Outfiles)
         )
@@ -91,7 +96,7 @@ def import_gold_standard_data(
 @app.command()
 def init_linkage_mapping_file(
     gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     link_map_path: Path = Path("link_map.csv"),
 ) -> None:
     """Create a mapping to link documents and the full texts."""
@@ -119,7 +124,7 @@ def init_linkage_mapping_file(
 @app.command()
 def link_documents_fulltexts(
     gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     pdf_dir: Path = Path("pdfs"),
     link_map_path: Path | None = None,
     output_path: Path = Path("linked_documents"),
@@ -143,7 +148,7 @@ def link_documents_fulltexts(
 @app.command()
 def init_prompt_csv(
     gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     csv_path: Path = Path("prompt_definitions.csv"),
 ) -> None:
     """Write a prompt csv."""
@@ -168,7 +173,7 @@ def init_prompt_csv(
 def extract_data(  # noqa: PLR0913
     config_path: Path = Path("default_extraction_config.yaml"),
     gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     prompt_population: CustomPromptPopulationMethod | None = None,
     csv_path: Path | None = None,
     linked_document_path: Path = Path("linked_documents"),
@@ -235,7 +240,7 @@ def extract_data(  # noqa: PLR0913
 @app.command()
 def evaluate_llm_to_gs(
     gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.DEET,
+    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     pipeline: UUID | None = None,
 ) -> None:
     """Evaluate a pipeline run, and print a table of evaluation metrics."""

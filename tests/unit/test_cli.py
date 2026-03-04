@@ -75,7 +75,7 @@ def test_write_prompt_csv_calls_export(tmp_path: Path):
         with patch.object(Path, "exists", return_value=False):
             init_prompt_csv(
                 gs_data_path=tmp_path,
-                gs_data_format=SupportedImportFormat.DEET,
+                gs_data_format=SupportedImportFormat.EPPI_JSON,
                 csv_path=csv_path,
             )
 

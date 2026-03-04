@@ -13,7 +13,6 @@ class SupportedImportFormat(StrEnum):
     """Supported formats to import gold standard annotation data from."""
 
     EPPI_JSON = auto()
-    DEET = auto()
 
     def get_annotation_converter(
         self,
@@ -21,6 +20,5 @@ class SupportedImportFormat(StrEnum):
         """Return the parser for the given data type."""
         mapping = {
             SupportedImportFormat.EPPI_JSON: EppiAnnotationConverter(),
-            SupportedImportFormat.DEET: AnnotationConverter(),
         }
         return mapping[self]

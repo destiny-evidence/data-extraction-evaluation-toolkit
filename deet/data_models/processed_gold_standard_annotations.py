@@ -344,4 +344,4 @@ class ProcessedEppiAnnotationData(
     EppiRawData object
     """
 
-    raw_data: EppiRawData
+    raw_data: EppiRawData | None = None

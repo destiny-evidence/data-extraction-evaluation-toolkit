@@ -1,13 +1,19 @@
 """Generic classes and functions for converters."""
 
 import json
+from abc import ABC, abstractmethod
 from enum import StrEnum, auto
 from pathlib import Path
+from typing import Generic
 
 from pydantic import TypeAdapter
 
-from deet.data_models.base import Attribute
-from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
+from deet.data_models.base import AttributeType, AttributeTypeVar
+from deet.data_models.documents import (
+    DocumentTypeVar,
+    GoldStandardAnnotatedDocumentTypeVar,
+    GoldStandardAnnotationTypeVar,
+)
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.logger import logger
 
@@ -27,29 +33,20 @@ class Outfiles(StrEnum):
     ATTRIBUTE_LABEL_MAPPING = auto()
 
 
-OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]] = {
-    Outfiles.ATTRIBUTES: (
-        DEFAULT_ATTRIBUTES_FILENAME,
-        TypeAdapter(list[Attribute]),
-    ),
-    Outfiles.DOCUMENTS: (DEFAULT_DOCUMENTS_FILENAME, TypeAdapter(list[Document])),
-    Outfiles.ANNOTATED_DOCUMENTS: (
-        DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
-        TypeAdapter(list[GoldStandardAnnotatedDocument]),
-    ),
-    Outfiles.ATTRIBUTE_LABEL_MAPPING: (
-        DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
-        TypeAdapter(dict[int, str]),
-    ),
-}
+class AnnotationConverter(
+    Generic[
+        DocumentTypeVar,
+        AttributeTypeVar,
+        GoldStandardAnnotationTypeVar,
+        GoldStandardAnnotatedDocumentTypeVar,
+    ],
+    ABC,
+):
+    """Abstract base class to define expected behaviour of an annotationconverter."""
 
-
-class AnnotationConverter:
-    """
-    A class to read converted data back into memory.
-
-    Other converters should inherit from this.
-    """
+    OUTFILE_LOADERS: dict[
+        Outfiles, tuple[str, TypeAdapter]
+    ]  # Subclasses must populate this.
 
     def __init__(
         self,
@@ -86,23 +83,20 @@ class AnnotationConverter:
             Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
         }
 
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
-        """Read DEET data back in."""
-        loaded_data = {}
-        for key, (filename, adapter) in OUTFILE_LOADERS.items():
-            path = file_path / DEFAULT_BASE_OUTPUT_DIR / filename
-            if not path.exists():
-                message = f"Expected {key.value} at {path}"
-                raise FileNotFoundError(message)
-            loaded_data[key] = adapter.validate_json(path.read_text())
+    @property
+    @abstractmethod
+    def processed_data_type(self) -> type[ProcessedAnnotationData]:
+        """Return the class to use when instantiating processed data."""
+        ...
 
-        return ProcessedAnnotationData(
-            attributes=loaded_data[Outfiles.ATTRIBUTES],
-            documents=loaded_data[Outfiles.DOCUMENTS],
-            annotations=[],  # or derive from loaded_data if applicable
-            annotated_documents=loaded_data[Outfiles.ANNOTATED_DOCUMENTS],
-            attribute_id_to_label=loaded_data[Outfiles.ATTRIBUTE_LABEL_MAPPING],
-        )
+    @abstractmethod
+    def process_annotation_file(
+        self,
+        file_path: str | Path,
+        set_attribute_type: str | AttributeType | None = None,
+    ) -> ProcessedAnnotationData:
+        """Parse a raw input format into processed data."""
+        ...
 
     def write_processed_data_to_file(
         self,
@@ -162,3 +156,24 @@ class AnnotationConverter:
             saved_files[file_type.value] = str(file_path)
 
         return saved_files
+
+    def reload_output(self, file_path: str | Path) -> ProcessedAnnotationData:
+        """
+        Read data back in, using OUTFILE_LOADERS and the
+        subclass's processed_data_type.
+        """
+        loaded_data = {}
+        for key, (filename, adapter) in self.OUTFILE_LOADERS.items():
+            path = file_path / DEFAULT_BASE_OUTPUT_DIR / filename
+            if not path.exists():
+                message = f"Expected {key.value} at {path}"
+                raise FileNotFoundError(message)
+            loaded_data[key] = adapter.validate_json(path.read_text())
+
+        return self.processed_data_type(
+            attributes=loaded_data[Outfiles.ATTRIBUTES],
+            documents=loaded_data[Outfiles.DOCUMENTS],
+            annotations=[],  # or derive from loaded_data if applicable
+            annotated_documents=loaded_data[Outfiles.ANNOTATED_DOCUMENTS],
+            attribute_id_to_label=loaded_data[Outfiles.ATTRIBUTE_LABEL_MAPPING],
+        )

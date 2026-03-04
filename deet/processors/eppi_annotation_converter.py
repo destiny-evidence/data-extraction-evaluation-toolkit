@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from loguru import logger
+from pydantic import TypeAdapter
 
 from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
@@ -18,7 +19,15 @@ from deet.data_models.eppi import (
 from deet.data_models.processed_gold_standard_annotations import (
     ProcessedEppiAnnotationData,
 )
-from deet.processors.base_converter import AnnotationConverter
+from deet.processors.base_converter import (
+    DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
+    DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
+    DEFAULT_ATTRIBUTES_FILENAME,
+    DEFAULT_BASE_OUTPUT_DIR,
+    DEFAULT_DOCUMENTS_FILENAME,
+    AnnotationConverter,
+    Outfiles,
+)
 
 
 class EppiAnnotationConverter(AnnotationConverter):
@@ -31,6 +40,65 @@ class EppiAnnotationConverter(AnnotationConverter):
     them while preserving parent-child relationships
     through path information.
     """
+
+    def __init__(
+        self,
+        base_output_dir: str | Path | None = DEFAULT_BASE_OUTPUT_DIR,
+        attributes_filename: str = DEFAULT_ATTRIBUTES_FILENAME,
+        documents_filename: str = DEFAULT_DOCUMENTS_FILENAME,
+        annotated_documents_filename: str = DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
+        attribute_mapping_filename: str = DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
+    ) -> None:
+        """
+        Initialize the converter with configurable output paths.
+
+        Args:
+            output_dir: Base directory for saving processed files
+            attributes_filename: Filename for attributes output
+            documents_filename: Filename for documents output
+            annotated_documents_filename: Filename for annotated documents output
+            attribute_mapping_filename: Filename for attribute ID to label mapping
+
+        """
+        if base_output_dir is None:
+            logger.debug(
+                "`base_output_dir` set to None; "
+                "converting to empty string for compatibility."
+            )
+            base_output_dir = ""
+        self.base_output_dir = Path(base_output_dir)
+
+        # extend below if adding more output files in `Outfiles`.
+        self.outfilename_object_map = {
+            Outfiles.ATTRIBUTES: attributes_filename,
+            Outfiles.DOCUMENTS: documents_filename,
+            Outfiles.ANNOTATED_DOCUMENTS: annotated_documents_filename,
+            Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
+        }
+
+        self.OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]] = {
+            Outfiles.ATTRIBUTES: (
+                attributes_filename,
+                TypeAdapter(list[EppiAttribute]),
+            ),
+            Outfiles.DOCUMENTS: (
+                documents_filename,
+                TypeAdapter(list[EppiDocument]),
+            ),
+            Outfiles.ANNOTATED_DOCUMENTS: (
+                annotated_documents_filename,
+                TypeAdapter(list[EppiGoldStandardAnnotatedDocument]),
+            ),
+            Outfiles.ATTRIBUTE_LABEL_MAPPING: (
+                attribute_mapping_filename,
+                TypeAdapter(dict[int, str]),
+            ),
+        }
+
+    @property
+    def processed_data_type(self) -> type[ProcessedEppiAnnotationData]:
+        """Return ProcessedEppiAnnotationData."""
+        return ProcessedEppiAnnotationData
 
     def flatten_attributes_hierarchy(
         self, attributes_list: list[dict[str, Any]], parent_path: str = ""
