@@ -65,6 +65,13 @@ class DataExtractionSettings(BaseSettings):
             "Maximum number of tokens to generate (None means provider default)."
         ),
     )
+    llm_max_context_length: int | None = Field(
+        default=None,
+        description=(
+            "Maximum input context length in tokens (system + attributes + "
+            "document). None = infer from model. Override to manage costs."
+        ),
+    )
 
     # Provider credentials / settings (secrets redacted)
     azure_api_key: SecretStr | None = Field(
