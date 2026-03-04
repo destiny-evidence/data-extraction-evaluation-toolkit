@@ -256,7 +256,6 @@ def test_write_to_csv_includes_all_fields(tmp_path: Path) -> None:
         row = rows[0]
 
         assert "prompt" in row
-        assert "prompt" in row
         assert "output_data_type" in row
         assert "attribute_id" in row
         assert "attribute_label" in row
