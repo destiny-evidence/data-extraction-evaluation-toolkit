@@ -3,12 +3,11 @@
 import base64
 import json
 from collections.abc import Callable
-from datetime import UTC, datetime
 from enum import StrEnum, auto
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Generic, Self, TypeVar
+from typing import Generic, Literal, Self, TypeVar
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -69,7 +68,7 @@ class DocumentIdentity(BaseModel):
 
     def populate_id(
         self,
-        existing_ids: list[int] | None = None,
+        existing_ids: set[int] | None = None,
         hierarchy: list[DocumentIDSource] | None = None,
     ) -> None:
         """
@@ -95,7 +94,7 @@ class DocumentIdentity(BaseModel):
 
         """
         if existing_ids is None:
-            existing_ids = []
+            existing_ids = set()
 
         if hierarchy is None:
             hierarchy = list(DocumentIDSource)  # retain the order from the enum
@@ -238,7 +237,12 @@ class Document(BaseModel):
     linking to a gold standard annotations document with references.
     """
 
-    model_config = ConfigDict(extra="allow")  # allowing extra fields.
+    # `extra` allows extra fields, e.g. for EppiDocument.
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    # `validate_assignment` runs model/field validators
+    # not only on instantiation, but also when we change values,
+    # e.g. when we set is_linked=True, thereby preventing
+    # us from saying something is linked if it isn't.
 
     name: str
     citation: ReferenceFileInput
@@ -248,12 +252,69 @@ class Document(BaseModel):
     document_identity: DocumentIdentity | None = None
 
     parsed_document: ParsedOutput | None = None
-    parse_timestamp: datetime | None = None
     original_doc_filepath: Path | None = (
         None  # NOTE -- add S3/blob support when required.
     )
 
-    def init_document_identity(self) -> None:
+    is_final: bool = False
+    is_linked: bool = False
+
+    @model_validator(mode="after")
+    def validate_linking_complete(self) -> Self:
+        """Validate linking is completed if `is_linked=True`."""
+        base_err_msg = "requirements not met for linking: "
+        if self.is_linked:
+            if self.context is None:
+                no_context_err = base_err_msg + "`context` is empty."
+                raise ValueError(no_context_err)
+            if (
+                self.context_type is None
+                or self.context_type != ContextType.FULL_DOCUMENT
+            ):
+                no_context_type_err = (
+                    base_err_msg + "`context_type` is not FULL_DOCUMENT."
+                )
+                raise ValueError(no_context_type_err)
+            if self.document_identity is None:
+                no_doc_id_err = (
+                    base_err_msg + "`document_identity` is empty.  "
+                    "run `init_document_identity() to populate."
+                )
+                raise ValueError(no_doc_id_err)
+            if self.parsed_document is None:
+                no_parsed_doc_err = base_err_msg + "`parsed_document` is empty. "
+                raise ValueError(no_parsed_doc_err)
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_final(self) -> Self:
+        """Validate Document is permitted to be `is_final`."""
+        base_err_msg = "requirements not met for `Document().is_final`: "
+        if self.is_final:
+            if self.context is None:
+                no_context_err = base_err_msg + "`context` is empty."
+                raise ValueError(no_context_err)
+            if self.context_type is None or self.context_type == ContextType.EMPTY:
+                bad_context_type_err = (
+                    base_err_msg + "`context_type` musnt be None or EMPTY."
+                )
+                raise ValueError(bad_context_type_err)
+            if self.document_identity is None:
+                no_doc_id_err = (
+                    base_err_msg + "`document_identity` is empty.  "
+                    "run `init_document_identity() to populate."
+                )
+                raise ValueError(no_doc_id_err)
+
+        return self
+
+    def init_document_identity(
+        self,
+        existing_ids: set[int] | None = None,
+        *,
+        return_id: bool = True,
+    ) -> int | None:
         """Initialise document_identity field using available metadata."""
         labs_ref = LabsReference(reference=self.citation)  # convert for easy access
         self.document_identity = DocumentIdentity(
@@ -264,7 +325,7 @@ class Document(BaseModel):
         )
 
         logger.info("populating id & id source...")
-        self.document_identity.populate_id()
+        self.document_identity.populate_id(existing_ids=existing_ids)
         if self.document_id is None:
             logger.info(
                 "populating Document-level `document_id` field with "
@@ -272,7 +333,13 @@ class Document(BaseModel):
             )
             self.document_id = self.document_identity.document_id
 
-    def author_year_from_document_identity(self) -> str:
+        if return_id:
+            return self.document_identity.document_id
+        return None
+
+    def author_year_from_document_identity(
+        self, substring_strategy: Literal["longest", "last"]
+    ) -> str:
         """
         Create lower-case `author_year` guess from a Document's
         DocumentIdentity field.
@@ -307,9 +374,17 @@ class Document(BaseModel):
         year = self.document_identity.year
 
         name_components = author_name.split(" ")
-        longest_component = max(name_components, key=len)
+        if substring_strategy == "longest":
+            name_guess = max(name_components, key=len)
+        elif substring_strategy == "last":
+            name_guess = name_components[-1]
+        else:
+            missing_name_guess_method_err = (
+                f"method {substring_strategy} is not implemented."
+            )
+            raise NotImplementedError(missing_name_guess_method_err)
 
-        return f"{longest_component.lower()}_{year}"
+        return f"{name_guess.lower()}_{year}"
 
     def set_abstract_context(self) -> None:
         """Set the abstract, contained in `citation` field, as context."""
@@ -321,6 +396,7 @@ class Document(BaseModel):
                 "set context type to ABSTRACT_ONLY; set context to abstract."
                 f" snippet: {abstract[:20]}"
             )
+            return
         no_abstract = "No abstract found"
         raise NoAbstractError(no_abstract)
 
@@ -328,7 +404,6 @@ class Document(BaseModel):
         self,
         parsed_document: ParsedOutput,
         original_doc_filepath: Path | None = None,
-        parse_timestamp: datetime | None = None,
     ) -> None:
         """
         Link parsed document and document metadata/`reference`.
@@ -336,7 +411,6 @@ class Document(BaseModel):
         Args:
             parsed_document (ParsedOutput): the output from the parser
             original_doc_filepath (Path): full filepath to the original doc.
-            parse_timestamp (datetime): a timestamp when file was parsed
 
         """
         self.parsed_document = parsed_document
@@ -348,36 +422,18 @@ class Document(BaseModel):
             )
             original_doc_filepath = None
         self.original_doc_filepath = original_doc_filepath
-        if parse_timestamp is None:
-            parse_timestamp = datetime.now(tz=UTC)
-        self.parse_timestamp = parse_timestamp
 
-
-class LinkedDocument(Document):
-    """A document linked to an actual context/body, usually derived from a pdf."""
-
-    model_config = ConfigDict(extra="allow")
-
-    context_type: ContextType
-    document_id: int
-    document_identity: DocumentIdentity
-
-    parsed_document: ParsedOutput
-    parse_timestamp: datetime
-
-    @model_validator(mode="after")
-    def set_context_from_parsed(self) -> Self:
+    def set_context_from_parsed(self) -> None:
         """Symlink context to parsed_document.text."""
-        if self.parsed_document.text:
+        if self.parsed_document and self.parsed_document.text:
             self.context = self.parsed_document.text
             self.context_type = ContextType.FULL_DOCUMENT
         else:
             logger.warning("no text in parsed_document!")
-        return self
 
     def save(self, path: Path) -> None:
         """Save linked document to .json."""
-        data = self.model_dump()
+        data = self.model_dump(by_alias=False)
 
         # convert images to base64 for json serialization
         # NOTE @all -- we leave ourselves open to
@@ -385,7 +441,7 @@ class LinkedDocument(Document):
         # suggestions as to how to validate/circumvent.
         # however, we do control what goes in and out,
         # so the danger here might be overstated.
-        if self.parsed_document.images:
+        if self.parsed_document and self.parsed_document.images:
             images_b64 = {}
             for key, img in self.parsed_document.images.items():
                 buffer = BytesIO()
@@ -396,17 +452,18 @@ class LinkedDocument(Document):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w") as f:
             json.dump(data, f, indent=2, default=str)
-
         logger.info(f"Saved LinkedDocument to {path}")
 
     @classmethod
-    def load(cls, path: Path) -> "LinkedDocument":
+    def load(cls, path: Path) -> Self:
         """Load linked document from .json."""
-        with path.open("r") as f:
-            data: dict = json.load(f)
+        data = json.loads(path.read_text(encoding="utf-8"))
+        logger.debug(data)
 
         # convert base64 back to PIL img
-        if data.get("parsed_document", {}).get("images"):
+        if data.get("parsed_document") is not None and data.get(
+            "parsed_document", {}
+        ).get("images"):
             images = {}
             for key, img_b64 in data["parsed_document"]["images"].items():
                 img_bytes = base64.b64decode(img_b64)

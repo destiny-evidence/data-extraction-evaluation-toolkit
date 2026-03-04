@@ -237,8 +237,23 @@ class EppiDocument(Document):
         if isinstance(value, datetime):
             return value
         if isinstance(value, str):
-            return datetime.strptime(value, "%d/%m/%Y").replace(tzinfo=UTC)
-        return value
+            # add as we encounter other formats, if ever relevant
+            formats = [
+                "%d/%m/%Y",  # OG EPPI
+                "%Y-%m-%d %H:%M:%S%z",  # ISO format with timezone,
+                # result of dumping is_final EppiDocument to json
+                "%Y-%m-%d",  # simple ISO date
+            ]
+
+            for fmt in formats:
+                try:
+                    return datetime.strptime(value, fmt).replace(tzinfo=UTC)
+                except ValueError:
+                    continue
+            no_parsage = "unable to parse date_created."
+            raise ValueError(no_parsage)
+
+        return None
 
     @model_validator(mode="before")
     @classmethod
@@ -247,7 +262,11 @@ class EppiDocument(Document):
         Populate the `citation` field with a Destiny
         reference derived from the EPPI data.
         """
-        if not isinstance(data, dict):
+        # if not isinstance(data, dict):
+        #     return data
+        if "citation" in data:
+            # we have already created citation,
+            # no need to do it again
             return data
 
         citation = parse_citation_to_destiny(reference=data)

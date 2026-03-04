@@ -2,15 +2,18 @@
 
 import csv
 import json
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
+from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiAttributeSelectionType,
+    EppiDocument,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
@@ -80,7 +83,6 @@ def test_eppi_attribute_creation_from_json_data() -> None:
         "ExtURL": "",
         "ExtType": "",
         # These fields are added by the annotation converter
-        "question_target": "",  # Always empty for EPPI
         "output_data_type": AttributeType.BOOL.value,  # Always boolean for EPPI
         "attribute_id": "5730447",  # Converted to string
         "attribute_label": "Test EPPI Attribute",
@@ -92,7 +94,6 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     attr = EppiAttribute.model_validate(attr_data)
     assert attr.attribute_id == 5730447
     assert attr.attribute_label == "Test EPPI Attribute"
-    assert attr.question_target == ""  # Default empty for EPPI
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
     # Test the EPPI-specific fields are properly populated
     assert attr.attribute_set_description == "Test set description"
@@ -235,7 +236,6 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
         "AttributeId": 5730447,
         "AttributeName": "Test EPPI Attribute",
         "AttributeType": "Selectable (show checkbox)",
-        "question_target": "",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "5730447",
         "attribute_label": "Test EPPI Attribute",
@@ -422,3 +422,131 @@ def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     assert processed_data.attributes[2].prompt == "Test prompt 3"
     # attr4's prompt was not updated because CSV had empty prompt for ID 4
     assert processed_data.attributes[3].prompt is None
+
+
+# eppi document citation generation
+@pytest.mark.parametrize(
+    ("date_input", "expected_day", "expected_month", "expected_year"),
+    [
+        ("15/03/2024", 15, 3, 2024),
+        ("2024-03-15 10:30:00+0000", 15, 3, 2024),
+        ("2024-03-15", 15, 3, 2024),
+        ("01/12/2023", 1, 12, 2023),
+        ("31/01/2020", 31, 1, 2020),
+    ],
+    ids=[
+        "dd_mm_yyyy_format",
+        "iso_format_with_timezone",
+        "simple_iso_format",
+        "first_day_of_month",
+        "last_day_of_month",
+    ],
+)
+def test_parse_date_string_valid_formats(
+    date_input: str,
+    expected_day: int,
+    expected_month: int,
+    expected_year: int,
+):
+    """Test parsing various valid date formats."""
+    doc = EppiDocument(
+        citation=ReferenceFileInput(),
+        document_id=123,
+        name="Test Doc",
+        date_created=date_input,  # type:ignore[arg-type]
+    )
+    assert doc.date_created is not None
+    assert isinstance(doc.date_created, datetime)
+    assert doc.date_created.day == expected_day
+    assert doc.date_created.month == expected_month
+    assert doc.date_created.year == expected_year
+
+
+def test_parse_date_string_none_value():
+    """Test that None date_created remains None."""
+    doc = EppiDocument(
+        document_id=123,
+        name="Test Doc",
+        date_created=None,
+        citation=ReferenceFileInput(),
+    )
+    assert doc.date_created is None
+
+
+def test_parse_date_string_empty_string():
+    """Test that empty string date_created becomes None."""
+    doc = EppiDocument(
+        document_id=123,
+        name="Test Doc",
+        date_created="",  # type:ignore[arg-type]
+        citation=ReferenceFileInput(),
+    )
+    assert doc.date_created is None
+
+
+def test_parse_date_string_invalid_format_raises():
+    """Test that invalid date format raises ValueError."""
+    with pytest.raises(ValueError, match="unable to parse date_created"):
+        EppiDocument(
+            citation=ReferenceFileInput(),
+            document_id=123,
+            name="Test Doc",
+            date_created="not-a-date",  # type:ignore[arg-type]
+        )
+
+
+# destiny citation validator
+def test_populate_citation_field_from_reference(sample_eppi_data):
+    """Test that citation field is populated from EPPI reference data."""
+    reference = sample_eppi_data["References"][0]
+    doc = EppiDocument.model_validate(reference)
+
+    assert doc.citation is not None
+    assert isinstance(doc.citation, ReferenceFileInput)
+    assert doc.document_id == 28856292
+    assert doc.name == "A title"
+
+
+def test_populate_citation_field_preserves_existing():
+    """Test that existing citation field is not overwritten."""
+    existing_citation = ReferenceFileInput(
+        visibility="public",  # type:ignore[arg-type]
+        identifiers=None,
+        enhancements=[],
+    )
+    doc = EppiDocument(
+        document_id=123,
+        name="Test Doc",
+        citation=existing_citation,
+    )
+    assert doc.citation is existing_citation
+
+
+def test_populate_citation_with_doi():
+    """Test citation population with DOI field."""
+    reference_data = {
+        "ItemId": 12345,
+        "Title": "Test Article",
+        "Year": "2023",
+        "Authors": "Doe, J;",
+        "DOI": "10.1234/test.doi.5678",
+        "Abstract": "Test abstract",
+    }
+    doc = EppiDocument.model_validate(reference_data)
+
+    assert doc.citation is not None
+    assert isinstance(doc.citation, ReferenceFileInput)
+    assert doc.doi == "10.1234/test.doi.5678"
+
+
+def test_populate_citation_with_malformed_doi():
+    """Test citation population sanitises malformed DOI."""
+    reference_data = {
+        "ItemId": 12345,
+        "Title": "Test Article",
+        "DOI": "https://doi.org/10.1234/test.doi.5678",
+    }
+    doc = EppiDocument.model_validate(reference_data)
+
+    # doi should be sanitised
+    assert doc.doi == "10.1234/test.doi.5678"

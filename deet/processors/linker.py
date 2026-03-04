@@ -3,15 +3,15 @@
 import csv
 import json
 from collections.abc import Callable, Generator
-from datetime import UTC, datetime
 from enum import StrEnum, auto
+from functools import partial
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal, Self, cast
 
 from loguru import logger
 from pydantic import BaseModel, field_validator, model_validator
 
-from deet.data_models.documents import ContextType, Document, LinkedDocument
+from deet.data_models.documents import Document
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
@@ -23,7 +23,8 @@ class LinkingStrategy(StrEnum):
     """Enum of permitted/implemented ref<>parsed_doc linking strategies."""
 
     MAPPING_FILE = auto()
-    FILENAME_AUTHOR_YEAR = auto()
+    FILENAME_AUTHOR_YEAR_LONGEST = auto()
+    FILENAME_AUTHOR_YEAR_LAST = auto()
     FILENAME_ID = auto()
     # to add: some sort of interactive selection thing in CLI
     # or, later on, in UI.
@@ -77,6 +78,7 @@ class LinkedInterimPayload(DocumentReferenceMapping):
     Interim output from a linking factory method; extending
     DocumentReferenceMapping.
 
+
     Interim as the document may
     a) still need to be parsed, and
     b) still needs to be coerced into ParsedOutput.
@@ -97,10 +99,12 @@ class MappingImporter:
         """
         Initialise MappingImporter instance.
 
+
         Args:
             mapping_file_path (Path): Path to csv/json file containing mappings.
             document_base_dir (Path | None, optional): Optional directory path
             where documents (pdf/md) live. Defaults to None.
+
 
         """
         if mapping_file_path.suffix not in [".csv", ".json"]:
@@ -139,6 +143,7 @@ class MappingImporter:
         """
         Load json file with mappings to dict.
 
+
         NOTE: json can be in...
         - array style:
         [
@@ -146,17 +151,21 @@ class MappingImporter:
         {"document_id": 87654321, "file_path": "path/to/other.md"}
         ]
 
+
         - dict style:
         {
         "12345678": "path/to/file.pdf",
         "87654321": "path/to/other.md"
         }
 
+
         Raises:
-            TypeError: if bad json style.
+            JsonStyleError: if bad json style.
+
 
         Returns:
             dict[int, Path]: the pre-validation object.
+
 
         """
         with self.mapping_file_path.open() as f:
@@ -213,15 +222,19 @@ class MappingImporter:
         Resolve file path, handling absolute
         paths and document_base_dir.
 
+
         Args:
             file_path: File path from mapping file
             (can be relative or absolute)
 
+
         Returns:
             Resolved Path object
 
+
         Raises:
             FileNotFoundError: If resolved path doesn't exist
+
 
         """
         file_path = Path(file_path)
@@ -262,15 +275,34 @@ class DocumentReferenceLinker:
         linking_strategies: list[LinkingStrategy] | None = None,
     ) -> None:
         """Initialise DocumentReferenceLinker class."""
+        # deep copies to ensure lookup tables don't modify validators
+        # on our existing reference docuemnts.
+        tmp_refs = [doc.model_copy(deep=True) for doc in references]
         self.documents_references = references
 
         # lookup dics for O(1) id & author_year based lookup
         self._references_by_id: dict[int, Document] = {
-            doc.document_id: doc for doc in references if doc.document_id is not None
+            doc.document_id: doc for doc in tmp_refs if doc.document_id is not None
         }
-        self._references_by_author_year: dict[str, Document] = {
-            doc.author_year_from_document_identity(): doc for doc in references
-        }
+        try:
+            self._references_by_author_year_longest: dict[str, Document] = {
+                doc.author_year_from_document_identity(
+                    substring_strategy="longest"
+                ): doc
+                for doc in tmp_refs
+            }
+        except ValueError:
+            logger.warning("author or year missing, returning empty dict.")
+            self._references_by_author_year_longest = {}
+
+        try:
+            self._references_by_author_year_last: dict[str, Document] = {
+                doc.author_year_from_document_identity(substring_strategy="last"): doc
+                for doc in tmp_refs
+            }
+        except ValueError:
+            logger.warning("author or year missing, returning empty dict.")
+            self._references_by_author_year_last = {}
 
         self.document_base_dir = document_base_dir
         if isinstance(document_reference_mapping, Path):
@@ -289,17 +321,25 @@ class DocumentReferenceLinker:
         """
         Create a match function contingent on linking strategy.
 
+
         Args:
             linking_strategy (LinkingStrategy): see the enum for available ones.
+
 
         Returns:
             function: the function to run to retrieve objects to be linked,
             which will always yield a LinkedInterimPayload.
 
+
         """
-        linking_strategy_map = {  # extend as needed.
+        linking_strategy_map: dict[LinkingStrategy, Callable] = {  # extend as needed.
             LinkingStrategy.MAPPING_FILE: self._get_linkages_mapping_file,
-            LinkingStrategy.FILENAME_AUTHOR_YEAR: self._get_linkages_filename_author_year,  # noqa: E501
+            LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST: partial(
+                self._get_linkages_filename_author_year, "longest"
+            ),
+            LinkingStrategy.FILENAME_AUTHOR_YEAR_LAST: partial(
+                self._get_linkages_filename_author_year, "last"
+            ),
             LinkingStrategy.FILENAME_ID: self._get_linkages_filename_id,
         }
 
@@ -309,13 +349,17 @@ class DocumentReferenceLinker:
         """
         Yield linkages between files (pdf/md) and document_ids.
 
+
         This is contingent on
         - successful reading of a mapping file (csv/json) and
           storing in self.document_reference_mapping
         - there being at least 1 document that matches the ids
           therein.
 
-        YIELDS a LinkedInterimPayload.
+
+        Yields:
+             Generator[LinkedInterimPayload].
+
         """
         if (
             self.document_reference_mapping is not None
@@ -346,13 +390,17 @@ class DocumentReferenceLinker:
             }
             yield LinkedInterimPayload(**interim_payload_dict)
 
-    def _get_linkages_filename_author_year(self) -> Generator[LinkedInterimPayload]:
+    def _get_linkages_filename_author_year(
+        self, substring_strategy: Literal["longest", "last"]
+    ) -> Generator[LinkedInterimPayload]:
         """
         Yield linkages between files and reference-documents based on
         best guess at `author_year.pdf` filename structure.
 
+
         Yields:
             Generator[LinkedInterimPayload]:
+
 
         """
         # we could type-check or existence-check self.document_reference_mapping
@@ -364,21 +412,34 @@ class DocumentReferenceLinker:
             bad_base_dir = "self.document_base_dir needs to be a valid directory."
             raise ValueError(bad_base_dir)
 
+        lookup_dict: dict[str, Document]
+        if substring_strategy == "longest":
+            lookup_dict = self._references_by_author_year_longest
+        elif substring_strategy == "last":
+            lookup_dict = self._references_by_author_year_last
+        else:
+            bad_strat_err = "unimnplemented substring strategy for finding author"
+            raise NotImplementedError(bad_strat_err)
+        logger.debug(f"last name strategy is {substring_strategy}")
+
         for file in self.document_base_dir.iterdir():
             if file.suffix not in [".md", ".pdf"]:
                 logger.warning(f"file {file} is not pdf/md. next!")
                 continue
             author_year_guess = file.name.split(".")[0].lower()
-            unlinked_doc = self._references_by_author_year.get(author_year_guess)
+            unlinked_doc = lookup_dict.get(author_year_guess)
             if unlinked_doc is None:
                 logger.debug(
                     f"no reference document found for id {author_year_guess}. next!"
                 )
                 continue
+            if unlinked_doc.document_identity is None:
+                unlinked_doc.init_document_identity()
+
             yield LinkedInterimPayload(
-                document_id=unlinked_doc.document_id,
+                document_id=unlinked_doc.document_identity.document_id,  # type:ignore[union-attr, arg-type]
                 file_path=file,
-                format=file.suffix[1:],
+                format=cast("Literal['md', 'pdf']", file.suffix[1:]),
                 unlinked_document=unlinked_doc,
             )
 
@@ -387,8 +448,10 @@ class DocumentReferenceLinker:
         Yield linkages between files and reference-documents based on
         assumption that files are named `id.pdf`, e.g `12345678.pdf`.
 
+
         Yields:
             Generator[LinkedInterimPayload]:
+
 
         """
         if not self.document_base_dir or not self.document_base_dir.is_dir():
@@ -404,10 +467,12 @@ class DocumentReferenceLinker:
             if unlinked_doc is None:
                 logger.debug(f"no reference document found for id {id_guess}. next!")
                 continue
+            if unlinked_doc.document_identity is None:
+                unlinked_doc.init_document_identity()
             yield LinkedInterimPayload(
-                document_id=unlinked_doc.document_id,
+                document_id=unlinked_doc.document_identity.document_id,  # type:ignore[union-attr, arg-type]
                 file_path=file,
-                format=file.suffix[1:],
+                format=cast("Literal['md', 'pdf']", file.suffix[1:]),
                 unlinked_document=unlinked_doc,
             )
 
@@ -418,18 +483,23 @@ class DocumentReferenceLinker:
         """
         Parse a pdf to ParsedOutput.
 
+
         NOTE: wrapper around DocumentParser.parse().
+
 
         Args:
             path_to_pdf (Path): where to find the file
             return_images (bool, optional): store images or not. Defaults to False.
             return_metadata (bool, optional): store metadata or not. Defaults to False.
 
+
         Raises:
             TypeError: when it's not a pdf file.
 
+
         Returns:
             ParsedOutput: a container for markdown, images and metadata.
+
 
         """
         if path_to_pdf.suffix != ".pdf":
@@ -445,29 +515,33 @@ class DocumentReferenceLinker:
     def link_reference_parsed_document(
         reference: Document,
         parsed_output: ParsedOutput,
-        parse_timestamp: datetime | None = None,
         original_filepath: Path | None = None,
-    ) -> LinkedDocument:
+    ) -> Document:
         """
         Link a reference, in `Document` format with a parsed document,
         in ParsedOutput format.
 
+
         Args:
             reference (Document): the reference, e.g. 'document' from eppi json.
             parsed_output (ParsedOutput): parser output.
-            parse_timestamp (datetime | None, optional): Defaults to None.
             original_filepath (Path | None, optional): Defaults to None.
 
+
         Returns:
-            LinkedDocument: a full LinkedDocument with
-            all required fields populated.
+            Document: a linked Document with
+            all required fields populated, and is_linked==True,
+            and required fields' presence validated.
+
 
         """
-        logger.debug(
-            "initialising document identity for "
-            f"reference with id {reference.document_id}."
-        )
-        reference.init_document_identity()
+        if not reference.document_identity:
+            logger.debug(
+                "initialising document identity for "
+                f"reference with id {reference.document_id}."
+            )
+
+            reference.init_document_identity()
 
         logger.debug(
             f"adding parsed_output to reference with id {reference.document_id}."
@@ -475,43 +549,57 @@ class DocumentReferenceLinker:
         reference.link_parsed_document(
             parsed_document=parsed_output,
             original_doc_filepath=original_filepath,
-            parse_timestamp=parse_timestamp,
         )
 
-        # set context-type
-        reference.context_type = ContextType.FULL_DOCUMENT
+        # set context & context-type
+        reference.set_context_from_parsed()
+        # reference.context_type = ContextType.FULL_DOCUMENT
 
-        return LinkedDocument(**reference.model_dump())
+        # set is_linked -- this will raise a ValidationError
+        # if min requirements are not met
+        reference.is_final = True
+        reference.is_linked = True
+
+        return reference
 
     def link_many_references_parsed_documents(
         self,
         *,
         return_images: bool = False,
         return_metadata: bool = False,
-    ) -> list[LinkedDocument]:
+    ) -> list[Document]:
         """
         Link multiple references to parsed
         documents using available LinkingStrategy(s).
+
 
         Iterates over linking strategies in
         hierarchical order, attempting to link
         each reference-doc to its corresponding file.
 
+
         If required, parses files.
-        Creates LinkedDocument objects.
+        Creates Document objects where is_linked=True.
+
 
         Args:
             return_images: Whether to include images in parsed output
             return_metadata: Whether to include metadata in parsed output
 
+
         Returns:
-            List of LinkedDocument objects successfully linked and parsed
+            List of Document objects successfully linked and parsed
+
 
         """
-        linked_documents = []
+        linked_documents: list[Document] = []
         processed_doc_ids = set()
+        n_docs_to_link = len(self.documents_references)
 
         for strategy in self.linking_strategies:
+            if len(linked_documents) == n_docs_to_link:
+                logger.info("all linking jobs completed.")
+                break
             logger.info(f"Attempting linking strategy: {strategy}")
 
             try:
@@ -548,7 +636,6 @@ class DocumentReferenceLinker:
                     linked_doc = self.link_reference_parsed_document(
                         reference=interim_payload.unlinked_document,
                         parsed_output=parsed_output,
-                        parse_timestamp=datetime.now(tz=UTC),
                         original_filepath=interim_payload.file_path,
                     )
 
@@ -557,13 +644,15 @@ class DocumentReferenceLinker:
 
                     logger.info(
                         f"successfully linked document {interim_payload.document_id} "
-                        f"with file {interim_payload.file_path}"
+                        f"with file {interim_payload.file_path} "
                         f"using {strategy}"
                     )
 
             except (TypeError, ValueError) as e:
+                # if i + 1 < len(self.linking_strategies):
                 logger.error(f"Error with linking strategy {strategy}: {e}")
                 continue
+                # raise
 
         total_refs = len(self.documents_references)
         linked_count = len(linked_documents)
