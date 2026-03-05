@@ -12,9 +12,7 @@ from deet.data_models.documents import (
     Document,
 )
 from deet.data_models.processed_gold_standard_annotations import (
-    BaseProcessedAnnotationData,
     CustomPromptPopulationMethod,
-    ProcessedEppiAnnotationData,
 )
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
 from deet.extractors.llm_data_extractor import (
@@ -23,9 +21,7 @@ from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
 )
 from deet.logger import logger
-from deet.processors.base_converter import Outfiles
 from deet.processors.converter_register import SupportedImportFormat
-from deet.processors.linker import DocumentReferenceLinker
 from deet.settings import get_settings
 
 settings = get_settings()
@@ -46,47 +42,8 @@ def export_config_template(
 
 
 @app.command()
-def import_gold_standard_data(
-    gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
-    output_dir: Path | None = Path(),
-) -> BaseProcessedAnnotationData | ProcessedEppiAnnotationData:
-    """
-    Import gold standard annotation data from a supported format.
-
-    Args:
-        gs_data_path (Path): A path to a file or directory containing gold
-            standard annotations.
-        gs_data_format (SupportedImportFormat): Format of the input data.
-            This determines which converter to use. Defaults to
-            SupportedImportFormat.EPPI_JSON.
-        output_dir (Path): Directory where processed data files will be
-            written. Set to None if you do not want to write processed data
-            to disk. Defaults to the current working directory.
-
-    Returns:
-        ProcessedAnnotationData: A structured object containing the
-            parsed annotation data.
-
-
-    """
-    converter = gs_data_format.get_annotation_converter()
-    if gs_data_path.is_dir():
-        out = converter.reload_output(gs_data_path)
-    else:
-        out = converter.process_annotation_file(gs_data_path)
-
-    logger.info(f"Imported data: {len(out.annotated_documents)} annotated documents.")
-    if output_dir is not None:
-        converter.write_processed_data_to_file(
-            processed_data=out, output_dir=output_dir, outfiles_to_write=list(Outfiles)
-        )
-    return out
-
-
-@app.command()
 def init_linkage_mapping_file(
-    gs_data_path: Path = Path(),
+    gs_data_path: Path,
     gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     link_map_path: Path = Path("link_map.csv"),
 ) -> None:
@@ -103,14 +60,13 @@ def init_linkage_mapping_file(
             Defaults to link_map.csv in the current working directory.
 
     """
-    out = import_gold_standard_data(
-        gs_data_path=gs_data_path, gs_data_format=gs_data_format
-    )
+    converter = gs_data_format.get_annotation_converter()
+    processed_annotation_data = converter.process_annotation_file(gs_data_path)
 
     with link_map_path.open("w") as f:
         writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
         writer.writeheader()
-        for d in out.documents:
+        for d in processed_annotation_data.documents:
             d.init_document_identity()
             if d.document_identity is None:
                 message = f"document_identity was not set for document {d}"
@@ -126,7 +82,7 @@ def init_linkage_mapping_file(
 
 @app.command()
 def link_documents_fulltexts(
-    gs_data_path: Path = Path(),
+    gs_data_path: Path,
     gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     pdf_dir: Path = Path("pdfs"),
     link_map_path: Path | None = None,
@@ -155,12 +111,13 @@ def link_documents_fulltexts(
             to. This defaults to `linked_documents`.
 
     """
-    out = import_gold_standard_data(
-        gs_data_path=gs_data_path, gs_data_format=gs_data_format
-    )
+    from deet.processors.linker import DocumentReferenceLinker
+
+    converter = gs_data_format.get_annotation_converter()
+    processed_annotation_data = converter.process_annotation_file(gs_data_path)
 
     linker = DocumentReferenceLinker(
-        references=out.documents,
+        references=processed_annotation_data.documents,
         document_base_dir=pdf_dir,
         document_reference_mapping=link_map_path,
     )
@@ -172,7 +129,7 @@ def link_documents_fulltexts(
 
 @app.command()
 def init_prompt_csv(
-    gs_data_path: Path = Path(),
+    gs_data_path: Path,
     gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     csv_path: Path = Path("prompt_definitions.csv"),
 ) -> None:
@@ -193,9 +150,8 @@ def init_prompt_csv(
             Defaults to `prompt_defitions.csv` in the current working directory.
 
     """
-    out = import_gold_standard_data(
-        gs_data_path=gs_data_path, gs_data_format=gs_data_format
-    )
+    converter = gs_data_format.get_annotation_converter()
+    processed_annotation_data = converter.process_annotation_file(gs_data_path)
     if csv_path.exists():
         message = (
             "Prompt definition csv already exists. Proceeding will "
@@ -207,13 +163,13 @@ def init_prompt_csv(
             csv_path.unlink()
         else:
             raise typer.Abort()  # noqa: RSE102
-    out.export_attributes_csv_file(filepath=csv_path)
+    processed_annotation_data.export_attributes_csv_file(filepath=csv_path)
 
 
 @app.command()
 def extract_data(  # noqa: PLR0913
+    gs_data_path: Path,
     config_path: Path = Path("default_extraction_config.yaml"),
-    gs_data_path: Path = Path(),
     gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     prompt_population: CustomPromptPopulationMethod | None = None,
     csv_path: Path | None = None,
@@ -273,20 +229,21 @@ def extract_data(  # noqa: PLR0913
         out_dir_exists = "out_dir already exists. Exiting, so as not to overwrite data"
         raise typer.Abort(out_dir_exists)
 
-    out = import_gold_standard_data(
-        gs_data_path=gs_data_path, gs_data_format=gs_data_format
-    )
+    converter = gs_data_format.get_annotation_converter()
+    processed_annotation_data = converter.process_annotation_file(gs_data_path)
 
     if prompt_population == CustomPromptPopulationMethod.FILE and not csv_path:
         message = "CSV prompt popluation selected without specifying csv_path"
         raise ValueError(message)
     if prompt_population is not None:
-        out.populate_custom_prompts(method=prompt_population, filepath=csv_path)
+        processed_annotation_data.populate_custom_prompts(
+            method=prompt_population, filepath=csv_path
+        )
 
     data_extractor = LLMDataExtractor(config=config)
 
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
-        documents = out.documents
+        documents = processed_annotation_data.documents
     elif config.default_context_type == ContextType.FULL_DOCUMENT:
         if linked_document_path.exists():
             documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
@@ -299,7 +256,7 @@ def extract_data(  # noqa: PLR0913
         raise typer.Abort(message)
 
     llm_annotated_documents = data_extractor.extract_from_documents(
-        attributes=out.attributes,
+        attributes=processed_annotation_data.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
         output_file=out_dir / "annotated_docs.json",
@@ -311,9 +268,9 @@ def extract_data(  # noqa: PLR0913
     )
 
     evaluator = GoldStandardLLMEvaluator(
-        gold_standard_annotated_documents=out.annotated_documents,
+        gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
         llm_annotated_documents=llm_annotated_documents,
-        attributes=out.attributes,
+        attributes=processed_annotation_data.attributes,
     )
     evaluator.evaluate_llm_annotations()
     evaluator.display_metrics()
