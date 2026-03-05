@@ -37,7 +37,7 @@ def init_linkage_mapping_file(
     link_map_path: Path = Path("link_map.csv"),
 ) -> None:
     """
-    Create a mapping to link documents and the full texts.
+    Create a mapping to link documents and their full texts.
 
     Args:
         gs_data_path (Path): A path to a file or directory containing gold
