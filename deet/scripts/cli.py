@@ -56,22 +56,18 @@ def import_gold_standard_data(
 
     Args:
         gs_data_path (Path): A path to a file or directory containing gold
-        standard annotations
+            standard annotations.
         gs_data_format (SupportedImportFormat): Format of the input data.
-        This determines which converter to use. Defaults to
-        SupportedImportFormat.EPPI_JSON
+            This determines which converter to use. Defaults to
+            SupportedImportFormat.EPPI_JSON.
         output_dir (Path): Directory where processed data files will be
-        written if the input is not DEET. Defaults to the current working
-        directory.
+            written. Set to None if you do not want to write processed data
+            to disk. Defaults to the current working directory.
 
     Returns:
         ProcessedAnnotationData: A structured object containing the
-        parsed annotation data.
+            parsed annotation data.
 
-    Notes:
-        - If `gs_data_format` is DEET, the processed data will not be written to
-          disk (as we assume we are just reading in data that has already been
-          converted from another format and written to disk.)
 
     """
     converter = gs_data_format.get_annotation_converter()
@@ -94,7 +90,19 @@ def init_linkage_mapping_file(
     gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     link_map_path: Path = Path("link_map.csv"),
 ) -> None:
-    """Create a mapping to link documents and the full texts."""
+    """
+    Create a mapping to link documents and the full texts.
+
+    Args:
+        gs_data_path (Path): A path to a file or directory containing gold
+            standard annotations.
+        gs_data_format (SupportedImportFormat): Format of the input data.
+            This determines which converter to use. Defaults to
+            SupportedImportFormat.EPPI_JSON.
+        link_map_path (Path): A path to write the link_map template to.
+            Defaults to link_map.csv in the current working directory.
+
+    """
     out = import_gold_standard_data(
         gs_data_path=gs_data_path, gs_data_format=gs_data_format
     )
@@ -124,7 +132,29 @@ def link_documents_fulltexts(
     link_map_path: Path | None = None,
     output_path: Path = Path("linked_documents"),
 ) -> None:
-    """Link documents to their fulltexts."""
+    """
+    Link documents to their fulltexts.
+
+    This creates a document containing the parsed output of its corresponding
+        fulltext in the folder defined in `output_path`. Linking will be
+        attempted using a mapping file, if provided, then by matching the
+        filename with author and year, then by matching by document id. See
+        `deet.processors.linker` for more details.
+
+    Args:
+        gs_data_path (Path): A path to a file or directory containing gold
+            standard annotations.
+        gs_data_format (SupportedImportFormat): Format of the input data.
+            This determines which converter to use. Defaults to
+            SupportedImportFormat.EPPI_JSON.
+        pdf_dir (Path): A path to a directory containing pdfs. Defaults to
+            "pdfs", within the current directory.
+        link_map_path (Path): A path to a link map
+            (create this by running `deet init-linkage-mapping-file`).
+        output_path (Path): A path to a directory to write the linked documents
+            to. This defaults to `linked_documents`.
+
+    """
     out = import_gold_standard_data(
         gs_data_path=gs_data_path, gs_data_format=gs_data_format
     )
@@ -146,7 +176,23 @@ def init_prompt_csv(
     gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
     csv_path: Path = Path("prompt_definitions.csv"),
 ) -> None:
-    """Write a prompt csv."""
+    """
+    Write a csv to define prompts for your dataset with.
+
+    This writes a row for each attribute in your dataset. Edit the prompt
+        column to edit the prompt to be used for that attribute. Attributes
+        without values in the prompt column will not be extracted.
+
+    Args:
+        gs_data_path (Path): A path to a file or directory containing gold
+            standard annotations.
+        gs_data_format (SupportedImportFormat): Format of the input data.
+            This determines which converter to use. Defaults to
+            SupportedImportFormat.EPPI_JSON.
+        csv_path (Path): a path to a file to write your prompt definitions to.
+            Defaults to `prompt_defitions.csv` in the current working directory.
+
+    """
     out = import_gold_standard_data(
         gs_data_path=gs_data_path, gs_data_format=gs_data_format
     )
@@ -174,7 +220,36 @@ def extract_data(  # noqa: PLR0913
     linked_document_path: Path = Path("linked_documents"),
     out_dir: Path | None = None,
 ) -> None:
-    """Extract data from documents."""
+    """
+    Extract data from documents.
+
+    Load gold standard annotation data, and use an LLM to extract data from the
+        documents in your dataset.
+
+    Args:
+        config_path (Path): A path to a config file containing options for
+            data extraction config. A template can be generated by running
+            `deet export-config-template`
+        gs_data_path (Path): A path to a file or directory containing gold
+            standard annotations.
+        gs_data_format (SupportedImportFormat): Format of the input data.
+            This determines which converter to use. Defaults to
+            SupportedImportFormat.EPPI_JSON.
+        prompt_population (CustomPromptPopulationMethod): A method to define
+            custom prompts for your attributes to be extracted. Leave blank
+            to use the prompts in your gold standard data. Set to `file` to
+            provide a file of prompt definitions (make sure this is supplied
+            below). Set to `cli` to define prompts interactively in the CLI.
+        csv_path (Path): A path to a file to write your prompt definitions to.
+            Defaults to `prompt_defitions.csv` in the current working directory.
+        linked_document_path (Path): A path to a directory containing
+            documents that have been linked to their fulltexts. This directory
+            can be populated by running `deet link-documents-fulltexts`
+        out_dir (Path): A path to a directory where you want to store the
+            results of this, and further instances of extract-data for this
+            project. Defaults to the current directory.
+
+    """
     if config_path.exists():
         config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
     else:
