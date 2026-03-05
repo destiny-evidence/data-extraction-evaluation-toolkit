@@ -17,7 +17,7 @@ class SupportedImportFormat(StrEnum):
     def get_annotation_converter(
         self,
     ) -> AnnotationConverter:
-        """Return the parser for the given data type."""
+        """Return an instance of the parser for the given data type."""
         mapping = {
             SupportedImportFormat.EPPI_JSON: EppiAnnotationConverter(),
         }

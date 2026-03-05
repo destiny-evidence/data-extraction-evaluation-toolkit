@@ -42,7 +42,12 @@ class AnnotationConverter(
     ],
     ABC,
 ):
-    """Abstract base class to define expected behaviour of an annotationconverter."""
+    """
+    Abstract base class to define expected behaviour of an annotationconverter.
+
+    OUTFILE_LOADERS maps the outfiles to be read/written to a filename, and a
+    TypeAdapter defining the type of Pydantic Model to read back in.
+    """
 
     OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]]
 
@@ -56,7 +61,7 @@ class AnnotationConverter(
         base_output_dir: str | Path | None = DEFAULT_BASE_OUTPUT_DIR,
     ) -> None:
         """
-        Initialize the converter with configurable output paths.
+        Initialise the converter with configurable output paths.
 
         Args:
             output_dir: Base directory for saving processed files

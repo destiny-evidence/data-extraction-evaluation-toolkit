@@ -50,7 +50,10 @@ class EppiAnnotationConverter(AnnotationConverter):
         attribute_mapping_filename: str = DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
     ) -> None:
         """
-        Initialize the converter with configurable output paths.
+        Initialise the converter with configurable output paths.
+        Set self.OUTFILE_LOADERS mapping the outfiles to be read/written to a
+        filename, and a TypeAdapter defining the type of Pydantic Model to
+        read back in when deserialising.
 
         Args:
             output_dir: Base directory for saving processed files
