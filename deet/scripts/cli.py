@@ -7,18 +7,8 @@ from pathlib import Path
 import typer
 import yaml
 
-from deet.data_models.base import Attribute, AttributeType
-from deet.data_models.documents import (
-    Document,
-)
 from deet.data_models.processed_gold_standard_annotations import (
     CustomPromptPopulationMethod,
-)
-from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
-from deet.extractors.llm_data_extractor import (
-    ContextType,
-    DataExtractionConfig,
-    LLMDataExtractor,
 )
 from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
@@ -34,6 +24,8 @@ def export_config_template(
     output_path: Path = Path("default_extraction_config.yaml"),
 ) -> None:
     """Export the default DataExtractionConfig to a YAML file."""
+    from deet.extractors.llm_data_extractor import DataExtractionConfig
+
     config = DataExtractionConfig()
     output_path.write_text(
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False)
@@ -209,6 +201,14 @@ def extract_data(  # noqa: PLR0913
             to help you identify this run later
 
     """
+    from deet.data_models.documents import Document
+    from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+    from deet.extractors.llm_data_extractor import (
+        ContextType,
+        DataExtractionConfig,
+        LLMDataExtractor,
+    )
+
     if config_path.exists():
         config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
     else:
@@ -279,6 +279,12 @@ def extract_data(  # noqa: PLR0913
 @app.command()
 def test_llm_config() -> None:
     """Test llm config."""
+    from deet.data_models.base import Attribute, AttributeType
+    from deet.extractors.llm_data_extractor import (
+        DataExtractionConfig,
+        LLMDataExtractor,
+    )
+
     config = DataExtractionConfig()
     data_extractor = LLMDataExtractor(config=config)
     attr = Attribute(
