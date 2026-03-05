@@ -14,7 +14,7 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocumentList,
     GoldStandardAnnotatedDocumentTypeVar,
 )
-from deet.data_models.evaluation import AttributeMetric, MetricType
+from deet.data_models.evaluation import METRICS, AttributeMetric, MetricFn
 
 
 class GoldStandardLLMEvaluator:
@@ -30,6 +30,7 @@ class GoldStandardLLMEvaluator:
         ],
         llm_annotated_documents: Sequence[GoldStandardAnnotatedDocumentTypeVar],
         attributes: Sequence[AttributeTypeVar],
+        metrics: dict[str, MetricFn] = METRICS,
     ) -> None:
         """
         Initialise GoldStandardLLMEvaluator with a list of ground truth and
@@ -41,6 +42,7 @@ class GoldStandardLLMEvaluator:
             gold_standard_annotations=llm_annotated_documents
         )
         self.attributes = attributes
+        self.metrics_config: dict[str, MetricFn] = metrics
         self.metrics: list[AttributeMetric] = []
 
     def evaluate_llm_annotations(
@@ -65,10 +67,10 @@ class GoldStandardLLMEvaluator:
             self.metrics.extend(
                 AttributeMetric(
                     attribute=attribute,
-                    metric=metric,
-                    value=metric.calculate(y_true, y_pred),
+                    metric=metric_name,
+                    value=float(metric_fn(y_true, y_pred)),
                 )
-                for metric in MetricType
+                for metric_name, metric_fn in self.metrics_config.items()
             )
 
     def display_metrics(self) -> None:
