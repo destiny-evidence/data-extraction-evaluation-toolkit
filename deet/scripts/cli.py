@@ -49,26 +49,9 @@ def init_linkage_mapping_file(
             Defaults to link_map.csv in the current working directory.
 
     """
-    import csv
-
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
-
-    with link_map_path.open("w") as f:
-        writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
-        writer.writeheader()
-        for d in processed_annotation_data.documents:
-            d.init_document_identity()
-            if d.document_identity is None:
-                message = f"document_identity was not set for document {d}"
-                raise RuntimeError(message)
-            writer.writerow(
-                {
-                    "document_id": d.document_identity.document_id,
-                    "name": d.name,
-                    "file_path": None,
-                }
-            )
+    processed_annotation_data.export_linkage_mapper_csv(link_map_path)
 
 
 @app.command()
