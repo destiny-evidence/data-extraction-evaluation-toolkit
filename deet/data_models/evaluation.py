@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
-from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -60,6 +59,5 @@ class AttributeMetric(BaseModel):
     """Data structure storing a metric for an attribute for a pipeline run."""
 
     attribute: Attribute
-    pipeline_run_id: UUID
     metric: MetricType
     value: float | None

@@ -20,6 +20,7 @@ from deet.data_models.processed_gold_standard_annotations import (
     CustomPromptPopulationMethod,
     ProcessedEppiAnnotationData,
 )
+from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
 from deet.extractors.llm_data_extractor import (
     ContextType,
     DataExtractionConfig,
@@ -222,7 +223,7 @@ def extract_data(  # noqa: PLR0913
         message = f"context type {config.default_context_type} not supported"
         raise typer.Abort(message)
 
-    data_extractor.extract_from_documents(
+    llm_annotated_documents = data_extractor.extract_from_documents(
         attributes=out.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
@@ -234,7 +235,13 @@ def extract_data(  # noqa: PLR0913
         yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
     )
 
-    evaluate_llm_to_gs(gs_data_path, gs_data_format, pipeline_run_id)
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=out.annotated_documents,
+        llm_annotated_documents=llm_annotated_documents,
+        attributes=out.attributes,
+    )
+    evaluator.evaluate_llm_annotations()
+    evaluator.display_metrics()
 
 
 @app.command()

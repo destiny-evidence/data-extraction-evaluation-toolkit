@@ -2,8 +2,9 @@
 
 import base64
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import StrEnum, auto
+from functools import cached_property
 from io import BytesIO
 from pathlib import Path
 from random import randint
@@ -545,30 +546,29 @@ GoldStandardAnnotatedDocumentTypeVar = TypeVar(
 class GoldStandardAnnotatedDocumentList(
     BaseModel, Generic[GoldStandardAnnotatedDocumentTypeVar]
 ):
-    """A list of GoldStandardAnnotatedDocuments (or subclasses thereof)."""
+    """
+    A list of GoldStandardAnnotatedDocuments (or subclasses thereof).
+    This list is indexed to enable easy retrieval by document_id.
+    """
 
-    gold_standard_annotations: list[GoldStandardAnnotatedDocumentTypeVar]
+    gold_standard_annotations: Sequence[GoldStandardAnnotatedDocumentTypeVar]
 
-    def get_by_id(
-        self, document_identity: DocumentIdentity
-    ) -> GoldStandardAnnotatedDocumentTypeVar:
+    @cached_property
+    def annotation_index(self) -> dict[int, GoldStandardAnnotatedDocumentTypeVar]:
+        """Cached index to enable retrieving annotated documents by id."""
+        return {
+            doc.document.safe_identity.document_id: doc
+            for doc in self.gold_standard_annotations
+        }
+
+    def get_by_id(self, document_id: int) -> GoldStandardAnnotatedDocumentTypeVar:
         """
         Get GoldStandardAnnotatedDocument where document.document_identity
         matches document_identity.
         """
-        result = None
-
-        for doc in self.gold_standard_annotations:
-            if doc.document.safe_identity == document_identity:
-                if result is not None:
-                    multiple_matches = "Multiple matches for document with "
-                    " ID: {document_identity.document_id}!"
-                    raise ValueError(multiple_matches)
-                result = doc
-
-        if result is None:
-            not_found = f"Document with ID: {document_identity.document_id} "
-            "not found!"
-            raise ValueError(not_found)
-
-        return result
+        try:
+            return self.annotation_index[document_id]
+        except KeyError as err:
+            not_found = f"Document with ID {document_id} not found in annotated"
+            " doc list"
+            raise ValueError(not_found) from err
