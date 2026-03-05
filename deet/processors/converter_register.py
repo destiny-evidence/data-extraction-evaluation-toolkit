@@ -4,9 +4,10 @@ and a map to their converters.
 """
 
 from enum import StrEnum, auto
+from typing import TYPE_CHECKING
 
-from deet.processors.base_converter import AnnotationConverter
-from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+if TYPE_CHECKING:
+    from deet.processors.base_converter import AnnotationConverter
 
 
 class SupportedImportFormat(StrEnum):
@@ -16,8 +17,10 @@ class SupportedImportFormat(StrEnum):
 
     def get_annotation_converter(
         self,
-    ) -> AnnotationConverter:
+    ) -> "AnnotationConverter":
         """Return an instance of the parser for the given data type."""
+        from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+
         mapping = {
             SupportedImportFormat.EPPI_JSON: EppiAnnotationConverter(),
         }

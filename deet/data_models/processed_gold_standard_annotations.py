@@ -2,7 +2,6 @@
 
 import csv
 from collections.abc import Sequence
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Generic
 
@@ -24,6 +23,7 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentTypeVar,
 )
+from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -31,13 +31,6 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiRawData,
 )
-
-
-class CustomPromptPopulationMethod(StrEnum):
-    """Methods of populating prompts."""
-
-    FILE = auto()
-    CLI = auto()
 
 
 class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):

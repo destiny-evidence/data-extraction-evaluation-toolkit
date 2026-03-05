@@ -28,7 +28,7 @@ from deet.data_models.base import (  # ContextType,
     AttributeType,
     GoldStandardAnnotation,
 )
-from deet.data_models.documents import Document
+from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
 
@@ -327,10 +327,10 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     )
 
 
-class EppiGoldStandardAnnotatedDocument(EppiDocument):
+class EppiGoldStandardAnnotatedDocument(
+    GoldStandardAnnotatedDocument[EppiDocument, EppiGoldStandardAnnotation]
+):
     """EPPI-specific gold standard annotated document."""
-
-    annotations: list[EppiGoldStandardAnnotation]
 
 
 class EppiCodeSet(BaseModel):
@@ -625,7 +625,9 @@ class ProcessedAnnotationData(BaseModel):
 
     def get_documents_with_annotations(self) -> list[EppiDocument]:
         """Get only documents that have annotations."""
-        annotated_doc_ids = {doc.document_id for doc in self.annotated_documents}
+        annotated_doc_ids = {
+            doc.document.document_id for doc in self.annotated_documents
+        }
         return [doc for doc in self.documents if doc.document_id in annotated_doc_ids]
 
     def get_annotations_by_annotation_type(

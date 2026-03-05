@@ -1,20 +1,15 @@
 """A CLI app to run DEET pipelines."""
 
-import csv
-import datetime
+from __future__ import annotations
+
+# import csv
+# import datetime
 from pathlib import Path
 
 import typer
-import yaml
 
-from deet.data_models.processed_gold_standard_annotations import (
-    CustomPromptPopulationMethod,
-)
-from deet.logger import logger
+from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.processors.converter_register import SupportedImportFormat
-from deet.settings import get_settings
-
-settings = get_settings()
 
 app = typer.Typer()
 
@@ -24,6 +19,8 @@ def export_config_template(
     output_path: Path = Path("default_extraction_config.yaml"),
 ) -> None:
     """Export the default DataExtractionConfig to a YAML file."""
+    import yaml
+
     from deet.extractors.llm_data_extractor import DataExtractionConfig
 
     config = DataExtractionConfig()
@@ -52,6 +49,8 @@ def init_linkage_mapping_file(
             Defaults to link_map.csv in the current working directory.
 
     """
+    import csv
+
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
 
@@ -151,7 +150,7 @@ def init_prompt_csv(
         )
         proceed = typer.confirm(message)
         if proceed:
-            logger.info("Proceeding to overwrite prompt definition csv")
+            typer.echo("Proceeding to overwrite prompt definition csv")
             csv_path.unlink()
         else:
             raise typer.Abort()  # noqa: RSE102
@@ -201,6 +200,10 @@ def extract_data(  # noqa: PLR0913
             to help you identify this run later
 
     """
+    import datetime
+
+    import yaml
+
     from deet.data_models.documents import Document
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.llm_data_extractor import (
@@ -212,7 +215,7 @@ def extract_data(  # noqa: PLR0913
     if config_path.exists():
         config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
     else:
-        logger.warning(
+        typer.echo(
             f"Config file: {config_path} does not exist."
             " Initialising config with default settings."
         )
@@ -302,7 +305,7 @@ def test_llm_config() -> None:
         payload=context,
         context_type=None,
     )
-    logger.info(response)
+    typer.echo(response)
 
 
 def main() -> None:
