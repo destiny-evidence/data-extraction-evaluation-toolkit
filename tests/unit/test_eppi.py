@@ -8,6 +8,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 from destiny_sdk.references import ReferenceFileInput
+from pydantic import ValidationError
 
 from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
@@ -492,8 +493,8 @@ def test_parse_date_string_empty_string():
 
 
 def test_parse_date_string_invalid_format_raises():
-    """Test that invalid date format raises ValueError."""
-    with pytest.raises(ValueError, match="unable to parse date_created"):
+    """Test that invalid date format raises ValidationError."""
+    with pytest.raises(ValidationError, match="Input should be a valid datetime"):
         EppiDocument(
             citation=ReferenceFileInput(),
             document_id=123,

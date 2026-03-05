@@ -44,17 +44,16 @@ class AnnotationConverter(
 ):
     """Abstract base class to define expected behaviour of an annotationconverter."""
 
-    OUTFILE_LOADERS: dict[
-        Outfiles, tuple[str, TypeAdapter]
-    ]  # Subclasses must populate this.
+    OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]]
+
+    @property
+    def outfile_names(self) -> dict[Outfiles, str]:
+        """Return a dictionary of outfiles to names, using outfile_loaders."""
+        return {k: v[0] for k, v in self.OUTFILE_LOADERS.items()}
 
     def __init__(
         self,
         base_output_dir: str | Path | None = DEFAULT_BASE_OUTPUT_DIR,
-        attributes_filename: str = DEFAULT_ATTRIBUTES_FILENAME,
-        documents_filename: str = DEFAULT_DOCUMENTS_FILENAME,
-        annotated_documents_filename: str = DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
-        attribute_mapping_filename: str = DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
     ) -> None:
         """
         Initialize the converter with configurable output paths.
@@ -75,17 +74,18 @@ class AnnotationConverter(
             base_output_dir = ""
         self.base_output_dir = Path(base_output_dir)
 
-        # extend below if adding more output files in `Outfiles`.
-        self.outfilename_object_map = {
-            Outfiles.ATTRIBUTES: attributes_filename,
-            Outfiles.DOCUMENTS: documents_filename,
-            Outfiles.ANNOTATED_DOCUMENTS: annotated_documents_filename,
-            Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
-        }
-
     @property
     @abstractmethod
-    def processed_data_type(self) -> type[ProcessedAnnotationData]:
+    def processed_data_type(
+        self,
+    ) -> type[
+        ProcessedAnnotationData[
+            AttributeTypeVar,
+            DocumentTypeVar,
+            GoldStandardAnnotationTypeVar,
+            GoldStandardAnnotatedDocumentTypeVar,
+        ]
+    ]:
         """Return the class to use when instantiating processed data."""
         ...
 
@@ -132,7 +132,7 @@ class AnnotationConverter(
         file_mappings = {
             k: v for k, v in file_mappings.items() if k in outfiles_to_write
         }
-        logger.info(f"writing {','.join(file_mappings.keys())} out...")
+        logger.info(f"writing {",".join(k.value for k in file_mappings)} out...")
 
         user_dir = Path(output_dir)
         target_dir = user_dir / self.base_output_dir
@@ -142,7 +142,7 @@ class AnnotationConverter(
         saved_files = {}
 
         for file_type, data_list in file_mappings.items():
-            file_path = target_dir / self.outfilename_object_map[file_type]
+            file_path = target_dir / self.outfile_names[file_type]
             logger.debug(f"writing file {file_type} to {file_path}")
             if file_type == Outfiles.ATTRIBUTE_LABEL_MAPPING:
                 file_path.write_text(json.dumps(data_list))
@@ -164,7 +164,7 @@ class AnnotationConverter(
         """
         loaded_data = {}
         for key, (filename, adapter) in self.OUTFILE_LOADERS.items():
-            path = file_path / DEFAULT_BASE_OUTPUT_DIR / filename
+            path = file_path / self.base_output_dir / filename
             if not path.exists():
                 message = f"Expected {key.value} at {path}"
                 raise FileNotFoundError(message)

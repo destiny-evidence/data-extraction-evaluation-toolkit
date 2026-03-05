@@ -49,12 +49,12 @@ def test_import_data_calls_converter_methods():
     fake_converter.process_annotation_file.return_value = fake_result
 
     with patch.object(
-        SupportedImportFormat.DEET,
+        SupportedImportFormat.EPPI_JSON,
         "get_annotation_converter",
         return_value=fake_converter,
     ):
         out = import_gold_standard_data(
-            gs_data_path=Path("dummy"), gs_data_format=SupportedImportFormat.DEET
+            gs_data_path=Path("dummy"), gs_data_format=SupportedImportFormat.EPPI_JSON
         )
 
     # Should call process_annotation_file with the given path

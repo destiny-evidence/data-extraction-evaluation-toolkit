@@ -69,13 +69,6 @@ class EppiAnnotationConverter(AnnotationConverter):
         self.base_output_dir = Path(base_output_dir)
 
         # extend below if adding more output files in `Outfiles`.
-        self.outfilename_object_map = {
-            Outfiles.ATTRIBUTES: attributes_filename,
-            Outfiles.DOCUMENTS: documents_filename,
-            Outfiles.ANNOTATED_DOCUMENTS: annotated_documents_filename,
-            Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
-        }
-
         self.OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]] = {
             Outfiles.ATTRIBUTES: (
                 attributes_filename,
