@@ -2,18 +2,14 @@
 
 import csv
 from pathlib import Path
-from uuid import UUID
 
 import typer
 import yaml
-from pydantic import TypeAdapter
 from uuid6 import uuid7
 
-from deet.data_models.base import Attribute, AttributeType, GoldStandardAnnotation
+from deet.data_models.base import Attribute, AttributeType
 from deet.data_models.documents import (
     Document,
-    GoldStandardAnnotatedDocument,
-    GoldStandardAnnotatedDocumentList,
 )
 from deet.data_models.processed_gold_standard_annotations import (
     BaseProcessedAnnotationData,
@@ -31,8 +27,6 @@ from deet.processors.base_converter import Outfiles
 from deet.processors.converter_register import SupportedImportFormat
 from deet.processors.linker import DocumentReferenceLinker
 from deet.settings import get_settings
-from deet.utils.cli_utils import get_last_pipeline_run
-from deet.utils.evaluation_utils import display_metrics, evaluate_llm_annotations
 
 settings = get_settings()
 
@@ -242,40 +236,6 @@ def extract_data(  # noqa: PLR0913
     )
     evaluator.evaluate_llm_annotations()
     evaluator.display_metrics()
-
-
-@app.command()
-def evaluate_llm_to_gs(
-    gs_data_path: Path = Path(),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
-    pipeline: UUID | None = None,
-) -> None:
-    """Evaluate a pipeline run, and print a table of evaluation metrics."""
-    out = import_gold_standard_data(
-        gs_data_path=gs_data_path, gs_data_format=gs_data_format
-    )
-
-    if pipeline is None:
-        pipeline, pipeline_dir = get_last_pipeline_run(Path("pipeline_runs"))
-    else:
-        pipeline_dir = Path("pipeline_runs") / str(pipeline)
-
-    adapter = TypeAdapter(
-        list[GoldStandardAnnotatedDocument[Document, GoldStandardAnnotation]]
-    )
-    llm_annotation_file = pipeline_dir / "annotated_docs.json"
-    llm_annotation_list = GoldStandardAnnotatedDocumentList(
-        gold_standard_annotations=adapter.validate_json(llm_annotation_file.read_text())
-    )
-
-    metrics = evaluate_llm_annotations(
-        reference_documents=out.annotated_documents,
-        attributes=out.attributes,
-        llm_annotation_list=llm_annotation_list,
-        pipeline_run_id=pipeline,
-    )
-
-    display_metrics(metrics)
 
 
 @app.command()
