@@ -327,7 +327,33 @@ class EppiAnnotationConverter:
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
-        documents_by_item_id: dict[int, EppiDocument] = {}
+        all_annotations_raw = []
+        documents_by_title: dict[str, EppiDocument] = {}
+
+        for reference in data.get("References", []):
+            reference_codes = reference.get("Codes", [])
+            all_annotations_raw.extend(reference_codes)
+
+            doc_title = reference.get("Title", "")
+            # NL: really, the existing_ids thing is quite redundant here,
+            # as we assume we're getting our eppi item ids as document_ids.
+            # however, a) it demonstrates the desired functionality of
+            # checking against a set of already populated ids, and
+            # b) there is a world where eppi.jsons contain invalid item ids.
+            existing_ids: set[int] = set()
+            if doc_title and doc_title not in documents_by_title:
+                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
+                document = EppiDocument(**reference)
+                # init doc id
+                new_id = document.init_document_identity(existing_ids=existing_ids)
+                if new_id:
+                    existing_ids.add(new_id)
+                documents_by_title[doc_title] = document
+
+        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
+            data.get("References", [])
+        )
+
         annotated_documents = []
         all_annotations = []
 
@@ -354,21 +380,19 @@ class EppiAnnotationConverter:
                     attribute_id_to_label,
                 )
 
-                payload = document.model_dump(mode="python")
-                annotations = [json.loads(ann.model_dump_json()) for ann in annotations]
-
-                payload["annotations"] = annotations
-
-                annotated_doc = EppiGoldStandardAnnotatedDocument(**payload)
+                # Use model_construct to bypass validation and preserve all fields
+                annotated_doc = EppiGoldStandardAnnotatedDocument.model_construct(
+                    **{**doc.__dict__, "annotations": annotations}
+                )
 
                 annotated_documents.append(annotated_doc)
                 all_annotations.extend(annotations)
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            f" {len(documents_by_item_id)} documents, "
+            f" {len(documents_by_title)} documents, "
             f"{len(all_annotations)} annotations,"
-            " {len(annotated_documents)} annotated documents"
+            f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(

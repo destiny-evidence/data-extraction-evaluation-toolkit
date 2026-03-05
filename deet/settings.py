@@ -2,6 +2,7 @@
 
 from enum import StrEnum, auto
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -65,36 +66,6 @@ class DataExtractionSettings(BaseSettings):
         ),
     )
 
-    # # Context and selection
-    # context_type: str = Field(
-    #     default="full_document",
-    #     description=(
-    #         "How to prepare context for the LLM. One of: f
-    # ull_document, abstract_only, "
-    #         "rag_snippets, custom."
-    #     ),
-    # )
-    # max_context_length: int = Field(
-    #     default=40000,
-    #     description="Maximum length of prepared context (characters).",
-    #     # TO DO: turn this into tokens; not characters
-    #     ge=1,
-    # )
-    # selected_attribute_ids: list[str] = Field(
-    #     default_factory=list,
-    #     description="Filter for specific attribute IDs to extract.",
-    # )
-
-    # Output toggles
-    # include_reasoning: bool = Field(
-    #     default=True,
-    #     description="Include model reasoning in the output structure.",
-    # )
-    # include_additional_text: bool = Field(
-    #     default=True,
-    #     description="Include additional text/citations in the output structure.",
-    # )
-
     # Provider credentials / settings (secrets redacted)
     azure_api_key: SecretStr | None = Field(
         default=None,
@@ -106,6 +77,12 @@ class DataExtractionSettings(BaseSettings):
     azure_deployment: str | None = Field(
         default="gpt-4o-mini",
         description="Azure deployment name to use when azure_api_key is provided.",
+    )
+
+    # disk cache folder
+    base_disk_cache_dir: Path = Field(
+        default=(Path.home() / ".deet_cache"),
+        description="the base directory for disk-based caches.",
     )
 
 
