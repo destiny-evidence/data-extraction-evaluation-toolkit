@@ -1,11 +1,5 @@
 """Convert annotation CSV files to Pydantic models."""
 
-# - Esure there are no duplicate column names else Raise an error.
-# - Require for 2 columns = name and doc_id.
-# - infer datatypes based on sample of 100 csv lines? -- majority wins? --coarse others?
-# - how to handle NA, none, not reported etc?
-# - allow the option for users to provide types?
-
 import csv
 import json
 import random
@@ -49,7 +43,7 @@ class ProcessedAnnotationData(BaseModel):
 
 
 class Outfiles(StrEnum):
-    """Enum of all outfiles producable by this module. Extend as required."""
+    """Enum of all outfiles producible by this module. Extend as required."""
 
     ATTRIBUTES = auto()
     DOCUMENTS = auto()
@@ -61,11 +55,6 @@ class CovidenceAnnotationConverter:
     """
     A class to convert raw Covidence CSV annotations
     into structured Pydantic models.
-
-    This converter handles the complex hierarchical
-    structure of EPPI attributes by flattening
-    them while preserving parent-child relationships
-    through path information.
     """
 
     def __init__(
@@ -100,11 +89,11 @@ class CovidenceAnnotationConverter:
             Outfiles.ATTRIBUTES: attributes_filename,
             Outfiles.DOCUMENTS: documents_filename,
             Outfiles.ANNOTATED_DOCUMENTS: annotated_documents_filename,
-            # Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
+            Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
         }
 
     def find_duplicate_fieldnames(self, fieldnames: list) -> list:
-        """Return duplicate column names and their index."""
+        """Return duplicate field/column names and their index."""
         positions = defaultdict(list)
         for idx, name in enumerate(fieldnames):
             positions[name].append(idx)
@@ -265,7 +254,7 @@ class CovidenceAnnotationConverter:
                 except (TypeError, ValueError) as e:
                     msg = (
                         f"Type conversion failed for row {row_idx}, "
-                        "field '{label}': {e}"
+                        f"field '{label}': {e}"
                     )
                     raise ValueError(msg) from e
 
@@ -314,8 +303,8 @@ class CovidenceAnnotationConverter:
         }
 
         logger.info(
-            f"Processed {len(attributes)} attributes, {{len(documents)}} documents, "
-            " {len(annotated_documents)} annotated documents"
+            f"Processed {len(attributes)} attributes, {len(documents)} documents, "
+            f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedAnnotationData(
