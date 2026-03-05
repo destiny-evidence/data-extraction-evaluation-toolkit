@@ -476,9 +476,11 @@ def test_extract_from_documents(
     assert len(all_annotations) == 1
     assert mock_litellm_completion.call_count == 1
     saved = json.loads(output_file.read_text())
-    assert "_metadata" in saved
-    assert saved["_metadata"]["total_output_tokens"] == 42
-    assert saved["_metadata"]["per_document"] == {"doc.md": 42}
+    assert "results" in saved
+    assert "metadata" in saved
+    assert saved["results"]["doc.md"]  # annotations for doc.md
+    assert saved["metadata"]["total_output_tokens"] == 42
+    assert saved["metadata"]["per_document"] == {"doc.md": 42}
 
 
 def test_extract_from_documents_continues_on_error(

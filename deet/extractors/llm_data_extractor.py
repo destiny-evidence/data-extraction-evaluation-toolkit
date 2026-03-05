@@ -459,10 +459,10 @@ class LLMDataExtractor:
             if max_ctx is None:
                 pass  # No truncation when unset
             else:
-                total_tokens = litellm.token_counter(
-                    model=self.model,
-                    messages=messages,
+                messages_text = " ".join(
+                    str(m.get("content", "")) for m in messages
                 )
+                total_tokens = count_tokens(self.model, messages_text)
                 if total_tokens > max_ctx:
                     prompt_data = json.loads(prompt)
                     context = prompt_data.get("context", "")
@@ -505,10 +505,10 @@ class LLMDataExtractor:
         logger.debug(f" user message: {messages[1]['content'][:1000]}")
 
         try:
-            input_tokens = litellm.token_counter(
-                model=self.model,
-                messages=messages,
+            messages_text = " ".join(
+                str(m.get("content", "")) for m in messages
             )
+            input_tokens = count_tokens(self.model, messages_text)
             prompt_cost, _ = litellm.cost_per_token(
                 model=self.model,
                 prompt_tokens=input_tokens,
@@ -636,22 +636,26 @@ class LLMDataExtractor:
         """
         Save results to file.
 
+        Output uses nested structure: {results: {...}, metadata: {...}} to avoid
+        mixing document keys with metadata and prevent filename collisions.
+
         Args:
             results: Dictionary mapping file paths to lists of annotations.
             output_file: Path to save results.
             per_document_output_tokens: Optional mapping of document name to
-                output token count. When provided, adds _metadata to the output.
+                output token count. When provided, adds metadata to the output.
 
         """
-        results_json: dict[str, Any] = {
+        results_data: dict[str, list[dict[str, Any]]] = {
             file_path: [ann.model_dump() for ann in annotations]
             for file_path, annotations in results.items()
         }
+        output: dict[str, Any] = {"results": results_data}
         if per_document_output_tokens is not None:
             total_output_tokens = sum(per_document_output_tokens.values())
-            results_json["_metadata"] = {
+            output["metadata"] = {
                 "total_output_tokens": total_output_tokens,
                 "per_document": per_document_output_tokens,
             }
-        output_file.write_text(json.dumps(results_json, indent=2), encoding="utf-8")
+        output_file.write_text(json.dumps(output, indent=2), encoding="utf-8")
         logger.info(f"Results saved to: {output_file}")
