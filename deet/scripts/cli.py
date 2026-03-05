@@ -1,11 +1,11 @@
 """A CLI app to run DEET pipelines."""
 
 import csv
+import datetime
 from pathlib import Path
 
 import typer
 import yaml
-from uuid6 import uuid7
 
 from deet.data_models.base import Attribute, AttributeType
 from deet.data_models.documents import (
@@ -219,6 +219,7 @@ def extract_data(  # noqa: PLR0913
     csv_path: Path | None = None,
     linked_document_path: Path = Path("linked_documents"),
     out_dir: Path | None = None,
+    run_name: str = "",
 ) -> None:
     """
     Extract data from documents.
@@ -248,6 +249,8 @@ def extract_data(  # noqa: PLR0913
         out_dir (Path): A path to a directory where you want to store the
             results of this, and further instances of extract-data for this
             project. Defaults to the current directory.
+        run_name (Path): A name for the run (which will appended to a timestamp)
+            to help you identify this run later
 
     """
     if config_path.exists():
@@ -259,9 +262,12 @@ def extract_data(  # noqa: PLR0913
         )
         config = DataExtractionConfig()
 
-    pipeline_run_id = uuid7()
+    pipeline_run_id = (
+        datetime.datetime.now(tz=datetime.UTC).strftime("%Y/%m/%d, %H:%M:%S")
+        + f"_{run_name}"
+    )
     if out_dir is None:
-        out_dir = Path("pipeline_runs") / str(pipeline_run_id)
+        out_dir = Path("pipeline_runs") / pipeline_run_id
         out_dir.mkdir(parents=True)
     elif out_dir.exists():
         out_dir_exists = "out_dir already exists. Exiting, so as not to overwrite data"
