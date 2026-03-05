@@ -17,7 +17,6 @@ from deet.data_models.base import (
 from deet.data_models.documents import (
     ContextType,
     Document,
-    DocumentIDSource,
     GoldStandardAnnotatedDocument,
 )
 
@@ -683,12 +682,11 @@ def test_document_creation() -> None:
         context="This is test content",
         context_type=ContextType.FULL_DOCUMENT,
         document_id=1,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
-        filename="test.pdf",
+        original_doc_filepath=Path("test.pdf"),
     )
     assert doc.name == "Test Document"
     assert doc.document_id == 1
-    assert doc.filename == "test.pdf"
+    assert doc.original_doc_filepath == Path("test.pdf")
     assert doc.context == "This is test content"
 
 
@@ -702,7 +700,6 @@ def test_document_creation_with_list_context() -> None:
         context=context_str,
         context_type=ContextType.RAG_SNIPPETS,
         document_id=2,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
     )
     assert doc.context == context_str
 
@@ -788,7 +785,6 @@ def test_gold_standard_annotated_document_creation() -> None:
         context="Test content",
         context_type=ContextType.FULL_DOCUMENT,
         document_id=3,
-        document_id_source=DocumentIDSource.EPPI_ITEM_ID,
         annotations=[annotation],
     )
     assert doc.name == "Test Document 3"

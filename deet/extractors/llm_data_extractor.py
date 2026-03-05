@@ -459,9 +459,7 @@ class LLMDataExtractor:
             if max_ctx is None:
                 pass  # No truncation when unset
             else:
-                messages_text = " ".join(
-                    str(m.get("content", "")) for m in messages
-                )
+                messages_text = " ".join(str(m.get("content", "")) for m in messages)
                 total_tokens = count_tokens(self.model, messages_text)
                 if total_tokens > max_ctx:
                     prompt_data = json.loads(prompt)
@@ -505,9 +503,7 @@ class LLMDataExtractor:
         logger.debug(f" user message: {messages[1]['content'][:1000]}")
 
         try:
-            messages_text = " ".join(
-                str(m.get("content", "")) for m in messages
-            )
+            messages_text = " ".join(str(m.get("content", "")) for m in messages)
             input_tokens = count_tokens(self.model, messages_text)
             prompt_cost, _ = litellm.cost_per_token(
                 model=self.model,

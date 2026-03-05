@@ -67,12 +67,15 @@ def test_truncate_to_token_limit_over_limit():
     """Test truncate_to_token_limit truncates when over limit."""
     long_text = " ".join(["word"] * 50)
     truncated = "word word word word word"
-    with patch(
-        "deet.utils.tokenization.litellm.encode",
-        return_value=list(range(50)),
-    ), patch(
-        "deet.utils.tokenization.litellm.decode",
-        return_value=truncated,
+    with (
+        patch(
+            "deet.utils.tokenization.litellm.encode",
+            return_value=list(range(50)),
+        ),
+        patch(
+            "deet.utils.tokenization.litellm.decode",
+            return_value=truncated,
+        ),
     ):
         result = truncate_to_token_limit(long_text, "gpt-4o-mini", max_tokens=5)
     assert result == truncated
