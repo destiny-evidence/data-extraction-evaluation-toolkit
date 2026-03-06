@@ -424,13 +424,15 @@ class EppiAnnotationConverter(AnnotationConverter):
                     attributes_lookup,
                     attribute_id_to_label,
                 )
+            else:
+                annotations = []
 
-                annotated_doc = EppiGoldStandardAnnotatedDocument(
-                    document=doc, annotations=annotations
-                )
+            annotated_doc = EppiGoldStandardAnnotatedDocument(
+                document=doc, annotations=annotations
+            )
 
-                annotated_documents.append(annotated_doc)
-                all_annotations.extend(annotations)
+            annotated_documents.append(annotated_doc)
+            all_annotations.extend(annotations)
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
