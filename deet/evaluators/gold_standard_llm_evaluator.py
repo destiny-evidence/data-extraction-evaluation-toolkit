@@ -3,8 +3,10 @@ Generalisable evaluation module for comparing data extracted by LLMS with
 data extracted by hand.
 """
 
+import csv
 from collections.abc import Sequence
 from itertools import groupby
+from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
@@ -99,3 +101,47 @@ class GoldStandardLLMEvaluator:
             table.add_row(*row)
 
         console.print(table)
+
+    def write_metrics_to_csv(self, filepath: Path) -> None:
+        """Save metrics to csv."""
+        if filepath.suffix != ".csv":
+            bad_filetype = "file ending must be .csv"
+            raise ValueError(bad_filetype)
+        for metric in self.metrics:
+            metric.write_to_csv(filepath=filepath)
+
+    def export_llm_comparison(
+        self,
+        filepath: Path,
+    ) -> None:
+        """Export a csv with side-by-side comparisons of gs and LLM decisions."""
+        with filepath.open("w") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "document_id",
+                    "document_name",
+                    "attribute_id",
+                    "attribute_label",
+                    "human_extraction",
+                    "llm_extraction",
+                ],
+            )
+            writer.writeheader()
+            for doc in self.gold_standard_annotated_documents:
+                llm_annotation = self.llm_annotated_documents.get_by_id(
+                    doc.document.safe_identity.document_id
+                )
+                for attribute in self.attributes:
+                    writer.writerow(
+                        {
+                            "document_id": doc.document.safe_identity.document_id,
+                            "document_name": doc.document.name,
+                            "attribute_id": attribute.attribute_id,
+                            "attribute_label": attribute.attribute_label,
+                            "human_extraction": doc.get_attribute_value(attribute),
+                            "llm_extraction": llm_annotation.get_attribute_value(
+                                attribute
+                            ),
+                        }
+                    )

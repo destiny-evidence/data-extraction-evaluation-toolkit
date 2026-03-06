@@ -51,6 +51,8 @@ DEFAULT_PDF_PATH = Path("pdfs")
 DEFAULT_PROMPT_DEFINITION_PATH = Path("prompt_definitions.csv")
 
 DEFAULT_PIPELINE_OUT_DIR = Path("pipeline_runs/")
+DEFAULT_METRICS_CSV = Path("metrics.csv")
+DEFAULT_OUTPUT_COMPARISON_CSV = Path("goldstandard_llm_comparison.csv")
 
 
 @app.command()
@@ -241,15 +243,12 @@ def extract_data(  # noqa: PLR0913
         config = DataExtractionConfig()
 
     pipeline_run_id = (
-        datetime.datetime.now(tz=datetime.UTC).strftime("%Y/%m/%d, %H:%M:%S")
+        datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
         + f"_{run_name}"
     )
-    if out_dir is None:
-        out_dir = Path("pipeline_runs") / pipeline_run_id
-        out_dir.mkdir(parents=True)
-    elif out_dir.exists():
-        out_dir_exists = "out_dir already exists. Exiting, so as not to overwrite data"
-        raise typer.Abort(out_dir_exists)
+
+    pipeline_out_dir = out_dir / pipeline_run_id
+    pipeline_out_dir.mkdir(parents=True)
 
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
@@ -281,10 +280,10 @@ def extract_data(  # noqa: PLR0913
         attributes=processed_annotation_data.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
-        output_file=out_dir / "annotated_docs.json",
+        output_file=pipeline_out_dir / "annotated_docs.json",
     )
 
-    config_out = out_dir / "config.yaml"
+    config_out = pipeline_out_dir / "config.yaml"
     config_out.write_text(
         yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
     )
@@ -295,6 +294,8 @@ def extract_data(  # noqa: PLR0913
         attributes=processed_annotation_data.attributes,
     )
     evaluator.evaluate_llm_annotations()
+    evaluator.write_metrics_to_csv(pipeline_out_dir / DEFAULT_METRICS_CSV)
+    evaluator.export_llm_comparison(pipeline_out_dir / DEFAULT_OUTPUT_COMPARISON_CSV)
     evaluator.display_metrics()
 
 
