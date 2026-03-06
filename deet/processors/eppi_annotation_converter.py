@@ -425,9 +425,8 @@ class EppiAnnotationConverter(AnnotationConverter):
                     attribute_id_to_label,
                 )
 
-                # Use model_construct to bypass validation and preserve all fields
-                annotated_doc = EppiGoldStandardAnnotatedDocument.model_construct(
-                    **{**doc.__dict__, "annotations": annotations}
+                annotated_doc = EppiGoldStandardAnnotatedDocument(
+                    document=doc, annotations=annotations
                 )
 
                 annotated_documents.append(annotated_doc)
