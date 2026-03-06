@@ -2,21 +2,63 @@
 
 from __future__ import annotations
 
-# import csv
-# import datetime
 from pathlib import Path
+from typing import Annotated
 
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.processors.converter_register import SupportedImportFormat
 
-app = typer.Typer()
+APP_HELP = """
+CLI to extract data from documents with LLMs, and evaluate extraction by
+comparing to human-annotated data.
+
+Run `deet --install-completion` to enable your shell to autocomplete deet
+commands when your press the tab key.
+"""
+
+app = typer.Typer(help=APP_HELP)
+
+# Shared argument definitions and defaults
+DEFAULT_CONFIG_PATH = Path("default_extraction_config.yaml")
+
+GS_DATA_PATH = Annotated[
+    Path,
+    typer.Argument(..., help="Path to gold standard annotation file."),
+]
+
+DEFAULT_IMPORT_FORMAT = SupportedImportFormat.EPPI_JSON
+
+GS_DATA_FORMAT = Annotated[
+    SupportedImportFormat,
+    typer.Option(
+        help="Format of the input data (determines which converter to use)",
+    ),
+]
+
+DEFAULT_LINK_MAP = Path("link_map.csv")
+
+LINK_MAP_PATH = Annotated[
+    Path,
+    typer.Option(
+        help="Path to write the link map",
+    ),
+]
+
+DEFAULT_PDF_PATH = Path("pdfs")
+
+DEFAULT_PROMPT_DEFINITION_PATH = Path("prompt_definitions.csv")
+
+DEFAULT_PIPELINE_OUT_DIR = Path("pipeline_runs/")
 
 
 @app.command()
 def export_config_template(
-    output_path: Path = Path("default_extraction_config.yaml"),
+    output_path: Annotated[
+        Path,
+        typer.Option(help="The output path where your config file will be written"),
+    ] = DEFAULT_CONFIG_PATH,
 ) -> None:
     """Export the default DataExtractionConfig to a YAML file."""
     import yaml
@@ -32,23 +74,11 @@ def export_config_template(
 
 @app.command()
 def init_linkage_mapping_file(
-    gs_data_path: Path,
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
-    link_map_path: Path = Path("link_map.csv"),
+    gs_data_path: GS_DATA_PATH,
+    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
+    link_map_path: LINK_MAP_PATH = DEFAULT_LINK_MAP,
 ) -> None:
-    """
-    Create a mapping to link documents and their full texts.
-
-    Args:
-        gs_data_path (Path): A path to a file or directory containing gold
-            standard annotations.
-        gs_data_format (SupportedImportFormat): Format of the input data.
-            This determines which converter to use. Defaults to
-            SupportedImportFormat.EPPI_JSON.
-        link_map_path (Path): A path to write the link_map template to.
-            Defaults to link_map.csv in the current working directory.
-
-    """
+    """Create a mapping to link documents and their full texts."""
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
     processed_annotation_data.export_linkage_mapper_csv(link_map_path)
@@ -56,33 +86,31 @@ def init_linkage_mapping_file(
 
 @app.command()
 def link_documents_fulltexts(
-    gs_data_path: Path,
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
-    pdf_dir: Path = Path("pdfs"),
-    link_map_path: Path | None = None,
-    output_path: Path = Path("linked_documents"),
+    gs_data_path: GS_DATA_PATH,
+    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
+    pdf_dir: Annotated[
+        Path, typer.Option(help="Path to a directory containing pdfs.")
+    ] = DEFAULT_PDF_PATH,
+    link_map_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="A path to a link map (create this by running "
+            "`deet init-linkage-mapping-file`)"
+        ),
+    ] = None,
+    output_path: Annotated[
+        Path,
+        typer.Option(help="A path to a directory to write the linked documents to."),
+    ] = Path("linked_documents"),
 ) -> None:
     """
     Link documents to their fulltexts.
 
     This creates a document containing the parsed output of its corresponding
-        fulltext in the folder defined in `output_path`. Linking will be
-        attempted using a mapping file, if provided, then by matching the
-        filename with author and year, then by matching by document id. See
-        `deet.processors.linker` for more details.
-
-    Args:
-        gs_data_path (Path): A path to a file or directory containing gold
-            standard annotations.
-        gs_data_format (SupportedImportFormat): Format of the input data.
-            This determines which converter to use. Defaults to
-            SupportedImportFormat.EPPI_JSON.
-        pdf_dir (Path): A path to a directory containing pdfs. Defaults to
-            "pdfs", within the current directory.
-        link_map_path (Path): A path to a link map
-            (create this by running `deet init-linkage-mapping-file`).
-        output_path (Path): A path to a directory to write the linked documents
-            to. This defaults to `linked_documents`.
+    fulltext in the folder defined in `output_path`. Linking will be
+    attempted using a mapping file, if provided, then by matching the
+    filename with author and year, then by matching by document id. See
+    `deet.processors.linker` for more details.
 
     """
     from deet.processors.linker import DocumentReferenceLinker
@@ -103,26 +131,18 @@ def link_documents_fulltexts(
 
 @app.command()
 def init_prompt_csv(
-    gs_data_path: Path,
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
-    csv_path: Path = Path("prompt_definitions.csv"),
+    gs_data_path: GS_DATA_PATH,
+    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
+    csv_path: Annotated[
+        Path, typer.Option(help="A path to a file to write your prompt definitions to.")
+    ] = DEFAULT_PROMPT_DEFINITION_PATH,
 ) -> None:
     """
     Write a csv to define prompts for your dataset with.
 
     This writes a row for each attribute in your dataset. Edit the prompt
-        column to edit the prompt to be used for that attribute. Attributes
-        without values in the prompt column will not be extracted.
-
-    Args:
-        gs_data_path (Path): A path to a file or directory containing gold
-            standard annotations.
-        gs_data_format (SupportedImportFormat): Format of the input data.
-            This determines which converter to use. Defaults to
-            SupportedImportFormat.EPPI_JSON.
-        csv_path (Path): a path to a file to write your prompt definitions to.
-            Defaults to `prompt_defitions.csv` in the current working directory.
-
+    column to edit the prompt to be used for that attribute. Attributes
+    without values in the prompt column will not be extracted.
     """
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
@@ -142,46 +162,62 @@ def init_prompt_csv(
 
 @app.command()
 def extract_data(  # noqa: PLR0913
-    gs_data_path: Path,
-    config_path: Path = Path("default_extraction_config.yaml"),
-    gs_data_format: SupportedImportFormat = SupportedImportFormat.EPPI_JSON,
-    prompt_population: CustomPromptPopulationMethod | None = None,
-    csv_path: Path | None = None,
-    linked_document_path: Path = Path("linked_documents"),
-    out_dir: Path | None = None,
-    run_name: str = "",
+    gs_data_path: GS_DATA_PATH,
+    config_path: Annotated[
+        Path,
+        typer.Option(
+            help="A path to a config file containing options for data "
+            "extraction config. A template can be generated by running "
+            "`deet export-config-template."
+        ),
+    ] = DEFAULT_CONFIG_PATH,
+    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
+    prompt_population: Annotated[
+        CustomPromptPopulationMethod | None,
+        typer.Option(
+            help="A method to define custom prompts for your attributes to be "
+            "extracted. Leave blank to use the prompts in your gold standard "
+            "data. Set to `file` to provide a file of prompt definitions "
+            "(make sure this is supplied below). Set to `cli` to define prompts"
+            " interactively in the CLI."
+        ),
+    ] = None,
+    csv_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="A path to read custom prompt definitions from."
+            " This must be set if using prompt population from file."
+        ),
+    ] = None,
+    linked_document_path: Annotated[
+        Path,
+        typer.Option(
+            help="A path to a directory containing documents that have been "
+            "linked to their fulltexts. This directory can be populated by "
+            "running `deet link-documents-fulltexts`."
+        ),
+    ] = Path("linked_documents"),
+    out_dir: Annotated[
+        Path,
+        typer.Option(
+            help="A path to a directory where you want to store the results of"
+            " this, and further instances of extract-data for this project."
+        ),
+    ] = DEFAULT_PIPELINE_OUT_DIR,
+    run_name: Annotated[
+        str,
+        typer.Option(
+            help="A name for the run (which will appended to a timestamp) "
+            "to help you identify this run later"
+        ),
+    ] = "",
 ) -> None:
     """
-    Extract data from documents.
+    Extract data from documents and evaluate.
 
     Load gold standard annotation data, and use an LLM to extract data from the
-        documents in your dataset.
-
-    Args:
-        config_path (Path): A path to a config file containing options for
-            data extraction config. A template can be generated by running
-            `deet export-config-template`
-        gs_data_path (Path): A path to a file or directory containing gold
-            standard annotations.
-        gs_data_format (SupportedImportFormat): Format of the input data.
-            This determines which converter to use. Defaults to
-            SupportedImportFormat.EPPI_JSON.
-        prompt_population (CustomPromptPopulationMethod): A method to define
-            custom prompts for your attributes to be extracted. Leave blank
-            to use the prompts in your gold standard data. Set to `file` to
-            provide a file of prompt definitions (make sure this is supplied
-            below). Set to `cli` to define prompts interactively in the CLI.
-        csv_path (Path): A path to a file to write your prompt definitions to.
-            Defaults to `prompt_defitions.csv` in the current working directory.
-        linked_document_path (Path): A path to a directory containing
-            documents that have been linked to their fulltexts. This directory
-            can be populated by running `deet link-documents-fulltexts`
-        out_dir (Path): A path to a directory where you want to store the
-            results of this, and further instances of extract-data for this
-            project. Defaults to the current directory.
-        run_name (Path): A name for the run (which will appended to a timestamp)
-            to help you identify this run later
-
+    documents in your dataset. Evaluate by comparing the results to the gold
+    standard data.
     """
     import datetime
 
