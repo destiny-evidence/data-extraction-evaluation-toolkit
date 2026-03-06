@@ -103,49 +103,41 @@ To navigate to another directory use the `cd` command. `cd ..` will move up a le
 
 #### Importing and linking data
 
-The first step to using `deet` is importing data. Currently, EPPIJson is the only supported external data format.
+Most commands start by importing gold standard data, and require that you specify the location of a file that contains:
+
+- bibliographic records of documents,
+- the attributes that should be extracted from them, and
+- (optionally) the gold standard annotations of those documents made by humans
+
+DEET currently supports importing this data from an EPPIJson file.
+
+If you want to extract data from the full text of documents, you will need to link your documents to those full texts.
+
+Assuming you have an EPPIJson file called `references.json` in your current working directory, and a folder of PDFs for those documents in a directory called `pdfs`, you can link these together with
 
 ```bash
-deet import-gold-standard-data --help
+deet link-documents-fulltexts references.json
 ```
 
-shows the arguments you need to import data, along with their defaults. You will see that running this command defaults to import deet-structured data from the current directory.
+You can specify the pdf folder to look through (which does not have to be in your current directory) by setting the option --pdf-dir, but this defaults to `pdfs`.
 
-You could put the EPPIJson file you want to import inside your current directory. Assuming there is a file called `references.json` in your current directory, you could import it by running
-
-```bash
-deet import-gold-standard-data --gs-data-path references.json --gs-data-format eppi_json
-```
-
-This will read the EPPIJson data and write it into the current directory in deet format. Running `deet import-gold-standard-data` again will read this data back in.
-
-Once you have imported data, you may want to link the data contained in your EPPIJson to a set of pdfs.
-
-To do this, you can run
+Deet will try to link documents to pdfs using IDs, or a combination of author and year, but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet init-linkage-mapping-file` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
 
 ```bash
-deet link-documents-fulltexts
-```
-
-If you want to, you can enter the same arguments as you did to import-gold-standard-data to specify the same EPPIJson file, otherwise it will default to reading the deet-structured data written by importing.
-
-Deet will look for pdfs in the folder specified by --pdf-dir, this defaults to `pdfs`.
-
-Deet will try to link documents to pdfs using IDs, authoryear, ..., but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet init-linkage-mapping-file` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
-
-```bash
-deet link-documents-fulltexts --link-map-path link_map.csv
+deet link-documents-fulltexts --link-map-path link_map.csv references.json
 ```
 
 Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option `--output-path`. This defaults to `linked_documents`
 
 #### Extracting data from parsed/linked data
 
-Once you have imported data (and linked this data to pdfs if you are doing full text data extraction), you are ready to extract data from them.
+Once you have linked this data to pdfs if you are doing full text data extraction, you are ready to extract data from them.
 
 Use the command `deet extract-data` to extract data from imported documents.
 
-You can set `--gs-data-path` and `--gs-data-format` to specify the EPPIJson you want to import from, or leave these blank to load data from a previous import.
+Once again, you will need to specify an EPPIJson file you want to import from, e.g.
+
+`deet extract-data references.json`
 
 By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.
 
