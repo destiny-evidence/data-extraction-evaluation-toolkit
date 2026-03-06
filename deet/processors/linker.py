@@ -284,14 +284,25 @@ class DocumentReferenceLinker:
         self._references_by_id: dict[int, Document] = {
             doc.document_id: doc for doc in tmp_refs if doc.document_id is not None
         }
-        self._references_by_author_year_longest: dict[str, Document] = {
-            doc.author_year_from_document_identity(substring_strategy="longest"): doc
-            for doc in tmp_refs
-        }
-        self._references_by_author_year_last: dict[str, Document] = {
-            doc.author_year_from_document_identity(substring_strategy="last"): doc
-            for doc in tmp_refs
-        }
+        try:
+            self._references_by_author_year_longest: dict[str, Document] = {
+                doc.author_year_from_document_identity(
+                    substring_strategy="longest"
+                ): doc
+                for doc in tmp_refs
+            }
+        except ValueError:
+            logger.warning("author or year missing, returning empty dict.")
+            self._references_by_author_year_longest = {}
+
+        try:
+            self._references_by_author_year_last: dict[str, Document] = {
+                doc.author_year_from_document_identity(substring_strategy="last"): doc
+                for doc in tmp_refs
+            }
+        except ValueError:
+            logger.warning("author or year missing, returning empty dict.")
+            self._references_by_author_year_last = {}
 
         self.document_base_dir = document_base_dir
         if isinstance(document_reference_mapping, Path):
@@ -633,7 +644,7 @@ class DocumentReferenceLinker:
 
                     logger.info(
                         f"successfully linked document {interim_payload.document_id} "
-                        f"with file {interim_payload.file_path}"
+                        f"with file {interim_payload.file_path} "
                         f"using {strategy}"
                     )
 
