@@ -11,6 +11,7 @@ import typer
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
+from deet.utils.cli_utils import fail_with_message
 
 APP_HELP = (
     "deet (data extraction evaluation toolkit) 🚤\n\n"
@@ -209,6 +210,13 @@ def extract_data(  # noqa: PLR0913
             "running `deet link-documents-fulltexts`."
         ),
     ] = Path("linked_documents"),
+    pdf_dir: Annotated[
+        Path,
+        typer.Option(
+            help="Path to a directory containing pdfs. We will attempt to link"
+            " these by document ID."
+        ),
+    ] = DEFAULT_PDF_PATH,
     out_dir: Annotated[
         Path,
         typer.Option(
@@ -241,43 +249,28 @@ def extract_data(  # noqa: PLR0913
     documents in your dataset. Evaluate by comparing the results to the gold
     standard data.
     """
-    import datetime
-
     import yaml
 
-    from deet.data_models.documents import Document
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+    from deet.extractors.cli_helpers import (
+        init_extraction_run,
+        load_or_init_config,
+        prepare_documents,
+    )
     from deet.extractors.llm_data_extractor import (
-        ContextType,
-        DataExtractionConfig,
         LLMDataExtractor,
     )
 
-    if config_path.exists():
-        config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
-    else:
-        typer.echo(
-            f"Config file: {config_path} does not exist."
-            " Initialising config with default settings."
-        )
-        config = DataExtractionConfig()
+    config = load_or_init_config(config_path=config_path)
 
-    extraction_run_id = (
-        datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
-        + f"_{run_name}"
-    )
-
-    experiment_out_dir = out_dir / extraction_run_id
-    experiment_out_dir.mkdir(parents=True)
-
-    logger.add(experiment_out_dir / "deet.log", level="DEBUG")
+    extraction_run_id, experiment_out_dir = init_extraction_run(out_dir, run_name)
 
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
 
     if prompt_population == CustomPromptPopulationMethod.FILE and not csv_path:
         message = "CSV prompt popluation selected without specifying csv_path"
-        raise ValueError(message)
+        fail_with_message(message)
     if prompt_population is not None:
         processed_annotation_data.populate_custom_prompts(
             method=prompt_population, filepath=csv_path
@@ -285,18 +278,12 @@ def extract_data(  # noqa: PLR0913
 
     data_extractor = LLMDataExtractor(config=config)
 
-    if config.default_context_type == ContextType.ABSTRACT_ONLY:
-        documents = processed_annotation_data.documents
-    elif config.default_context_type == ContextType.FULL_DOCUMENT:
-        if linked_document_path.exists():
-            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
-        else:
-            message = f"context type {config.default_context_type} selected"
-            " but no linked_document_path supplied"
-            raise typer.Abort(message)
-    else:
-        message = f"context type {config.default_context_type} not supported"
-        raise typer.Abort(message)
+    documents = prepare_documents(
+        processed_annotation_data.documents,
+        config,
+        linked_document_path=linked_document_path,
+        pdf_dir=pdf_dir,
+    )
 
     llm_annotated_documents = data_extractor.extract_from_documents(
         attributes=processed_annotation_data.attributes,
@@ -354,7 +341,9 @@ def test_llm_config() -> None:
 
 
 @app.callback()
-def global_options(*, verbose: bool = typer.Option(default=False)) -> None:
+def global_options(
+    *, verbose: bool = typer.Option(default=False, help="Display verbose logs.")
+) -> None:
     """Set global options for all deet commands."""
     logger.remove()
 

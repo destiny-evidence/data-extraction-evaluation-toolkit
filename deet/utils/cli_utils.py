@@ -2,6 +2,7 @@
 
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
+from typing import NoReturn
 
 import typer
 
@@ -20,3 +21,9 @@ def optional_progress(
             yield progress
     else:
         yield iterable
+
+
+def fail_with_message(message: str) -> NoReturn:
+    """Print message and exit CLI."""
+    typer.secho(message, fg=typer.colors.RED, err=True)
+    raise typer.Exit(code=1)
