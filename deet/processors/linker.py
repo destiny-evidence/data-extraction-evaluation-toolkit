@@ -282,8 +282,11 @@ class DocumentReferenceLinker:
 
         # lookup dics for O(1) id & author_year based lookup
         self._references_by_id: dict[int, Document] = {
-            doc.document_id: doc for doc in tmp_refs if doc.document_id is not None
+            doc.document_identity.document_id: doc  # type:ignore[union-attr]
+            for doc in tmp_refs
+            if doc.document_identity.document_id is not None  # type:ignore[union-attr]
         }
+        logger.debug(self._references_by_id.keys())
         try:
             self._references_by_author_year_longest: dict[str, Document] = {
                 doc.author_year_from_document_identity(
@@ -306,6 +309,9 @@ class DocumentReferenceLinker:
 
         self.document_base_dir = document_base_dir
         if isinstance(document_reference_mapping, Path):
+            logger.debug(
+                f"document_reference_mapping type: {type(document_reference_mapping)}"
+            )
             document_reference_mapping = MappingImporter(
                 mapping_file_path=document_reference_mapping,
                 document_base_dir=document_base_dir,
