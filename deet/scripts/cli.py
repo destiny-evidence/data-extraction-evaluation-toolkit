@@ -54,6 +54,14 @@ LINK_MAP_PATH = Annotated[
     ),
 ]
 
+LINK_MAP_PATH_READ = Annotated[
+    Path | None,
+    typer.Option(
+        help="A path to an optional link map (create this by running "
+        "`deet init-linkage-mapping-file`)"
+    ),
+]
+
 DEFAULT_PDF_PATH = Path("pdfs")
 
 DEFAULT_PROMPT_DEFINITION_PATH = Path("prompt_definitions.csv")
@@ -104,13 +112,7 @@ def link_documents_fulltexts(
     pdf_dir: Annotated[
         Path, typer.Option(help="Path to a directory containing pdfs.")
     ] = DEFAULT_PDF_PATH,
-    link_map_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to an optional link map (create this by running "
-            "`deet init-linkage-mapping-file`)"
-        ),
-    ] = None,
+    link_map_path: LINK_MAP_PATH_READ = None,
     output_path: Annotated[
         Path,
         typer.Option(help="A path to a directory to write the linked documents to."),
@@ -210,6 +212,13 @@ def extract_data(  # noqa: PLR0913
             "running `deet link-documents-fulltexts`."
         ),
     ] = Path("linked_documents"),
+    link_map_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="A path to an optional link map (create this by running "
+            "`deet init-linkage-mapping-file`)"
+        ),
+    ] = None,
     pdf_dir: Annotated[
         Path,
         typer.Option(
@@ -283,6 +292,7 @@ def extract_data(  # noqa: PLR0913
         config,
         linked_document_path=linked_document_path,
         pdf_dir=pdf_dir,
+        link_map_path=link_map_path,
     )
 
     llm_annotated_documents = data_extractor.extract_from_documents(

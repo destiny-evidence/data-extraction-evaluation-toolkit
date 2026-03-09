@@ -10,7 +10,7 @@ from loguru import logger
 
 from deet.data_models.documents import ContextType, Document
 from deet.extractors.llm_data_extractor import DataExtractionConfig
-from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
+from deet.processors.linker import DocumentReferenceLinker
 from deet.utils.cli_utils import fail_with_message
 
 
@@ -50,6 +50,7 @@ def prepare_documents(
     config: DataExtractionConfig,
     linked_document_path: Path,
     pdf_dir: Path,
+    link_map_path: Path | None,
 ) -> Sequence[Document]:
     """
     Load documents depending on the context type we want.
@@ -68,7 +69,7 @@ def prepare_documents(
         linker = DocumentReferenceLinker(
             references=documents,
             document_base_dir=pdf_dir,
-            linking_strategies=[LinkingStrategy.FILENAME_ID],
+            document_reference_mapping=link_map_path,
         )
         documents = linker.link_many_references_parsed_documents()
         for linked_document in documents:
