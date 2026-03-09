@@ -1,3 +1,4 @@
+# ruff: noqa: PLC0415
 """A CLI app to run DEET pipelines."""
 
 from __future__ import annotations
@@ -8,17 +9,23 @@ from typing import Annotated
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
 
-APP_HELP = """
-CLI to extract data from documents with LLMs, and evaluate extraction by
-comparing to human-annotated data.
+APP_HELP = (
+    "deet (data extraction evaluation toolkit) 🚤\n\n"
+    "Use the deet CLI to extract data from documents with LLMs, and evaluate "
+    "extraction by comparing to human-annotated data. To run any of the list "
+    "of commands below, type `deet *command*`, and type `deet *command* --help` "
+    "to see more information about the command. For example, `deet extract-data "
+    "--help` \n"
+    "Prefix any command with --verbose to see complete log output."
+    "will give you more information about how to use the extract-data command.\n\n"
+    "Run `deet --install-completion` to enable your shell to autocomplete deet "
+    "commands."
+)
 
-Run `deet --install-completion` to enable your shell to autocomplete deet
-commands when your press the tab key.
-"""
-
-app = typer.Typer(help=APP_HELP)
+app = typer.Typer(help=APP_HELP, add_completion=True)
 
 # Shared argument definitions and defaults
 DEFAULT_CONFIG_PATH = Path("default_extraction_config.yaml")
@@ -50,7 +57,7 @@ DEFAULT_PDF_PATH = Path("pdfs")
 
 DEFAULT_PROMPT_DEFINITION_PATH = Path("prompt_definitions.csv")
 
-DEFAULT_PIPELINE_OUT_DIR = Path("pipeline_runs/")
+DEFAULT_EXPERIMENT_OUT_DIR = Path("data-extraction-experiments/")
 DEFAULT_METRICS_CSV = Path("metrics.csv")
 DEFAULT_OUTPUT_COMPARISON_CSV = Path("goldstandard_llm_comparison.csv")
 
@@ -71,7 +78,10 @@ def export_config_template(
     output_path.write_text(
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False)
     )
-    typer.echo(f"Default config exported to {output_path}")
+    typer.secho(f"✅ Default config exported to {output_path}", fg=typer.colors.GREEN)
+    typer.secho(
+        "✏️  Edit this file to adjust options for data extraction.", fg=typer.colors.BLUE
+    )
 
 
 @app.command()
@@ -96,7 +106,7 @@ def link_documents_fulltexts(
     link_map_path: Annotated[
         Path | None,
         typer.Option(
-            help="A path to a link map (create this by running "
+            help="A path to an optional link map (create this by running "
             "`deet init-linkage-mapping-file`)"
         ),
     ] = None,
@@ -205,7 +215,7 @@ def extract_data(  # noqa: PLR0913
             help="A path to a directory where you want to store the results of"
             " this, and further instances of extract-data for this project."
         ),
-    ] = DEFAULT_PIPELINE_OUT_DIR,
+    ] = DEFAULT_EXPERIMENT_OUT_DIR,
     run_name: Annotated[
         str,
         typer.Option(
@@ -257,8 +267,10 @@ def extract_data(  # noqa: PLR0913
         + f"_{run_name}"
     )
 
-    pipeline_out_dir = out_dir / extraction_run_id
-    pipeline_out_dir.mkdir(parents=True)
+    experiment_out_dir = out_dir / extraction_run_id
+    experiment_out_dir.mkdir(parents=True)
+
+    logger.add(experiment_out_dir / "deet.log", level="DEBUG")
 
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
@@ -290,10 +302,11 @@ def extract_data(  # noqa: PLR0913
         attributes=processed_annotation_data.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
-        output_file=pipeline_out_dir / "annotated_docs.json",
+        output_file=experiment_out_dir / "annotated_docs.json",
+        show_progress=True,
     )
 
-    config_out = pipeline_out_dir / "config.yaml"
+    config_out = experiment_out_dir / "config.yaml"
     config_out.write_text(
         yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
     )
@@ -306,8 +319,8 @@ def extract_data(  # noqa: PLR0913
         extraction_run_id=extraction_run_id,
     )
     evaluator.evaluate_llm_annotations()
-    evaluator.write_metrics_to_csv(pipeline_out_dir / DEFAULT_METRICS_CSV)
-    evaluator.export_llm_comparison(pipeline_out_dir / DEFAULT_OUTPUT_COMPARISON_CSV)
+    evaluator.write_metrics_to_csv(experiment_out_dir / DEFAULT_METRICS_CSV)
+    evaluator.export_llm_comparison(experiment_out_dir / DEFAULT_OUTPUT_COMPARISON_CSV)
     evaluator.display_metrics()
 
 
@@ -338,6 +351,19 @@ def test_llm_config() -> None:
         context_type=None,
     )
     typer.echo(response)
+
+
+@app.callback()
+def global_options(*, verbose: bool = typer.Option(default=False)) -> None:
+    """Set global options for all deet commands."""
+    logger.remove()
+
+    level = "DEBUG" if verbose else "INFO"
+    logger.add(
+        lambda m: typer.echo(m, err=True),
+        level=level,
+        format="<level>{message}</level>" if verbose else "{message}",
+    )
 
 
 def main() -> None:

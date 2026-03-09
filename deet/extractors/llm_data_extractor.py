@@ -29,6 +29,7 @@ from deet.data_models.documents import (
 )
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
+from deet.utils.cli_utils import optional_progress
 
 settings = get_settings()
 
@@ -227,6 +228,8 @@ class LLMDataExtractor:
         output_file: Path | None = None,
         context_type: ContextType | None = None,
         prompt_outfile: Path | None = None,
+        *,
+        show_progress: bool = False,
     ) -> list[GoldStandardAnnotatedDocument]:
         """
         Extract data from all documents.
@@ -252,30 +255,35 @@ class LLMDataExtractor:
 
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
 
-        for document in documents:
-            logger.info(f"Processing document: {document.name}")
+        with optional_progress(
+            documents, show_progress=show_progress
+        ) as iterable_documents:
+            for document in iterable_documents:
+                logger.info(f"Processing document: {document.name}")
 
-            if context_type == ContextType.ABSTRACT_ONLY:
-                document.set_abstract_context()
-            elif context_type == ContextType.FULL_DOCUMENT:
-                document.context = document.safe_parsed_document.text
+                if context_type == ContextType.ABSTRACT_ONLY:
+                    document.set_abstract_context()
+                elif context_type == ContextType.FULL_DOCUMENT:
+                    document.context = document.safe_parsed_document.text
 
-            try:
-                result, messages = self.extract_from_document(
-                    attributes=attributes,
-                    filter_attribute_ids=filter_attribute_ids,
-                    payload=document.context,
-                    context_type=context_type,
-                )
+                try:
+                    result, messages = self.extract_from_document(
+                        attributes=attributes,
+                        filter_attribute_ids=filter_attribute_ids,
+                        payload=document.context,
+                        context_type=context_type,
+                    )
 
-                llm_annotated_docs.append(
-                    GoldStandardAnnotatedDocument(document=document, annotations=result)
-                )
-                prompt_payloads[str(document.safe_identity.document_id)] = messages
+                    llm_annotated_docs.append(
+                        GoldStandardAnnotatedDocument(
+                            document=document, annotations=result
+                        )
+                    )
+                    prompt_payloads[str(document.safe_identity.document_id)] = messages
 
-            except Exception as e:  # noqa: BLE001
-                logger.error(f"Failed to process {document.name}: {e}")
-                logger.debug("Error details", exc_info=True)
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"Failed to process {document.name}: {e}")
+                    logger.debug("Error details", exc_info=True)
 
         if output_file is not None:
             self._save_results(llm_annotated_docs, output_file)
