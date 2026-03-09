@@ -15,6 +15,8 @@ from deet.scripts.cli import (
 
 runner = CliRunner()
 
+pytest_plugins = ["tests.unit.test_eppi"]
+
 
 def test_cli_help() -> None:
     """Make sure cli is callable."""

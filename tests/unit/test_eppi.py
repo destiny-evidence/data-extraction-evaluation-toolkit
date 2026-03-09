@@ -14,6 +14,7 @@ from deet.data_models.eppi import (
     EppiAttribute,
     EppiAttributeSelectionType,
     EppiDocument,
+    EppiGoldStandardAnnotatedDocument,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
@@ -47,11 +48,24 @@ def processed_data():
         output_data_type=AttributeType.BOOL,
         attribute_type=EppiAttributeSelectionType.INTERVENTION,
     )
+    doc1 = EppiDocument(
+        name="Doc 1", citation=ReferenceFileInput(), document_id=12345678
+    )
+    doc2 = EppiDocument(
+        name="Doc 2", citation=ReferenceFileInput(), document_id=87654321
+    )
+    annotated_doc_1 = EppiGoldStandardAnnotatedDocument(document=doc1, annotations=[])
+    annotation_1 = EppiGoldStandardAnnotation(
+        attribute=attr1, output_data=True, annotation_type=AnnotationType.HUMAN
+    )
+    annotated_doc_2 = EppiGoldStandardAnnotatedDocument(
+        document=doc2, annotations=[annotation_1]
+    )
     return ProcessedEppiAnnotationData(
         attributes=[attr1, attr2, attr3],
-        documents=[],
-        annotations=[],
-        annotated_documents=[],
+        documents=[doc1, doc2],
+        annotations=[annotation_1],
+        annotated_documents=[annotated_doc_1, annotated_doc_2],
         attribute_id_to_label={1: "Attribute 1", 2: "Attribute 2", 3: "Attribute 3"},
         raw_data=EppiRawData(),
     )
