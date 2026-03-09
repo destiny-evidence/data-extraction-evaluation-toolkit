@@ -18,7 +18,12 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocumentList,
     GoldStandardAnnotatedDocumentTypeVar,
 )
-from deet.data_models.evaluation import METRICS, AttributeMetric, MetricFn
+from deet.data_models.evaluation import (
+    METRICS,
+    AttributeMetric,
+    MetricFunction,
+    check_metric_returns_float,
+)
 
 
 class GoldStandardLLMEvaluator:
@@ -34,7 +39,7 @@ class GoldStandardLLMEvaluator:
         ],
         llm_annotated_documents: Sequence[GoldStandardAnnotatedDocumentTypeVar],
         attributes: Sequence[AttributeTypeVar],
-        metrics: dict[str, MetricFn] = METRICS,
+        metrics: dict[str, MetricFunction] = METRICS,
         custom_metrics: list[str] | None = None,
     ) -> None:
         """
@@ -47,7 +52,7 @@ class GoldStandardLLMEvaluator:
             gold_standard_annotations=llm_annotated_documents
         )
         self.attributes = attributes
-        self.metrics_config: dict[str, MetricFn] = metrics
+        self.metrics_config: dict[str, MetricFunction] = metrics
         self.calculated_metrics: list[AttributeMetric] = []
         if custom_metrics is not None:
             self.add_custom_metrics(custom_metrics)
@@ -57,7 +62,13 @@ class GoldStandardLLMEvaluator:
         for custom_metric_name in custom_metrics:
             custom_metric = getattr(sklearn.metrics, custom_metric_name, None)
             if custom_metric is not None:
-                self.metrics_config[custom_metric_name] = custom_metric
+                if check_metric_returns_float(custom_metric):
+                    self.metrics_config[custom_metric_name] = custom_metric
+                else:
+                    logger.warning(
+                        f"Tried to add {custom_metric_name} to"
+                        " evaluation metrics, but it does not return a float."
+                    )
             else:
                 logger.warning(
                     f"Tried to add {custom_metric_name} to"
@@ -88,7 +99,7 @@ class GoldStandardLLMEvaluator:
             self.calculated_metrics.extend(
                 AttributeMetric(
                     attribute=attribute,
-                    metric=metric_name,
+                    metric_name=metric_name,
                     value=float(metric_fn(y_true, y_pred)),
                 )
                 for metric_name, metric_fn in self.metrics_config.items()
@@ -100,7 +111,7 @@ class GoldStandardLLMEvaluator:
 
         table = Table(title="Evaluation Results")
 
-        metric_names = sorted({str(m.metric) for m in self.calculated_metrics})
+        metric_names = sorted({str(m.metric_name) for m in self.calculated_metrics})
 
         # Create table with metrics as columns
         table = Table(title="Evaluation Metrics")
@@ -116,7 +127,7 @@ class GoldStandardLLMEvaluator:
             metrics_sorted, key=lambda m: m.attribute.attribute_label
         ):
             row = [attribute]
-            group_metrics = {str(m.metric): m.value for m in group}
+            group_metrics = {str(m.metric_name): m.value for m in group}
             # fill cells in order of metric_names
             row += [f"{group_metrics.get(name, 0.0):.4f}" for name in metric_names]
             table.add_row(*row)

@@ -17,7 +17,15 @@ from sklearn.metrics import (
 
 from deet.data_models.base import Attribute
 
-MetricFn = Callable[[list, list], float | np.floating | np.ndarray]
+MetricFunction = Callable[[list, list], float | np.floating | np.ndarray]
+
+
+def check_metric_returns_float(metric: MetricFunction) -> bool:
+    """Check whether a metric returns a scalar."""
+    y_true = [1, 0, 0, 1]
+    y_pred = [1, 0, 0, 0]
+    result = metric(y_true, y_pred)
+    return isinstance(result, float)
 
 
 def n_labels(y_true: list[int], y_pred: list[int]) -> float:  # noqa: ARG001
@@ -25,7 +33,7 @@ def n_labels(y_true: list[int], y_pred: list[int]) -> float:  # noqa: ARG001
     return sum(y_true)
 
 
-METRICS: dict[str, MetricFn] = {
+METRICS: dict[str, MetricFunction] = {
     "accuracy": accuracy_score,
     "recall": recall_score,
     "precision": precision_score,
@@ -35,10 +43,10 @@ METRICS: dict[str, MetricFn] = {
 
 
 class AttributeMetric(BaseModel):
-    """Data structure storing a metric for an attribute for a pipeline run."""
+    """Data structure storing a metric for an attribute for a data extraction run."""
 
     attribute: Attribute
-    metric: str
+    metric_name: str
     value: float | None
 
     def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
