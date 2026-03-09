@@ -6,6 +6,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Generic
 
+from loguru import logger
 from pydantic import TypeAdapter
 
 from deet.data_models.base import AttributeType, AttributeTypeVar
@@ -15,7 +16,6 @@ from deet.data_models.documents import (
     GoldStandardAnnotationTypeVar,
 )
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
-from deet.logger import logger
 
 DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_eppi")
 DEFAULT_ATTRIBUTES_FILENAME = "attributes.json"

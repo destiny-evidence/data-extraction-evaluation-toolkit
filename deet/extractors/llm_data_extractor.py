@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import litellm
+from loguru import logger
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -27,7 +28,6 @@ from deet.data_models.documents import (
     Document,
     GoldStandardAnnotatedDocument,
 )
-from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
 from deet.utils.cli_utils import optional_progress
 

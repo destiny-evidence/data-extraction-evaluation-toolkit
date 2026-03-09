@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Annotated
 
 import typer
+from sklearn.exceptions import UndefinedMetricWarning
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.logger import logger
@@ -355,14 +357,10 @@ def global_options(
     *, verbose: bool = typer.Option(default=False, help="Display verbose logs.")
 ) -> None:
     """Set global options for all deet commands."""
-    logger.remove()
-
     level = "DEBUG" if verbose else "INFO"
-    logger.add(
-        lambda m: typer.echo(m, err=True),
-        level=level,
-        format="<level>{message}</level>" if verbose else "{message}",
-    )
+    logger.add(typer.echo, colorize=True, level=level)
+    if not verbose:
+        warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 
 def main() -> None:
