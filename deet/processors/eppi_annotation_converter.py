@@ -231,16 +231,19 @@ class EppiAnnotationConverter(AnnotationConverter):
             text_details
         )
 
-        output_data: str | bool = " | ".join(extracted_texts) if extracted_texts else ""
+        output_data: str | bool | int | float | list | dict = (
+            " | ".join(extracted_texts) if extracted_texts else ""
+        )
 
-        # Coerce empty string to False for BOOL attributes (backward compatibility
-        # when ItemAttributeFullTextDetails is absent)
-        # NOTE @sagaruprety this (modified to coerce all bools to bool) is OK
-        # for eppi as we're only expecting bool/str, but we need to implement
-        # elsewhere a functionality that auto-maps output_data to the correct data type.
+        # Coerce output_data to match attribute's output_data_type. Required because
+        # EppiGoldStandardAnnotation validates type. When ItemAttributeFullTextDetails
+        # is absent, use type-appropriate defaults. For BOOL with text, use truthiness.
         attr = attributes_lookup.get(annotation.get("AttributeId", 0))
-        if attr is not None and attr.output_data_type == AttributeType.BOOL:
-            output_data = bool(output_data)
+        if attr is not None:
+            if not extracted_texts:
+                output_data = attr.output_data_type.to_python_type()()
+            elif attr.output_data_type == AttributeType.BOOL:
+                output_data = bool(output_data)
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -300,53 +303,10 @@ class EppiAnnotationConverter(AnnotationConverter):
             for annotation in annotations_data
         ]
 
-    def _create_pdf_to_title_mapping(
-        self, references: list[dict[str, Any]]
-    ) -> dict[str, str]:
-        """Create mapping from PDF filenames to document titles."""
-        pdf_to_title_mapping = {}
-        for ref in references:
-            title = ref.get("Title", "")
-            pdf_filename = title.replace(" ", "_") + ".pdf"
-            pdf_to_title_mapping[pdf_filename] = title
-
-            year = ref.get("Year", "")
-            if year:
-                authors = (
-                    ref.get("Authors", "").split(";")[0].strip()
-                    if ref.get("Authors")
-                    else ""
-                )
-                if authors:
-                    author_year_pdf = f"{authors.split()[0]} {year}.pdf"
-                    pdf_to_title_mapping[author_year_pdf] = title
-
-        return pdf_to_title_mapping
-
-    def _find_document_annotations(
-        self,
-        all_annotations_raw: list[dict[str, Any]],
-        doc_title: str,
-        pdf_to_title_mapping: dict[str, str],
-    ) -> list[dict[str, Any]]:
-        """Find annotations for a specific document."""
-        doc_annotations = []
-        for ann in all_annotations_raw:
-            for text_detail in ann.get("ItemAttributeFullTextDetails", []):
-                doc_title_from_ann = text_detail.get("DocTitle", "")
-                if doc_title_from_ann == doc_title or (
-                    doc_title_from_ann in pdf_to_title_mapping
-                    and pdf_to_title_mapping[doc_title_from_ann] == doc_title
-                ):
-                    doc_annotations.append(ann)
-                    break
-
-        return doc_annotations
-
     def process_annotation_file(
         self,
         file_path: str | Path,
-        set_attribute_type: str | AttributeType | None = None,
+        set_attribute_type: AttributeType | str | None = None,
     ) -> ProcessedEppiAnnotationData:
         """
         Process a complete annotation file and return structured data.
@@ -383,44 +343,29 @@ class EppiAnnotationConverter(AnnotationConverter):
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
-        all_annotations_raw = []
-        documents_by_title: dict[str, EppiDocument] = {}
-
-        for reference in data.get("References", []):
-            reference_codes = reference.get("Codes", [])
-            all_annotations_raw.extend(reference_codes)
-
-            doc_title = reference.get("Title", "")
-            # NL: really, the existing_ids thing is quite redundant here,
-            # as we assume we're getting our eppi item ids as document_ids.
-            # however, a) it demonstrates the desired functionality of
-            # checking against a set of already populated ids, and
-            # b) there is a world where eppi.jsons contain invalid item ids.
-            existing_ids: set[int] = set()
-            if doc_title and doc_title not in documents_by_title:
-                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
-                document = EppiDocument(**reference)
-                # init doc id
-                new_id = document.init_document_identity(existing_ids=existing_ids)
-                if new_id:
-                    existing_ids.add(new_id)
-                documents_by_title[doc_title] = document
-
-        pdf_to_title_mapping = self._create_pdf_to_title_mapping(
-            data.get("References", [])
-        )
-
         annotated_documents = []
         all_annotations = []
+        documents_by_item_id: dict[int, EppiDocument] = {}
 
-        for doc_title, doc in documents_by_title.items():
-            doc_annotations = self._find_document_annotations(
-                all_annotations_raw, doc_title, pdf_to_title_mapping
-            )
+        # Process each reference with its annotations directly
+        # Annotations are already nested within their parent reference
+        for reference in data.get("References", []):
+            item_id = reference.get("ItemId")
+            if item_id is None:
+                continue
 
-            if doc_annotations:
+            # Create or retrieve document using ItemId as unique identifier
+            if item_id not in documents_by_item_id:
+                document = EppiDocument.model_validate(reference)
+                documents_by_item_id[item_id] = document
+            else:
+                document = documents_by_item_id[item_id]
+
+            # Get annotations directly from this reference's Codes array
+            reference_codes = reference.get("Codes", [])
+            if reference_codes:
                 annotations = self.convert_to_eppi_annotations(
-                    doc_annotations,
+                    reference_codes,
                     attributes_lookup,
                     attribute_id_to_label,
                 )
@@ -428,7 +373,7 @@ class EppiAnnotationConverter(AnnotationConverter):
                 annotations = []
 
             annotated_doc = EppiGoldStandardAnnotatedDocument(
-                document=doc, annotations=annotations
+                document=document, annotations=annotations
             )
 
             annotated_documents.append(annotated_doc)
@@ -436,14 +381,14 @@ class EppiAnnotationConverter(AnnotationConverter):
 
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            f" {len(documents_by_title)} documents, "
+            f" {len(documents_by_item_id)} documents, "
             f"{len(all_annotations)} annotations,"
             f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedEppiAnnotationData(
             attributes=attributes,
-            documents=list(documents_by_title.values()),
+            documents=list(documents_by_item_id.values()),
             annotations=all_annotations,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,
