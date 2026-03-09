@@ -48,8 +48,21 @@ class AttributeMetric(BaseModel):
     attribute: Attribute
     metric_name: str
     value: float | None
+    extraction_run_id: str
 
-    def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
+    def dictify(self) -> dict:
+        """
+        Return a dictionary representation, unpacking the attribute into ID
+            and label.
+        """
+        return {
+            "attribute_id": self.attribute.attribute_id,
+            "attribute_label": self.attribute.attribute_label,
+            "value": self.value,
+            "extraction_run_id": self.extraction_run_id,
+        }
+
+    def save_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
         """
         Write an evaluation metric for an attribute as a line to a csv file.
 
@@ -59,7 +72,7 @@ class AttributeMetric(BaseModel):
             Defaults to "a" (append).
 
         """
-        dictified = self.model_dump()
+        dictified = self.dictify()
 
         filepath.parent.mkdir(parents=True, exist_ok=True)
         file_exists = filepath.exists() and filepath.stat().st_size > 0

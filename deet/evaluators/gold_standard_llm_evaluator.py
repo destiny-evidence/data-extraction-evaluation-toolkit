@@ -39,7 +39,7 @@ class GoldStandardLLMEvaluator:
         ],
         llm_annotated_documents: Sequence[GoldStandardAnnotatedDocumentTypeVar],
         attributes: Sequence[AttributeTypeVar],
-        metrics: dict[str, MetricFunction] = METRICS,
+        extraction_run_id: str,
         custom_metrics: list[str] | None = None,
     ) -> None:
         """
@@ -52,7 +52,8 @@ class GoldStandardLLMEvaluator:
             gold_standard_annotations=llm_annotated_documents
         )
         self.attributes = attributes
-        self.metrics_config: dict[str, MetricFunction] = metrics
+        self.extraction_run_id = extraction_run_id
+        self.metrics_config: dict[str, MetricFunction] = METRICS
         self.calculated_metrics: list[AttributeMetric] = []
         if custom_metrics is not None:
             self.add_custom_metrics(custom_metrics)
@@ -86,21 +87,29 @@ class GoldStandardLLMEvaluator:
             logger.warning("Already calculated metrics, deleting and overwriting.")
             self.calculated_metrics = []
         for attribute in self.attributes:
+            logger.debug(
+                f"Calculating metric for attribute: {attribute.attribute_label}"
+            )
             y_true = []
             y_pred = []
             for document in self.gold_standard_annotated_documents:
-                y_true.append(document.get_attribute_value(attribute))
+                logger.debug(
+                    f"Extracting gold standard and LLM prediction for"
+                    f" doc {document.document.safe_identity.document_id}"
+                )
+                y_true.append(document.get_attribute_annotation(attribute).output_data)
 
                 llm_doc = self.llm_annotated_documents.get_by_id(
                     document.document.safe_identity.document_id
                 )
-                y_pred.append(llm_doc.get_attribute_value(attribute))
+                y_pred.append(llm_doc.get_attribute_annotation(attribute).output_data)
 
             self.calculated_metrics.extend(
                 AttributeMetric(
                     attribute=attribute,
                     metric_name=metric_name,
                     value=float(metric_fn(y_true, y_pred)),
+                    extraction_run_id=self.extraction_run_id,
                 )
                 for metric_name, metric_fn in self.metrics_config.items()
             )
@@ -140,7 +149,7 @@ class GoldStandardLLMEvaluator:
             bad_filetype = "file ending must be .csv"
             raise ValueError(bad_filetype)
         for metric in self.calculated_metrics:
-            metric.write_to_csv(filepath=filepath)
+            metric.save_to_csv(filepath=filepath)
 
     def export_llm_comparison(
         self,
@@ -157,6 +166,8 @@ class GoldStandardLLMEvaluator:
                     "attribute_label",
                     "human_extraction",
                     "llm_extraction",
+                    "llm_reasoning",
+                    "extraction_run_id",
                 ],
             )
             writer.writeheader()
@@ -171,9 +182,15 @@ class GoldStandardLLMEvaluator:
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
-                            "human_extraction": doc.get_attribute_value(attribute),
-                            "llm_extraction": llm_annotation.get_attribute_value(
+                            "human_extraction": doc.get_attribute_annotation(
                                 attribute
-                            ),
+                            ).output_data,
+                            "llm_extraction": llm_annotation.get_attribute_annotation(
+                                attribute
+                            ).output_data,
+                            "llm_reasoning": llm_annotation.get_attribute_annotation(
+                                attribute
+                            ).reasoning,
+                            "extraction_run_id": self.extraction_run_id,
                         }
                     )

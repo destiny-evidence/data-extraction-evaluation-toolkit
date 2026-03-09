@@ -17,8 +17,10 @@ from PIL import Image
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from deet.data_models.base import (
+    AnnotationType,
     Attribute,
     AttributeType,
+    GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
 )
 from deet.exceptions import (
@@ -511,11 +513,10 @@ class GoldStandardAnnotatedDocument(
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
 
-    def get_attribute_value(
-        self, attribute: Attribute
-    ) -> str | int | float | bool | list | dict:
+    def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
+        output_data: bool | list
         for annotation in self.annotations:
             if annotation.attribute.attribute_id == attribute.attribute_id:
                 if result is not None:
@@ -523,17 +524,23 @@ class GoldStandardAnnotatedDocument(
                     f"attribute: {attribute.attribute_label}. We don't know how to"
                     "interpret which is the canonical version."
                     raise ValueError(multiple_matches)
-                result = annotation.output_data
+                result = annotation
 
         if result is None:
             if attribute.output_data_type == AttributeType.BOOL:
-                return False
-            if attribute.output_data_type == AttributeType.LIST:
-                return []
-            not_found = "Attribute not found in annotations."
-            " Don't know how to interpret this when attribute is of type "
-            f"{attribute.output_data_type}"
-            raise ValueError(not_found)
+                output_data = False
+            elif attribute.output_data_type == AttributeType.LIST:
+                output_data = []
+            else:
+                not_found = "Attribute not found in annotations."
+                " Don't know how to interpret this when attribute is of type "
+                f"{attribute.output_data_type}"
+                raise ValueError(not_found)
+            return GoldStandardAnnotation(
+                attribute=attribute,
+                output_data=output_data,
+                annotation_type=AnnotationType.HUMAN,
+            )
 
         return result
 

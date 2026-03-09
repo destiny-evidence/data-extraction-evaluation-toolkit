@@ -213,6 +213,16 @@ def extract_data(  # noqa: PLR0913
             "to help you identify this run later"
         ),
     ] = "",
+    custom_evaluation_metrics: Annotated[
+        list[str] | None,
+        typer.Option(
+            help="A list of additional sklearn metrics that you wish to "
+            " calculate. Use this option for each additional metric you "
+            " would like to add, e.g. `deet extract-data "
+            "--custom-evaluation-metrics brier_score_loss "
+            "--custom-evaluation-metrics cohen_kappa_score`"
+        ),
+    ] = None,
 ) -> None:
     """
     Extract data from documents and evaluate.
@@ -242,12 +252,12 @@ def extract_data(  # noqa: PLR0913
         )
         config = DataExtractionConfig()
 
-    pipeline_run_id = (
+    extraction_run_id = (
         datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
         + f"_{run_name}"
     )
 
-    pipeline_out_dir = out_dir / pipeline_run_id
+    pipeline_out_dir = out_dir / extraction_run_id
     pipeline_out_dir.mkdir(parents=True)
 
     converter = gs_data_format.get_annotation_converter()
@@ -292,6 +302,8 @@ def extract_data(  # noqa: PLR0913
         gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
         llm_annotated_documents=llm_annotated_documents,
         attributes=processed_annotation_data.attributes,
+        custom_metrics=custom_evaluation_metrics,
+        extraction_run_id=extraction_run_id,
     )
     evaluator.evaluate_llm_annotations()
     evaluator.write_metrics_to_csv(pipeline_out_dir / DEFAULT_METRICS_CSV)

@@ -223,7 +223,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         Populate custom prompts.
 
         Args:
-            method (PromptPopulationMethod)
+            method (CustomPromptPopulationMethod)
             filepath (Path | None): infile path.
 
         Raises:
@@ -322,7 +322,7 @@ class ProcessedAnnotationData(
                 d.init_document_identity()
                 if d.document_identity is None:
                     message = f"document_identity was not set for document {d}"
-                    raise RuntimeError(message)
+                    raise ValueError(message)
                 writer.writerow(
                     {
                         "document_id": d.document_identity.document_id,
