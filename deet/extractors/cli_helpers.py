@@ -4,14 +4,13 @@ import datetime
 from collections.abc import Sequence
 from pathlib import Path
 
-import typer
 import yaml  # type:ignore[import-untyped]
 from loguru import logger
 
 from deet.data_models.documents import ContextType, Document
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.linker import DocumentReferenceLinker
-from deet.utils.cli_utils import fail_with_message
+from deet.utils.cli_utils import echo_and_log, fail_with_message
 
 
 def load_or_init_config(config_path: Path) -> DataExtractionConfig:
@@ -19,7 +18,7 @@ def load_or_init_config(config_path: Path) -> DataExtractionConfig:
     if config_path.exists():
         config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
     else:
-        typer.echo(
+        echo_and_log(
             f"Config file: {config_path} does not exist."
             " Initialising config with default settings."
         )
@@ -55,6 +54,10 @@ def prepare_documents(
     """
     Load documents depending on the context type we want.
 
+    NOTE: while there are no arg-defaults defined here,
+    when used in cli.py, we populate defaults via
+    typer arg defaults.
+
     If fulltext, try to load linked documents, or create them if not.
     """
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
@@ -63,7 +66,9 @@ def prepare_documents(
         documents = []
         if linked_document_path.exists():
             return [Document.load(f) for f in linked_document_path.glob("*.json")]
-        typer.echo("Linked document path does not exist. Attempting to linkdocs by ID.")
+        echo_and_log(
+            "Linked document path does not exist. Attempting to linkdocs by ID."
+        )
         linker = DocumentReferenceLinker(
             references=documents,
             document_base_dir=pdf_dir,

@@ -2,9 +2,10 @@
 
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
-from typing import NoReturn
+from typing import Any, NoReturn
 
 import typer
+from loguru import logger
 
 
 @contextmanager
@@ -23,7 +24,17 @@ def optional_progress(
         yield iterable
 
 
+def echo_and_log(message: Any, **kwargs) -> None:  # noqa: ANN401
+    """
+    Echo (in typer) and log (via logger) a message simultaenously.
+
+    NOTE: pass typer-style stuff via kwargs.
+    """
+    typer.secho(message, **kwargs)
+    logger.info(f"typer .secho: {message}")
+
+
 def fail_with_message(message: str) -> NoReturn:
     """Print message and exit CLI."""
-    typer.secho(message, fg=typer.colors.RED, err=True)
+    echo_and_log(message, fg=typer.colors.RED, err=True)
     raise typer.Exit(code=1)

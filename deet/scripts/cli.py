@@ -13,7 +13,7 @@ from sklearn.exceptions import UndefinedMetricWarning  # type:ignore[import-unty
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
-from deet.utils.cli_utils import fail_with_message
+from deet.utils.cli_utils import echo_and_log, fail_with_message
 
 APP_HELP = (
     "deet (data extraction evaluation toolkit) 🚤\n\n"
@@ -89,8 +89,8 @@ def export_config_template(
     output_path.write_text(
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False)
     )
-    typer.secho(f"✅ Default config exported to {output_path}", fg=typer.colors.GREEN)
-    typer.secho(
+    echo_and_log(f"✅ Default config exported to {output_path}", fg=typer.colors.GREEN)
+    echo_and_log(
         "✏️  Edit this file to adjust options for data extraction.", fg=typer.colors.BLUE
     )
 
@@ -170,7 +170,7 @@ def init_prompt_csv(
         )
         proceed = typer.confirm(message)
         if proceed:
-            typer.echo("Proceeding to overwrite prompt definition csv")
+            echo_and_log("Proceeding to overwrite prompt definition csv")
             csv_path.unlink()
         else:
             raise typer.Abort()  # noqa: RSE102
@@ -346,7 +346,7 @@ def test_llm_config() -> None:
         payload=context,
         context_type=None,
     )
-    typer.echo(response)
+    echo_and_log(response)
 
 
 @app.callback()
