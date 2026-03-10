@@ -110,7 +110,7 @@ class AnnotationConverter(
         outfiles_to_write: list[Outfiles] | None = None,
     ) -> dict[str, str]:
         """
-        Save processed data to structured files using Pydantic model serialization.
+        Save processed data to structured files using Pydantic model serialisation.
 
         Args:
             processed_data: The processed data from process_annotation_file

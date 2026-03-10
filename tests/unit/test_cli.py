@@ -46,9 +46,6 @@ def test_init_linkage_mapping_file(tmp_path: Path, processed_data):
     gs_data_path = tmp_path / "dummy.json"
     link_map_path = tmp_path / "link_map.csv"
 
-    # Patch the converter to return our processed_data
-    from unittest.mock import patch
-
     with patch(
         "deet.processors.converter_register.SupportedImportFormat.get_annotation_converter"
     ) as mock_get_converter:

@@ -1,5 +1,5 @@
 # ruff: noqa: PLC0415
-"""A CLI app to run DEET pipelines."""
+"""A CLI app to run deet pipelines."""
 
 from __future__ import annotations
 
