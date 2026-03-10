@@ -942,12 +942,12 @@ def test_gold_standard_annotated_document_multiple_annotations():
         ),
     ]
 
-    doc = GoldStandardAnnotatedDocument(
-        name="Test Document",
-        citation=citation,
-        context="Test content",
+    document = Document(name="Test Document", citation=citation, context="Test content")
+
+    gold_standard_doc = GoldStandardAnnotatedDocument(
+        document=document,
         annotations=annotations,
     )
-    assert len(doc.annotations) == 2
-    assert doc.annotations[0].output_data is True
-    assert doc.annotations[1].output_data == "Test string value"
+    assert len(gold_standard_doc.annotations) == 2
+    assert gold_standard_doc.annotations[0].output_data is True
+    assert gold_standard_doc.annotations[1].output_data == "Test string value"

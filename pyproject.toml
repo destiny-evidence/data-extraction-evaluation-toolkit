@@ -34,8 +34,10 @@ dependencies = [
     "pydantic>=2.11.7",
     "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
+    "scikit-learn>=1.7.1",
     "tabulate>=0.9.0",
-    "types-pyyaml>=6.0.12.20250915",
+    "typer>=0.21.2",
+    "uuid6>=2025.0.1",
 ]
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
@@ -44,6 +46,7 @@ requires-python = ">=3.12.11"
 version = "0.2.0"
 
 [project.scripts]
+deet = "deet.scripts.cli:main"
 
 [tool.coverage.report]
 # This section is optional but good practice
@@ -51,9 +54,6 @@ fail_under = 80
 show_missing = true
 
 [tool.coverage.run]
-omit = [
-    "deet/scripts/*",
-]
 source = ["deet"]
 
 [[tool.mypy.overrides]]

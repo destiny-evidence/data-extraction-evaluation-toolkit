@@ -3,7 +3,7 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -45,6 +45,9 @@ class AttributeType(StrEnum):
             AttributeType.DICT: dict,
         }
         return mapping[self]
+
+
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 class Attribute(BaseModel):
@@ -185,6 +188,9 @@ class Attribute(BaseModel):
                 continue
 
 
+AttributeTypeVar = TypeVar("AttributeTypeVar", bound=Attribute)
+
+
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
 
@@ -220,6 +226,11 @@ class GoldStandardAnnotation(BaseModel):
             )
             raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
         return data
+
+
+GoldStandardAnnotationTypeVar = TypeVar(
+    "GoldStandardAnnotationTypeVar", bound=GoldStandardAnnotation
+)
 
 
 # models specifically for interfacing with the LLM below

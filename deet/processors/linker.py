@@ -2,7 +2,7 @@
 
 import csv
 import json
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Sequence
 from enum import StrEnum, auto
 from functools import partial
 from pathlib import Path
@@ -307,7 +307,7 @@ class DocumentReferenceLinker:
 
     def __init__(
         self,
-        references: list[Document],
+        references: Sequence[Document],
         document_reference_mapping: list[DocumentReferenceMapping] | Path | None = None,
         document_base_dir: Path | None = None,
         parser: DocumentParser = parser,
