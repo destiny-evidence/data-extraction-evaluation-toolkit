@@ -1,5 +1,5 @@
 """
-Generalisable evaluation module for comparing data extracted by LLMS with
+Generalisable evaluation module for comparing data extracted by LLMs with
 data extracted by hand.
 """
 
@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
 
-import sklearn.metrics
+import sklearn.metrics  # type:ignore[import-untyped]
 from loguru import logger
 from rich.console import Console
 from rich.table import Table

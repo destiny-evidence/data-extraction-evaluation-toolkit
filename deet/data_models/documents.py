@@ -276,7 +276,7 @@ class Document(BaseModel):
         if self.document_identity is None:
             self.init_document_identity()
         if self.document_identity is None:
-            no_id = "Failed to initialize document identity"
+            no_id = "Failed to initialise document identity"
             raise RuntimeError(no_id)
         return self.document_identity
 

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from sklearn.exceptions import UndefinedMetricWarning
+from sklearn.exceptions import UndefinedMetricWarning  # type:ignore[import-untyped]
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.logger import logger
@@ -81,7 +81,7 @@ def export_config_template(
     ] = DEFAULT_CONFIG_PATH,
 ) -> None:
     """Export the default DataExtractionConfig to a YAML file."""
-    import yaml
+    import yaml  # type:ignore[import-untyped]
 
     from deet.extractors.llm_data_extractor import DataExtractionConfig
 
@@ -268,9 +268,7 @@ def extract_data(  # noqa: PLR0913
         load_or_init_config,
         prepare_documents,
     )
-    from deet.extractors.llm_data_extractor import (
-        LLMDataExtractor,
-    )
+    from deet.extractors.llm_data_extractor import LLMDataExtractor
 
     config = load_or_init_config(config_path=config_path)
 
@@ -341,8 +339,7 @@ def test_llm_config() -> None:
         prompt="Is the document about climate and health? Return a BOOL",
     )
     context = (
-        "This is document, extract data from me please. "
-        "I am about climate and health"
+        "This is document, extract data from me please. I am about climate and health"
     )
     response = data_extractor.extract_from_document(
         attributes=[attr],

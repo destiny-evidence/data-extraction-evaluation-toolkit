@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import typer
-import yaml
+import yaml  # type:ignore[import-untyped]
 from loguru import logger
 
 from deet.data_models.documents import ContextType, Document
@@ -63,9 +63,7 @@ def prepare_documents(
         documents = []
         if linked_document_path.exists():
             return [Document.load(f) for f in linked_document_path.glob("*.json")]
-        typer.echo(
-            "Linked document path does not exist. Attempting to link" "docs by ID."
-        )
+        typer.echo("Linked document path does not exist. Attempting to linkdocs by ID.")
         linker = DocumentReferenceLinker(
             references=documents,
             document_base_dir=pdf_dir,

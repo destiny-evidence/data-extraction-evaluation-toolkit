@@ -8,7 +8,7 @@ from typing import Literal
 import numpy as np
 from loguru import logger
 from pydantic import BaseModel
-from sklearn.metrics import (
+from sklearn.metrics import (  # type:ignore[import-untyped]
     accuracy_score,
     f1_score,
     precision_score,
