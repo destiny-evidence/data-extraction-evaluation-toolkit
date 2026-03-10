@@ -1,3 +1,6 @@
+import csv
+
+import pytest
 from loguru import logger
 
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
@@ -66,3 +69,24 @@ def test_evaluator_evaluates_with_nonfloat_metric(processed_data):
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
         assert metric.value == 1
+
+
+@pytest.fixture
+def evaluator_evaluated(processed_data):
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_data.annotated_documents,
+        llm_annotated_documents=processed_data.annotated_documents,
+        attributes=[processed_data.attributes[0]],
+        extraction_run_id="",
+    )
+    evaluator.evaluate_llm_annotations()
+    return evaluator
+
+
+def test_evaluator_writes_metrics(evaluator_evaluated, tmp_path):
+    metric_csv_path = tmp_path / "metrics.csv"
+    evaluator_evaluated.write_metrics_to_csv(metric_csv_path)
+    reader = csv.DictReader(metric_csv_path.open())
+    rows = list(reader)
+    for r in rows:
+        assert float(r["value"]) == 1.0
