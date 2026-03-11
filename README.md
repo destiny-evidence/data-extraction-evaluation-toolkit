@@ -91,10 +91,10 @@ To test this run
 deet --help
 ```
 
-You should see a list of commands. To get more information on any of these (for example import-gold-standard-data), run
+You should see a list of commands. To get more information on any of these (for example extract-data), run
 
 ```bash
-deet import-gold-standard-data --help
+deet extract-data --help
 ```
 
 You can call these commands from anywhere where your virtual environment with deet installed is activated. It's a good idea to navigate into a new directory for each data extraction project, where you can store the outputs of running deet for your project.
@@ -141,12 +141,12 @@ Once again, you will need to specify an EPPIJson file you want to import from, e
 
 By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.
 
-If you want to edit the prompts used for data extraction, you can do this by setting the `--prompt-population` option to `cli`, to fill in prompts in the command line, or by setting `--prompt-population` to `file`, and pointing to a csv detailing a prompt for each attribute with `--csv-path`. To create a template for this csv, run `deet write-prompt-csv`.
+If you want to edit the prompts used for data extraction, you can do this by setting the `--prompt-population` option to `cli`, to fill in prompts in the command line, or by setting `--prompt-population` to `file`, and pointing to a csv detailing a prompt for each attribute with `--csv-path`. To create a template for this csv, run `deet init-prompt-csv`.
 
 To set further configuration options, you can supply a path to a configuration file with the option `--config-path`. To create a template for this file detailing configurable options, run
 
 ```bash
-deet export-default-config
+deet export-config-template
 ```
 
 You can edit this file to change the configuration options for your extract-data pipeline.

@@ -63,7 +63,6 @@ def prepare_documents(
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
         return documents
     if config.default_context_type == ContextType.FULL_DOCUMENT:
-        documents = []
         if linked_document_path.exists():
             return [Document.load(f) for f in linked_document_path.glob("*.json")]
         echo_and_log(

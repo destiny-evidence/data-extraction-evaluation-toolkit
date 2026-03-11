@@ -520,9 +520,11 @@ class GoldStandardAnnotatedDocument(
         for annotation in self.annotations:
             if annotation.attribute.attribute_id == attribute.attribute_id:
                 if result is not None:
-                    multiple_matches = "More than one annotation found for "
-                    f"attribute: {attribute.attribute_label}. We don't know how to"
-                    "interpret which is the canonical version."
+                    multiple_matches = (
+                        "More than one annotation found for "
+                        f"attribute: {attribute.attribute_label}. We don't know how to"
+                        "interpret which is the canonical version."
+                    )
                     raise ValueError(multiple_matches)
                 result = annotation
 
@@ -532,8 +534,10 @@ class GoldStandardAnnotatedDocument(
             elif attribute.output_data_type == AttributeType.LIST:
                 output_data = []
             else:
-                not_found = "Attribute not found in annotations."
-                " Don't know how to interpret this when attribute is of type "
+                not_found = (
+                    "Attribute not found in annotations."
+                    " Don't know how to interpret this when attribute is of type "
+                )
                 f"{attribute.output_data_type}"
                 raise ValueError(not_found)
             return GoldStandardAnnotation(

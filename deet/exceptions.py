@@ -13,7 +13,7 @@ class InvalidInputFileTypeError(Exception):
 
 class InvalidOutputFileTypeError(Exception):
     """
-    Riase when user supplies a not permitted output file.
+    Raise when user supplies a not permitted output file.
 
     Args:
         Exception (_type_):
@@ -23,7 +23,7 @@ class InvalidOutputFileTypeError(Exception):
 
 class InvalidFileTypeError(Exception):
     """
-    Riase when user supplies a not permitted file.
+    Raise when user supplies a not permitted file.
 
     Args:
         Exception (_type_):

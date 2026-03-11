@@ -276,7 +276,7 @@ def extract_data(  # noqa: PLR0913
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
 
     if prompt_population == CustomPromptPopulationMethod.FILE and not csv_path:
-        message = "CSV prompt popluation selected without specifying csv_path"
+        message = "CSV prompt population selected without specifying csv_path"
         fail_with_message(message)
     if prompt_population is not None:
         processed_annotation_data.populate_custom_prompts(

@@ -137,7 +137,8 @@ class AnnotationConverter(
         file_mappings = {
             k: v for k, v in file_mappings.items() if k in outfiles_to_write
         }
-        logger.info(f"writing {",".join(k.value for k in file_mappings)} out...")
+        files_to_write_message = {",".join(k.value for k in file_mappings)}
+        logger.info(f"writing {files_to_write_message} out...")
 
         user_dir = Path(output_dir)
         target_dir = user_dir / self.base_output_dir
@@ -162,7 +163,7 @@ class AnnotationConverter(
 
         return saved_files
 
-    def reload_output(self, file_path: str | Path) -> ProcessedAnnotationData:
+    def reload_output(self, file_path: Path) -> ProcessedAnnotationData:
         """
         Read data back in, using OUTFILE_LOADERS and the
         subclass's processed_data_type.
