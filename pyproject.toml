@@ -1,3 +1,7 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
+
 [dependency-groups]
 dev = [
     "mypy>=1.17.1",
@@ -11,34 +15,99 @@ dev = [
 
 [project]
 authors = [
-    "Nik Loynes <n.loynes@ucl.ac.uk>",
+    {email = "h.moss@ucl.ac.uk", name = "Harry Moss"},
+    {email = "n.loynes@ucl.ac.uk", name = "Nik Loynes"},
+    {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
 dependencies = [
-    "destiny-sdk>=0.3.0",
+    "destiny-sdk[labs]>=0.9.1",
+    "litellm>=1.77.4",
+    "loguru>=0.7.3",
+    "marker-pdf>=1.9.1",
+    "nltk>=3.9.1",
+    "openai>=1.0.0",
+    "pdfminer.six>=20221105",
+    "pillow>=10.4.0",
+    "pydantic-extra-types>=2.10.5",
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
+    "pypandoc>=1.15",
+    "python-dotenv>=1.1.1",
+    "tabulate>=0.9.0",
+    "types-pyyaml>=6.0.12.20250915",
 ]
-description = " A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
+description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11"
-version = "0.1.0"
+version = "0.2.0"
 
-[tool.mypy]
-explicit_package_bases = true
-plugins = ["pydantic.mypy"]
+[project.scripts]
+DEET-eppi-convert = "deet.scripts.eppi_annotation_converter_cli:main"
+DEET-pipeline-csv-stage-1 = "deet.scripts.pipeline_prompt_csv_01:main"
+DEET-pipeline-csv-stage-2 = "deet.scripts.pipeline_prompt_csv_02:main"
+DEET-pipeline-eppi = "deet.scripts.pipeline_prompts_from_eppi_json:main"
+DEET-pipeline-interactive = "deet.scripts.pipeline_interactive_prompt_population:main"
+
+[tool.coverage.report]
+# This section is optional but good practice
+fail_under = 80
+show_missing = true
+
+[tool.coverage.run]
+omit = [
+    "deet/scripts/*",
+]
+source = ["deet"]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "pypandoc.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "marker.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "nltk.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "pdfminer.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "loguru.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "tabulate.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
+filterwarnings = [
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+]
 pythonpath = "."
 testpaths = ["tests"]
 
 [tool.ruff]
-extend-exclude = ["app/migrations/versions/*.py", "docs/*.py"]
+extend-exclude = ["deet/migrations/versions/*.py", "docs/*.py"]
 fix = true
 force-exclude = true
+line-length = 88
 target-version = "py312"
-lint.ignore = [
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+indent-style = "space"
+line-ending = "auto"
+quote-style = "double"
+
+[tool.ruff.lint]
+ignore = [
     "ANN003", # kwargs type annotation required
     "ARG002", # kwargs unused
     "COM812", # trailing commas (ruff-format recommended)
@@ -49,13 +118,14 @@ lint.ignore = [
     "D403", # forcing upper-case
     "D407", # removed dashes lines under sections
     "D417", # argument description in docstring (unreliable)
-    "E501", # let's keep this for now (long lines)
+    "ERA001", # allow commented code -- FOR NOW!
     "FIX002", # implicit trust that TODOs are not trivial, or else they would be fixed
     "ISC001", # simplify implicit str concatenation (ruff-format recommended)
+    "RUF012", # where ruff wants type annotations using ClassVar for subclasses - mypy doesnt care, so why would we?
     "TD002", # name for TO DO
     "TD003", # pedantic issue number requester in to dos
 ]
-lint.per-file-ignores = {"tests*" = [
+per-file-ignores = {"tests*" = [
     "ANN001", # No return type annotation
     "ANN201", # No return type annotation
     "ARG001", # Unused function argument
@@ -65,10 +135,15 @@ lint.per-file-ignores = {"tests*" = [
     "PLR0913", # Too many arguments in function definition
     "PLR2004", # Magic value used in comparison
     "S101", # Use of `assert` detected,
+    "SLF001", # directly calling private class members.
 ]}
-lint.select = ["ALL"]
-lint.mccabe.max-complexity = 18
-lint.pep8-naming.classmethod-decorators = ["classmethod"]
+select = ["ALL"]
+mccabe.max-complexity = 18
+pep8-naming.classmethod-decorators = ["classmethod"]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = {find = {exclude = ["test_env*", "tests*"]}}
 
 [tool.tomlsort]
 all = true
