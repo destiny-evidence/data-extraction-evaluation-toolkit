@@ -2,39 +2,34 @@
 
 import csv
 import json
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
+from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.base import AnnotationType, AttributeType
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiAttributeSelectionType,
+    EppiDocument,
+    EppiGoldStandardAnnotatedDocument,
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
     EppiRawData,
-    ProcessedAnnotationData,
+    parse_citation_to_destiny,
+)
+from deet.data_models.processed_gold_standard_annotations import (
+    CustomPromptPopulationMethod,
+    ProcessedEppiAnnotationData,
 )
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
 @pytest.fixture
-def test_csv_file(tmp_path):
-    """Create a test CSV file with 3 attributes."""
-    csv_file = tmp_path / "prompts.csv"
-    with csv_file.open(mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
-        writer.writeheader()
-        writer.writerow({"attribute_id": "1", "prompt": "Test prompt 1"})
-        writer.writerow({"attribute_id": "2", "prompt": "Test prompt 2"})
-        writer.writerow({"attribute_id": "3", "prompt": "Test prompt 3"})
-    return csv_file
-
-
-@pytest.fixture
 def processed_data():
-    """Create ProcessedAnnotationData with test attributes."""
+    """Create ProcessedEppiAnnotationData with test attributes."""
     attr1 = EppiAttribute(  # type: ignore[call-arg]
         attribute_id=1,
         attribute_label="Attribute 1",
@@ -53,14 +48,56 @@ def processed_data():
         output_data_type=AttributeType.BOOL,
         attribute_type=EppiAttributeSelectionType.INTERVENTION,
     )
-    return ProcessedAnnotationData(
+    doc1 = EppiDocument(
+        name="Doc 1", citation=ReferenceFileInput(), document_id=12345678
+    )
+    doc2 = EppiDocument(
+        name="Doc 2", citation=ReferenceFileInput(), document_id=87654321
+    )
+    annotated_doc_1 = EppiGoldStandardAnnotatedDocument(document=doc1, annotations=[])
+    annotation_1 = EppiGoldStandardAnnotation(
+        attribute=attr1, output_data=True, annotation_type=AnnotationType.HUMAN
+    )
+    annotated_doc_2 = EppiGoldStandardAnnotatedDocument(
+        document=doc2, annotations=[annotation_1]
+    )
+    return ProcessedEppiAnnotationData(
         attributes=[attr1, attr2, attr3],
-        documents=[],
-        annotations=[],
-        annotated_documents=[],
+        documents=[doc1, doc2],
+        annotations=[annotation_1],
+        annotated_documents=[annotated_doc_1, annotated_doc_2],
         attribute_id_to_label={1: "Attribute 1", 2: "Attribute 2", 3: "Attribute 3"},
         raw_data=EppiRawData(),
     )
+
+
+@pytest.fixture
+def test_csv_file(tmp_path, processed_data):
+    """Create a test CSV file with from processed_data."""
+    csv_file = tmp_path / "prompts.csv"
+    processed_data.export_attributes_csv_file(csv_file)
+    return csv_file
+
+
+@pytest.fixture
+def amended_csv_file(test_csv_file: Path) -> Path:
+    """Modify the CSV produced by test_csv_file by adding a prompt for each row."""
+    rows = []
+
+    with test_csv_file.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = list(reader.fieldnames or [])
+        rows = list(reader)
+
+    for i, row in enumerate(rows):
+        row["prompt"] = f"Test prompt {i+1}"
+
+    with test_csv_file.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return test_csv_file
 
 
 def test_eppi_attribute_creation_from_json_data() -> None:
@@ -80,7 +117,6 @@ def test_eppi_attribute_creation_from_json_data() -> None:
         "ExtURL": "",
         "ExtType": "",
         # These fields are added by the annotation converter
-        "question_target": "",  # Always empty for EPPI
         "output_data_type": AttributeType.BOOL.value,  # Always boolean for EPPI
         "attribute_id": "5730447",  # Converted to string
         "attribute_label": "Test EPPI Attribute",
@@ -92,7 +128,6 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     attr = EppiAttribute.model_validate(attr_data)
     assert attr.attribute_id == 5730447
     assert attr.attribute_label == "Test EPPI Attribute"
-    assert attr.question_target == ""  # Default empty for EPPI
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
     # Test the EPPI-specific fields are properly populated
     assert attr.attribute_set_description == "Test set description"
@@ -235,7 +270,6 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
         "AttributeId": 5730447,
         "AttributeName": "Test EPPI Attribute",
         "AttributeType": "Selectable (show checkbox)",
-        "question_target": "",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "5730447",
         "attribute_label": "Test EPPI Attribute",
@@ -361,48 +395,33 @@ def test_import_prompts_csv_updates_output_data_type(
         encoding="utf-8",
     )
 
-    result.populate_custom_prompts(method="file", filepath=csv_path)
+    result.populate_custom_prompts(
+        method=CustomPromptPopulationMethod.FILE, filepath=csv_path
+    )
 
     assert first_attr.output_data_type == AttributeType.STRING
+    assert result.raw_data is not None
     assert len(result.raw_data.code_sets[0].attributes["AttributesList"]) == 1  # type:ignore[index]
 
 
 # minimal tests for csv import
-def test_import_prompts_csv_file_comprehensive(test_csv_file, processed_data) -> None:
-    """Test CSV import functionality."""
-    processed_data._import_prompts_csv_file(test_csv_file)
-
-    assert len(processed_data.attributes) == 3
-
-    assert processed_data.attributes[0].prompt == "Test prompt 1"
-    assert processed_data.attributes[1].prompt == "Test prompt 2"
-    assert processed_data.attributes[2].prompt == "Test prompt 3"
-
-
-def test_import_prompts_with_csv_missing_prompt(test_csv_file, processed_data) -> None:
-    """Test csv with one row missing prompts."""
-    with test_csv_file.open(mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
-        writer.writerow({"attribute_id": "4", "prompt": ""})
-
-    processed_data._import_prompts_csv_file(test_csv_file)
-    # we should now have 3 attributes in processed_data as
-    # attribute_id==4 is missing a prompt.
-    assert len(processed_data.attributes) == 3
-
-    assert processed_data.attributes[0].prompt == "Test prompt 1"
-    assert processed_data.attributes[1].prompt == "Test prompt 2"
-    assert processed_data.attributes[2].prompt == "Test prompt 3"
-
-
-def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
-    test_csv_file, processed_data
+def test_import_prompts_csv_file_comprehensive(
+    amended_csv_file, processed_data
 ) -> None:
-    """Test csv with one row missing prompts and retain_only_csv_attributes=False."""
-    with test_csv_file.open(mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["attribute_id", "prompt"])
-        writer.writerow({"attribute_id": "4", "prompt": ""})
+    """Test CSV import functionality."""
+    processed_data._import_prompts_csv_file(amended_csv_file)
 
+    assert len(processed_data.attributes) == 3
+
+    assert processed_data.attributes[0].prompt == "Test prompt 1"
+    assert processed_data.attributes[1].prompt == "Test prompt 2"
+    assert processed_data.attributes[2].prompt == "Test prompt 3"
+
+
+def test_import_prompts_with_csv_missing_prompt(
+    amended_csv_file, processed_data
+) -> None:
+    """Test csv with one row missing prompts."""
     attr4 = EppiAttribute(  # type:ignore[call-arg]
         attribute_id=4,
         output_data_type=AttributeType.BOOL,
@@ -411,9 +430,36 @@ def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     )
     processed_data.attributes.append(attr4)
 
+    attr4.write_to_csv(amended_csv_file)
+
     # note the added arg - this means we keep all original attributes
     processed_data._import_prompts_csv_file(
-        test_csv_file, retain_only_csv_attributes=False
+        amended_csv_file, retain_only_csv_attributes=True
+    )
+    assert len(processed_data.attributes) == 3
+
+    assert processed_data.attributes[0].prompt == "Test prompt 1"
+    assert processed_data.attributes[1].prompt == "Test prompt 2"
+    assert processed_data.attributes[2].prompt == "Test prompt 3"
+
+
+def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
+    amended_csv_file, processed_data
+) -> None:
+    """Test csv with one row missing prompts and retain_only_csv_attributes=False."""
+    attr4 = EppiAttribute(  # type:ignore[call-arg]
+        attribute_id=4,
+        output_data_type=AttributeType.BOOL,
+        attribute_selection_type=EppiAttributeSelectionType.INTERVENTION,
+        attribute_label="yes",
+    )
+    processed_data.attributes.append(attr4)
+
+    attr4.write_to_csv(amended_csv_file)
+
+    # note the added arg - this means we keep all original attributes
+    processed_data._import_prompts_csv_file(
+        amended_csv_file, retain_only_csv_attributes=False
     )
     assert len(processed_data.attributes) == 4
 
@@ -422,3 +468,128 @@ def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     assert processed_data.attributes[2].prompt == "Test prompt 3"
     # attr4's prompt was not updated because CSV had empty prompt for ID 4
     assert processed_data.attributes[3].prompt is None
+
+
+# eppi document citation generation
+@pytest.mark.parametrize(
+    ("date_input", "expected_day", "expected_month", "expected_year"),
+    [
+        ("15/03/2024", 15, 3, 2024),
+        ("2024-03-15 10:30:00+0000", 15, 3, 2024),
+        ("2024-03-15", 15, 3, 2024),
+        ("01/12/2023", 1, 12, 2023),
+        ("31/01/2020", 31, 1, 2020),
+    ],
+    ids=[
+        "dd_mm_yyyy_format",
+        "iso_format_with_timezone",
+        "simple_iso_format",
+        "first_day_of_month",
+        "last_day_of_month",
+    ],
+)
+def test_parse_date_string_valid_formats(
+    date_input: str,
+    expected_day: int,
+    expected_month: int,
+    expected_year: int,
+):
+    """Test parsing various valid date formats."""
+    doc = EppiDocument(
+        citation=ReferenceFileInput(),
+        document_id=123,
+        name="Test Doc",
+        date_created=date_input,  # type:ignore[arg-type]
+    )
+    assert doc.date_created is not None
+    assert isinstance(doc.date_created, datetime)
+    assert doc.date_created.day == expected_day
+    assert doc.date_created.month == expected_month
+    assert doc.date_created.year == expected_year
+
+
+def test_parse_date_string_none_value():
+    """Test that None date_created remains None."""
+    doc = EppiDocument(
+        document_id=123,
+        name="Test Doc",
+        date_created=None,
+        citation=ReferenceFileInput(),
+    )
+    assert doc.date_created is None
+
+
+def test_parse_date_string_empty_string():
+    """Test that empty string date_created becomes None."""
+    doc = EppiDocument(
+        document_id=123,
+        name="Test Doc",
+        date_created="",  # type:ignore[arg-type]
+        citation=ReferenceFileInput(),
+    )
+    assert doc.date_created is None
+
+
+def test_parse_date_string_invalid_format_raises():
+    """Test that invalid date format raises ValidationError."""
+    with pytest.raises(ValueError, match="unable to parse date_created"):
+        EppiDocument(
+            citation=ReferenceFileInput(),
+            document_id=123,
+            name="Test Doc",
+            date_created="not-a-date",  # type:ignore[arg-type]
+        )
+
+
+# destiny citation validator
+def test_populate_citation_field_from_reference(sample_eppi_data):
+    """Test that citation field is populated from EPPI reference data."""
+    reference = sample_eppi_data["References"][0]
+    doc = EppiDocument.model_validate(reference)
+
+    assert doc.citation is not None
+    assert isinstance(doc.citation, ReferenceFileInput)
+    assert doc.document_id == 28856292
+    assert doc.name == "A title"
+
+
+def test_populate_citation_field_preserves_existing():
+    """Test that existing citation field is not overwritten."""
+    existing_citation = parse_citation_to_destiny({"abstract": "abstract"})
+
+    doc = EppiDocument(
+        document_id=123,
+        name="Test Doc",
+        citation=existing_citation,
+    )
+    assert doc.citation is existing_citation
+
+
+def test_populate_citation_with_doi():
+    """Test citation population with DOI field."""
+    reference_data = {
+        "ItemId": 12345,
+        "Title": "Test Article",
+        "Year": "2023",
+        "Authors": "Doe, J;",
+        "DOI": "10.1234/test.doi.5678",
+        "Abstract": "Test abstract",
+    }
+    doc = EppiDocument.model_validate(reference_data)
+
+    assert doc.citation is not None
+    assert isinstance(doc.citation, ReferenceFileInput)
+    assert doc.doi == "10.1234/test.doi.5678"
+
+
+def test_populate_citation_with_malformed_doi():
+    """Test citation population sanitises malformed DOI."""
+    reference_data = {
+        "ItemId": 12345,
+        "Title": "Test Article",
+        "DOI": "https://doi.org/10.1234/test.doi.5678",
+    }
+    doc = EppiDocument.model_validate(reference_data)
+
+    # doi should be sanitised
+    assert doc.doi == "10.1234/test.doi.5678"
