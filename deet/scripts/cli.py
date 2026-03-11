@@ -1,8 +1,6 @@
 # ruff: noqa: PLC0415
 """A CLI app to run deet pipelines."""
 
-from __future__ import annotations
-
 import warnings
 from pathlib import Path
 from typing import Annotated
