@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from sklearn.exceptions import UndefinedMetricWarning  # type:ignore[import-untyped]
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.logger import logger
@@ -70,6 +69,8 @@ DEFAULT_EXPERIMENT_OUT_DIR = Path("data-extraction-experiments/")
 DEFAULT_METRICS_CSV = Path("metrics.csv")
 DEFAULT_OUTPUT_COMPARISON_CSV = Path("goldstandard_llm_comparison.csv")
 
+DEFAULT_LINKED_DOCUMENTS_PATH = Path("linked_documents")
+
 
 @app.command()
 def export_config_template(
@@ -84,6 +85,18 @@ def export_config_template(
     from deet.extractors.llm_data_extractor import DataExtractionConfig
 
     config = DataExtractionConfig()
+    if output_path.exists():
+        message = (
+            "Config template exists. Proceeding will "
+            "overwrite this and you may lose work if you have edited this."
+            " Do you want to continue?"
+        )
+        proceed = typer.confirm(message)
+        if proceed:
+            echo_and_log("Proceeding to overwrite config template")
+            output_path.unlink()
+        else:
+            raise typer.Abort()  # noqa: RSE102
     output_path.write_text(
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False)
     )
@@ -116,7 +129,7 @@ def link_documents_fulltexts(
     output_path: Annotated[
         Path,
         typer.Option(help="A path to a directory to write the linked documents to."),
-    ] = Path("linked_documents"),
+    ] = DEFAULT_LINKED_DOCUMENTS_PATH,
 ) -> None:
     """
     Link documents to their fulltexts.
@@ -139,6 +152,13 @@ def link_documents_fulltexts(
         document_reference_mapping=link_map_path,
     )
     linked_documents = linker.link_many_references_parsed_documents()
+
+    if not output_path.exists():
+        output_path.mkdir()
+
+    if len(linked_documents) == 0:
+        fail_with_message("Error. Could not link any documents!")
+
     for linked_document in linked_documents:
         file_path = output_path / f"{linked_document.safe_identity.document_id}.json"
         linked_document.save(file_path)
@@ -211,7 +231,7 @@ def extract_data(  # noqa: PLR0913
             "linked to their fulltexts. This directory can be populated by "
             "running `deet link-documents-fulltexts`."
         ),
-    ] = Path("linked_documents"),
+    ] = DEFAULT_LINKED_DOCUMENTS_PATH,
     link_map_path: Annotated[
         Path | None,
         typer.Option(
@@ -355,7 +375,7 @@ def global_options(
     level = "DEBUG" if verbose else "INFO"
     logger.add(typer.echo, colorize=True, level=level)
     if not verbose:
-        warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+        warnings.filterwarnings("ignore", message=".*is ill-defined.*")
 
 
 def main() -> None:
