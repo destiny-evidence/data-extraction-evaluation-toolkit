@@ -16,6 +16,7 @@ dev = [
 [project]
 authors = [
     {email = "h.moss@ucl.ac.uk", name = "Harry Moss"},
+    {email = "max.callaghan@pik-potsdam.de", name = "Max Callaghan"},
     {email = "n.loynes@ucl.ac.uk", name = "Nik Loynes"},
     {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
