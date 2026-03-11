@@ -90,3 +90,12 @@ def test_evaluator_writes_metrics(evaluator_evaluated, tmp_path):
     rows = list(reader)
     for r in rows:
         assert float(r["value"]) == 1.0
+
+
+def test_evaluator_writes_comparison(evaluator_evaluated, tmp_path):
+    comparison_csv_path = tmp_path / "llm_human_comparison.csv"
+    evaluator_evaluated.export_llm_comparison(comparison_csv_path)
+    reader = csv.DictReader(comparison_csv_path.open())
+    rows = list(reader)
+    for r in rows:
+        assert r["human_extraction"] == r["llm_extraction"]
