@@ -113,6 +113,18 @@ def init_linkage_mapping_file(
     link_map_path: LINK_MAP_PATH = DEFAULT_LINK_MAP,
 ) -> None:
     """Create a mapping to link documents and their full texts."""
+    if link_map_path.exists():
+        message = (
+            f"mapping already exists at {link_map_path}. Overwriting"
+            " may cause you to lose work. Do you want to continue?"
+        )
+        proceed = typer.confirm(message)
+        if proceed:
+            echo_and_log("Proceeding to overwrite config template")
+            link_map_path.unlink()
+        else:
+            raise typer.Abort()  # noqa: RSE102
+
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
     processed_annotation_data.export_linkage_mapper_csv(link_map_path)
