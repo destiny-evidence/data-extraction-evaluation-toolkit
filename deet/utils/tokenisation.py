@@ -7,6 +7,7 @@ import litellm
 from deet.logger import logger
 
 # Fallback when model is unknown (e.g. custom Ollama).
+# 128k matches common model limits (e.g. GPT-4o, GPT-4o-mini, many Llama models).
 _DEFAULT_MAX_TOKENS = 128_000
 
 

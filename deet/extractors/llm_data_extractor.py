@@ -17,7 +17,8 @@ from deet.data_models.base import (
 from deet.data_models.documents import ContextType
 from deet.logger import logger
 from deet.settings import LLMProvider, get_settings
-from deet.utils.tokenization import (
+from deet.utils.tokenisation import (
+    _DEFAULT_MAX_TOKENS,
     count_tokens,
     get_model_max_tokens,
     truncate_to_token_limit,
@@ -50,13 +51,16 @@ class PromptConfig(BaseModel):
         return self
 
 
-def _model_string_for_tokenization() -> str:
-    """Build the model string used for tokenization (matches LLMDataExtractor.model)."""
-    if settings.llm_provider == LLMProvider.AZURE:
-        return f"azure/{settings.azure_deployment}"
-    if settings.llm_provider == LLMProvider.OLLAMA:
-        return f"ollama/{settings.llm_model}"
-    return settings.llm_model
+def _model_string_for_tokenisation() -> str:
+    """Build the model string used for tokenisation (matches LLMDataExtractor.model)."""
+    match settings.llm_provider:
+        case LLMProvider.AZURE:
+            return f"azure/{settings.azure_deployment}"
+        case LLMProvider.OLLAMA:
+            return f"ollama/{settings.llm_model}"
+        case _:
+            msg = f"Unsupported LLM provider: {settings.llm_provider}"
+            raise ValueError(msg)
 
 
 class DataExtractionConfig(BaseModel):
@@ -100,12 +104,13 @@ class DataExtractionConfig(BaseModel):
         """Populate max_context_length from model when not set."""
         if self.max_context_length is not None:
             return self
-        model_str = _model_string_for_tokenization()
+        model_str = _model_string_for_tokenisation()
         inferred = get_model_max_tokens(model_str)
         if inferred is not None:
             self.max_context_length = inferred
         else:
-            self.max_context_length = 128_000
+            # Use shared fallback when model max tokens cannot be inferred.
+            self.max_context_length = _DEFAULT_MAX_TOKENS
         return self
 
 

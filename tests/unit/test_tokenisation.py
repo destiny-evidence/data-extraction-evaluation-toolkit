@@ -1,8 +1,8 @@
-"""Tests for tokenization utilities."""
+"""Tests for tokenisation utilities."""
 
 from unittest.mock import patch
 
-from deet.utils.tokenization import (
+from deet.utils.tokenisation import (
     count_tokens,
     get_model_max_tokens,
     truncate_to_token_limit,
@@ -12,7 +12,7 @@ from deet.utils.tokenization import (
 def test_get_model_max_tokens_known_model():
     """Test get_model_max_tokens returns int for known model."""
     with patch(
-        "deet.utils.tokenization.litellm.get_max_tokens",
+        "deet.utils.tokenisation.litellm.get_max_tokens",
         return_value=4096,
     ):
         result = get_model_max_tokens("gpt-4o-mini")
@@ -24,7 +24,7 @@ def test_get_model_max_tokens_known_model():
 def test_get_model_max_tokens_unknown_model():
     """Test get_model_max_tokens returns None for unknown model."""
     with patch(
-        "deet.utils.tokenization.litellm.get_max_tokens",
+        "deet.utils.tokenisation.litellm.get_max_tokens",
         side_effect=Exception("unknown"),
     ):
         result = get_model_max_tokens("unknown-model-xyz")
@@ -34,7 +34,7 @@ def test_get_model_max_tokens_unknown_model():
 def test_count_tokens_basic():
     """Test count_tokens returns positive int."""
     with patch(
-        "deet.utils.tokenization.litellm.token_counter",
+        "deet.utils.tokenisation.litellm.token_counter",
         return_value=3,
     ):
         result = count_tokens("gpt-4o-mini", "Hello world")
@@ -45,7 +45,7 @@ def test_count_tokens_basic():
 def test_count_tokens_fallback_on_error():
     """Test count_tokens uses char estimate when token_counter fails."""
     with patch(
-        "deet.utils.tokenization.litellm.token_counter",
+        "deet.utils.tokenisation.litellm.token_counter",
         side_effect=Exception("token_counter failed"),
     ):
         result = count_tokens("unknown-model", "Hello world")
@@ -56,7 +56,7 @@ def test_truncate_to_token_limit_under_limit():
     """Test truncate_to_token_limit returns unchanged when under limit."""
     text = "Short text"
     with patch(
-        "deet.utils.tokenization.litellm.encode",
+        "deet.utils.tokenisation.litellm.encode",
         return_value=[1, 2, 3],
     ):
         result = truncate_to_token_limit(text, "gpt-4o-mini", max_tokens=100)
@@ -69,11 +69,11 @@ def test_truncate_to_token_limit_over_limit():
     truncated = "word word word word word"
     with (
         patch(
-            "deet.utils.tokenization.litellm.encode",
+            "deet.utils.tokenisation.litellm.encode",
             return_value=list(range(50)),
         ),
         patch(
-            "deet.utils.tokenization.litellm.decode",
+            "deet.utils.tokenisation.litellm.decode",
             return_value=truncated,
         ),
     ):
