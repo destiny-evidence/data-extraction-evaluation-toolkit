@@ -201,7 +201,7 @@ class DocumentIdentity(BaseModel):
         if not all(field in self.model_dump() for field in target_fields):
             missing_citation = (
                 f"required fields are missing in citation. "
-                "required: {', '.join(target_fields)}"
+                f"required: {', '.join(target_fields)}"
                 f"actual: {','.join(self.model_dump())}"
             )
             raise MissingCitationElementError(missing_citation)
