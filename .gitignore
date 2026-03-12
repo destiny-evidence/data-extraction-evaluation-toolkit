@@ -221,7 +221,6 @@ deet/annotations/raw/
 
 # Files created by CLI
 default_extraction_config.yaml
-link_map.csv
 pdfs/*
-prompt_definition.csv
 data-extraction-experiments/*
+*.csv
