@@ -711,9 +711,11 @@ class DocumentReferenceLinker:
             for doc in self.documents_references:
                 logger.debug(f"doc_reference name : {doc.name}")
                 logger.debug(f"doc_referece id: {doc.document_identity.document_id}")
+                logger.debug(f"doc id type: {type(doc.document_identity.document_id)}")
             logger.debug("processed_doc_ids")
             for doc in processed_doc_ids:
                 logger.debug(doc)
+                logger.debug(f"type: {type(doc)}")
 
             unlinked_ids = [
                 doc.document_identity.document_id  # type:ignore[union-attr]
