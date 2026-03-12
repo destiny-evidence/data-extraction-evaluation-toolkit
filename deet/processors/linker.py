@@ -708,7 +708,7 @@ class DocumentReferenceLinker:
 
         if linked_count < total_refs:
             unlinked_ids = [
-                doc.document_id
+                doc.document_identity.document_id  # type:ignore[union-attr]
                 for doc in self.documents_references
                 if doc.document_id not in processed_doc_ids
             ]
