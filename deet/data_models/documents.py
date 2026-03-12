@@ -479,7 +479,7 @@ class Document(BaseModel):
             data["parsed_document"]["images"] = images_b64
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w") as f:
+        with path.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, default=str)
         logger.info(f"Saved Document fulltext link to {path}")
 
