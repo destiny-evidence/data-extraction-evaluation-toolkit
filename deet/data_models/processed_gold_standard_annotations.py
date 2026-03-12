@@ -63,6 +63,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         if filepath.suffix != ".csv":
             bad_filetype = "file ending must be .csv"
             raise ValueError(bad_filetype)
+        filepath.unlink(missing_ok=True)
         for attribute in self.attributes:
             attribute.write_to_csv(filepath=filepath)
 
