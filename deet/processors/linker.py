@@ -720,7 +720,7 @@ class DocumentReferenceLinker:
             unlinked_ids = [
                 doc.document_identity.document_id  # type:ignore[union-attr]
                 for doc in self.documents_references
-                if doc.document_id not in processed_doc_ids
+                if doc.document_identity.document_id not in processed_doc_ids
             ]
             logger.warning(f"Unlinked document IDs: {unlinked_ids}")
 
