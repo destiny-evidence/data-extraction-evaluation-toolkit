@@ -198,7 +198,7 @@ class MappingImporter:
     def _load_csv(self) -> dict[int, Path]:
         result = {}
 
-        with self.mapping_file_path.open(newline="") as f:
+        with self.mapping_file_path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
 
             # ensure required columns exist
