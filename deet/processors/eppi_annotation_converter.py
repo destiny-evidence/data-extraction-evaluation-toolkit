@@ -1,6 +1,7 @@
 """Convert annotation JSON files to Pydantic models."""
 
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -343,6 +344,27 @@ class EppiAnnotationConverter(AnnotationConverter):
 
         return doc_annotations
 
+    def _deduplicate_annotations(
+        self, annotations: list[EppiGoldStandardAnnotation]
+    ) -> list[EppiGoldStandardAnnotation]:
+        grouped = defaultdict(list)
+        for ann in annotations:
+            grouped[ann.attribute.attribute_id].append(ann)
+
+        collapsed_annotations = []
+
+        for anns in grouped.values():
+            base = anns[0]
+            if len(anns) == 1:
+                collapsed_annotations.append(base)
+                continue
+            values = [a.output_data for a in anns]
+
+            merged = base.model_copy(update={"output_data": values})
+            collapsed_annotations.append(merged)
+
+        return collapsed_annotations
+
     def process_annotation_file(
         self,
         file_path: str | Path,
@@ -424,6 +446,8 @@ class EppiAnnotationConverter(AnnotationConverter):
                     attributes_lookup,
                     attribute_id_to_label,
                 )
+                annotations = self._deduplicate_annotations(annotations)
+
             else:
                 annotations = []
 
