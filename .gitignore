@@ -225,3 +225,4 @@ link_map.csv
 pdfs/*
 prompt_definition.csv
 data-extraction-experiments/*
+prompt_definitions.csv
