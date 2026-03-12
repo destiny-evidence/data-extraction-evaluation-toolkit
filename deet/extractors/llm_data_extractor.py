@@ -566,4 +566,6 @@ class LLMDataExtractor:
 
         """
         adapter = TypeAdapter(list[GoldStandardAnnotatedDocument])
-        output_file.write_text(adapter.dump_json(results, indent=2).decode())
+        output_file.write_text(
+            adapter.dump_json(results, indent=2).decode(), encoding="utf-8"
+        )
