@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import ValidationError
 
@@ -52,12 +51,13 @@ def mock_settings(monkeypatch):
 @pytest.fixture
 def sample_eppi_document() -> EppiDocument:
     """Fixture for a sample EppiDocument."""
-    return EppiDocument(
-        document_id=12345,
-        name="Test Document",
-        context="This is the abstract.",
-        citation=ReferenceFileInput(),
-    )
+    reference = {
+        "document_id": 12345,
+        "name": "Test Document",
+        "context": "This is the abstract.",
+        "Abstract": "The document's abstract.",
+    }
+    return EppiDocument.model_validate(reference)
 
 
 @pytest.fixture
@@ -258,11 +258,9 @@ def test_prepare_context_full_document_context_in_config(
 
 def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     """Test _prepare_context with ABSTRACT_ONLY type."""
-    payload = "This is the full text."
     llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
-    # ABSTRACT_ONLY is currently commented out, so this will raise ValueError
-    with pytest.raises(ValueError, match="context type is not allowed"):
-        llm_extractor._prepare_context(payload=payload)
+    sample_eppi_document.set_abstract_context()
+    assert sample_eppi_document.context == sample_eppi_document.abstract
 
 
 def test_call_llm_truncates_when_payload_exceeds_max(
@@ -334,22 +332,25 @@ def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
 
 
 @pytest.mark.parametrize("llm_provider", [*list(LLMProvider), "unsupported_provider"])
-def test_call_llm(mock_litellm_completion, default_config, mock_settings, llm_provider):
+def test_call_llm(mock_litellm_completion, mock_settings, llm_provider):
     """Test the _call_llm method."""
     prompt = '{"key": "value"}'
     mock_settings.llm_provider = llm_provider
+
     if llm_provider in [member.value for member in LLMProvider]:
-        llm_extractor = create_llm_extractor(default_config, mock_settings)
+        config = DataExtractionConfig(
+            model=mock_settings.llm_model, provider=mock_settings.llm_provider
+        )
+
+        llm_extractor = create_llm_extractor(config, mock_settings)
         response, messages, output_tokens = llm_extractor._call_llm(prompt)
 
         mock_litellm_completion.assert_called_once()
         call_args = mock_litellm_completion.call_args
         if mock_settings.llm_provider == LLMProvider.AZURE:
-            assert (
-                call_args.kwargs["model"] == f"azure/{mock_settings.azure_deployment}"
-            )
+            assert call_args.kwargs["model"] == f"azure/{config.model}"
         elif mock_settings.llm_provider == LLMProvider.OLLAMA:
-            assert call_args.kwargs["model"] == f"ollama/{mock_settings.llm_model}"
+            assert call_args.kwargs["model"] == f"ollama/{config.model}"
         else:
             assert mock_settings.llm_provider in LLMProvider
         assert call_args.kwargs["response_format"]["type"] == "json_schema"
@@ -362,10 +363,10 @@ def test_call_llm(mock_litellm_completion, default_config, mock_settings, llm_pr
         assert len(messages) >= 1
         assert output_tokens == 42
     else:
-        with pytest.raises(
-            ValueError, match="Unsupported LLM provider: unsupported_provider"
-        ):
-            llm_extractor = create_llm_extractor(default_config, mock_settings)
+        with pytest.raises(ValidationError, match=r"provider"):
+            config = DataExtractionConfig(
+                model=mock_settings.llm_model, provider=mock_settings.llm_provider
+            )
 
 
 def test_parse_llm_response(
@@ -463,24 +464,24 @@ def test_extract_from_documents(
     mock_litellm_completion,
     tmp_path,
 ):
-    """Test extracting from multiple documents (directory mode)."""
-    full_text = "This is the full text of the document."
-    (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
+    """Test extracting from multiple documents (document mode)."""
+    sample_eppi_documents = [sample_eppi_document]
+    llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
     output_file = tmp_path / "results.json"
     all_annotations = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        markdown_dir=tmp_path,
-        context_type=ContextType.FULL_DOCUMENT,
+        documents=sample_eppi_documents,
         output_file=output_file,
     )
     assert len(all_annotations) == 1
     assert mock_litellm_completion.call_count == 1
     saved = json.loads(output_file.read_text())
-    assert "results" in saved
+    assert "annotated_documents" in saved
     assert "metadata" in saved
-    assert saved["results"]["doc.md"]  # annotations for doc.md
+    assert len(saved["annotated_documents"]) == 1
     assert saved["metadata"]["total_output_tokens"] == 42
-    assert saved["metadata"]["per_document"] == {"doc.md": 42}
+    doc_id_str = str(sample_eppi_document.safe_identity.document_id)
+    assert saved["metadata"]["per_document"][doc_id_str] == 42
 
 
 def test_extract_from_documents_continues_on_error(
@@ -491,13 +492,12 @@ def test_extract_from_documents_continues_on_error(
     tmp_path,
 ):
     """Test that when one file fails, processing continues and returns empty dict."""
-    full_text = "This is the full text of the document."
-    (tmp_path / "doc.md").write_text(full_text, encoding="utf-8")
+    sample_eppi_documents = [sample_eppi_document]
+    llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
     mock_litellm_completion.side_effect = ValueError("LLM call failed")
     all_annotations = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        markdown_dir=tmp_path,
-        context_type=ContextType.FULL_DOCUMENT,
+        documents=sample_eppi_documents,
     )
-    assert all_annotations == {}
+    assert all_annotations == []
     assert mock_litellm_completion.call_count == 1

@@ -2,7 +2,7 @@
 
 import csv
 import json
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Sequence
 from enum import StrEnum, auto
 from functools import partial
 from pathlib import Path
@@ -217,6 +217,39 @@ class MappingImporter:
 
         return result
 
+    @staticmethod
+    def merge_partial_paths(parts_a: list[str], parts_b: list[str]) -> list[str]:
+        """
+        Merge partial file path components.
+
+        Implements the Knuth-Morris-Pratt (KMP) algorithm. Nice!
+        https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm
+
+        Args:
+            parts_a (list[str]): the longer of the path parts
+            parts_b (list[str]): the shorter of the path parts.
+
+        Returns:
+            list[str]: the merged combined path
+
+        """
+        # build combined list with sentinel
+        sentinel_combined = [*parts_b, None, *parts_a]
+
+        # prefix function (KMP)
+        pi = [0] * len(sentinel_combined)  # this is the nomenclature KMP uses
+        for i in range(1, len(sentinel_combined)):
+            j = pi[i - 1]
+            while j > 0 and sentinel_combined[i] != sentinel_combined[j]:
+                j = pi[j - 1]
+            if sentinel_combined[i] == sentinel_combined[j]:
+                j += 1
+            pi[i] = j
+
+        overlap = pi[-1]  # length of prefix of b matching suffix of a
+
+        return parts_a[: len(parts_a) - overlap] + parts_b
+
     def _resolve_file_path(self, file_path: str | Path) -> Path:
         """
         Resolve file path, handling absolute
@@ -239,26 +272,32 @@ class MappingImporter:
         """
         file_path = Path(file_path)
 
-        # if already absolute, use as-is
-        if file_path.is_absolute():
-            resolved_path = file_path
-            logger.debug(f"Using absolute path: {resolved_path}")
+        # if already findable, use as-is
+        if file_path.exists():
+            logger.debug(f"Using absolute path: {file_path.absolute()!s}")
+            return file_path.absolute()
 
-        # if document_base_dir provided, prepend it
-        elif self.document_base_dir:
-            resolved_path = self.document_base_dir / file_path
-            logger.debug(f"Resolved relative path with base dir: {resolved_path}")
+        # if document_base_dir provided, prepend it -- if appropriate
+        if not self.document_base_dir or not self.document_base_dir.is_dir():
+            dir_missing = (
+                f"self.document_base_dir {self.document_base_dir!s}"
+                " does not exist or is not defined."
+            )
+            raise FileNotFoundError(dir_missing)
 
-        # else relative path from cwd
-        else:
-            resolved_path = file_path.resolve()
-            logger.debug(f"Resolved path from current directory: {resolved_path}")
+        # try finding a file that simply appends to base path and exists
+        if (self.document_base_dir / file_path).exists():
+            return (self.document_base_dir / file_path).absolute()
 
-        if not resolved_path.is_file():
-            no_file = f"File not found: {resolved_path} (original: {file_path})"
-            raise FileNotFoundError(no_file)
-
-        return resolved_path
+        # now we're facing a situation where we try to resolve it all...
+        base_dir_parts = list(self.document_base_dir.absolute().parts)
+        file_path_parts = list(file_path.parts)
+        merged_partials = self.merge_partial_paths(base_dir_parts, file_path_parts)
+        merged_partial_path = Path("/".join(merged_partials))
+        if merged_partial_path.exists():
+            return merged_partial_path
+        cant_resolve = f"merged file path {merged_partial_path!s} cant be resolved."
+        raise FileNotFoundError(cant_resolve)
 
 
 class DocumentReferenceLinker:
@@ -268,7 +307,7 @@ class DocumentReferenceLinker:
 
     def __init__(
         self,
-        references: list[Document],
+        references: Sequence[Document],
         document_reference_mapping: list[DocumentReferenceMapping] | Path | None = None,
         document_base_dir: Path | None = None,
         parser: DocumentParser = parser,
@@ -282,8 +321,11 @@ class DocumentReferenceLinker:
 
         # lookup dics for O(1) id & author_year based lookup
         self._references_by_id: dict[int, Document] = {
-            doc.document_id: doc for doc in tmp_refs if doc.document_id is not None
+            doc.document_identity.document_id: doc  # type:ignore[union-attr]
+            for doc in tmp_refs
+            if doc.document_identity.document_id is not None  # type:ignore[union-attr]
         }
+        logger.debug(self._references_by_id.keys())
         try:
             self._references_by_author_year_longest: dict[str, Document] = {
                 doc.author_year_from_document_identity(
@@ -306,6 +348,9 @@ class DocumentReferenceLinker:
 
         self.document_base_dir = document_base_dir
         if isinstance(document_reference_mapping, Path):
+            logger.debug(
+                f"document_reference_mapping type: {type(document_reference_mapping)}"
+            )
             document_reference_mapping = MappingImporter(
                 mapping_file_path=document_reference_mapping,
                 document_base_dir=document_base_dir,

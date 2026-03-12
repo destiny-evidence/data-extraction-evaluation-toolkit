@@ -2,12 +2,13 @@
 
 import base64
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import StrEnum, auto
+from functools import cached_property
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Literal, Self
+from typing import Generic, Literal, Self, TypeVar
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -15,7 +16,13 @@ from loguru import logger
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from deet.data_models.base import GoldStandardAnnotation
+from deet.data_models.base import (
+    AnnotationType,
+    Attribute,
+    AttributeType,
+    GoldStandardAnnotation,
+    GoldStandardAnnotationTypeVar,
+)
 from deet.exceptions import (
     BadDocumentIdError,
     MissingCitationElementError,
@@ -194,7 +201,7 @@ class DocumentIdentity(BaseModel):
         if not all(field in self.model_dump() for field in target_fields):
             missing_citation = (
                 f"required fields are missing in citation. "
-                "required: {', '.join(target_fields)}"
+                f"required: {', '.join(target_fields)}"
                 f"actual: {','.join(self.model_dump())}"
             )
             raise MissingCitationElementError(missing_citation)
@@ -258,6 +265,28 @@ class Document(BaseModel):
 
     is_final: bool = False
     is_linked: bool = False
+
+    @property
+    def safe_identity(self) -> DocumentIdentity:
+        """
+        Definitely Return an identity.
+        Initialise identity if not set already,
+        or raise an error if this is not possible.
+        """
+        if self.document_identity is None:
+            self.init_document_identity()
+        if self.document_identity is None:
+            no_id = "Failed to initialise document identity"
+            raise RuntimeError(no_id)
+        return self.document_identity
+
+    @property
+    def safe_parsed_document(self) -> ParsedOutput:
+        """Return the parsed_document, or raise an error if document is not linked."""
+        if self.parsed_document is None:
+            unlinked = "Document is not linked, cannot access parsed_document"
+            raise RuntimeError(unlinked)
+        return self.parsed_document
 
     @model_validator(mode="after")
     def validate_linking_complete(self) -> Self:
@@ -452,7 +481,7 @@ class Document(BaseModel):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w") as f:
             json.dump(data, f, indent=2, default=str)
-        logger.info(f"Saved LinkedDocument to {path}")
+        logger.info(f"Saved Document fulltext link to {path}")
 
     @classmethod
     def load(cls, path: Path) -> Self:
@@ -473,7 +502,84 @@ class Document(BaseModel):
         return cls(**data)
 
 
-class GoldStandardAnnotatedDocument(Document):
+DocumentTypeVar = TypeVar("DocumentTypeVar", bound=Document)
+
+
+class GoldStandardAnnotatedDocument(
+    BaseModel, Generic[DocumentTypeVar, GoldStandardAnnotationTypeVar]
+):
     """A document with its gold standard annotations."""
 
-    annotations: list[GoldStandardAnnotation]
+    document: DocumentTypeVar
+    annotations: list[GoldStandardAnnotationTypeVar]
+
+    def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
+        """Get the value of the annotation of the corresponding attribute."""
+        result = None
+        output_data: bool | list
+        for annotation in self.annotations:
+            if annotation.attribute.attribute_id == attribute.attribute_id:
+                if result is not None:
+                    multiple_matches = (
+                        "More than one annotation found for "
+                        f"attribute: {attribute.attribute_label}. We don't know how to"
+                        "interpret which is the canonical version."
+                    )
+                    raise ValueError(multiple_matches)
+                result = annotation
+
+        if result is None:
+            if attribute.output_data_type == AttributeType.BOOL:
+                output_data = False
+            elif attribute.output_data_type == AttributeType.LIST:
+                output_data = []
+            else:
+                not_found = (
+                    "Attribute not found in annotations."
+                    " Don't know how to interpret this when attribute is of type "
+                )
+                f"{attribute.output_data_type}"
+                raise ValueError(not_found)
+            return GoldStandardAnnotation(
+                attribute=attribute,
+                output_data=output_data,
+                annotation_type=AnnotationType.HUMAN,
+            )
+
+        return result
+
+
+GoldStandardAnnotatedDocumentTypeVar = TypeVar(
+    "GoldStandardAnnotatedDocumentTypeVar", bound=GoldStandardAnnotatedDocument
+)
+
+
+class GoldStandardAnnotatedDocumentList(
+    BaseModel, Generic[GoldStandardAnnotatedDocumentTypeVar]
+):
+    """
+    A list of GoldStandardAnnotatedDocuments (or subclasses thereof).
+    This list is indexed to enable easy retrieval by document_id.
+    """
+
+    gold_standard_annotations: Sequence[GoldStandardAnnotatedDocumentTypeVar]
+
+    @cached_property
+    def annotation_index(self) -> dict[int, GoldStandardAnnotatedDocumentTypeVar]:
+        """Cached index to enable retrieving annotated documents by id."""
+        return {
+            doc.document.safe_identity.document_id: doc
+            for doc in self.gold_standard_annotations
+        }
+
+    def get_by_id(self, document_id: int) -> GoldStandardAnnotatedDocumentTypeVar:
+        """
+        Get GoldStandardAnnotatedDocument where document.document_identity
+        matches document_identity.
+        """
+        try:
+            return self.annotation_index[document_id]
+        except KeyError as err:
+            not_found = f"Document with ID {document_id} not found in annotated"
+            " doc list"
+            raise ValueError(not_found) from err

@@ -1,5 +1,6 @@
 """Tests for eppi_annotation_converter using real EPPI data."""
 
+import csv
 import json
 from pathlib import Path
 from unittest.mock import mock_open, patch
@@ -8,7 +9,14 @@ import pytest
 from pytest_mock import MockerFixture
 
 from deet.data_models.base import AttributeType
-from deet.data_models.eppi import EppiAttributeSelectionType, EppiDocument, EppiRawData
+from deet.data_models.eppi import (
+    EppiAttributeSelectionType,
+    EppiDocument,
+    EppiRawData,
+)
+from deet.data_models.processed_gold_standard_annotations import (
+    ProcessedEppiAnnotationData,
+)
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
@@ -22,6 +30,7 @@ def test_load_eppi_json_annotations(
     )
     result = converter.process_annotation_file("fake_path.json")
     assert hasattr(result, "raw_data")
+    assert result.raw_data is not None
     assert len(result.raw_data.code_sets) == 2
     assert len(result.raw_data.references) > 0
 
@@ -38,6 +47,80 @@ def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
 
         assert len(result.attributes) > 0
         assert len(result.documents) > 0
+
+
+@pytest.fixture
+def processed_eppi_annotations(sample_eppi_data: dict) -> ProcessedEppiAnnotationData:
+    """Create fixture to test methods that operate on ProcessedEppiAnnotationData."""
+    converter = EppiAnnotationConverter()
+    with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
+        return converter.process_annotation_file("fake_path.json")
+
+
+@pytest.fixture
+def attribute_csv(tmp_path, processed_eppi_annotations):
+    """Create fixture to write csv file from processed eppi annotation data."""
+    csv_file = tmp_path / "attribute_definitions.csv"
+    processed_eppi_annotations.export_attributes_csv_file(csv_file)
+    return csv_file
+
+
+def test_export_attributes_csv(attribute_csv, processed_eppi_annotations):
+    """
+    Test whether csv has been written, has the expected number of rows, and
+    has at an attribute_id and prompt field in the headers.
+    """
+    with attribute_csv.open() as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+
+    headers = rows[0]
+    assert "attribute_id" in headers
+    assert "prompt" in headers
+
+    assert len(rows) - 1 == len(processed_eppi_annotations.attributes)
+
+
+@pytest.fixture
+def edited_attribute_csv(tmp_path, attribute_csv):
+    """
+    Edit the csv, putting a new prompt in the prompt column.
+    Write it to a new fixture.
+    """
+    edited_definitions = tmp_path / "edited_attribute_definitions.csv"
+    with attribute_csv.open() as fr, edited_definitions.open("w") as fw:
+        reader = csv.reader(fr)
+        writer = csv.writer(fw)
+        for i, row in enumerate(reader):
+            if i == 0:
+                writer.writerow(row)
+            else:
+                row[0] = "New edited prompt"
+                writer.writerow(row)
+    return edited_definitions
+
+
+def test_populate_custom_prompts_csv(edited_attribute_csv, processed_eppi_annotations):
+    """
+    Test whether populating custom prompts from the edited csv correctly sets
+    the prompt for each attribute.
+    """
+    processed_eppi_annotations.populate_custom_prompts(
+        method="file", filepath=edited_attribute_csv
+    )
+    for attribute in processed_eppi_annotations.attributes:
+        assert attribute.prompt == "New edited prompt"
+
+
+def test_populate_custom_prompts_cli(processed_eppi_annotations):
+    """Test the CLI form populating custom prompts."""
+    side_effect_list = []
+    for _ in processed_eppi_annotations.attributes:
+        side_effect_list.extend(["y", "New edited prompt", "y"])
+    with patch("builtins.input", side_effect=side_effect_list):
+        processed_eppi_annotations.populate_custom_prompts(method="cli")
+    for attribute in processed_eppi_annotations.attributes:
+        assert attribute.prompt == "New edited prompt"
 
 
 def test_convert_to_eppi_attributes_default(sample_eppi_data: dict) -> None:

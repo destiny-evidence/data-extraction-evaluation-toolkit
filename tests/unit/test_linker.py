@@ -390,8 +390,29 @@ def test_mapping_importer_resolve_nonexistent_file(tmp_path):
     )
 
     importer = MappingImporter(mapping_file_path=json_file)
-    with pytest.raises(FileNotFoundError, match="File not found"):
+    with pytest.raises(FileNotFoundError, match="does not exist or is not defined."):
         importer.import_mapping()
+
+
+# merge_partial_paths tests
+def test_merge_partial_paths_no_overlap():
+    """Test merging paths with no overlap."""
+    parts_a = ["Users", "docs"]
+    parts_b = ["files", "test.pdf"]
+
+    result = MappingImporter.merge_partial_paths(parts_a, parts_b)
+
+    assert result == ["Users", "docs", "files", "test.pdf"]
+
+
+def test_merge_partial_paths_full_overlap():
+    """Test merging paths where b is suffix of a."""
+    parts_a = ["misc", "reproduce", "hpv", "pdf"]
+    parts_b = ["misc", "reproduce", "hpv", "pdf", "file.pdf"]
+
+    result = MappingImporter.merge_partial_paths(parts_a, parts_b)
+
+    assert result == ["misc", "reproduce", "hpv", "pdf", "file.pdf"]
 
 
 # actual DocumentReferenceLinker tests

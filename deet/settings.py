@@ -81,10 +81,6 @@ class DataExtractionSettings(BaseSettings):
     azure_api_base: SecretStr | None = Field(
         default=None, description="Base URL for azure openAI."
     )
-    azure_deployment: str | None = Field(
-        default="gpt-4o-mini",
-        description="Azure deployment name to use when azure_api_key is provided.",
-    )
 
     # disk cache folder
     base_disk_cache_dir: Path = Field(

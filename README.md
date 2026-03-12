@@ -4,7 +4,7 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 
 ## tl, dr
 
-[Look here if you just want help running default pipelines](#default-pipelines).
+[Look here if you just want help running deet via the CLI](#using-deet-via-the-cli).
 
 A key innovation of the [Destiny project](https://destiny-evidence.github.io/website/) is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
 
@@ -77,45 +77,79 @@ Our roadmap for future development contains:
 - **Comparison & evaluation of LLM vs human annotations**
 - **Support for prompt versioning tool**
 
-### Default pipelines
+### Using `deet` via the CLI
 
-Default pipelines leverage the included modules to chain typical, often-used data tasks.
-Currently, they are implemented as scripts, but will soon be moved into a `cli`.
-See available scripts prefixed with `pipeline_` in `deet/scripts/`.
-All these scripts will require:
+The deet command line interface (CLI) allows you to use deet without writing any python code.
 
-- a path to a directory of input files, `.md` or `.pdf`
-- a path to a `eppi.json`
-- paths to other relevant files, e.g. csvs containing prompts.
-These scripts will then produce a file `llm_extractions.json` containing llm classifications for each of the files contained in the directory.
+#### Getting started
 
-So, you might want to run something like this:
+Once you have installed DEET, and activated your environment, (see [installation](#installation)), you should be able to run the CLI.
 
-```python
-python deet/scripts/pipeline_interactive_prompt_generation.py -m path/to/my/markdown/files -e path/to/eppi.json -o path/to/write/out/files
+To test this run
+
+```bash
+deet --help
 ```
 
-If you're unsure what kind of arguments a given script might required, you can always run something with the `-h` or `--help` flag, to get more info:
+You should see a list of commands. To get more information on any of these (for example extract-data), run
 
-```python
-python deet/scripts/pipeline_interactive_prompt_generation.py -h
-
-usage: pipeline_interactive_prompt_population.py [-h] [-p PDF_PATH] [-m MARKDOWN_PATH] -e EPPI_JSON_PATH
-                                                 [-f FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...]] [-o OUTPUT_PATH]
-
-options:
-  -h, --help            show this help message and exit
-  -p PDF_PATH, --pdf_path PDF_PATH
-                        directory containing PDF files
-  -m MARKDOWN_PATH, --markdown_path MARKDOWN_PATH
-                        directory containing or for markdown files
-  -e EPPI_JSON_PATH, --eppi_json_path EPPI_JSON_PATH
-                        path to eppi json
-  -f FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...], --filter_attribute_ids FILTER_ATTRIBUTE_IDS [FILTER_ATTRIBUTE_IDS ...]
-                        an optional list of attribute_ids to filter by.
-  -o OUTPUT_PATH, --output_path OUTPUT_PATH
-                        path to save output JSON (auto-generated if not provided)
+```bash
+deet extract-data --help
 ```
+
+You can call these commands from anywhere where your virtual environment with deet installed is activated. It's a good idea to navigate into a new directory for each data extraction project, where you can store the outputs of running deet for your project.
+
+To navigate to another directory use the `cd` command. `cd ..` will move up a level, cd `deet-project` will move into the `deet-project` folder, assuming it exists in the current directory. Type `ls` to see the files and folders in your current directory.
+
+#### Importing and linking data
+
+Most commands start by importing gold standard data, and require that you specify the location of a file that contains:
+
+- bibliographic records of documents,
+- the attributes that should be extracted from them, and
+- (optionally) the gold standard annotations of those documents made by humans
+
+DEET currently supports importing this data from an EPPIJson file.
+
+If you want to extract data from the full text of documents, you will need to link your documents to those full texts.
+
+Assuming you have an EPPIJson file called `references.json` in your current working directory, and a folder of PDFs for those documents in a directory called `pdfs`, you can link these together with
+
+```bash
+deet link-documents-fulltexts references.json
+```
+
+You can specify the pdf folder to look through (which does not have to be in your current directory) by setting the option --pdf-dir, but this defaults to `pdfs`.
+
+Deet will try to link documents to pdfs using IDs, or a combination of author and year, but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet init-linkage-mapping-file` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
+
+```bash
+deet link-documents-fulltexts --link-map-path link_map.csv references.json
+```
+
+Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option `--output-path`. This defaults to `linked_documents`
+
+#### Extracting data from parsed/linked data
+
+Once you have linked this data to pdfs if you are doing full text data extraction, you are ready to extract data from them.
+
+Use the command `deet extract-data` to extract data from imported documents.
+
+Once again, you will need to specify an EPPIJson file you want to import from, e.g.
+
+`deet extract-data references.json`
+
+By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.
+
+If you want to edit the prompts used for data extraction, you can do this by setting the `--prompt-population` option to `cli`, to fill in prompts in the command line, or by setting `--prompt-population` to `file`, and pointing to a csv detailing a prompt for each attribute with `--csv-path`. To create a template for this csv, run `deet init-prompt-csv`.
+
+To set further configuration options, you can supply a path to a configuration file with the option `--config-path`. To create a template for this file detailing configurable options, run
+
+```bash
+deet export-config-template
+```
+
+You can edit this file to change the configuration options for your extract-data pipeline.
 
 ## Contributing
 
