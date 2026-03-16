@@ -134,7 +134,6 @@ class MappingImporter:
         return [
             DocumentReferenceMapping(document_id=doc_id, file_path=file_path)
             for doc_id, file_path in payload.items()
-            if file_path and str(file_path).strip()
         ]
 
     def _load_json(self) -> dict[int, Path]:
