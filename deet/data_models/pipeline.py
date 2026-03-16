@@ -403,7 +403,7 @@ class PipelineStage(BaseModel):
     @staticmethod
     def write_stage_logfile(payload: str, filepath: Path) -> None:
         """Write logfile for a specific stage."""
-        filepath.write_text(payload)
+        filepath.write_text(payload, encoding="utf-8")
 
     def run_jobs(
         self,
