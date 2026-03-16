@@ -177,7 +177,11 @@ class MappingImporter:
                 doc_id = int(item["document_id"])
                 file_path = self._resolve_file_path(item["file_path"])
                 if file_path:
+                    logger.debug(f"file path {file_path} resolved, adding dict entry.")
                     result[doc_id] = Path(file_path)
+                logger.debug(
+                    f"file path {file_path} not resoved resolved, adding dict entry."
+                )
 
         # dict style
         elif isinstance(data, dict):
@@ -186,7 +190,13 @@ class MappingImporter:
                 doc_id = int(doc_id_str)
                 file_path_out = self._resolve_file_path(file_path)
                 if file_path_out:
+                    logger.debug(
+                        f"file path {file_path_out} resolved, adding dict entry."
+                    )
                     result[doc_id] = Path(file_path_out)
+                logger.debug(
+                    f"file path {file_path_out} not resolved, not adding dict entry."
+                )
 
         else:
             bad_json = "json must be either a list(array) or dict format."
@@ -213,7 +223,11 @@ class MappingImporter:
                 doc_id = int(row["document_id"])
                 file_path = self._resolve_file_path(row["file_path"])
                 if file_path:
+                    logger.debug(f"file path {file_path} resolved, adding dict entry.")
                     result[doc_id] = Path(file_path)
+                logger.debug(
+                    f"file path not {file_path} resolved, not adding dict entry."
+                )
 
         return result
 
@@ -271,7 +285,6 @@ class MappingImporter:
 
         """
         if file_path == "" or file_path is None:
-            logger.info("file_path is empty. returning None.")
             return None
         file_path = Path(file_path)
 
