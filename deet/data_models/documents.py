@@ -187,17 +187,16 @@ class DocumentIdentity(BaseModel):
         # from parsing eppi-json to EppiDocument is always going
         # to be eppi, otherwise this method should be extended to
         # reflect it coming from somewhere else.
-        # either way, it'll have to be an 8-digit int.
+        # Either way, it must be a positive integer with a number of digits
+        # between MIN_DOCUMENT_ID_DIGITS and MAX_DOCUMENT_ID_DIGITS (inclusive).
         if (
             self.document_id is not None
             and isinstance(self.document_id, int)
-            and (
-                MIN_DOCUMENT_ID_DIGITS
-                <= len(str(self.document_id))
-                <= MAX_DOCUMENT_ID_DIGITS
-            )
+            and self.document_id > 0
         ):
-            return self.document_id
+            digit_count = len(str(abs(self.document_id)))
+            if MIN_DOCUMENT_ID_DIGITS <= digit_count <= MAX_DOCUMENT_ID_DIGITS:
+                return self.document_id
         bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
         raise BadDocumentIdError(bad_doc_id)
 
