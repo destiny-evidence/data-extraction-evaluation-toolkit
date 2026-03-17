@@ -122,17 +122,14 @@ class MappingImporter:
     def import_mapping(self) -> list[DocumentReferenceMapping]:
         """Parse a csv/json file to a list od DocumentReferenceMapping objects."""
         if self.mapping_file_type == "json":
+            logger.debug("importing mapping from json")
             payload = self._load_json()
         elif self.mapping_file_type == "csv":
+            logger.debug("importing mapping from csv")
             payload = self._load_csv()
         else:
             bad_file = "only json or csv files are supported."
             raise ValueError(bad_file)
-
-        logger.info(
-            f"supplied mapping file {self.mapping_file_path.name} "
-            f"is {self.mapping_file_type}."
-        )
 
         return [
             DocumentReferenceMapping(document_id=doc_id, file_path=file_path)
@@ -179,7 +176,12 @@ class MappingImporter:
             for item in data:
                 doc_id = int(item["document_id"])
                 file_path = self._resolve_file_path(item["file_path"])
-                result[doc_id] = Path(file_path)
+                if file_path:
+                    logger.debug(f"file path {file_path} resolved, adding dict entry.")
+                    result[doc_id] = Path(file_path)
+                logger.debug(
+                    f"file path {file_path} not resoved resolved, adding dict entry."
+                )
 
         # dict style
         elif isinstance(data, dict):
@@ -187,7 +189,14 @@ class MappingImporter:
             for doc_id_str, file_path in data.items():
                 doc_id = int(doc_id_str)
                 file_path_out = self._resolve_file_path(file_path)
-                result[doc_id] = Path(file_path_out)
+                if file_path_out:
+                    logger.debug(
+                        f"file path {file_path_out} resolved, adding dict entry."
+                    )
+                    result[doc_id] = Path(file_path_out)
+                logger.debug(
+                    f"file path {file_path_out} not resolved, not adding dict entry."
+                )
 
         else:
             bad_json = "json must be either a list(array) or dict format."
@@ -213,7 +222,12 @@ class MappingImporter:
             for row in reader:
                 doc_id = int(row["document_id"])
                 file_path = self._resolve_file_path(row["file_path"])
-                result[doc_id] = Path(file_path)
+                if file_path:
+                    logger.debug(f"file path {file_path} resolved, adding dict entry.")
+                    result[doc_id] = Path(file_path)
+                logger.debug(
+                    f"file path not {file_path} resolved, not adding dict entry."
+                )
 
         return result
 
@@ -250,7 +264,7 @@ class MappingImporter:
 
         return parts_a[: len(parts_a) - overlap] + parts_b
 
-    def _resolve_file_path(self, file_path: str | Path) -> Path:
+    def _resolve_file_path(self, file_path: str | None | Path) -> Path | None:
         """
         Resolve file path, handling absolute
         paths and document_base_dir.
@@ -270,6 +284,8 @@ class MappingImporter:
 
 
         """
+        if file_path == "" or file_path is None:
+            return None
         file_path = Path(file_path)
 
         # if already findable, use as-is
@@ -708,9 +724,9 @@ class DocumentReferenceLinker:
 
         if linked_count < total_refs:
             unlinked_ids = [
-                doc.document_id
+                doc.document_identity.document_id  # type:ignore[union-attr]
                 for doc in self.documents_references
-                if doc.document_id not in processed_doc_ids
+                if doc.document_identity.document_id not in processed_doc_ids  # type:ignore[operator, union-attr]
             ]
             logger.warning(f"Unlinked document IDs: {unlinked_ids}")
 
