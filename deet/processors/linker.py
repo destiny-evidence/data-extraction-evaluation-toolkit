@@ -14,7 +14,7 @@ from pydantic import BaseModel, field_validator, model_validator
 from deet.data_models.documents import Document
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
-from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
+from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
 
 parser = DocumentParser()
 
@@ -47,8 +47,11 @@ class DocumentReferenceMapping(BaseModel):
     @classmethod
     def ensure_valid_doc_id(cls, value: int) -> int:
         """Ensure supplied document_id has 8 digits."""
-        if len(str(value)) != DOCUMENT_ID_N_DIGITS:
-            val_err = f'`document_id` must have 8 digits. supplied" {value}'
+        if not (MIN_DOCUMENT_ID_DIGITS <= len(str(value)) <= MAX_DOCUMENT_ID_DIGITS):
+            val_err = (
+                f"`document_id` must be between {MIN_DOCUMENT_ID_DIGITS} "
+                f'and {MAX_DOCUMENT_ID_DIGITS} digits. supplied" {value}'
+            )
             raise ValueError(val_err)
         return value
 

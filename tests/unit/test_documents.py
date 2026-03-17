@@ -28,6 +28,12 @@ from deet.exceptions import (
     NoAbstractError,
 )
 from deet.processors.parser import ParsedOutput
+from deet.utils.identifier_utils import (
+    MAX_DOCUMENT_ID,
+    MAX_DOCUMENT_ID_DIGITS,
+    MIN_DOCUMENT_ID,
+    MIN_DOCUMENT_ID_DIGITS,
+)
 
 
 # DocumentIdentity stuff
@@ -71,10 +77,22 @@ def test_document_identity_eppi_item_id_valid():
     assert result == 12345678
 
 
-def test_document_identity_eppi_item_id_invalid_digits():
+def test_document_identity_eppi_item_id_invalid_digits_short():
     """Test _eppi_item_id raises error for non-8-digit ID."""
     doc_identity = DocumentIdentity(
-        document_id=1234,  # bad!
+        document_id=123,  # bad!
+        doi=None,
+        first_author=None,
+        year=None,
+    )
+    with pytest.raises(BadDocumentIdError):
+        doc_identity._eppi_item_id()
+
+
+def test_document_identity_eppi_item_id_invalid_digits_long():
+    """Test _eppi_item_id raises error for non-8-digit ID."""
+    doc_identity = DocumentIdentity(
+        document_id=1234567891011,  # bad!
         doi=None,
         first_author=None,
         year=None,
@@ -104,7 +122,7 @@ def test_document_identity_doi_id():
     )
     result = doc_identity._doi_id()
     assert isinstance(result, int)
-    assert len(str(result)) == 8
+    assert MIN_DOCUMENT_ID_DIGITS <= len(str(result)) <= MAX_DOCUMENT_ID_DIGITS
 
 
 def test_document_identity_doi_author_year_id():
@@ -116,7 +134,7 @@ def test_document_identity_doi_author_year_id():
     )
     result = doc_identity._doi_author_year_id()
     assert isinstance(result, int)
-    assert len(str(result)) == 8
+    assert MIN_DOCUMENT_ID_DIGITS <= len(str(result)) <= MAX_DOCUMENT_ID_DIGITS
 
 
 def test_document_identity_doi_author_year_id_missing_field():
@@ -139,7 +157,7 @@ def test_document_identity_author_year_id():
     )
     result = doc_identity._author_year_id()
     assert isinstance(result, int)
-    assert len(str(result)) == 8
+    assert MIN_DOCUMENT_ID_DIGITS <= len(str(result)) <= MAX_DOCUMENT_ID_DIGITS
 
 
 def test_document_identity_random_int_id():
@@ -151,8 +169,8 @@ def test_document_identity_random_int_id():
     )
     result = doc_identity._random_int_id()
     assert isinstance(result, int)
-    assert 10000000 <= result <= 99999999
-    assert len(str(result)) == 8
+    assert MIN_DOCUMENT_ID <= result <= MAX_DOCUMENT_ID
+    assert MIN_DOCUMENT_ID_DIGITS <= len(str(result)) <= MAX_DOCUMENT_ID_DIGITS
 
 
 def test_document_identity_random_int_id_is_random():
@@ -232,7 +250,7 @@ def test_document_identity_populate_id_with_eppi():
 def test_document_identity_populate_id_falls_back_to_doi():
     """Test populate_id falls back to DOI when EPPI is invalid."""
     doc_identity = DocumentIdentity(
-        document_id=1234,  # invalid - not 8 digits
+        document_id=123,  # invalid - not 8 digits
         doi="10.1000/test",
         first_author="Smith",
         year="2024",
@@ -240,7 +258,11 @@ def test_document_identity_populate_id_falls_back_to_doi():
     doc_identity.populate_id()
     assert doc_identity.document_id is not None
     assert doc_identity.document_id_source == DocumentIDSource.DOI_AUTHOR_YEAR
-    assert len(str(doc_identity.document_id)) == 8
+    assert (
+        MIN_DOCUMENT_ID_DIGITS
+        <= len(str(doc_identity.document_id))
+        <= MAX_DOCUMENT_ID_DIGITS
+    )
 
 
 def test_document_identity_populate_id_avoids_existing_ids():
@@ -255,7 +277,11 @@ def test_document_identity_populate_id_avoids_existing_ids():
     doc_identity.populate_id(existing_ids=existing_ids)
     assert doc_identity.document_id != 12345678
     assert doc_identity.document_id not in existing_ids
-    assert len(str(doc_identity.document_id)) == 8
+    assert (
+        MIN_DOCUMENT_ID_DIGITS
+        <= len(str(doc_identity.document_id))
+        <= MAX_DOCUMENT_ID_DIGITS
+    )
 
 
 def test_document_identity_populate_id_custom_hierarchy():
@@ -268,7 +294,11 @@ def test_document_identity_populate_id_custom_hierarchy():
     )
     doc_identity.populate_id(hierarchy=[DocumentIDSource.DOI_ID])
     assert doc_identity.document_id_source == DocumentIDSource.DOI_ID
-    assert len(str(doc_identity.document_id)) == 8
+    assert (
+        MIN_DOCUMENT_ID_DIGITS
+        <= len(str(doc_identity.document_id))
+        <= MAX_DOCUMENT_ID_DIGITS
+    )
 
 
 def test_document_identity_populate_id_custom_bad_hierarchy():
@@ -576,7 +606,7 @@ def test_document_init_document_identity():
     assert doc.document_identity is not None
     assert result is not None
     assert isinstance(result, int)
-    assert len(str(result)) == 8
+    assert MIN_DOCUMENT_ID_DIGITS <= len(str(result)) <= MAX_DOCUMENT_ID_DIGITS
 
 
 def test_document_init_document_identity_with_existing_ids():

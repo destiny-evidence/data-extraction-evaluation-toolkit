@@ -30,10 +30,11 @@ from deet.exceptions import (
 )
 from deet.processors.parser import ParsedOutput
 from deet.utils.identifier_utils import (
-    DOCUMENT_ID_N_DIGITS,
     MAX_DOCUMENT_ID,
+    MAX_DOCUMENT_ID_DIGITS,
     MIN_DOCUMENT_ID,
-    hash_n_strings_to_eight_digit_int,
+    MIN_DOCUMENT_ID_DIGITS,
+    hash_n_strings_to_eppi_id_sized_int,
 )
 
 
@@ -190,7 +191,11 @@ class DocumentIdentity(BaseModel):
         if (
             self.document_id is not None
             and isinstance(self.document_id, int)
-            and len(str(self.document_id)) == DOCUMENT_ID_N_DIGITS
+            and (
+                MIN_DOCUMENT_ID_DIGITS
+                <= len(str(self.document_id))
+                <= MAX_DOCUMENT_ID_DIGITS
+            )
         ):
             return self.document_id
         bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
@@ -213,7 +218,7 @@ class DocumentIdentity(BaseModel):
                 f"None or empty strings: {','.join(target_fields)} "
             )
             raise MissingCitationElementError(none_or_empty)
-        return hash_n_strings_to_eight_digit_int(payload)
+        return hash_n_strings_to_eppi_id_sized_int(payload)
 
     def _doi_id(self) -> int:
         """Create an integer id as a function of doi."""
