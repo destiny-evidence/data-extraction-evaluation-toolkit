@@ -5,12 +5,12 @@ import hashlib
 MIN_DOCUMENT_ID_DIGITS = 4
 MAX_DOCUMENT_ID_DIGITS = 10
 MIN_DOCUMENT_ID = 10 ** (MIN_DOCUMENT_ID_DIGITS - 1)
-MAX_DOCUMENT_ID = (10 ** MAX_DOCUMENT_ID_DIGITS) - 1
+MAX_DOCUMENT_ID = (10**MAX_DOCUMENT_ID_DIGITS) - 1
 
 
 def hash_n_strings_to_eppi_id_sized_int(string_list: list[str]) -> int:
     """
-    Convert n strings into an integer with 4–10 digits using hash-based combination.
+    Convert n strings into an integer with 4-10 digits using hash-based combination.
 
     Args:
         string_list: a list of strings to hash.
