@@ -33,7 +33,7 @@ class LinkingStrategy(StrEnum):
 class DocumentReferenceMapping(BaseModel):
     """
     Data model for incoming, manual mappings
-    of references (via 8-digit integer ids) to
+    of references (via integer ids) to
     documents, via filename.
     """
 
@@ -46,14 +46,18 @@ class DocumentReferenceMapping(BaseModel):
     @field_validator("document_id", mode="before")
     @classmethod
     def ensure_valid_doc_id(cls, value: int) -> int:
-        """Ensure supplied document_id has 8 digits."""
-        if not (MIN_DOCUMENT_ID_DIGITS <= len(str(value)) <= MAX_DOCUMENT_ID_DIGITS):
+        """Ensure supplied document_id has a valid number of digits."""
+        int_value = int(value)
+        if int_value <= 0:
+            raise ValueError(f"`document_id` must be a positive integer. Supplied: {int_value}")
+        num_digits = len(str(abs(int_value)))
+        if not (MIN_DOCUMENT_ID_DIGITS <= num_digits <= MAX_DOCUMENT_ID_DIGITS):
             val_err = (
                 f"`document_id` must be between {MIN_DOCUMENT_ID_DIGITS} "
-                f'and {MAX_DOCUMENT_ID_DIGITS} digits. supplied" {value}'
+                f"and {MAX_DOCUMENT_ID_DIGITS} digits. Supplied: {int_value}"
             )
             raise ValueError(val_err)
-        return value
+        return int_value
 
     @model_validator(mode="after")
     def ensure_file_exists(self) -> Self:
