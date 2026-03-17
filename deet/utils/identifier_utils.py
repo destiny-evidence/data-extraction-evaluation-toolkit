@@ -4,8 +4,8 @@ import hashlib
 
 MIN_DOCUMENT_ID_DIGITS = 4
 MAX_DOCUMENT_ID_DIGITS = 10
-MIN_DOCUMENT_ID = 1000
-MAX_DOCUMENT_ID = 999999999
+MIN_DOCUMENT_ID = 10 ** (MIN_DOCUMENT_ID_DIGITS - 1)
+MAX_DOCUMENT_ID = (10 ** MAX_DOCUMENT_ID_DIGITS) - 1
 
 
 def hash_n_strings_to_eppi_id_sized_int(string_list: list[str]) -> int:
