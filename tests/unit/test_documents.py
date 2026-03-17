@@ -66,7 +66,7 @@ def test_document_identity_creation_minimal():
 
 
 def test_document_identity_eppi_item_id_valid():
-    """Test _eppi_item_id with valid 8-digit ID."""
+    """Test _eppi_item_id with a valid ID within the allowed digit range."""
     doc_identity = DocumentIdentity(
         document_id=12345678,
         doi=None,
@@ -77,8 +77,34 @@ def test_document_identity_eppi_item_id_valid():
     assert result == 12345678
 
 
+def test_document_identity_eppi_item_id_valid_min_digits():
+    """Test _eppi_item_id accepts an ID with the minimum allowed number of digits."""
+    min_digits_id = int("1" * MIN_DOCUMENT_ID_DIGITS)
+    doc_identity = DocumentIdentity(
+        document_id=min_digits_id,
+        doi=None,
+        first_author=None,
+        year=None,
+    )
+    result = doc_identity._eppi_item_id()
+    assert result == min_digits_id
+
+
+def test_document_identity_eppi_item_id_valid_max_digits():
+    """Test _eppi_item_id accepts an ID with the maximum allowed number of digits."""
+    max_digits_id = int("1" * MAX_DOCUMENT_ID_DIGITS)
+    doc_identity = DocumentIdentity(
+        document_id=max_digits_id,
+        doi=None,
+        first_author=None,
+        year=None,
+    )
+    result = doc_identity._eppi_item_id()
+    assert result == max_digits_id
+
+
 def test_document_identity_eppi_item_id_invalid_digits_short():
-    """Test _eppi_item_id raises error for non-8-digit ID."""
+    """Test _eppi_item_id raises error for an ID with too few digits."""
     doc_identity = DocumentIdentity(
         document_id=123,  # bad!
         doi=None,
@@ -90,7 +116,7 @@ def test_document_identity_eppi_item_id_invalid_digits_short():
 
 
 def test_document_identity_eppi_item_id_invalid_digits_long():
-    """Test _eppi_item_id raises error for non-8-digit ID."""
+    """Test _eppi_item_id raises error for an ID with too many digits."""
     doc_identity = DocumentIdentity(
         document_id=1234567891011,  # bad!
         doi=None,
