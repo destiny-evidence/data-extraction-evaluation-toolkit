@@ -14,7 +14,7 @@ from pydantic import BaseModel, field_validator, model_validator
 from deet.data_models.documents import Document
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
-from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
+from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
 
 parser = DocumentParser()
 
@@ -33,7 +33,7 @@ class LinkingStrategy(StrEnum):
 class DocumentReferenceMapping(BaseModel):
     """
     Data model for incoming, manual mappings
-    of references (via 8-digit integer ids) to
+    of references (via integer ids) to
     documents, via filename.
     """
 
@@ -46,11 +46,21 @@ class DocumentReferenceMapping(BaseModel):
     @field_validator("document_id", mode="before")
     @classmethod
     def ensure_valid_doc_id(cls, value: int) -> int:
-        """Ensure supplied document_id has 8 digits."""
-        if len(str(value)) != DOCUMENT_ID_N_DIGITS:
-            val_err = f'`document_id` must have 8 digits. supplied" {value}'
+        """Ensure supplied document_id has a valid number of digits."""
+        int_value = int(value)
+        if int_value <= 0:
+            invalid_int_id_error = (
+                f"`document_id` must be a positive integer. Supplied: {int_value}"
+            )
+            raise ValueError(invalid_int_id_error)
+        num_digits = len(str(abs(int_value)))
+        if not (MIN_DOCUMENT_ID_DIGITS <= num_digits <= MAX_DOCUMENT_ID_DIGITS):
+            val_err = (
+                f"`document_id` must be between {MIN_DOCUMENT_ID_DIGITS} "
+                f"and {MAX_DOCUMENT_ID_DIGITS} digits. Supplied: {int_value}"
+            )
             raise ValueError(val_err)
-        return value
+        return int_value
 
     @model_validator(mode="after")
     def ensure_file_exists(self) -> Self:

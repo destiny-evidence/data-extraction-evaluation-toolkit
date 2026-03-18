@@ -59,20 +59,48 @@ def test_document_reference_mapping_valid_md(tmp_path):
 
 def test_document_reference_mapping_invalid_document_id_too_short():
     """Test DocumentReferenceMapping raises error for short document_id."""
-    with pytest.raises(ValueError, match="8 digits"):
+    with pytest.raises(ValueError, match="must be between"):
         DocumentReferenceMapping(
-            document_id=1234,
+            document_id=123,
             file_path=Path("/fake/path.pdf"),
         )
 
 
 def test_document_reference_mapping_invalid_document_id_too_long():
     """Test DocumentReferenceMapping raises error for long document_id."""
-    with pytest.raises(ValueError, match="8 digits"):
+    with pytest.raises(ValueError, match="must be between"):
         DocumentReferenceMapping(
-            document_id=123456789,
+            document_id=1234567891011,
             file_path=Path("/fake/path.pdf"),
         )
+
+
+def test_document_reference_mapping_min_boundary_document_id(tmp_path):
+    """Test DocumentReferenceMapping accepts minimum 4-digit document_id."""
+    pdf_file = tmp_path / "boundary_min.pdf"
+    pdf_file.write_text("fake pdf content")
+
+    mapping = DocumentReferenceMapping(
+        document_id=1000,
+        file_path=pdf_file,
+    )
+    assert mapping.document_id == 1000
+    assert mapping.file_path == pdf_file
+    assert mapping.format == "pdf"
+
+
+def test_document_reference_mapping_max_boundary_document_id(tmp_path):
+    """Test DocumentReferenceMapping accepts maximum 10-digit document_id."""
+    pdf_file = tmp_path / "boundary_max.pdf"
+    pdf_file.write_text("fake pdf content")
+
+    mapping = DocumentReferenceMapping(
+        document_id=9999999999,
+        file_path=pdf_file,
+    )
+    assert mapping.document_id == 9999999999
+    assert mapping.file_path == pdf_file
+    assert mapping.format == "pdf"
 
 
 def test_document_reference_mapping_file_does_not_exist():
@@ -130,7 +158,7 @@ def test_linked_interim_payload_inherits_validation(tmp_path):
     citation = ReferenceFileInput()
     doc = Document(name="Test Doc", citation=citation)
 
-    with pytest.raises(ValueError, match="8 digits"):
+    with pytest.raises(ValueError, match="must be between"):
         LinkedInterimPayload(
             document_id=123,
             file_path=Path("/fake/path.pdf"),

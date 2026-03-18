@@ -30,10 +30,11 @@ from deet.exceptions import (
 )
 from deet.processors.parser import ParsedOutput
 from deet.utils.identifier_utils import (
-    DOCUMENT_ID_N_DIGITS,
     MAX_DOCUMENT_ID,
+    MAX_DOCUMENT_ID_DIGITS,
     MIN_DOCUMENT_ID,
-    hash_n_strings_to_eight_digit_int,
+    MIN_DOCUMENT_ID_DIGITS,
+    hash_n_strings_to_document_id,
 )
 
 
@@ -186,13 +187,16 @@ class DocumentIdentity(BaseModel):
         # from parsing eppi-json to EppiDocument is always going
         # to be eppi, otherwise this method should be extended to
         # reflect it coming from somewhere else.
-        # either way, it'll have to be an 8-digit int.
+        # Either way, it must be a positive integer with a number of digits
+        # between MIN_DOCUMENT_ID_DIGITS and MAX_DOCUMENT_ID_DIGITS (inclusive).
         if (
             self.document_id is not None
             and isinstance(self.document_id, int)
-            and len(str(self.document_id)) == DOCUMENT_ID_N_DIGITS
+            and self.document_id > 0
         ):
-            return self.document_id
+            digit_count = len(str(abs(self.document_id)))
+            if MIN_DOCUMENT_ID_DIGITS <= digit_count <= MAX_DOCUMENT_ID_DIGITS:
+                return self.document_id
         bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
         raise BadDocumentIdError(bad_doc_id)
 
@@ -213,7 +217,7 @@ class DocumentIdentity(BaseModel):
                 f"None or empty strings: {','.join(target_fields)} "
             )
             raise MissingCitationElementError(none_or_empty)
-        return hash_n_strings_to_eight_digit_int(payload)
+        return hash_n_strings_to_document_id(payload)
 
     def _doi_id(self) -> int:
         """Create an integer id as a function of doi."""
