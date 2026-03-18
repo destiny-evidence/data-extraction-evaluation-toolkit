@@ -91,15 +91,14 @@ def test_document_identity_eppi_item_id_valid_min_digits():
 
 def test_document_identity_eppi_item_id_valid_max_digits():
     """Test _eppi_item_id accepts an ID with the maximum allowed number of digits."""
-    max_digits_id = int("1" * MAX_DOCUMENT_ID_DIGITS)
     doc_identity = DocumentIdentity(
-        document_id=max_digits_id,
+        document_id=MAX_DOCUMENT_ID,
         doi=None,
         first_author=None,
         year=None,
     )
     result = doc_identity._eppi_item_id()
-    assert result == max_digits_id
+    assert result == MAX_DOCUMENT_ID
 
 
 def test_document_identity_eppi_item_id_invalid_digits_short():
