@@ -2,13 +2,20 @@
 
 import csv
 import json
-import random
 from collections import defaultdict
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any
 
-from destiny_sdk.enhancements import Visibility
+from destiny_sdk.enhancements import (
+    AbstractContentEnhancement,
+    AbstractProcessType,
+    AuthorPosition,
+    Authorship,
+    BibliographicMetadataEnhancement,
+    EnhancementFileInput,
+    Visibility,
+)
 from destiny_sdk.references import ReferenceFileInput
 from pydantic import BaseModel
 
@@ -92,8 +99,25 @@ class CovidenceAnnotationConverter:
             Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
         }
 
-    def find_duplicate_fieldnames(self, fieldnames: list) -> list:
-        """Return duplicate field/column names and their index."""
+    @staticmethod
+    def normalize_text(value: str) -> str:
+        """Strip white space and lowercase text."""
+        return value.strip().lower()
+
+    @staticmethod
+    def find_duplicate_fieldnames(fieldnames: list) -> list[dict]:
+        """
+        Find duplicate column names and return their positions.
+
+        Given a list of field/column names, returns a list of dictionaries
+        containing the duplicated column name and the indices where it appears.
+
+        Example:
+            ["id", "name", "title", "name", "title"] ->
+            [{"col_name": "name", "col_ids": [1, 3]},
+             {"col_name": "title", "col_ids": [2, 4]}]
+
+        """
         positions = defaultdict(list)
         for idx, name in enumerate(fieldnames):
             positions[name].append(idx)
@@ -140,37 +164,142 @@ class CovidenceAnnotationConverter:
         msg = "Multiple incompatible types found"
         raise ValueError(msg)
 
-    def infer_field_types(
+    def infer_attribute_types(
         self,
         rows: list[dict],
-        fieldnames: list[str],
-        sample_size: int = DEFAULT_SAMPLE_SIZE,
+        attribute_names: list[str],
+        sample_size: int | None = None,
     ) -> dict[str, AttributeType]:
-        """Infer field types for the given columns."""
-        sample_size = min(len(rows), sample_size)
+        """
+        Infer field types for each column using up to `sample_size` non-null samples.
+        Delfault sample size = entire dataset. Only use sample size if you are sure.
+        This avoids sparse columns biasing the inference due to many empty values.
 
-        rng = random.Random(42)  # noqa: S311
-        sample_rows = rng.sample(rows, sample_size)
+        Example:
+        rows = [
+            {"id": "1", "age": "42", "gender": "F"},
+            {"id": "2", "age": "", "gender": "M"},
+            {"id": "3", "age": "36", "gender": ""},
+        ]
+        fieldnames = ["id", "age", "gender"]
 
-        raw_fieldtypes = defaultdict(list)
-        for row in sample_rows:
-            for fname in fieldnames:
-                ftype = self.infer_type(row[fname])
-                raw_fieldtypes[fname].append(ftype)
+        Function:
+        infer_field_types(rows, fieldnames, sample_size=2)
 
-        fieldtypes: dict[str, AttributeType] = {}
-        for fname, ftypes in raw_fieldtypes.items():
+        Output:
+        {"id": int, "age": int, "gender": str}
+
+        """
+        n_rows = len(rows)
+        raw_attribute_types: defaultdict[str, list] = defaultdict(list)
+
+        if not sample_size:
+            sample_size = n_rows
+
+        for att_name in attribute_names:
+            row_num = 0
+
+            while len(raw_attribute_types[att_name]) < sample_size and row_num < n_rows:
+                att_type = self.infer_type(rows[row_num][att_name])
+
+                if att_type is not None:
+                    raw_attribute_types[att_name].append(att_type)
+
+                row_num += 1
+
+        resolved_attribute_types: dict[str, AttributeType] = {}
+        for att_name, att_types in raw_attribute_types.items():
             try:
-                fieldtypes[fname] = self.resolve_types(ftypes)
+                resolved_attribute_types[att_name] = self.resolve_types(att_types)
             except ValueError as e:
-                msg = f"Error inferring type for field '{fname}': {e}"
+                msg = f"Error inferring type for field '{att_name}': {e}"
                 raise ValueError(msg) from e
 
-        return fieldtypes
+        return resolved_attribute_types
+
+    @staticmethod
+    def _build_citation_dict_from_row(
+        mapping: dict[str, str],
+        row: dict[str, Any],
+    ) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+
+        for key, column_name in mapping.items():
+            if column_name not in row:
+                continue  # or raise, depending on strictness
+
+            parts = key.split(".")
+            d = result
+
+            for part in parts[:-1]:
+                d = d.setdefault(part, {})
+
+            d[parts[-1]] = row[column_name].strip()
+
+        return result
+
+    @staticmethod
+    def build_authorship_list(authors: str) -> list[Authorship]:
+        """Create a Authorship list."""
+        authorship = []
+        author_list = authors.split(";")
+        for i, author in enumerate(author_list):
+            position = AuthorPosition.MIDDLE
+            if i == 0:
+                position = AuthorPosition.FIRST
+            if i == len(author_list) - 1:
+                position = AuthorPosition.LAST
+            authorship.append(Authorship(display_name=author, position=position))
+        return authorship
+
+    def build_destiny_reference(
+        self,
+        row: dict,
+        citation_fields: dict[str, Any],
+        source: str = "DEET csv converter",
+    ) -> ReferenceFileInput:
+        """Convert citation dict to destiny reference."""
+        citation_dict = self._build_citation_dict_from_row(citation_fields, row)
+
+        abstract = (
+            AbstractContentEnhancement(
+                abstract=citation_dict["abstract"],
+                process=AbstractProcessType.UNINVERTED,
+            )
+            if "abstract" in citation_dict
+            else None
+        )
+
+        citation_dict["authorship"] = (
+            self.build_authorship_list(citation_dict["authorship"])
+            if "authorship" in citation_dict
+            and isinstance(citation_dict["authorship"], str)
+            else None
+        )
+
+        bibliographic_data = BibliographicMetadataEnhancement(**citation_dict)
+
+        enhancements = [
+            EnhancementFileInput(
+                source=source,
+                visibility=Visibility.PUBLIC,
+                content=content,
+            )
+            for content in [abstract, bibliographic_data]
+            if content is not None
+        ]
+
+        return ReferenceFileInput(
+            visibility=Visibility.PUBLIC,
+            enhancements=enhancements,
+        )
 
     def load_csv(
-        self, file_path: str | Path
-    ) -> tuple[list[str], list[str], list[dict[str, Any]]]:
+        self,
+        file_path: str | Path,
+        attribute_fields: list[str] | None = None,
+        citation_fields: dict | None = None,
+    ) -> tuple[list[str], dict[str, str], list[str], list[dict[str, Any]]]:
         """Load CSV file, normalize fieldnames, return fieldnames, attributes, rows."""
         path = Path(file_path)
         with path.open(newline="") as f:
@@ -178,7 +307,7 @@ class CovidenceAnnotationConverter:
 
             # normalize headers BEFORE reading rows
             raw_headers = csv_reader.fieldnames or []
-            fieldnames = [h.strip().lower() for h in raw_headers]
+            fieldnames: list[str] = [self.normalize_text(h) for h in raw_headers]
             csv_reader.fieldnames = fieldnames
 
             # validate duplicates
@@ -194,15 +323,33 @@ class CovidenceAnnotationConverter:
                 msg = f"Required columns missing: {missing}"
                 raise ValueError(msg)
 
-            # attribute fields
-            attribute_fields: list[str] = [
-                h for h in fieldnames if h not in meta_fields
-            ]
+            if citation_fields is None:
+                logger.info("No citation fields provided")
+                citation_fields = {}
+            else:
+                # normalize citation fields
+                citation_fields = {
+                    k: self.normalize_text(v) for k, v in citation_fields.items()
+                }
+
+                unknown = set(citation_fields.values()) - set(fieldnames)
+                if unknown:
+                    msg = f"Citation fields not found in CSV: {unknown}"
+                    raise ValueError(msg)
+
+            if attribute_fields is None:
+                logger.info("No attribute fields provided")
+                excluded_fields = meta_fields | set(citation_fields.values())
+                resolved_attribute_fields = [
+                    h for h in fieldnames if h not in excluded_fields
+                ]
+            else:
+                resolved_attribute_fields = attribute_fields
 
             # Read rows into mem once
             rows = list(csv_reader)
 
-        return fieldnames, attribute_fields, rows
+        return fieldnames, citation_fields, resolved_attribute_fields, rows
 
     def build_attributes(
         self, attribute_types: dict[str, AttributeType]
@@ -221,20 +368,23 @@ class CovidenceAnnotationConverter:
 
     def build_documents_and_annotations(
         self,
-        rows: list[dict],
         attributes: list[Attribute],
+        citation_fields: dict,
+        rows: list[dict],
     ) -> tuple[list[Document], list[GoldStandardAnnotatedDocument]]:
         """Build and return Documents and  Gold Standard Annotated Documents."""
-        documents: list[Document] = []
-        annotated_documents: list[GoldStandardAnnotatedDocument] = []
-
         attr_by_label = {a.attribute_label: a for a in attributes}
+        annotated_documents: list[GoldStandardAnnotatedDocument] = []
+        documents: list[Document] = []
+
         for row_idx, row in enumerate(rows):
+            row_reference = self.build_destiny_reference(row, citation_fields)
+
             # --- Build Document ---
             try:
                 document = Document(
                     name=row["name"],
-                    citation=ReferenceFileInput(visibility=Visibility.PUBLIC),
+                    citation=row_reference,
                     document_id=row["document_id"],
                 )
             except KeyError as e:
@@ -264,19 +414,24 @@ class CovidenceAnnotationConverter:
                     annotation_type=AnnotationType.HUMAN,
                 )
 
-            annotations.append(annotation)
+                annotations.append(annotation)
 
             # --- Attach annotations to document ---
             annotated_doc = GoldStandardAnnotatedDocument(
-                **document.model_dump(),
-                annotations=annotations,
+                document=document,  # <-- pass the model itself
+                annotations=annotations,  # <-- list of annotation models
             )
 
             annotated_documents.append(annotated_doc)
 
         return documents, annotated_documents
 
-    def process_annotation_file(self, file_path: str | Path) -> ProcessedAnnotationData:
+    def process_annotation_file(
+        self,
+        file_path: str | Path,
+        attribute_fields: list | None = None,
+        citation_fields: dict | None = None,
+    ) -> ProcessedAnnotationData:
         """
         Process a complete CSV annotation file and return structured data.
 
@@ -289,14 +444,16 @@ class CovidenceAnnotationConverter:
         """
         logger.info(f"Processing annotation file: {file_path}")
 
-        fieldnames, attribute_fields, rows = self.load_csv(file_path)
+        fieldnames, citation_fields, attribute_fields, rows = self.load_csv(
+            file_path, attribute_fields, citation_fields
+        )
 
-        attribute_types = self.infer_field_types(rows, attribute_fields)
+        attribute_types = self.infer_attribute_types(rows, attribute_fields)
 
         attributes = self.build_attributes(attribute_types)
 
         documents, annotated_documents = self.build_documents_and_annotations(
-            rows, attributes
+            attributes, citation_fields, rows
         )
         attribute_id_to_label = {
             attr.attribute_id: attr.attribute_label for attr in attributes
