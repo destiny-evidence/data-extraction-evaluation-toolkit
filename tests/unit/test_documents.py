@@ -275,8 +275,11 @@ def test_document_identity_populate_id_with_eppi():
 
 def test_document_identity_populate_id_falls_back_to_doi():
     """Test populate_id falls back to DOI when EPPI is invalid."""
+    # NOTE: below will have to be changed if the whole nature
+    # of ids change.
+    invalid = MIN_DOCUMENT_ID - 1
     doc_identity = DocumentIdentity(
-        document_id=123,  # invalid - not 8 digits
+        document_id=invalid,
         doi="10.1000/test",
         first_author="Smith",
         year="2024",
