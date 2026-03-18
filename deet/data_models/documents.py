@@ -34,7 +34,7 @@ from deet.utils.identifier_utils import (
     MAX_DOCUMENT_ID_DIGITS,
     MIN_DOCUMENT_ID,
     MIN_DOCUMENT_ID_DIGITS,
-    hash_n_strings_to_eppi_id_sized_int,
+    hash_n_strings_to_document_id,
 )
 
 
@@ -217,7 +217,7 @@ class DocumentIdentity(BaseModel):
                 f"None or empty strings: {','.join(target_fields)} "
             )
             raise MissingCitationElementError(none_or_empty)
-        return hash_n_strings_to_eppi_id_sized_int(payload)
+        return hash_n_strings_to_document_id(payload)
 
     def _doi_id(self) -> int:
         """Create an integer id as a function of doi."""

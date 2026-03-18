@@ -8,15 +8,17 @@ MIN_DOCUMENT_ID = 10 ** (MIN_DOCUMENT_ID_DIGITS - 1)
 MAX_DOCUMENT_ID = (10**MAX_DOCUMENT_ID_DIGITS) - 1
 
 
-def hash_n_strings_to_eppi_id_sized_int(string_list: list[str]) -> int:
+def hash_n_strings_to_document_id(string_list: list[str]) -> int:
     """
-    Convert n strings into an integer with 4-10 digits using hash-based combination.
+    Convert n strings into an integer with MIN_DOCUMENT_ID-MAX_DOCUMENT_ID
+    digits (4-10) using hash-based combination.
 
     Args:
         string_list: a list of strings to hash.
 
     Returns:
-        An integer with between 4 and 10 digits (from 1000 to 9999999999).
+        An integer with between MIN_DOCUMENT_ID-MAX_DOCUMENT_ID digits
+        (from 1000 to 9999999999).
 
     """
     combined = "|".join(string_list)
