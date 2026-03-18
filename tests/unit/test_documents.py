@@ -103,8 +103,9 @@ def test_document_identity_eppi_item_id_valid_max_digits():
 
 def test_document_identity_eppi_item_id_invalid_digits_short():
     """Test _eppi_item_id raises error for an ID with too few digits."""
+    too_short_id = MIN_DOCUMENT_ID - 1
     doc_identity = DocumentIdentity(
-        document_id=123,  # bad!
+        document_id=too_short_id,
         doi=None,
         first_author=None,
         year=None,
@@ -115,8 +116,9 @@ def test_document_identity_eppi_item_id_invalid_digits_short():
 
 def test_document_identity_eppi_item_id_invalid_digits_long():
     """Test _eppi_item_id raises error for an ID with too many digits."""
+    too_long_id = MAX_DOCUMENT_ID + 1
     doc_identity = DocumentIdentity(
-        document_id=1234567891011,  # bad!
+        document_id=too_long_id,  # bad!
         doi=None,
         first_author=None,
         year=None,
