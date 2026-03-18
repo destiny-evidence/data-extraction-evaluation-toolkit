@@ -49,8 +49,10 @@ class DocumentReferenceMapping(BaseModel):
         """Ensure supplied document_id has a valid number of digits."""
         int_value = int(value)
         if int_value <= 0:
-            not_int = f"`document_id` must be a positive integer. Supplied: {int_value}"
-            raise ValueError(not_int)
+            invalid_int_id_error = (
+                f"`document_id` must be a positive integer. Supplied: {int_value}"
+            )
+            raise ValueError(invalid_int_id_error)
         num_digits = len(str(abs(int_value)))
         if not (MIN_DOCUMENT_ID_DIGITS <= num_digits <= MAX_DOCUMENT_ID_DIGITS):
             val_err = (
