@@ -39,6 +39,8 @@ def hash_n_strings_to_eppi_id_sized_int(string_list: list[str]) -> int:
     # Sanity check
     id_len = len(str(id_))
     if not (MIN_DOCUMENT_ID_DIGITS <= id_len <= MAX_DOCUMENT_ID_DIGITS):
+        # NOTE: potentially fix ID at source if this error is ever raised,
+        # otherwise remove error.
         bad_id = (
             f"id {id_} is bad, it should have between "
             f"{MIN_DOCUMENT_ID_DIGITS} and {MAX_DOCUMENT_ID_DIGITS} digits!"
