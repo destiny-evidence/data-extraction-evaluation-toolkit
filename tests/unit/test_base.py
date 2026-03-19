@@ -779,16 +779,19 @@ def test_gold_standard_annotated_document_creation() -> None:
         annotation_type=AnnotationType.HUMAN,
     )
 
-    doc = GoldStandardAnnotatedDocument(
+    document = Document(
         name="Test Document 3",
         citation=citation,
         context="Test content",
         context_type=ContextType.FULL_DOCUMENT,
         document_id=3,
+    )
+    doc = GoldStandardAnnotatedDocument(
+        document=document,
         annotations=[annotation],
     )
-    assert doc.name == "Test Document 3"
-    assert doc.document_id == 3
+    assert doc.document.name == "Test Document 3"
+    assert doc.document.document_id == 3
     assert len(doc.annotations) == 1
     assert doc.annotations[0].output_data is True
 
