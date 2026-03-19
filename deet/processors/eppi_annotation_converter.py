@@ -386,17 +386,17 @@ class EppiAnnotationConverter(AnnotationConverter):
         all_annotations_raw = []
         documents_by_title: dict[str, EppiDocument] = {}
 
+        # NL: really, the existing_ids thing is quite redundant here,
+        # as we assume we're getting our eppi item ids as document_ids.
+        # however, a) it demonstrates the desired functionality of
+        # checking against a set of already populated ids, and
+        # b) there is a world where eppi.jsons contain invalid item ids.
+        existing_ids: set[int] = set()
         for reference in data.get("References", []):
             reference_codes = reference.get("Codes", [])
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
-            # NL: really, the existing_ids thing is quite redundant here,
-            # as we assume we're getting our eppi item ids as document_ids.
-            # however, a) it demonstrates the desired functionality of
-            # checking against a set of already populated ids, and
-            # b) there is a world where eppi.jsons contain invalid item ids.
-            existing_ids: set[int] = set()
             if doc_title and doc_title not in documents_by_title:
                 logger.debug(f"already populated ids in this job: {existing_ids!s} ")
                 document = EppiDocument(**reference)
