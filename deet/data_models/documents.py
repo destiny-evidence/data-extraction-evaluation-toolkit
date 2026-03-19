@@ -8,7 +8,7 @@ from functools import cached_property
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Generic, Literal, Self, TypeVar
+from typing import Any, Generic, Literal, Self, TypeVar
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -520,7 +520,7 @@ class GoldStandardAnnotatedDocument(
     def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
-        output_data: bool | list
+        output_data: Any
         for annotation in self.annotations:
             if annotation.attribute.attribute_id == attribute.attribute_id:
                 if result is not None:
@@ -533,17 +533,22 @@ class GoldStandardAnnotatedDocument(
                 result = annotation
 
         if result is None:
-            if attribute.output_data_type == AttributeType.BOOL:
-                output_data = False
-            elif attribute.output_data_type == AttributeType.LIST:
-                output_data = []
-            else:
+            _default_for_missing: dict[AttributeType, Any] = {
+                AttributeType.BOOL: False,
+                AttributeType.LIST: [],
+                AttributeType.STRING: "",
+                AttributeType.INTEGER: 0,
+                AttributeType.FLOAT: 0.0,
+                AttributeType.DICT: {},
+            }
+            if attribute.output_data_type not in _default_for_missing:
                 not_found = (
                     "Attribute not found in annotations."
                     " Don't know how to interpret this when attribute is of type "
+                    f"{attribute.output_data_type}"
                 )
-                f"{attribute.output_data_type}"
                 raise ValueError(not_found)
+            output_data = _default_for_missing[attribute.output_data_type]
             return GoldStandardAnnotation(
                 attribute=attribute,
                 output_data=output_data,
