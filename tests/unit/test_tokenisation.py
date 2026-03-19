@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from deet.utils.tokenisation import (
     count_tokens,
+    estimate_cost_usd,
     get_model_max_tokens,
     truncate_to_token_limit,
 )
@@ -25,7 +26,7 @@ def test_get_model_max_tokens_unknown_model():
     """Test get_model_max_tokens returns None for unknown model."""
     with patch(
         "deet.utils.tokenisation.litellm.get_max_tokens",
-        side_effect=Exception("unknown"),
+        side_effect=KeyError("unknown"),
     ):
         result = get_model_max_tokens("unknown-model-xyz")
     assert result is None
@@ -42,11 +43,51 @@ def test_count_tokens_basic():
     assert result == 3
 
 
+def test_estimate_cost_usd_returns_tuple():
+    """Test estimate_cost_usd returns (prompt_cost, completion_cost)."""
+    with patch(
+        "deet.utils.tokenisation.litellm.cost_per_token",
+        return_value=(0.001, 0.002),
+    ):
+        prompt_cost, completion_cost = estimate_cost_usd(
+            "gpt-4o-mini",
+            prompt_tokens=100,
+            completion_tokens=50,
+        )
+    assert prompt_cost == 0.001
+    assert completion_cost == 0.002
+
+
+def test_estimate_cost_usd_completion_only():
+    """Test estimate_cost_usd with completion_tokens only."""
+    with patch(
+        "deet.utils.tokenisation.litellm.cost_per_token",
+        return_value=(None, 0.0001),
+    ):
+        prompt_cost, completion_cost = estimate_cost_usd(
+            "gpt-4o-mini",
+            completion_tokens=10,
+        )
+    assert prompt_cost is None
+    assert completion_cost == 0.0001
+
+
+def test_estimate_cost_usd_on_error_returns_none():
+    """Test estimate_cost_usd returns (None, None) when litellm fails."""
+    with patch(
+        "deet.utils.tokenisation.litellm.cost_per_token",
+        side_effect=KeyError("unknown model"),
+    ):
+        prompt_cost, completion_cost = estimate_cost_usd("unknown-model")
+    assert prompt_cost is None
+    assert completion_cost is None
+
+
 def test_count_tokens_fallback_on_error():
     """Test count_tokens uses char estimate when token_counter fails."""
     with patch(
         "deet.utils.tokenisation.litellm.token_counter",
-        side_effect=Exception("token_counter failed"),
+        side_effect=TypeError("token_counter failed"),
     ):
         result = count_tokens("unknown-model", "Hello world")
     assert result == max(1, 11 // 4)

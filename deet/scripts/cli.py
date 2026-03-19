@@ -325,7 +325,7 @@ def extract_data(  # noqa: PLR0913
         link_map_path=link_map_path,
     )
 
-    llm_annotated_documents = data_extractor.extract_from_documents(
+    run_output = data_extractor.extract_from_documents(
         attributes=processed_annotation_data.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
@@ -340,7 +340,7 @@ def extract_data(  # noqa: PLR0913
 
     evaluator = GoldStandardLLMEvaluator(
         gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
-        llm_annotated_documents=llm_annotated_documents,
+        llm_annotated_documents=run_output.annotated_documents,
         attributes=processed_annotation_data.attributes,
         custom_metrics=custom_evaluation_metrics,
         extraction_run_id=extraction_run_id,

@@ -65,7 +65,7 @@ class DataExtractionSettings(BaseSettings):
             "Maximum number of tokens to generate (None means provider default)."
         ),
     )
-    llm_max_context_length: int | None = Field(
+    llm_max_context_tokens: int | None = Field(
         default=None,
         description=(
             "Maximum input context length in tokens (system + attributes + "

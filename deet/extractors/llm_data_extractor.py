@@ -11,7 +11,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    TypeAdapter,
     ValidationError,
     model_validator,
 )
@@ -28,11 +27,17 @@ from deet.data_models.documents import (
     Document,
     GoldStandardAnnotatedDocument,
 )
+from deet.data_models.extraction import (
+    DocumentExtractionResult,
+    ExtractionRunMetadata,
+    ExtractionRunOutput,
+)
 from deet.settings import LLMProvider, get_settings
 from deet.utils.cli_utils import optional_progress
 from deet.utils.tokenisation import (
     _DEFAULT_MAX_TOKENS,
     count_tokens,
+    estimate_cost_usd,
     get_model_max_tokens,
     truncate_to_token_limit,
 )
@@ -68,7 +73,7 @@ def _model_string_for_tokenisation() -> str:
     """Build the model string used for tokenisation (matches LLMDataExtractor.model)."""
     match settings.llm_provider:
         case LLMProvider.AZURE:
-            return f"azure/{settings.azure_deployment}"
+            return f"azure/{settings.llm_model}"
         case LLMProvider.OLLAMA:
             return f"ollama/{settings.llm_model}"
         case _:
@@ -91,11 +96,18 @@ class DataExtractionConfig(BaseModel):
     default_context_type: ContextType = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
-    max_context_length: int | None = Field(
-        default_factory=lambda: settings.llm_max_context_length,
+    max_context_tokens: int | None = Field(
+        default_factory=lambda: settings.llm_max_context_tokens,
         description=(
             "Maximum context length in tokens (total payload: system + attributes + "
             "context). None = infer from model. Override to manage costs."
+        ),
+    )
+    truncate_on_overflow: bool = Field(
+        default=False,
+        description=(
+            "When True, automatically truncate context that exceeds "
+            "max_context_tokens. When False (default), raise ValueError."
         ),
     )
 
@@ -113,17 +125,17 @@ class DataExtractionConfig(BaseModel):
     )
 
     @model_validator(mode="after")
-    def populate_max_context_length_from_model(self) -> "DataExtractionConfig":
-        """Populate max_context_length from model when not set."""
-        if self.max_context_length is not None:
+    def populate_max_context_tokens_from_model(self) -> "DataExtractionConfig":
+        """Populate max_context_tokens from model when not set."""
+        if self.max_context_tokens is not None:
             return self
         model_str = _model_string_for_tokenisation()
         inferred = get_model_max_tokens(model_str)
         if inferred is not None:
-            self.max_context_length = inferred
+            self.max_context_tokens = inferred
         else:
             # Use shared fallback when model max tokens cannot be inferred.
-            self.max_context_length = _DEFAULT_MAX_TOKENS
+            self.max_context_tokens = _DEFAULT_MAX_TOKENS
         return self
 
 
@@ -193,7 +205,7 @@ class LLMDataExtractor:
         payload: str | None = None,
         md_path: Path | None = None,
         context_type: ContextType | None = None,
-    ) -> tuple[list[GoldStandardAnnotation], list[dict[str, Any]], int]:
+    ) -> DocumentExtractionResult:
         """
         Extract data from a single document.
 
@@ -210,8 +222,8 @@ class LLMDataExtractor:
             context_type: Override config context type; if None, use config default.
 
         Returns:
-            Tuple of (list of annotations for the document, messages sent to the LLM,
-            output token count from the LLM response).
+            DocumentExtractionResult with annotations, messages, token counts,
+            cost, model name, and timestamp.
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
@@ -248,18 +260,38 @@ class LLMDataExtractor:
             logger.warning(msg)
             raise ValueError(msg)
 
-        context = self._prepare_context(
-            payload=payload,
-            context_type=context_type,
-        )
+        context = self._prepare_context(payload=payload, context_type=context_type)
         prompt = self._generate_user_message_json(
             payload=context, attributes=selected_attributes
         )
-        llm_response, messages, output_tokens = self._call_llm(prompt=prompt)
+        llm_response, messages, output_tokens, input_tokens = self._call_llm(
+            prompt=prompt
+        )
         annotations = self._parse_llm_response(
             response_content=llm_response, attributes=selected_attributes
         )
-        return annotations, messages, output_tokens
+
+        input_cost, completion_cost = estimate_cost_usd(
+            self.model,
+            prompt_tokens=input_tokens,
+            completion_tokens=output_tokens,
+        )
+        total_cost: float | None = None
+        if input_cost is not None and completion_cost is not None:
+            total_cost = input_cost + completion_cost
+        elif input_cost is not None:
+            total_cost = input_cost
+        elif completion_cost is not None:
+            total_cost = completion_cost
+
+        return DocumentExtractionResult(
+            annotations=annotations,
+            messages=messages,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
+        )
 
     def extract_from_documents(  # noqa: PLR0913
         self,
@@ -271,7 +303,7 @@ class LLMDataExtractor:
         prompt_outfile: Path | None = None,
         *,
         show_progress: bool = False,
-    ) -> list[GoldStandardAnnotatedDocument]:
+    ) -> ExtractionRunOutput:
         """
         Extract data from all documents.
 
@@ -280,22 +312,27 @@ class LLMDataExtractor:
         Args:
             attributes: List of attributes to extract.
             documents: Sequence of Document instances (required).
+            filter_attribute_ids: Optional list of attribute IDs to filter by.
             output_file: Optional path to save combined results JSON.
+            context_type: Override config context type; if None, use config default.
             prompt_outfile: Optional path to write a single JSON object:
-                keys are document (PDF) paths, values are prompt payload (messages).
-
+                keys are document IDs, values are prompt payload (messages).
+            show_progress: Whether to show a progress bar.
 
         Returns:
-            Dictionary mapping file paths to lists of annotations.
+            ExtractionRunOutput containing annotated documents and run metadata.
 
         """
         if context_type is None:
             context_type = self.config.default_context_type
 
         prompt_payloads: dict[str, Any] = {}
-        per_document_output_tokens: dict[str, int] = {}
+        per_doc_tokens: dict[str, dict[str, int]] = {}
 
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_cost: float | None = None
 
         with optional_progress(
             documents, show_progress=show_progress
@@ -309,7 +346,7 @@ class LLMDataExtractor:
                     document.context = document.safe_parsed_document.text
 
                 try:
-                    result, messages, output_tokens = self.extract_from_document(
+                    result = self.extract_from_document(
                         attributes=attributes,
                         filter_attribute_ids=filter_attribute_ids,
                         payload=document.context,
@@ -318,22 +355,38 @@ class LLMDataExtractor:
 
                     llm_annotated_docs.append(
                         GoldStandardAnnotatedDocument(
-                            document=document, annotations=result
+                            document=document, annotations=result.annotations
                         )
                     )
-                    prompt_payloads[str(document.safe_identity.document_id)] = messages
-                    per_document_output_tokens[
-                        str(document.safe_identity.document_id)
-                    ] = output_tokens
+                    doc_id_str = str(document.safe_identity.document_id)
+                    prompt_payloads[doc_id_str] = result.messages
+                    per_doc_tokens[doc_id_str] = {
+                        "input_tokens": result.input_tokens,
+                        "output_tokens": result.output_tokens,
+                    }
+                    total_input_tokens += result.input_tokens
+                    total_output_tokens += result.output_tokens
+                    if result.total_cost_usd is not None:
+                        total_cost = (total_cost or 0.0) + result.total_cost_usd
 
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to process {document.name}: {e}")
                     logger.debug("Error details", exc_info=True)
 
+        run_metadata = ExtractionRunMetadata(
+            model=self.model,
+            total_input_tokens=total_input_tokens,
+            total_output_tokens=total_output_tokens,
+            total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
+            per_document_tokens=per_doc_tokens,
+        )
+        run_output = ExtractionRunOutput(
+            annotated_documents=llm_annotated_docs,
+            metadata=run_metadata,
+        )
+
         if output_file is not None:
-            self._save_results(
-                llm_annotated_docs, output_file, per_document_output_tokens
-            )
+            self._save_results(run_output, output_file)
             logger.info(f"Combined LLM classifications written to: {output_file}")
 
         if prompt_outfile is not None:
@@ -342,7 +395,7 @@ class LLMDataExtractor:
             )
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
-        return llm_annotated_docs
+        return run_output
 
     def _write_json_if_path(
         self, data: dict[str, Any] | list[Any], path: Path | None
@@ -467,7 +520,82 @@ class LLMDataExtractor:
 
         return prompt_json
 
-    def _call_llm(self, prompt: str) -> tuple[str, list[dict[str, Any]], int]:
+    def _enforce_context_limit(
+        self,
+        messages: list[dict[str, Any]],
+        prompt: str,
+        system_prompt: str,
+    ) -> None:
+        """
+        Enforce max_context_tokens on the messages payload.
+
+        When the total token count exceeds max_context_tokens:
+        - If ``truncate_on_overflow`` is False (default), raises ValueError.
+        - If ``truncate_on_overflow`` is True, truncates the "context" field
+          inside the user prompt JSON to fit. Mutates messages in place.
+
+        Args:
+            messages: List of message dicts with "role" and "content";
+                messages[1] is the user message (prompt JSON).
+            prompt: Current user prompt JSON string.
+            system_prompt: System prompt text (for token counting).
+
+        Raises:
+            ValueError: When payload exceeds max_context_tokens and
+                truncate_on_overflow is False.
+
+        """
+        max_ctx = self.config.max_context_tokens
+        if max_ctx is None:
+            return
+        messages_text = " ".join(str(m.get("content", "")) for m in messages)
+        total_tokens = count_tokens(self.model, messages_text)
+        if total_tokens <= max_ctx:
+            return
+
+        if not self.config.truncate_on_overflow:
+            msg = (
+                f"Payload ({total_tokens} tokens) exceeds "
+                f"max_context_tokens ({max_ctx} tokens). "
+                "Set truncate_on_overflow=True in your config to "
+                "automatically truncate, or increase max_context_tokens."
+            )
+            raise ValueError(msg)
+
+        try:
+            prompt_data = json.loads(prompt)
+            context = prompt_data.get("context", "")
+            attributes_payload = prompt_data.get("attributes", [])
+            attributes_part = json.dumps(
+                {"context": "", "attributes": attributes_payload},
+                ensure_ascii=False,
+            )
+            system_tokens = count_tokens(self.model, str(system_prompt))
+            attributes_tokens = count_tokens(self.model, attributes_part)
+            # Buffer for token-count discrepancies or extra tokens from
+            # serialization/whitespace that LLM APIs may add.
+            buffer = 50
+            context_limit = max_ctx - system_tokens - attributes_tokens - buffer
+            if context_limit > 0:
+                context = truncate_to_token_limit(context, self.model, context_limit)
+                prompt_data["context"] = context
+                truncated_prompt = json.dumps(prompt_data, ensure_ascii=False)
+                messages[1]["content"] = truncated_prompt
+                logger.warning(
+                    f"Truncated context to fit {max_ctx} "
+                    "tokens. Edit `max_context_tokens` in your config."
+                )
+            else:
+                logger.warning(
+                    "System prompt and attributes exceed "
+                    "max_context_tokens; context will be empty."
+                )
+                prompt_data["context"] = ""
+                messages[1]["content"] = json.dumps(prompt_data, ensure_ascii=False)
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            logger.debug(f"Could not truncate by tokens: {e}")
+
+    def _call_llm(self, prompt: str) -> tuple[str, list[dict[str, Any]], int, int]:
         """
         Call the LLM with the given prompt.
 
@@ -475,8 +603,8 @@ class LLMDataExtractor:
             prompt: The user prompt (with context and attributes).
 
         Returns:
-            Tuple of (LLM response text to be parsed, messages list sent to the API,
-            output token count from the response).
+            Tuple of (LLM response text, messages list, output token count,
+            input/prompt token count from the response usage).
 
         """
         system_prompt = self.config.prompt_config.system_prompt
@@ -485,49 +613,7 @@ class LLMDataExtractor:
             {"role": "user", "content": prompt},
         ]
 
-        # Truncate context if total payload exceeds max_context_length
-        try:
-            max_ctx = self.config.max_context_length
-            if max_ctx is None:
-                pass  # No truncation when unset
-            else:
-                messages_text = " ".join(str(m.get("content", "")) for m in messages)
-                total_tokens = count_tokens(self.model, messages_text)
-                if total_tokens > max_ctx:
-                    prompt_data = json.loads(prompt)
-                    context = prompt_data.get("context", "")
-                    attributes_payload = prompt_data.get("attributes", [])
-                    attributes_part = json.dumps(
-                        {"context": "", "attributes": attributes_payload},
-                        ensure_ascii=False,
-                    )
-                    system_tokens = count_tokens(self.model, str(system_prompt))
-                    attributes_tokens = count_tokens(self.model, attributes_part)
-                    # Buffer for token-count discrepancies or extra tokens from
-                    # serialization/whitespace that LLM APIs may add.
-                    buffer = 50
-                    context_limit = max_ctx - system_tokens - attributes_tokens - buffer
-                    if context_limit > 0:
-                        context = truncate_to_token_limit(
-                            context, self.model, context_limit
-                        )
-                        prompt_data["context"] = context
-                        prompt = json.dumps(prompt_data, ensure_ascii=False)
-                        messages[1]["content"] = prompt
-                        logger.warning(
-                            f"Truncated context to fit {max_ctx} "
-                            "tokens. Edit `max_context_length` in your config."
-                        )
-                    else:
-                        logger.warning(
-                            "System prompt and attributes exceed "
-                            "max_context_length; context will be empty."
-                        )
-                        prompt_data["context"] = ""
-                        prompt = json.dumps(prompt_data, ensure_ascii=False)
-                        messages[1]["content"] = prompt
-        except Exception as e:  # noqa: BLE001
-            logger.debug(f"Could not truncate by tokens: {e}")
+        self._enforce_context_limit(messages, prompt, str(system_prompt))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")
@@ -537,14 +623,16 @@ class LLMDataExtractor:
         try:
             messages_text = " ".join(str(m.get("content", "")) for m in messages)
             input_tokens = count_tokens(self.model, messages_text)
-            prompt_cost, _ = litellm.cost_per_token(
-                model=self.model,
+            prompt_cost, _ = estimate_cost_usd(
+                self.model,
                 prompt_tokens=input_tokens,
                 completion_tokens=0,
             )
-            logger.info(
-                f"Estimated input cost: ${prompt_cost:.6f} USD ({input_tokens} tokens)"
-            )
+            if prompt_cost is not None:
+                logger.info(
+                    f"Estimated input cost: ${prompt_cost:.6f} USD "
+                    f"({input_tokens} tokens)"
+                )
         except Exception as e:  # noqa: BLE001
             logger.debug(f"Could not compute input cost: {e}")
 
@@ -568,14 +656,15 @@ class LLMDataExtractor:
         response_content = response.choices[0].message.content
         logger.debug(f"raw response: {response_content}")
 
-        output_tokens = (
-            response.usage.completion_tokens
-            if response.usage is not None
-            and hasattr(response.usage, "completion_tokens")
-            else 0
-        )
+        input_tokens = 0
+        output_tokens = 0
+        if response.usage is not None:
+            if hasattr(response.usage, "prompt_tokens"):
+                input_tokens = response.usage.prompt_tokens or 0
+            if hasattr(response.usage, "completion_tokens"):
+                output_tokens = response.usage.completion_tokens or 0
 
-        return response_content, messages, output_tokens
+        return response_content, messages, output_tokens, input_tokens
 
     def _parse_llm_response(
         self,
@@ -657,37 +746,19 @@ class LLMDataExtractor:
 
     def _save_results(
         self,
-        results: list[GoldStandardAnnotatedDocument],
+        run_output: ExtractionRunOutput,
         output_file: Path,
-        per_document_output_tokens: dict[str, int] | None = None,
     ) -> None:
         """
-        Save results to file.
-
-        Writes list of GoldStandardAnnotatedDocument as JSON. When
-        per_document_output_tokens is provided, wraps in an object with
-        annotated_documents and metadata.
+        Serialize an ExtractionRunOutput to JSON and write it to disk.
 
         Args:
-            results: List of annotated documents to save.
-            output_file: Path to save results.
-            per_document_output_tokens: Optional mapping of document_id to
-                output token count. When provided, adds metadata to the output.
+            run_output: The complete extraction run output to persist.
+            output_file: Destination file path.
 
         """
-        adapter = TypeAdapter(list[GoldStandardAnnotatedDocument])
-        if per_document_output_tokens is not None:
-            total_output_tokens = sum(per_document_output_tokens.values())
-            output: dict[str, Any] = {
-                "annotated_documents": json.loads(
-                    adapter.dump_json(results, indent=2).decode()
-                ),
-                "metadata": {
-                    "total_output_tokens": total_output_tokens,
-                    "per_document": per_document_output_tokens,
-                },
-            }
-            output_file.write_text(json.dumps(output, indent=2), encoding="utf-8")
-        else:
-            output_file.write_text(adapter.dump_json(results, indent=2).decode())
+        output_file.write_text(
+            run_output.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
         logger.info(f"Results saved to: {output_file}")
