@@ -386,6 +386,9 @@ def global_options(
     *, verbose: bool = typer.Option(default=False, help="Display verbose logs.")
 ) -> None:
     """Set global options for all deet commands."""
+    # Remove any previously added handlers to avoid accumulation
+    logger.remove()
+
     level = "DEBUG" if verbose else "INFO"
     logger.add(typer.echo, colorize=True, level=level)
     if not verbose:
