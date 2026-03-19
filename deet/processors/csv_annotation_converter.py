@@ -1,9 +1,7 @@
 """Convert annotation CSV files to Pydantic models."""
 
 import csv
-import json
 from collections import defaultdict
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +15,7 @@ from destiny_sdk.enhancements import (
     Visibility,
 )
 from destiny_sdk.references import ReferenceFileInput
-from pydantic import BaseModel
+from pydantic import TypeAdapter
 
 from deet.data_models.base import (
     AnnotationType,
@@ -29,39 +27,36 @@ from deet.data_models.documents import (
     Document,
     GoldStandardAnnotatedDocument,
 )
+from deet.data_models.processed_gold_standard_annotations import (
+    ProcessedAnnotationData,
+)
 from deet.logger import logger
+from deet.processors.base_converter import (
+    DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
+    DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
+    DEFAULT_ATTRIBUTES_FILENAME,
+    DEFAULT_BASE_OUTPUT_DIR,
+    DEFAULT_DOCUMENTS_FILENAME,
+    AnnotationConverter,
+    Outfiles,
+)
 
-DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_covidence")
-DEFAULT_ATTRIBUTES_FILENAME = "attributes.json"
-DEFAULT_DOCUMENTS_FILENAME = "documents.json"
-DEFAULT_ANNOTATED_DOCUMENTS_FILENAME = "annotated_documents.json"
-DEFAULT_ATTRIBUTE_MAPPING_FILENAME = "attribute_id_to_label_mapping.json"
+# class ProcessedAnnotationData(BaseModel):
+#     """Structured result from annotation processing."""
 
-DEFAULT_SAMPLE_SIZE = 100
-
-
-class ProcessedAnnotationData(BaseModel):
-    """Structured result from annotation processing."""
-
-    attributes: list[Attribute]
-    documents: list[Document]
-    annotated_documents: list[GoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[int, str]
-
-
-class Outfiles(StrEnum):
-    """Enum of all outfiles producible by this module. Extend as required."""
-
-    ATTRIBUTES = auto()
-    DOCUMENTS = auto()
-    ANNOTATED_DOCUMENTS = auto()
-    ATTRIBUTE_LABEL_MAPPING = auto()
+#     attributes: list[Attribute]
+#     documents: list[Document]
+#     annotated_documents: list[GoldStandardAnnotatedDocument]
+#     attribute_id_to_label: dict[int, str]
 
 
-class CovidenceAnnotationConverter:
+class CovidenceAnnotationConverter(AnnotationConverter):
     """
-    A class to convert raw Covidence CSV annotations
+    A class to convert raw CSV (e.g. Covidence) annotations
     into structured Pydantic models.
+
+     This converter operates on flat CSV columns, infers field/column types,
+    and produces attributes, documents, and annotated document records.
     """
 
     def __init__(
@@ -76,7 +71,7 @@ class CovidenceAnnotationConverter:
         Initialize the converter with configurable output paths.
 
         Args:
-            output_dir: Base directory for saving processed files
+            base_output_dir: Base directory for saving processed files
             attributes_filename: Filename for attributes output
             documents_filename: Filename for documents output
             annotated_documents_filename: Filename for annotated documents output
@@ -91,21 +86,37 @@ class CovidenceAnnotationConverter:
             base_output_dir = ""
         self.base_output_dir = Path(base_output_dir)
 
-        # extend below if adding more output files in `Outfiles`.
-        self.outfilename_object_map = {
-            Outfiles.ATTRIBUTES: attributes_filename,
-            Outfiles.DOCUMENTS: documents_filename,
-            Outfiles.ANNOTATED_DOCUMENTS: annotated_documents_filename,
-            Outfiles.ATTRIBUTE_LABEL_MAPPING: attribute_mapping_filename,
+        self.OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]] = {
+            Outfiles.ATTRIBUTES: (
+                attributes_filename,
+                TypeAdapter(list[Attribute]),
+            ),
+            Outfiles.DOCUMENTS: (
+                documents_filename,
+                TypeAdapter(list[Document]),
+            ),
+            Outfiles.ANNOTATED_DOCUMENTS: (
+                annotated_documents_filename,
+                TypeAdapter(list[GoldStandardAnnotatedDocument]),
+            ),
+            Outfiles.ATTRIBUTE_LABEL_MAPPING: (
+                attribute_mapping_filename,
+                TypeAdapter(dict[int, str]),
+            ),
         }
 
+    @property
+    def processed_data_type(self) -> type[ProcessedAnnotationData]:
+        """Return ProcessedAnnotationData."""
+        return ProcessedAnnotationData
+
     @staticmethod
-    def normalize_text(value: str) -> str:
+    def _normalize_text(value: str) -> str:
         """Strip white space and lowercase text."""
         return value.strip().lower()
 
     @staticmethod
-    def find_duplicate_fieldnames(fieldnames: list) -> list[dict]:
+    def _find_duplicate_column_names(column_names: list[str]) -> list[dict]:
         """
         Find duplicate column names and return their positions.
 
@@ -113,42 +124,50 @@ class CovidenceAnnotationConverter:
         containing the duplicated column name and the indices where it appears.
 
         Example:
-            ["id", "name", "title", "name", "title"] ->
-            [{"col_name": "name", "col_ids": [1, 3]},
-             {"col_name": "title", "col_ids": [2, 4]}]
+            column_names = ["id", "name", "title", "name", "title"] ->
+            {"name": [1, 3], "title": [2, 4]}
 
         """
         positions = defaultdict(list)
-        for idx, name in enumerate(fieldnames):
+        for idx, name in enumerate(column_names):
             positions[name].append(idx)
 
-        return [
-            {"col_name": name, "col_ids": ids}
-            for name, ids in positions.items()
-            if len(ids) > 1
-        ]
+        return [{name: ids} for name, ids in positions.items() if len(ids) > 1]
 
-    def infer_type(self, value: str) -> type | None:
-        """Infer value types."""
+    @staticmethod
+    def _infer_type(value: str) -> type | None:
+        """
+        Given a string value infer its type.
+        Returns bool, int, float, or str depending on the value.
+        Empty or null-like values return None.
+        """
         if value is None or str(value).strip() == "":
             return None
 
         v = str(value).strip().lower()
 
-        if v in {"true", "false"}:
+        if v in {"true", "false", "t", "f"}:
             return bool
         try:
             float(v)
-            if "." in v:
-                return float
-            else:  # noqa: RET505
+            if v.lstrip("-+").isdigit():
                 return int
+            return float  # noqa: TRY300
         except ValueError:
             return str
 
     # TODO: need to add list and dictionary handling
-    def resolve_types(self, types: list) -> AttributeType:
-        """Given a list of types, resolve to a single type."""
+    @staticmethod
+    def _resolve_types(types: list) -> AttributeType:
+        """
+        Given a list of types, resolve to a single type and return an
+        AttributeType object.
+
+        Examples:
+        [int, int, None, int, None, int] -> int -> AttributeType.INTEGER
+        [int, int, None, float, None, int] -> float -> AttributeType.FLOAT
+
+        """
         unique = set(types) - {None}
         if len(unique) == 0:
             msg = "Type not inferred. Sample is null."
@@ -164,64 +183,96 @@ class CovidenceAnnotationConverter:
         msg = "Multiple incompatible types found"
         raise ValueError(msg)
 
-    def infer_attribute_types(
+    def _infer_column_types(
         self,
         rows: list[dict],
-        attribute_names: list[str],
+        column_names: list[str],
         sample_size: int | None = None,
     ) -> dict[str, AttributeType]:
         """
-        Infer field types for each column using up to `sample_size` non-null samples.
-        Delfault sample size = entire dataset. Only use sample size if you are sure.
-        This avoids sparse columns biasing the inference due to many empty values.
+        Infer the data type of each column using up to `sample_size` non-null samples.
+
+        By default, `sample_size` is the total number of rows. Specifying a smaller
+        sample can speed up inference but may bias results if columns are sparse.
+
+        Args:
+            rows: List of dictionaries representing CSV rows.
+            column_names: List of column names for which to infer data types.
+            sample_size: Maximum number of non-null samples to use per column.
+
+        Returns:
+        - Dictionary mapping each column name to its inferred `AttributeType`.
 
         Example:
-        rows = [
-            {"id": "1", "age": "42", "gender": "F"},
-            {"id": "2", "age": "", "gender": "M"},
-            {"id": "3", "age": "36", "gender": ""},
-        ]
-        fieldnames = ["id", "age", "gender"]
+            rows = [
+                {"id": "1", "age": "42", "gender": "F"},
+                {"id": "2", "age": "", "gender": "M"},
+                {"id": "3", "age": "36", "gender": ""},
+            ]
+            fieldnames = ["id", "age", "gender"]
 
-        Function:
-        infer_field_types(rows, fieldnames, sample_size=2)
-
-        Output:
-        {"id": int, "age": int, "gender": str}
+            converter = CovidenceAnnotationConverter()
+            converter._infer_column_types(rows, fieldnames, sample_size=2)
+            # Output: {"id": int, "age": int, "gender": str}
 
         """
         n_rows = len(rows)
-        raw_attribute_types: defaultdict[str, list] = defaultdict(list)
+        raw_column_types: defaultdict[str, list] = defaultdict(list)
 
-        if not sample_size:
+        if sample_size is None:
             sample_size = n_rows
 
-        for att_name in attribute_names:
+        for col_name in column_names:
             row_num = 0
 
-            while len(raw_attribute_types[att_name]) < sample_size and row_num < n_rows:
-                att_type = self.infer_type(rows[row_num][att_name])
+            while len(raw_column_types[col_name]) < sample_size and row_num < n_rows:
+                att_type = self._infer_type(rows[row_num][col_name])
 
                 if att_type is not None:
-                    raw_attribute_types[att_name].append(att_type)
+                    raw_column_types[col_name].append(att_type)
 
                 row_num += 1
 
-        resolved_attribute_types: dict[str, AttributeType] = {}
-        for att_name, att_types in raw_attribute_types.items():
+        resolved_column_types: dict[str, AttributeType] = {}
+        for col_name, col_types in raw_column_types.items():
             try:
-                resolved_attribute_types[att_name] = self.resolve_types(att_types)
+                resolved_column_types[col_name] = self._resolve_types(col_types)
             except ValueError as e:
-                msg = f"Error inferring type for field '{att_name}': {e}"
+                msg = f"Error inferring type for field '{col_name}': {e}"
                 raise ValueError(msg) from e
 
-        return resolved_attribute_types
+        return resolved_column_types
 
     @staticmethod
-    def _build_citation_dict_from_row(
+    def _build_reference_dict_from_row(
         mapping: dict[str, str],
         row: dict[str, Any],
     ) -> dict[str, Any]:
+        """
+        Build a nested dictionary of reference data from a CSV row.
+
+        Maps flat CSV columns to the nested structure expected by
+        destiny_sdk.enhancements models, The resulting dictionary can be used to create
+        `EnhancementFileInput` and `ReferenceFileInput` objects.
+
+        Args:
+            mapping: Dictionary mapping nested keys(dot-separated strings) to CSV
+            column names.
+            row: Dictionary representing a CSV row.
+
+        Returns:
+            Nested dictionary representing the reference data. Example:
+
+        Example:
+        mapping = {"publication_venue.display_name": "journal", "abstract": "abstract"}
+        row = {"journal": "Nature Climate Change", "abstract": "ABCDEFXXXXXX"}
+        # Output
+            {
+            "publication_venue": {"display_name": "Nature Climate Change"},
+            "abstract": "ABCDEFXXXXXX"
+            }
+
+        """
         result: dict[str, Any] = {}
 
         for key, column_name in mapping.items():
@@ -239,8 +290,19 @@ class CovidenceAnnotationConverter:
         return result
 
     @staticmethod
-    def build_authorship_list(authors: str) -> list[Authorship]:
-        """Create a Authorship list."""
+    def _build_authorship_list(authors: str) -> list[Authorship]:
+        """
+        Build a list of a `Authorship` objects  (as defined in destiny_sdk.enhancements)
+        from a string. The returned list is in the format expected by
+        `BibliographicMetadataEnhancement` for authorship.
+
+        Args:
+            authors: A semicolon-separated string of author names. eg:("Alice; Bob; Mo")
+
+        Returns:
+            List of `Authorship` objects representing each author with their position.
+
+        """
         authorship = []
         author_list = authors.split(";")
         for i, author in enumerate(author_list):
@@ -255,29 +317,48 @@ class CovidenceAnnotationConverter:
     def build_destiny_reference(
         self,
         row: dict,
-        citation_fields: dict[str, Any],
-        source: str = "DEET csv converter",
+        mapping: dict[str, Any],
+        source: str = "DEET CSV converter",
     ) -> ReferenceFileInput:
-        """Convert citation dict to destiny reference."""
-        citation_dict = self._build_citation_dict_from_row(citation_fields, row)
+        """
+
+        Convert a CSV row into a `ReferenceFileInput` for destiny_sdk.reference.
+
+        This method extracts bibliographic metadata and abstract content from the
+        given row using the provided reference field mapping. It constructs
+        `BibliographicMetadataEnhancement` and `AbstractContentEnhancement`
+        objects, then wraps them in `EnhancementFileInput` objects, and finally
+        returns a `ReferenceFileInput`.
+
+        Args:
+            row: Dictionary representing a single CSV row.
+            mapping: Dictionary mapping nested keys (dot-separated strings) to CSV
+                 column names.
+            source: Optional string indicating the source of the data; defaults to
+                "DEET CSV converter"
+        Returns:
+            ReferenceFileInput object containing all extracted enhancements
+
+        """
+        reference_dict = self._build_reference_dict_from_row(mapping, row)
 
         abstract = (
             AbstractContentEnhancement(
-                abstract=citation_dict["abstract"],
+                abstract=reference_dict["abstract"],
                 process=AbstractProcessType.UNINVERTED,
             )
-            if "abstract" in citation_dict
+            if "abstract" in reference_dict
             else None
         )
 
-        citation_dict["authorship"] = (
-            self.build_authorship_list(citation_dict["authorship"])
-            if "authorship" in citation_dict
-            and isinstance(citation_dict["authorship"], str)
+        reference_dict["authorship"] = (
+            self._build_authorship_list(reference_dict["authorship"])
+            if "authorship" in reference_dict
+            and isinstance(reference_dict["authorship"], str)
             else None
         )
 
-        bibliographic_data = BibliographicMetadataEnhancement(**citation_dict)
+        bibliographic_data = BibliographicMetadataEnhancement(**reference_dict)
 
         enhancements = [
             EnhancementFileInput(
@@ -298,50 +379,53 @@ class CovidenceAnnotationConverter:
         self,
         file_path: str | Path,
         attribute_fields: list[str] | None = None,
-        citation_fields: dict | None = None,
+        reference_fields: dict | None = None,
     ) -> tuple[list[str], dict[str, str], list[str], list[dict[str, Any]]]:
-        """Load CSV file, normalize fieldnames, return fieldnames, attributes, rows."""
+        """
+        Load a CSV, normalize headers, and return all column names, attribute names,
+        citation names, and rows.
+        """
         path = Path(file_path)
         with path.open(newline="") as f:
             csv_reader = csv.DictReader(f)
 
             # normalize headers BEFORE reading rows
             raw_headers = csv_reader.fieldnames or []
-            fieldnames: list[str] = [self.normalize_text(h) for h in raw_headers]
-            csv_reader.fieldnames = fieldnames
+            colnames: list[str] = [self._normalize_text(h) for h in raw_headers]
+            csv_reader.fieldnames = colnames
 
             # validate duplicates
-            dup_fields = self.find_duplicate_fieldnames(fieldnames)
+            dup_fields = self._find_duplicate_column_names(colnames)
             if dup_fields:
                 msg = f"{len(dup_fields)} Duplicate fieldnames found: {dup_fields}"
                 raise ValueError(msg)
 
             # validate required fields
             meta_fields = {"name", "document_id"}
-            missing = meta_fields - set(fieldnames)
+            missing = meta_fields - set(colnames)
             if missing:
                 msg = f"Required columns missing: {missing}"
                 raise ValueError(msg)
 
-            if citation_fields is None:
+            if reference_fields is None:
                 logger.info("No citation fields provided")
-                citation_fields = {}
+                reference_fields = {}
             else:
                 # normalize citation fields
-                citation_fields = {
-                    k: self.normalize_text(v) for k, v in citation_fields.items()
+                reference_fields = {
+                    k: self._normalize_text(v) for k, v in reference_fields.items()
                 }
 
-                unknown = set(citation_fields.values()) - set(fieldnames)
+                unknown = set(reference_fields.values()) - set(colnames)
                 if unknown:
                     msg = f"Citation fields not found in CSV: {unknown}"
                     raise ValueError(msg)
 
             if attribute_fields is None:
                 logger.info("No attribute fields provided")
-                excluded_fields = meta_fields | set(citation_fields.values())
+                excluded_fields = meta_fields | set(reference_fields.values())
                 resolved_attribute_fields = [
-                    h for h in fieldnames if h not in excluded_fields
+                    h for h in colnames if h not in excluded_fields
                 ]
             else:
                 resolved_attribute_fields = attribute_fields
@@ -349,12 +433,21 @@ class CovidenceAnnotationConverter:
             # Read rows into mem once
             rows = list(csv_reader)
 
-        return fieldnames, citation_fields, resolved_attribute_fields, rows
+        return colnames, reference_fields, resolved_attribute_fields, rows
 
     def build_attributes(
-        self, attribute_types: dict[str, AttributeType]
+        self,
+        attribute_fields: list[str],
+        rows: list[dict],
     ) -> list[Attribute]:
-        """Build and return an Attribute."""
+        """
+        Build a list of `Attribute` objects from CSV rows and specified attribute
+        columns.
+
+        Infers the `AttributeType` for each attribute field and assigns a unique ID
+        to each `Attribute`.
+        """
+        attribute_types = self._infer_column_types(rows, attribute_fields)
         attributes = []
         for idx, (k, v) in enumerate(attribute_types.items()):
             attribute = Attribute(
@@ -372,8 +465,24 @@ class CovidenceAnnotationConverter:
         citation_fields: dict,
         rows: list[dict],
     ) -> tuple[list[Document], list[GoldStandardAnnotatedDocument]]:
-        """Build and return Documents and  Gold Standard Annotated Documents."""
+        """
+        Build `Document` objects and their corresponding GoldStandardAnnotatedDocument`s
+        from CSV rows.
+
+        Args:
+            attributes:
+            citation_fields: Dictionary mapping reference field labels (as defined in
+                destiny_sdk.enhancements) to CSV column names.
+
+            rows: List of dictionaries representing all CSV rows.
+
+        Returns:
+            A tuple containing: Document and List[GoldStandardAnnotatedDocument]
+
+        """
         attr_by_label = {a.attribute_label: a for a in attributes}
+
+        # ---  ---
         annotated_documents: list[GoldStandardAnnotatedDocument] = []
         documents: list[Document] = []
 
@@ -418,8 +527,8 @@ class CovidenceAnnotationConverter:
 
             # --- Attach annotations to document ---
             annotated_doc = GoldStandardAnnotatedDocument(
-                document=document,  # <-- pass the model itself
-                annotations=annotations,  # <-- list of annotation models
+                document=document,
+                annotations=annotations,
             )
 
             annotated_documents.append(annotated_doc)
@@ -429,17 +538,25 @@ class CovidenceAnnotationConverter:
     def process_annotation_file(
         self,
         file_path: str | Path,
+        set_attribute_type: str | AttributeType | None = None,
         attribute_fields: list | None = None,
         citation_fields: dict | None = None,
     ) -> ProcessedAnnotationData:
         """
         Process a complete CSV annotation file and return structured data.
 
+        Each row is assumed to represent a document, and columns correspond to
+        different types of fields (metadata, reference information, and attributes).
+
         Args:
-            file_path: Path to the CSV annotation file
+            file_path: Path to the CSV annotation file.
+            attribute_fields: List of column names to be treated as document attributes.
+            citation_fields: Dictionary mapping reference field labels(as defined in
+            destiny_sdk.enhancements) to corresponding CSV column names.
+
 
         Returns:
-            ProcessedAnnotationData containing all processed data
+            ProcessedAnnotationData containing all processed data.
 
         """
         logger.info(f"Processing annotation file: {file_path}")
@@ -448,9 +565,7 @@ class CovidenceAnnotationConverter:
             file_path, attribute_fields, citation_fields
         )
 
-        attribute_types = self.infer_attribute_types(rows, attribute_fields)
-
-        attributes = self.build_attributes(attribute_types)
+        attributes = self.build_attributes(attribute_fields, rows)
 
         documents, annotated_documents = self.build_documents_and_annotations(
             attributes, citation_fields, rows
@@ -469,60 +584,5 @@ class CovidenceAnnotationConverter:
             documents=documents,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,
+            annotations=[],  # keep type compatible
         )
-
-    def write_processed_data_to_file(
-        self,
-        processed_data: ProcessedAnnotationData,
-        output_dir: str | Path,
-        outfiles_to_write: list[Outfiles] | None = None,
-    ) -> dict[str, str]:
-        """
-        Save processed data to structured files using Pydantic model serialization.
-
-        Args:
-            processed_data: The processed data from process_annotation_file
-            output_dir: Write all output (json) files from conversion to this
-            directory. NOTE: we output files will live in a sub-directory
-            `self.base_output_dir`, which by default is `DEFAULT_BASE_OUTPUT_DIR`.
-            so, if you want output files to go straight to `output_dir`, set
-            `self.base_output_dir` to '' or None.
-
-        Returns:
-            Dictionary mapping data types to saved file paths
-
-        """
-        file_mappings = {
-            Outfiles.ATTRIBUTES: processed_data.attributes,
-            Outfiles.DOCUMENTS: processed_data.documents,
-            Outfiles.ANNOTATED_DOCUMENTS: processed_data.annotated_documents,
-            Outfiles.ATTRIBUTE_LABEL_MAPPING: processed_data.attribute_id_to_label,
-        }
-        # setting here to avoid mutable default.
-        if outfiles_to_write is None:
-            outfiles_to_write = [Outfiles.ATTRIBUTES, Outfiles.DOCUMENTS]
-
-        file_mappings = {
-            k: v for k, v in file_mappings.items() if k in outfiles_to_write
-        }
-        logger.info(f"writing {','.join(file_mappings.keys())} out...")
-
-        user_dir = Path(output_dir)
-        target_dir = user_dir / self.base_output_dir
-        target_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"writing files to dir: {target_dir}")
-
-        saved_files = {}
-
-        for file_type, data_list in file_mappings.items():
-            file_path = target_dir / self.outfilename_object_map[file_type]
-            logger.debug(f"writing file {file_type} to {file_path}")
-            file_path.write_text(
-                json.dumps(
-                    [item.model_dump(mode="json") for item in data_list],  # type: ignore[attr-defined]
-                    indent=2,
-                )
-            )
-            saved_files[file_type.value] = str(file_path)
-
-        return saved_files
