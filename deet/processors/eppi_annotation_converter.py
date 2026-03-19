@@ -362,7 +362,7 @@ class EppiAnnotationConverter(AnnotationConverter):
         logger.info(f"Processing annotation file: {file_path}")
 
         with Path(file_path).open("r", encoding="utf-8") as f:
-            data = json.load(f)
+            data: dict = json.load(f)
 
         raw_data = EppiRawData.model_validate(data)
 

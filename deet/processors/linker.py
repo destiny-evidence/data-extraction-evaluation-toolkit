@@ -14,7 +14,7 @@ from pydantic import BaseModel, field_validator, model_validator
 from deet.data_models.documents import Document
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
-from deet.utils.identifier_utils import DOCUMENT_ID_N_DIGITS
+from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
 
 parser = DocumentParser()
 
@@ -33,7 +33,7 @@ class LinkingStrategy(StrEnum):
 class DocumentReferenceMapping(BaseModel):
     """
     Data model for incoming, manual mappings
-    of references (via 8-digit integer ids) to
+    of references (via integer ids) to
     documents, via filename.
     """
 
@@ -46,11 +46,21 @@ class DocumentReferenceMapping(BaseModel):
     @field_validator("document_id", mode="before")
     @classmethod
     def ensure_valid_doc_id(cls, value: int) -> int:
-        """Ensure supplied document_id has 8 digits."""
-        if len(str(value)) != DOCUMENT_ID_N_DIGITS:
-            val_err = f'`document_id` must have 8 digits. supplied" {value}'
+        """Ensure supplied document_id has a valid number of digits."""
+        int_value = int(value)
+        if int_value <= 0:
+            invalid_int_id_error = (
+                f"`document_id` must be a positive integer. Supplied: {int_value}"
+            )
+            raise ValueError(invalid_int_id_error)
+        num_digits = len(str(abs(int_value)))
+        if not (MIN_DOCUMENT_ID_DIGITS <= num_digits <= MAX_DOCUMENT_ID_DIGITS):
+            val_err = (
+                f"`document_id` must be between {MIN_DOCUMENT_ID_DIGITS} "
+                f"and {MAX_DOCUMENT_ID_DIGITS} digits. Supplied: {int_value}"
+            )
             raise ValueError(val_err)
-        return value
+        return int_value
 
     @model_validator(mode="after")
     def ensure_file_exists(self) -> Self:
@@ -122,17 +132,14 @@ class MappingImporter:
     def import_mapping(self) -> list[DocumentReferenceMapping]:
         """Parse a csv/json file to a list od DocumentReferenceMapping objects."""
         if self.mapping_file_type == "json":
+            logger.debug("importing mapping from json")
             payload = self._load_json()
         elif self.mapping_file_type == "csv":
+            logger.debug("importing mapping from csv")
             payload = self._load_csv()
         else:
             bad_file = "only json or csv files are supported."
             raise ValueError(bad_file)
-
-        logger.info(
-            f"supplied mapping file {self.mapping_file_path.name} "
-            f"is {self.mapping_file_type}."
-        )
 
         return [
             DocumentReferenceMapping(document_id=doc_id, file_path=file_path)
@@ -179,7 +186,12 @@ class MappingImporter:
             for item in data:
                 doc_id = int(item["document_id"])
                 file_path = self._resolve_file_path(item["file_path"])
-                result[doc_id] = Path(file_path)
+                if file_path:
+                    logger.debug(f"file path {file_path} resolved, adding dict entry.")
+                    result[doc_id] = Path(file_path)
+                logger.debug(
+                    f"file path {file_path} not resoved resolved, adding dict entry."
+                )
 
         # dict style
         elif isinstance(data, dict):
@@ -187,7 +199,14 @@ class MappingImporter:
             for doc_id_str, file_path in data.items():
                 doc_id = int(doc_id_str)
                 file_path_out = self._resolve_file_path(file_path)
-                result[doc_id] = Path(file_path_out)
+                if file_path_out:
+                    logger.debug(
+                        f"file path {file_path_out} resolved, adding dict entry."
+                    )
+                    result[doc_id] = Path(file_path_out)
+                logger.debug(
+                    f"file path {file_path_out} not resolved, not adding dict entry."
+                )
 
         else:
             bad_json = "json must be either a list(array) or dict format."
@@ -198,7 +217,7 @@ class MappingImporter:
     def _load_csv(self) -> dict[int, Path]:
         result = {}
 
-        with self.mapping_file_path.open(newline="") as f:
+        with self.mapping_file_path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
 
             # ensure required columns exist
@@ -213,7 +232,12 @@ class MappingImporter:
             for row in reader:
                 doc_id = int(row["document_id"])
                 file_path = self._resolve_file_path(row["file_path"])
-                result[doc_id] = Path(file_path)
+                if file_path:
+                    logger.debug(f"file path {file_path} resolved, adding dict entry.")
+                    result[doc_id] = Path(file_path)
+                logger.debug(
+                    f"file path not {file_path} resolved, not adding dict entry."
+                )
 
         return result
 
@@ -250,7 +274,7 @@ class MappingImporter:
 
         return parts_a[: len(parts_a) - overlap] + parts_b
 
-    def _resolve_file_path(self, file_path: str | Path) -> Path:
+    def _resolve_file_path(self, file_path: str | None | Path) -> Path | None:
         """
         Resolve file path, handling absolute
         paths and document_base_dir.
@@ -270,6 +294,8 @@ class MappingImporter:
 
 
         """
+        if file_path == "" or file_path is None:
+            return None
         file_path = Path(file_path)
 
         # if already findable, use as-is
@@ -708,9 +734,9 @@ class DocumentReferenceLinker:
 
         if linked_count < total_refs:
             unlinked_ids = [
-                doc.document_id
+                doc.document_identity.document_id  # type:ignore[union-attr]
                 for doc in self.documents_references
-                if doc.document_id not in processed_doc_ids
+                if doc.document_identity.document_id not in processed_doc_ids  # type:ignore[operator, union-attr]
             ]
             logger.warning(f"Unlinked document IDs: {unlinked_ids}")
 

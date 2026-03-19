@@ -63,6 +63,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         if filepath.suffix != ".csv":
             bad_filetype = "file ending must be .csv"
             raise ValueError(bad_filetype)
+        filepath.unlink(missing_ok=True)
         for attribute in self.attributes:
             attribute.write_to_csv(filepath=filepath)
 
@@ -315,7 +316,7 @@ class ProcessedAnnotationData(
 
     def export_linkage_mapper_csv(self, file_path: Path) -> None:
         """Export a csv mapper to link document IDs and filenames."""
-        with file_path.open("w") as f:
+        with file_path.open("w", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
             writer.writeheader()
             for d in self.documents:
