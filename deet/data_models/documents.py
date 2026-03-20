@@ -117,12 +117,9 @@ class DocumentIdentity(BaseModel):
         for id_source in hierarchy:
             try:
                 id_factory = self._create_id_factory(id_source)
-                logger.debug(f"created id_factory: {id_factory.__name__}")
+                logger.debug(f"created id_factory: {id_factory}")
                 potential_id = id_factory()
-                logger.debug(
-                    f"created potential id: {potential_id} "
-                    f"using factory {id_factory.__name__}"
-                )
+                logger.debug(f"created potential id: {potential_id}")
 
                 # id collisions?
                 if potential_id not in existing_ids:

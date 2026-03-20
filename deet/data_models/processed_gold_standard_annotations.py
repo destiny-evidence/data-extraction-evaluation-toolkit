@@ -320,14 +320,10 @@ class ProcessedAnnotationData(
             writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
             writer.writeheader()
             for d in self.documents:
-                if (
-                    d.document_identity is None
-                    or d.document_identity.document_id is None
-                ):
-                    d.init_document_identity()
+                d.init_document_identity()
                 if d.document_identity is None:
-                    no_doc_id_err = f"document_identity was not set for document {d}"
-                    raise ValueError(no_doc_id_err)
+                    message = f"document_identity was not set for document {d}"
+                    raise ValueError(message)
                 writer.writerow(
                     {
                         "document_id": d.document_identity.document_id,
