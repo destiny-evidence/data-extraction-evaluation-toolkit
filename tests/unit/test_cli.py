@@ -311,36 +311,57 @@ def test_global_options_non_verbose():
     assert "deet" in result.output
 
 
-def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, mock_converter):
+def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, processed_data):
     """Test that verbose flag produces additional log output compared to default."""
+    import copy
+
+    # Create fresh copies for each run to avoid mutation issues
+    def make_fresh_mock() -> MagicMock:
+        fresh_data = copy.deepcopy(processed_data)
+        return MagicMock(process_annotation_file=lambda _: fresh_data)
+
     # First run without --verbose
     logger.remove()
-    result_non_verbose = runner.invoke(
-        app,
-        [
-            "init-linkage-mapping-file",
-            str(gs_data_path),
-            "--link-map-path",
-            str(link_map_path),
-        ],
-        catch_exceptions=False,
-    )
+    with patch.object(
+        SupportedImportFormat.EPPI_JSON,
+        "get_annotation_converter",
+        return_value=make_fresh_mock(),
+    ):
+        result_non_verbose = runner.invoke(
+            app,
+            [
+                "init-linkage-mapping-file",
+                str(gs_data_path),
+                "--link-map-path",
+                str(link_map_path),
+            ],
+            catch_exceptions=False,
+        )
     assert result_non_verbose.exit_code == 0
     non_verbose_output = result_non_verbose.output
 
-    # Now run with --verbose, resetting logger to avoid handler accumulation
+    # delete link map csv we just created
+    if link_map_path.exists():
+        link_map_path.unlink()
+
+    # Now run with --verbose using fresh data
     logger.remove()
-    result_verbose = runner.invoke(
-        app,
-        [
-            "--verbose",
-            "init-linkage-mapping-file",
-            str(gs_data_path),
-            "--link-map-path",
-            str(link_map_path),
-        ],
-        catch_exceptions=False,
-    )
+    with patch.object(
+        SupportedImportFormat.EPPI_JSON,
+        "get_annotation_converter",
+        return_value=make_fresh_mock(),
+    ):
+        result_verbose = runner.invoke(
+            app,
+            [
+                "--verbose",
+                "init-linkage-mapping-file",
+                str(gs_data_path),
+                "--link-map-path",
+                str(link_map_path),
+            ],
+            catch_exceptions=False,
+        )
     assert result_verbose.exit_code == 0
     verbose_output = result_verbose.output
 
