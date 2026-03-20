@@ -1,3 +1,3 @@
 # API reference
 
-::: app
+::: deet
