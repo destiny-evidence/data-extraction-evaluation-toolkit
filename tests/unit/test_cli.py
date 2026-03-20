@@ -312,10 +312,24 @@ def test_global_options_non_verbose():
 
 
 def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, mock_converter):
-    """Test that verbose flag produces log output."""
+    """Test that verbose flag produces additional log output compared to default."""
+    # First run without --verbose
     logger.remove()
+    result_non_verbose = runner.invoke(
+        app,
+        [
+            "init-linkage-mapping-file",
+            str(gs_data_path),
+            "--link-map-path",
+            str(link_map_path),
+        ],
+        catch_exceptions=False,
+    )
+    assert result_non_verbose.exit_code == 0
+    non_verbose_output = result_non_verbose.output
 
-    # Just verify verbose mode produces output
+    # Now run with --verbose, resetting logger to avoid handler accumulation
+    logger.remove()
     result_verbose = runner.invoke(
         app,
         [
@@ -328,7 +342,11 @@ def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, mock_convert
         catch_exceptions=False,
     )
     assert result_verbose.exit_code == 0
-    assert len(result_verbose.output) > 0
+    verbose_output = result_verbose.output
+
+    # Verbose mode should produce additional output (e.g., debug logs)
+    assert verbose_output != non_verbose_output
+    assert len(verbose_output) > len(non_verbose_output)
 
 
 def test_init_linkage_mapping_file_via_cli(gs_data_path, link_map_path, mock_converter):
