@@ -2,39 +2,53 @@
 
 import hashlib
 
-DOCUMENT_ID_N_DIGITS = 8
-MIN_DOCUMENT_ID = 10000000
-MAX_DOCUMENT_ID = 99999999
+MIN_DOCUMENT_ID_DIGITS = 4
+MAX_DOCUMENT_ID_DIGITS = 10
+MIN_DOCUMENT_ID = 10 ** (MIN_DOCUMENT_ID_DIGITS - 1)
+MAX_DOCUMENT_ID = (10**MAX_DOCUMENT_ID_DIGITS) - 1
 
 
-def hash_n_strings_to_eight_digit_int(string_list: list[str]) -> int:
+def hash_n_strings_to_document_id(string_list: list[str]) -> int:
     """
-    Convert n strings into an 8-digit integer using hash-based combination.
+    Convert n strings into an integer with MIN_DOCUMENT_ID-MAX_DOCUMENT_ID
+    digits (4-10) using hash-based combination.
 
     Args:
         string_list: a list of strings to hash.
 
     Returns:
-        An 8-digit integer (10000000 to 99999999)
+        An integer with between MIN_DOCUMENT_ID-MAX_DOCUMENT_ID digits
+        (from 1000 to 9999999999).
 
     """
     combined = "|".join(string_list)
-
     hash_object = hashlib.sha256(combined.encode())
     hash_hex = hash_object.hexdigest()
 
-    # convert first 8 hex chars to integer and map to 8-digit range
-    hash_int = int(hash_hex[:8], 16)
+    # Use first 8 hex chars to select digit count (4-10)
+    hash_int_1 = int(hash_hex[:8], 16)
+    n_digits = (hash_int_1 % 7) + 4  # 7 possible values (4-10 inclusive)
 
-    # calculate range size and use modulo to stay within bounds
-    range_size = MAX_DOCUMENT_ID - MIN_DOCUMENT_ID + 1
+    # Use next 8 hex chars to select value within that digit range
+    hash_int_2 = int(hash_hex[8:16], 16)
 
-    # runtime check to ensure we have an 8-digit ID
-    # overkill, but better safe than sorry.
-    id_ = (hash_int % range_size) + MIN_DOCUMENT_ID
-    if len(str(abs(id_))) != DOCUMENT_ID_N_DIGITS:
-        bad_id = f"id {id_} is bad, it should have 8 digits!"
+    min_for_digits = 10 ** (n_digits - 1)
+    max_for_digits = (10**n_digits) - 1
+    range_size = max_for_digits - min_for_digits + 1
+
+    id_ = (hash_int_2 % range_size) + min_for_digits
+
+    # Sanity check
+    id_len = len(str(id_))
+    if not (MIN_DOCUMENT_ID_DIGITS <= id_len <= MAX_DOCUMENT_ID_DIGITS):
+        # NOTE: potentially fix ID at source if this error is ever raised,
+        # otherwise remove error.
+        bad_id = (
+            f"id {id_} is bad, it should have between "
+            f"{MIN_DOCUMENT_ID_DIGITS} and {MAX_DOCUMENT_ID_DIGITS} digits!"
+        )
         raise ValueError(bad_id)
+
     return id_
 
 
