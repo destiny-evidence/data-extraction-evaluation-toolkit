@@ -316,7 +316,7 @@ def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, processed_da
     import copy
 
     # Create fresh copies for each run to avoid mutation issues
-    def make_fresh_mock() -> MagicMock:
+    def make_fresh_mock():
         fresh_data = copy.deepcopy(processed_data)
         return MagicMock(process_annotation_file=lambda _: fresh_data)
 
