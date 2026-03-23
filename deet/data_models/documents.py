@@ -19,7 +19,6 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
-    AttributeType,
     GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
 )
@@ -533,22 +532,15 @@ class GoldStandardAnnotatedDocument(
                 result = annotation
 
         if result is None:
-            _default_for_missing: dict[AttributeType, Any] = {
-                AttributeType.BOOL: False,
-                AttributeType.LIST: [],
-                AttributeType.STRING: "",
-                AttributeType.INTEGER: 0,
-                AttributeType.FLOAT: 0.0,
-                AttributeType.DICT: {},
-            }
-            if attribute.output_data_type not in _default_for_missing:
+            try:
+                output_data = attribute.output_data_type.missing_annotation_default()
+            except ValueError as err:
                 not_found = (
                     "Attribute not found in annotations."
                     " Don't know how to interpret this when attribute is of type "
                     f"{attribute.output_data_type}"
                 )
-                raise ValueError(not_found)
-            output_data = _default_for_missing[attribute.output_data_type]
+                raise ValueError(not_found) from err
             return GoldStandardAnnotation(
                 attribute=attribute,
                 output_data=output_data,
