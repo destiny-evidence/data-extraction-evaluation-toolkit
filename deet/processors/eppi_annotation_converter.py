@@ -384,38 +384,73 @@ class EppiAnnotationConverter(AnnotationConverter):
         }
 
         all_annotations_raw = []
-        documents_by_title: dict[str, EppiDocument] = {}
+        documents: list[EppiDocument] = []
+        documents_by_id: dict[
+            int, EppiDocument
+        ] = {}  # assume this needs changing because we will want to support IDs containing strings
+        id_to_title_mapping: dict[
+            int, str
+        ] = {}  # retrieving document titles by IDs where necessary
+        existing_ids: set[int] = set()
 
         for reference in data.get("References", []):
             reference_codes = reference.get("Codes", [])
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
+            doc_id = reference.get("ItemId", "")
+            if doc_id == "":
+                raise ValueError(
+                    "Document is missing required field 'ItemId'. "
+                    "All documents must have an ItemId."
+                    f"Error found in document with title: {doc_title}"
+                )
             # NL: really, the existing_ids thing is quite redundant here,
             # as we assume we're getting our eppi item ids as document_ids.
             # however, a) it demonstrates the desired functionality of
             # checking against a set of already populated ids, and
             # b) there is a world where eppi.jsons contain invalid item ids.
-            existing_ids: set[int] = set()
-            if doc_title and doc_title not in documents_by_title:
-                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
-                document = EppiDocument(**reference)
-                # init doc id
-                new_id = document.init_document_identity(existing_ids=existing_ids)
-                if new_id:
-                    existing_ids.add(new_id)
-                documents_by_title[doc_title] = document
+
+            if doc_id in existing_ids:
+                raise ValueError(
+                    f"Duplicate document ID {doc_id} found in the input data. "
+                    "All document IDs must be unique. "
+                    "Please check the input JSON for this duplicate item."
+                )
+
+            existing_ids.add(doc_id)
+            id_to_title_mapping[doc_id] = doc_title
+
+            document = EppiDocument(**reference)
+            # init doc id
+            new_id = document.init_document_identity(existing_ids=existing_ids)
+            if (
+                new_id != doc_id
+            ):  # NB I disabled coercion unless no ID is provided. It is impossible to provide no ID due to validating ID presence above :)
+                logger.warning(
+                    f"Document ID {doc_id} was not valid and has been coerced to {new_id}. "
+                    "Please check the input JSON for this item."
+                )
+
+            # store mapping from ID to (possibly empty) title, and collect documents
+            id_to_title_mapping[doc_id] = doc_title
+            documents.append(document)
+            documents_by_id[doc_id] = document
 
         pdf_to_title_mapping = self._create_pdf_to_title_mapping(
             data.get("References", [])
         )
+        # print("PDF to title mapping: ", pdf_to_title_mapping)
 
         annotated_documents = []
         all_annotations = []
 
-        for doc_title, doc in documents_by_title.items():
+        for (
+            doc_id,
+            doc,
+        ) in documents_by_id.items():  # using id dict rather than title dict
             doc_annotations = self._find_document_annotations(
-                all_annotations_raw, doc_title, pdf_to_title_mapping
+                all_annotations_raw, id_to_title_mapping[doc_id], pdf_to_title_mapping
             )
 
             if doc_annotations:
@@ -434,16 +469,26 @@ class EppiAnnotationConverter(AnnotationConverter):
             annotated_documents.append(annotated_doc)
             all_annotations.extend(annotations)
 
+        # Validate that we have created one Document per input reference.
+        n_docs = len(documents)
+        n_refs = len(data.get("References", []))
+        if n_docs != n_refs:
+            mismatch_msg = (
+                "Mismatch between number of processed documents and input references. "
+                f"Processed documents: {n_docs}; References in input: {n_refs}."
+            )
+            raise ValueError(mismatch_msg)
+
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            f" {len(documents_by_title)} documents, "
+            f" {len(documents)} documents, "
             f"{len(all_annotations)} annotations,"
             f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedEppiAnnotationData(
             attributes=attributes,
-            documents=list(documents_by_title.values()),
+            documents=documents,
             annotations=all_annotations,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,
