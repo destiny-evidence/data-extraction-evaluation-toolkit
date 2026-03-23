@@ -103,6 +103,9 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
+
+
 class ContextType(StrEnum):
     """Types of context that can be provided to the LLM."""
 
