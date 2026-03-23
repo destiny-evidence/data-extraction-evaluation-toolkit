@@ -41,16 +41,8 @@ from deet.processors.base_converter import (
     Outfiles,
 )
 
-# class ProcessedAnnotationData(BaseModel):
-#     """Structured result from annotation processing."""
 
-#     attributes: list[Attribute]
-#     documents: list[Document]
-#     annotated_documents: list[GoldStandardAnnotatedDocument]
-#     attribute_id_to_label: dict[int, str]
-
-
-class CovidenceAnnotationConverter(AnnotationConverter):
+class CSVAnnotationConverter(AnnotationConverter):
     """
     A class to convert raw CSV (e.g. Covidence) annotations
     into structured Pydantic models.
@@ -383,7 +375,7 @@ class CovidenceAnnotationConverter(AnnotationConverter):
     ) -> tuple[list[str], dict[str, str], list[str], list[dict[str, Any]]]:
         """
         Load a CSV, normalize headers, and return all column names, attribute names,
-        citation names, and rows.
+        reference names, and rows.
         """
         path = Path(file_path)
         with path.open(newline="") as f:
@@ -408,10 +400,10 @@ class CovidenceAnnotationConverter(AnnotationConverter):
                 raise ValueError(msg)
 
             if reference_fields is None:
-                logger.info("No citation fields provided")
+                logger.info("No reference fields provided")
                 reference_fields = {}
             else:
-                # normalize citation fields
+                # normalize reference fields
                 reference_fields = {
                     k: self._normalize_text(v) for k, v in reference_fields.items()
                 }
@@ -462,7 +454,7 @@ class CovidenceAnnotationConverter(AnnotationConverter):
     def build_documents_and_annotations(
         self,
         attributes: list[Attribute],
-        citation_fields: dict,
+        reference_fields: dict,
         rows: list[dict],
     ) -> tuple[list[Document], list[GoldStandardAnnotatedDocument]]:
         """
@@ -471,7 +463,7 @@ class CovidenceAnnotationConverter(AnnotationConverter):
 
         Args:
             attributes:
-            citation_fields: Dictionary mapping reference field labels (as defined in
+            reference_fields: Dictionary mapping reference field labels (as defined in
                 destiny_sdk.enhancements) to CSV column names.
 
             rows: List of dictionaries representing all CSV rows.
@@ -487,7 +479,7 @@ class CovidenceAnnotationConverter(AnnotationConverter):
         documents: list[Document] = []
 
         for row_idx, row in enumerate(rows):
-            row_reference = self.build_destiny_reference(row, citation_fields)
+            row_reference = self.build_destiny_reference(row, reference_fields)
 
             # --- Build Document ---
             try:
@@ -540,7 +532,7 @@ class CovidenceAnnotationConverter(AnnotationConverter):
         file_path: str | Path,
         set_attribute_type: str | AttributeType | None = None,
         attribute_fields: list | None = None,
-        citation_fields: dict | None = None,
+        reference_fields: dict | None = None,
     ) -> ProcessedAnnotationData:
         """
         Process a complete CSV annotation file and return structured data.
@@ -551,7 +543,7 @@ class CovidenceAnnotationConverter(AnnotationConverter):
         Args:
             file_path: Path to the CSV annotation file.
             attribute_fields: List of column names to be treated as document attributes.
-            citation_fields: Dictionary mapping reference field labels(as defined in
+            reference_fields: Dictionary mapping reference field labels(as defined in
             destiny_sdk.enhancements) to corresponding CSV column names.
 
 
@@ -561,14 +553,14 @@ class CovidenceAnnotationConverter(AnnotationConverter):
         """
         logger.info(f"Processing annotation file: {file_path}")
 
-        fieldnames, citation_fields, attribute_fields, rows = self.load_csv(
-            file_path, attribute_fields, citation_fields
+        fieldnames, reference_fields, attribute_fields, rows = self.load_csv(
+            file_path, attribute_fields, reference_fields
         )
 
         attributes = self.build_attributes(attribute_fields, rows)
 
         documents, annotated_documents = self.build_documents_and_annotations(
-            attributes, citation_fields, rows
+            attributes, reference_fields, rows
         )
         attribute_id_to_label = {
             attr.attribute_id: attr.attribute_label for attr in attributes
