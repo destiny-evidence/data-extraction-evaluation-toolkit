@@ -358,6 +358,26 @@ class Document(BaseModel):
         )
 
         logger.info("populating id & id source...")
+        # self.document_identity.populate_id(existing_ids=existing_ids)
+        # if self.document_id is None:
+        #     logger.info(
+        #         "populating Document-level `document_id` field with "
+        #         f"newly populated id {self.document_identity.document_id}... "
+        #     )
+        #     self.document_id = self.document_identity.document_id
+
+        # if return_id:
+        #     return self.document_identity.document_id
+        # return None
+        # If a document_id is already present, keep it as-is and
+        # just populate the surrounding identity metadata. This avoids
+        # coercing EPPI item IDs or other externally supplied IDs.
+        if self.document_id is not None:
+            if return_id:
+                return self.document_id
+            return None
+
+        logger.info("populating id & id source...")
         self.document_identity.populate_id(existing_ids=existing_ids)
         if self.document_id is None:
             logger.info(
