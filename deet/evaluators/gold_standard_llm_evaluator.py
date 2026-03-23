@@ -23,6 +23,7 @@ from deet.data_models.evaluation import (
     AttributeMetric,
     MetricFunction,
     check_metric_returns_float,
+    get_metrics_for_attribute_type,
 )
 
 
@@ -54,6 +55,7 @@ class GoldStandardLLMEvaluator:
         self.attributes = attributes
         self.extraction_run_id = extraction_run_id
         self.metrics_config: dict[str, MetricFunction] = METRICS
+        self.custom_metrics: dict[str, MetricFunction] = {}
         self.calculated_metrics: list[AttributeMetric] = []
         if custom_metrics is not None:
             self.add_custom_metrics(custom_metrics)
@@ -65,6 +67,7 @@ class GoldStandardLLMEvaluator:
             if custom_metric is not None:
                 if check_metric_returns_float(custom_metric):
                     self.metrics_config[custom_metric_name] = custom_metric
+                    self.custom_metrics[custom_metric_name] = custom_metric
                 else:
                     logger.warning(
                         f"Tried to add {custom_metric_name} to"
@@ -97,22 +100,38 @@ class GoldStandardLLMEvaluator:
                     f"Extracting gold standard and LLM prediction for"
                     f" doc {document.document.safe_identity.document_id}"
                 )
-                y_true.append(document.get_attribute_annotation(attribute).output_data)
+                gs_val = document.get_attribute_annotation(attribute).output_data
+                y_true.append(gs_val)
 
                 llm_doc = self.llm_annotated_documents.get_by_id(
                     document.document.safe_identity.document_id
                 )
-                y_pred.append(llm_doc.get_attribute_annotation(attribute).output_data)
+                llm_val = llm_doc.get_attribute_annotation(attribute).output_data
+                y_pred.append(llm_val)
 
-            self.calculated_metrics.extend(
-                AttributeMetric(
-                    attribute=attribute,
-                    metric_name=metric_name,
-                    value=float(metric_fn(y_true, y_pred)),
-                    extraction_run_id=self.extraction_run_id,
-                )
-                for metric_name, metric_fn in self.metrics_config.items()
+            applicable_metrics = get_metrics_for_attribute_type(
+                attribute.output_data_type
             )
+            combined_metrics = {**applicable_metrics, **self.custom_metrics}
+
+            for metric_name, metric_fn in combined_metrics.items():
+                try:
+                    value = float(metric_fn(y_true, y_pred))
+                except (ValueError, TypeError) as e:
+                    logger.warning(
+                        f"Metric '{metric_name}' not applicable for "
+                        f"attribute '{attribute.attribute_label}' "
+                        f"(type={attribute.output_data_type}): {e}"
+                    )
+                    value = None
+                self.calculated_metrics.append(
+                    AttributeMetric(
+                        attribute=attribute,
+                        metric_name=metric_name,
+                        value=value,
+                        extraction_run_id=self.extraction_run_id,
+                    )
+                )
 
     def display_metrics(self) -> None:
         """Print metrics in a nice table to the command line."""
@@ -138,7 +157,12 @@ class GoldStandardLLMEvaluator:
             row = [attribute]
             group_metrics = {str(m.metric_name): m.value for m in group}
             # fill cells in order of metric_names
-            row += [f"{group_metrics.get(name, 0.0):.4f}" for name in metric_names]
+            row += [
+                f"{group_metrics[name]:.4f}"
+                if group_metrics.get(name) is not None
+                else "N/A"
+                for name in metric_names
+            ]
             table.add_row(*row)
 
         console.print(table)

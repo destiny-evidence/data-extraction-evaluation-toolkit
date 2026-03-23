@@ -144,8 +144,8 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
 
         except ValueError as e:
             logger.error(
-                f"Error processing row for attribute {attribute_id}: {e}"
-                "setting attribute type to bool."
+                f"Error processing row for attribute {attribute_id}: {e}. "
+                "Setting attribute type to bool."
             )
             matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
             return False

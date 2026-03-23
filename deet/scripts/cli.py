@@ -227,7 +227,9 @@ def extract_data(  # noqa: PLR0913
             "extracted. Leave blank to use the prompts in your gold standard "
             "data. Set to `file` to provide a file of prompt definitions "
             "(make sure this is supplied below). Set to `cli` to define prompts"
-            " interactively in the CLI."
+            " interactively in the CLI. With `file`, only attributes that appear "
+            "in the CSV with a non-empty `prompt` are kept for extraction and "
+            "evaluation (see also `--csv-path`)."
         ),
     ] = None,
     csv_path: Annotated[
@@ -235,6 +237,8 @@ def extract_data(  # noqa: PLR0913
         typer.Option(
             help="A path to read custom prompt definitions from."
             " This must be set if using prompt population from file."
+            " Rows with blank `prompt` are ignored; attribute IDs not listed are "
+            "dropped from the run."
         ),
     ] = None,
     linked_document_path: Annotated[
