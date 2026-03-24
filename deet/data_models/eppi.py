@@ -117,6 +117,7 @@ class EppiAttributeSelectionType(StrEnum):
     OUTCOME = "Outcome"
     INTERVENTION = "Intervention"
     NOT_SELECTABLE = "Not Selectable (no checkbox)"
+    UNSPECIFIED = "Unspecified"
 
     @classmethod
     def _missing_(cls, value: object) -> "EppiAttributeSelectionType | None":
@@ -145,9 +146,10 @@ class EppiAttribute(Attribute):
         validation_alias=AliasChoices("AttributeId", "attribute_id")
     )
     attribute_selection_type: EppiAttributeSelectionType = Field(
+        default=EppiAttributeSelectionType.UNSPECIFIED,
         validation_alias=AliasChoices(
             "AttributeType", "attribute_type", "attribute_selection_type"
-        )
+        ),
     )
     output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
