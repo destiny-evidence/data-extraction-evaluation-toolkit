@@ -19,7 +19,6 @@ docs = [
     "mkdocs>=1.6.1,<2.0",
     "mkdocstrings-python>=1.19.0",
     "mkdocstrings>=0.30.1",
-    "tox>=4.27.0",
 ]
 
 [project]
@@ -166,23 +165,3 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
-overrides."tool.tox.env.docs.commands".inline_arrays = false
-
-[tool.tox]
-env_list = [
-    "py313",
-]
-
-[tool.tox.env.docs]
-allowlist_externals = [
-    "mkdocs",
-]
-commands = [
-    [
-        "mkdocs",
-        "build",
-    ],
-]
-extras = [
-    "docs",
-]
