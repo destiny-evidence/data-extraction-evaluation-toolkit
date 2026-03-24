@@ -1,12 +1,12 @@
 """Token counting and truncation utilities for LLM context management."""
 
+import re
+
 import litellm
 from litellm.exceptions import NotFoundError as LitellmNotFoundError
 from loguru import logger
 
-# Fallback when model is unknown (e.g. custom Ollama).
-# 128k matches common model limits (e.g. GPT-4o, GPT-4o-mini, many Llama models).
-_DEFAULT_MAX_TOKENS = 128_000
+from deet.exceptions import LitellmModelNotMappedError
 
 # litellm raises NotFoundError for unknown models and KeyError / ValueError
 # from internal dict lookups.  We catch only these so genuinely unexpected
@@ -16,6 +16,12 @@ _LITELLM_LOOKUP_ERRORS = (LitellmNotFoundError, KeyError, ValueError)
 # Tokeniser operations can additionally raise TypeError (wrong input type)
 # or AttributeError (missing tokeniser method).
 _LITELLM_TOKENISER_ERRORS = (*_LITELLM_LOOKUP_ERRORS, TypeError, AttributeError)
+
+# litellm.get_max_tokens raises bare Exception with this wording for unmapped models.
+_LITELLM_UNMAPPED_MODEL_MSG = re.compile(
+    r"isn['\u2019]?t mapped yet|model_prices_and_context_window\.json",
+    re.IGNORECASE,
+)
 
 
 def get_model_max_tokens(model: str) -> int | None:
@@ -30,15 +36,23 @@ def get_model_max_tokens(model: str) -> int | None:
     Returns:
         Maximum input tokens, or None if model not found.
 
+    Raises:
+        LitellmModelNotMappedError: When litellm raises a bare ``Exception``
+            whose message indicates an unmapped model (registry message).
+        Exception: Any other error from litellm is re-raised.
+
     """
     try:
         result = litellm.get_max_tokens(model)
         return int(result) if result is not None else None
-    except Exception as e:  # noqa: BLE001
-        # litellm.get_max_tokens raises bare Exception for unmapped models
-        # (not a typed subclass), so we cannot narrow this catch further.
+    except _LITELLM_LOOKUP_ERRORS as e:
         logger.debug(f"Could not get max tokens for model {model}: {e}")
         return None
+    except Exception as e:
+        if _LITELLM_UNMAPPED_MODEL_MSG.search(str(e)):
+            logger.debug(f"Litellm model not in registry for max tokens: {model}: {e}")
+            raise LitellmModelNotMappedError(model) from e
+        raise
 
 
 def count_tokens(model: str, text: str) -> int:
@@ -62,9 +76,19 @@ def count_tokens(model: str, text: str) -> int:
             messages=[{"role": "user", "content": text}],
         )
     except _LITELLM_TOKENISER_ERRORS as e:
-        logger.debug(
+        logger.warning(
             f"Could not count tokens for model {model}, using char estimate: {e}"
         )
+    except Exception as e:  # noqa: BLE001
+        # litellm token_counter may raise bare Exception (registry / provider).
+        if _LITELLM_UNMAPPED_MODEL_MSG.search(str(e)):
+            logger.debug(
+                f"Could not count tokens for model {model} (unmapped in registry): {e}"
+            )
+        else:
+            logger.warning(
+                f"Could not count tokens for model {model}, using char estimate: {e}"
+            )
     return max(1, len(text) // 4)
 
 
@@ -78,6 +102,9 @@ def estimate_cost_usd(
 
     Uses litellm's cost_per_token. Returns (prompt_cost_usd, completion_cost_usd).
     Either or both may be None if the model is unknown or the call fails.
+    Any other ``Exception`` from litellm (e.g. provider HTTP errors) is logged
+    at debug and also yields ``(None, None)`` so cost estimation stays
+    best-effort for callers.
 
     Args:
         model: Model identifier (e.g. "gpt-4o-mini", "azure/gpt-4o-mini").
@@ -101,6 +128,42 @@ def estimate_cost_usd(
     except _LITELLM_LOOKUP_ERRORS as e:
         logger.debug(f"Could not estimate cost for model {model}: {e}")
         return (None, None)
+    except Exception as e:  # noqa: BLE001
+        # litellm cost_per_token may raise bare Exception (registry / provider).
+        if _LITELLM_UNMAPPED_MODEL_MSG.search(str(e)):
+            logger.debug(
+                f"Could not estimate cost for model {model} (unmapped in registry): {e}"
+            )
+        else:
+            logger.debug(f"Could not estimate cost for model {model}: {e}")
+        return (None, None)
+
+
+def merge_prompt_completion_cost_usd(
+    prompt_cost_usd: float | None,
+    completion_cost_usd: float | None,
+) -> float | None:
+    """
+    Combine litellm prompt and completion cost parts into a single total.
+
+    Either part may be None when the model table lacks that component or
+    estimation failed for that side.
+
+    Args:
+        prompt_cost_usd: Estimated USD cost for prompt tokens, or None.
+        completion_cost_usd: Estimated USD cost for completion tokens, or None.
+
+    Returns:
+        Sum when at least one part is known, otherwise None.
+
+    """
+    if prompt_cost_usd is not None and completion_cost_usd is not None:
+        return prompt_cost_usd + completion_cost_usd
+    if prompt_cost_usd is not None:
+        return prompt_cost_usd
+    if completion_cost_usd is not None:
+        return completion_cost_usd
+    return None
 
 
 def truncate_to_token_limit(text: str, model: str, max_tokens: int) -> str:

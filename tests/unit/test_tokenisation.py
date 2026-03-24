@@ -2,10 +2,14 @@
 
 from unittest.mock import patch
 
+import pytest
+
+from deet.exceptions import LitellmModelNotMappedError
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,
     get_model_max_tokens,
+    merge_prompt_completion_cost_usd,
     truncate_to_token_limit,
 )
 
@@ -30,6 +34,35 @@ def test_get_model_max_tokens_unknown_model():
     ):
         result = get_model_max_tokens("unknown-model-xyz")
     assert result is None
+
+
+def test_get_model_max_tokens_unmapped_litellm_message_raises() -> None:
+    """Litellm unmapped-model message becomes LitellmModelNotMappedError."""
+    msg = (
+        "Model test-model isn't mapped yet. Add it here - "
+        "https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json"
+    )
+    with (
+        patch(
+            "deet.utils.tokenisation.litellm.get_max_tokens",
+            side_effect=Exception(msg),
+        ),
+        pytest.raises(LitellmModelNotMappedError) as exc_info,
+    ):
+        get_model_max_tokens("test-model")
+    assert exc_info.value.args[0] == "test-model"
+
+
+def test_get_model_max_tokens_other_exception_reraises() -> None:
+    """Exceptions that do not match the unmapped-model message propagate."""
+    with (
+        patch(
+            "deet.utils.tokenisation.litellm.get_max_tokens",
+            side_effect=RuntimeError("unexpected"),
+        ),
+        pytest.raises(RuntimeError, match="unexpected"),
+    ):
+        get_model_max_tokens("any-model")
 
 
 def test_count_tokens_basic():
@@ -83,6 +116,50 @@ def test_estimate_cost_usd_on_error_returns_none():
     assert completion_cost is None
 
 
+def test_estimate_cost_usd_unmapped_registry_exception_returns_none() -> None:
+    """Bare Exception with litellm registry wording yields (None, None)."""
+    msg = (
+        "Model x isn't mapped yet. Add it here - "
+        "https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json"
+    )
+    with patch(
+        "deet.utils.tokenisation.litellm.cost_per_token",
+        side_effect=Exception(msg),
+    ):
+        prompt_cost, completion_cost = estimate_cost_usd("x")
+    assert prompt_cost is None
+    assert completion_cost is None
+
+
+def test_estimate_cost_usd_other_exception_returns_none() -> None:
+    """Non-registry Exception from cost_per_token yields (None, None)."""
+    with patch(
+        "deet.utils.tokenisation.litellm.cost_per_token",
+        side_effect=RuntimeError("unexpected"),
+    ):
+        prompt_cost, completion_cost = estimate_cost_usd("gpt-4o-mini")
+    assert prompt_cost is None
+    assert completion_cost is None
+
+
+@pytest.mark.parametrize(
+    ("prompt_c", "completion_c", "expected"),
+    [
+        (None, None, None),
+        (0.01, None, 0.01),
+        (None, 0.02, 0.02),
+        (0.01, 0.02, 0.03),
+    ],
+)
+def test_merge_prompt_completion_cost_usd(
+    prompt_c: float | None,
+    completion_c: float | None,
+    expected: float | None,
+) -> None:
+    """merge_prompt_completion_cost_usd sums known parts and handles None."""
+    assert merge_prompt_completion_cost_usd(prompt_c, completion_c) == expected
+
+
 def test_count_tokens_fallback_on_error():
     """Test count_tokens uses char estimate when token_counter fails."""
     with patch(
@@ -90,6 +167,20 @@ def test_count_tokens_fallback_on_error():
         side_effect=TypeError("token_counter failed"),
     ):
         result = count_tokens("unknown-model", "Hello world")
+    assert result == max(1, 11 // 4)
+
+
+def test_count_tokens_unmapped_registry_exception_uses_char_estimate() -> None:
+    """Bare Exception with litellm registry wording falls back to char estimate."""
+    msg = (
+        "Model y isn't mapped yet. Add it here - "
+        "https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json"
+    )
+    with patch(
+        "deet.utils.tokenisation.litellm.token_counter",
+        side_effect=Exception(msg),
+    ):
+        result = count_tokens("y", "Hello world")
     assert result == max(1, 11 // 4)
 
 

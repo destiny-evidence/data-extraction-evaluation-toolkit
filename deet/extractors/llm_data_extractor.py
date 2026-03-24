@@ -32,10 +32,14 @@ from deet.data_models.extraction import (
     ExtractionRunMetadata,
     ExtractionRunOutput,
 )
-from deet.settings import LLMProvider, get_settings
+from deet.exceptions import LitellmModelNotMappedError
+from deet.settings import (
+    DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
+    LLMProvider,
+    get_settings,
+)
 from deet.utils.cli_utils import optional_progress
 from deet.utils.tokenisation import (
-    _DEFAULT_MAX_TOKENS,
     count_tokens,
     estimate_cost_usd,
     get_model_max_tokens,
@@ -69,15 +73,19 @@ class PromptConfig(BaseModel):
         return self
 
 
-def _model_string_for_tokenisation() -> str:
-    """Build the model string used for tokenisation (matches LLMDataExtractor.model)."""
-    match settings.llm_provider:
+def _model_string_for_tokenisation(provider: LLMProvider, model: str) -> str:
+    """
+    Build the model string used for tokenisation.
+
+    Must match how ``LLMDataExtractor`` sets ``self.model`` from config.
+    """
+    match provider:
         case LLMProvider.AZURE:
-            return f"azure/{settings.llm_model}"
+            return f"azure/{model}"
         case LLMProvider.OLLAMA:
-            return f"ollama/{settings.llm_model}"
+            return f"ollama/{model}"
         case _:
-            msg = f"Unsupported LLM provider: {settings.llm_provider}"
+            msg = f"Unsupported LLM provider: {provider}"
             raise ValueError(msg)
 
 
@@ -129,13 +137,16 @@ class DataExtractionConfig(BaseModel):
         """Populate max_context_tokens from model when not set."""
         if self.max_context_tokens is not None:
             return self
-        model_str = _model_string_for_tokenisation()
-        inferred = get_model_max_tokens(model_str)
+        model_str = _model_string_for_tokenisation(self.provider, self.model)
+        try:
+            inferred = get_model_max_tokens(model_str)
+        except LitellmModelNotMappedError:
+            inferred = None
         if inferred is not None:
             self.max_context_tokens = inferred
         else:
             # Use shared fallback when model max tokens cannot be inferred.
-            self.max_context_tokens = _DEFAULT_MAX_TOKENS
+            self.max_context_tokens = DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK
         return self
 
 
@@ -180,7 +191,7 @@ class LLMDataExtractor:
             error_message = f"Unsupported LLM provider: {self.config.provider}"
             raise ValueError(error_message)
 
-        logger.info(f"Using {settings.llm_provider} with model: {self.model}")
+        logger.info(f"Using {self.config.provider} with model: {self.model}")
         if self.config.max_tokens is not None:
             logger.info(f"max_tokens={self.config.max_tokens}")
 
@@ -271,26 +282,12 @@ class LLMDataExtractor:
             response_content=llm_response, attributes=selected_attributes
         )
 
-        input_cost, completion_cost = estimate_cost_usd(
-            self.model,
-            prompt_tokens=input_tokens,
-            completion_tokens=output_tokens,
-        )
-        total_cost: float | None = None
-        if input_cost is not None and completion_cost is not None:
-            total_cost = input_cost + completion_cost
-        elif input_cost is not None:
-            total_cost = input_cost
-        elif completion_cost is not None:
-            total_cost = completion_cost
-
         return DocumentExtractionResult(
             annotations=annotations,
             messages=messages,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             model=self.model,
-            total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
         )
 
     def extract_from_documents(  # noqa: PLR0913
@@ -542,7 +539,9 @@ class LLMDataExtractor:
 
         Raises:
             ValueError: When payload exceeds max_context_tokens and
-                truncate_on_overflow is False.
+                truncate_on_overflow is False, or when truncate_on_overflow is
+                True but the prompt JSON cannot be parsed or messages are not
+                in the expected shape so truncation cannot be applied.
 
         """
         max_ctx = self.config.max_context_tokens
@@ -594,6 +593,15 @@ class LLMDataExtractor:
                 messages[1]["content"] = json.dumps(prompt_data, ensure_ascii=False)
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             logger.debug(f"Could not truncate by tokens: {e}")
+            logger.warning(
+                "Could not enforce max_context_tokens by truncating the prompt JSON; "
+                "prompt appears to be invalid or not in the expected shape."
+            )
+            msg = (
+                "Failed to enforce max_context_tokens: invalid or unexpected prompt "
+                "JSON structure while truncate_on_overflow=True."
+            )
+            raise ValueError(msg) from e
 
     def _call_llm(self, prompt: str) -> tuple[str, list[dict[str, Any]], int, int]:
         """
@@ -620,21 +628,18 @@ class LLMDataExtractor:
         logger.debug(f" sys message: {messages[0]['content'][:1000]}")
         logger.debug(f" user message: {messages[1]['content'][:1000]}")
 
-        try:
-            messages_text = " ".join(str(m.get("content", "")) for m in messages)
-            input_tokens = count_tokens(self.model, messages_text)
-            prompt_cost, _ = estimate_cost_usd(
-                self.model,
-                prompt_tokens=input_tokens,
-                completion_tokens=0,
+        messages_text = " ".join(str(m.get("content", "")) for m in messages)
+        input_tokens = count_tokens(self.model, messages_text)
+        prompt_cost, _ = estimate_cost_usd(
+            self.model,
+            prompt_tokens=input_tokens,
+            completion_tokens=0,
+        )
+        if prompt_cost is not None:
+            logger.info(
+                f"Estimated input cost: ${prompt_cost:.6f} USD "
+                f"({input_tokens} tokens)"
             )
-            if prompt_cost is not None:
-                logger.info(
-                    f"Estimated input cost: ${prompt_cost:.6f} USD "
-                    f"({input_tokens} tokens)"
-                )
-        except Exception as e:  # noqa: BLE001
-            logger.debug(f"Could not compute input cost: {e}")
 
         response = litellm.completion(
             model=self.model,
