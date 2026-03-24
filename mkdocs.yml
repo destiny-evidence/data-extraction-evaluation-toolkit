@@ -37,6 +37,7 @@ nav:
   - Overview: index.md
   - API reference: api.md
   - License: LICENSE.md
+  - Contributing: CONTRIBUTING.md
 
 markdown_extensions:
   - pymdownx.tasklist
