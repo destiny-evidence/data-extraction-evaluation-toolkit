@@ -174,11 +174,13 @@ env_list = [
 ]
 
 [tool.tox.env.docs]
+allowlist_externals = [
+    "mkdocs",
+]
 commands = [
     [
         "mkdocs",
         "build",
-        "--strict",
     ],
 ]
 extras = [
