@@ -110,18 +110,21 @@ Most commands start by importing gold standard data, and require that you specif
 - (optionally) the gold standard annotations of those documents made by humans
 
 DEET currently supports importing this data from an EPPIJson file.
+The following examples assume you have an EPPIJson file called `references.json` in your current working directory.
 
-If you want to extract data from the full text of documents, you will need to link your documents to those full texts.
+If you want to extract data from the full text of documents, you will need to link your documents to those full texts. Let's assume you have a folder of pdfs in the `pdfs` directory.
 
-Assuming you have an EPPIJson file called `references.json` in your current working directory, and a folder of PDFs for those documents in a directory called `pdfs`, you can link these together with
+The first step to link these together is to create a "link map" file which maps each reference to the filename of it's corresponding full text.
+
+Create this by running
 
 ```bash
-deet link-documents-fulltexts references.json
+deet init-linkage-mapping-file references.json
 ```
 
-You can specify the pdf folder to look through (which does not have to be in your current directory) by setting the option --pdf-dir, but this defaults to `pdfs`.
+Then edit this file, making sure to carefully add the filename of each document in the `file_path` column.
 
-Deet will try to link documents to pdfs using IDs, or a combination of author and year, but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet init-linkage-mapping-file` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
+You can then link the documents using the link map as follows.
 
 ```bash
 deet link-documents-fulltexts --link-map-path link_map.csv references.json
