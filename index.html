@@ -1,0 +1,1292 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation website for Data Extraction & Evaluation Toolkit (DEET)">
+      
+      
+        <meta name="author" content="DESTinY Consortium">
+      
+      
+      
+      
+        <link rel="next" href="api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Data Extraction & Evaluation Toolkit (DEET)</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-extraction-evaluation-toolkit" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Data Extraction &amp; Evaluation Toolkit (DEET)" class="md-header__button md-logo" aria-label="Data Extraction & Evaluation Toolkit (DEET)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Data Extraction & Evaluation Toolkit (DEET)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    destiny-evidence/data-extraction-evaluation-toolkit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Data Extraction &amp; Evaluation Toolkit (DEET)" class="md-nav__button md-logo" aria-label="Data Extraction & Evaluation Toolkit (DEET)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Data Extraction & Evaluation Toolkit (DEET)
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    destiny-evidence/data-extraction-evaluation-toolkit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tl-dr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tl, dr
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installing-pandoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing pandoc
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing uv
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activate-your-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activate your environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-pre-commit-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing pre-commit hooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-deet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using deet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using deet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-deet-via-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using deet via the CLI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using deet via the CLI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting started
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importing-and-linking-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing and linking data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extracting-data-from-parsedlinked-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extracting data from parsed/linked data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-installation-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform-specific installation instructions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform-specific installation instructions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pandoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PANDOC
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PANDOC">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-verifying-that-pandoc-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Verifying that Pandoc works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Verifying that Pandoc works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Completion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="LICENSE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tl-dr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tl, dr
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installing-pandoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing pandoc
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing uv
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activate-your-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activate your environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-pre-commit-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing pre-commit hooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-deet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using deet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using deet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-deet-via-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using deet via the CLI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using deet via the CLI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting started
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importing-and-linking-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing and linking data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extracting-data-from-parsedlinked-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extracting data from parsed/linked data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-installation-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform-specific installation instructions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform-specific installation instructions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pandoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PANDOC
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PANDOC">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-verifying-that-pandoc-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Verifying that Pandoc works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Verifying that Pandoc works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Completion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/edit/main/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<!-- markdownlint-disable MD041 -->
+
+<h1 id="data-extraction-evaluation-toolkit">data-extraction-evaluation-toolkit</h1>
+<p>A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks.</p>
+<h2 id="tl-dr">tl, dr</h2>
+<p><a href="#using-deet-via-the-cli">Look here if you just want help running deet via the CLI</a>.</p>
+<p>A key innovation of the <a href="https://destiny-evidence.github.io/website/">Destiny project</a> is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.</p>
+<p>This software enables this end-to-end process for data extraction and evaluation tasks. <strong><code>data-extraction-evaluation-toolkit</code></strong>; or <strong><code>deet</code></strong> is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.</p>
+<h2 id="installation">Installation</h2>
+<h3 id="installing-pandoc">Installing <code>pandoc</code></h3>
+<p>This software depends on <a href="https://pandoc.org/"><code>pandoc</code></a>, a widespread open source file/document conversion utility. In this codebase, this is implemented using <code>pypandoc</code>, but this depends on <code>pandoc</code> being installed at a system level.</p>
+<div class="highlight"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>pandoc<span class="w"> </span><span class="c1"># mac</span>
+apt<span class="w"> </span>install<span class="w"> </span>pandoc<span class="w"> </span><span class="c1"># ubuntu/debian</span>
+choco<span class="w"> </span>install<span class="w"> </span>pandoc<span class="w"> </span><span class="c1"># windows</span>
+</code></pre></div>
+<p>Alternative installation instructions for Windows users are <a href="#pandoc">shown further below</a></p>
+<h3 id="installing-uv">Installing <code>uv</code></h3>
+<p><a href="https://docs.astral.sh/uv">uv</a> is used for dependency management and managing virtual environments. You can install uv either using pipx or the uv installer script:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</code></pre></div>
+<h3 id="installing-dependencies">Installing Dependencies</h3>
+<p>Once uv is installed, install dependencies:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:destiny-evidence/data-extraction-evaluation-toolkit.git<span class="w"> </span><span class="c1"># SSH</span>
+<span class="c1"># or</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git<span class="w"> </span><span class="c1"># HTTPS</span>
+<span class="nb">cd</span><span class="w"> </span>data-extraction-evaluation-toolkit
+uv<span class="w"> </span>sync
+</code></pre></div>
+<h3 id="activate-your-environment">Activate your environment</h3>
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</code></pre></div>
+<h3 id="installing-pre-commit-hooks">Installing pre-commit hooks</h3>
+<p>Install <code>pre-commit</code> locally (in your activated <code>venv</code>) to aid code consistency (if you're looking to contribute).</p>
+<div class="highlight"><pre><span></span><code>pre-commit<span class="w"> </span>install
+</code></pre></div>
+<h2 id="using-deet">Using <code>deet</code></h2>
+<p>The <code>data-extraction-evaluation-toolkit</code> (<code>deet</code>) contains mutliple modules which can be leveraged alone, or orchestrated together to form a <code>Pipeline</code>. The goal of <code>DEET</code> is to be modular and extensible, allowing users to customise a specific pipeline or workflow to their needs.</p>
+<p>Currently, the app covers the following tools:</p>
+<ul>
+<li><strong>Document parsing</strong> (from a range of formats; typically into <code>markdown</code>)</li>
+<li><strong>Gold standard data ingestion and standardisation</strong> (currently only <code>eppi.json</code> datasets are supported out of the box, for other datasets, use the data models in <code>data_models/base.py</code> to ingest your gold standard references.)</li>
+<li><strong>LLM-powered data extraction</strong></li>
+<li><strong>Orchetration of tools into <code>Pipeline</code>s</strong> (these tools can be existing <code>DEET</code> modules, custom python functions, or scripts (<code>R</code>, <code>python</code>, <code>bash</code> currently suppported.))</li>
+</ul>
+<p>Our roadmap for future development contains:</p>
+<ul>
+<li><strong>Linking of gold standard references &amp; pdf-derived parsed documents</strong></li>
+<li><strong>A fully-fledged cli for typical <code>deet</code> tasks</strong></li>
+<li><strong>A framework for repeatable pipeline runs with slight modifications for comparison</strong></li>
+<li><strong>Comparison &amp; evaluation of LLM vs human annotations</strong></li>
+<li><strong>Support for prompt versioning tool</strong></li>
+</ul>
+<h3 id="using-deet-via-the-cli">Using <code>deet</code> via the CLI</h3>
+<p>The deet command line interface (CLI) allows you to use deet without writing any python code.</p>
+<h4 id="getting-started">Getting started</h4>
+<p>Once you have installed DEET, and activated your environment, (see <a href="#installation">installation</a>), you should be able to run the CLI.</p>
+<p>To test this run</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>--help
+</code></pre></div>
+<p>You should see a list of commands. To get more information on any of these (for example extract-data), run</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>extract-data<span class="w"> </span>--help
+</code></pre></div>
+<p>You can call these commands from anywhere where your virtual environment with deet installed is activated. It's a good idea to navigate into a new directory for each data extraction project, where you can store the outputs of running deet for your project.</p>
+<p>To navigate to another directory use the <code>cd</code> command. <code>cd ..</code> will move up a level, cd <code>deet-project</code> will move into the <code>deet-project</code> folder, assuming it exists in the current directory. Type <code>ls</code> to see the files and folders in your current directory.</p>
+<h4 id="importing-and-linking-data">Importing and linking data</h4>
+<p>Most commands start by importing gold standard data, and require that you specify the location of a file that contains:</p>
+<ul>
+<li>bibliographic records of documents,</li>
+<li>the attributes that should be extracted from them, and</li>
+<li>(optionally) the gold standard annotations of those documents made by humans</li>
+</ul>
+<p>DEET currently supports importing this data from an EPPIJson file.</p>
+<p>If you want to extract data from the full text of documents, you will need to link your documents to those full texts.</p>
+<p>Assuming you have an EPPIJson file called <code>references.json</code> in your current working directory, and a folder of PDFs for those documents in a directory called <code>pdfs</code>, you can link these together with</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>link-documents-fulltexts<span class="w"> </span>references.json
+</code></pre></div>
+<p>You can specify the pdf folder to look through (which does not have to be in your current directory) by setting the option --pdf-dir, but this defaults to <code>pdfs</code>.</p>
+<p>Deet will try to link documents to pdfs using IDs, or a combination of author and year, but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the <code>deet init-linkage-mapping-file</code> command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>link-documents-fulltexts<span class="w"> </span>--link-map-path<span class="w"> </span>link_map.csv<span class="w"> </span>references.json
+</code></pre></div>
+<p>Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option <code>--output-path</code>. This defaults to <code>linked_documents</code></p>
+<h4 id="extracting-data-from-parsedlinked-data">Extracting data from parsed/linked data</h4>
+<p>Once you have linked this data to pdfs if you are doing full text data extraction, you are ready to extract data from them.</p>
+<p>Use the command <code>deet extract-data</code> to extract data from imported documents.</p>
+<p>Once again, you will need to specify an EPPIJson file you want to import from, e.g.</p>
+<p><code>deet extract-data references.json</code></p>
+<p>By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.</p>
+<p>If you want to edit the prompts used for data extraction, you can do this by setting the <code>--prompt-population</code> option to <code>cli</code>, to fill in prompts in the command line, or by setting <code>--prompt-population</code> to <code>file</code>, and pointing to a csv detailing a prompt for each attribute with <code>--csv-path</code>. To create a template for this csv, run <code>deet init-prompt-csv</code>.</p>
+<p>To set further configuration options, you can supply a path to a configuration file with the option <code>--config-path</code>. To create a template for this file detailing configurable options, run</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>export-config-template
+</code></pre></div>
+<p>You can edit this file to change the configuration options for your extract-data pipeline.</p>
+<h2 id="contributing">Contributing</h2>
+<p>If you want to contribute to this project -- awesome, everyone's welcome.
+Please see the <a href="CONTRIBUTING/">contributing guidelines</a> for details on how best to contribute.</p>
+<h2 id="tests">Tests</h2>
+<p>Tests are written using <code>pytest</code>. You can run the tests locally using</p>
+<div class="highlight"><pre><span></span><code>pytest
+</code></pre></div>
+<p>Unit tests are automatically run in <a href="https://en.m.wikipedia.org/wiki/Continuous_integration">Continuous Integration</a> (CI) using github actions (see <code>.github/workflows/tests.yml</code>) on Pull Requests or merges into <code>main</code> or <code>development</code>. Integration tests are also run for pushes/PRs into <code>main</code> (Note: these will take approx 1-2h to complete, so consider a cup of coffee while you wait).</p>
+<h2 id="adding-documentation">Adding documentation</h2>
+<p>Please add to the docs whenever you feel it would be useful. The docs are built using <a href="https://www.mkdocs.org/">mkdocs</a> and mix automatically-generated API documentation with more general documentation. An automatically generated html static site is built from the <code>docs/</code> directory, and the API documentation is generated from docstrings in the code.</p>
+<p>To add your own documentation, add markdown files to the <code>docs/</code> directory <em>and</em> add these to the <code>nav</code> block in <code>mkdocs.yml</code>. To add API documentation, add docstrings to the code and ensure that the relevant modules are included in the <code>nav</code> block in <code>mkdocs.yml</code>.</p>
+<p>To build the docs locally, run <code>mkdocs build --strict</code> from the root of the repository and open <code>site/index.html</code> in a browser. The documentation website is currently automatically built and deployed to GitHub Pages on pushes to the <code>main</code> branch, and uses the <code>gh-pages</code> branch to serve the docs.</p>
+<p>The documentation website is available at <a href="https://destiny-evidence.github.io/deet">https://destiny-evidence.github.io/deet</a>.</p>
+<h2 id="platform-specific-installation-instructions">Platform-specific installation instructions</h2>
+<h3 id="pandoc">PANDOC</h3>
+<h4 id="1-installation">1. Installation</h4>
+<p>There are multiple options. The first and possibly best one is using an installer file provided via GitHub. For the most recent release, visit:</p>
+<ul>
+<li><a href="https://github.com/jgm/pandoc/releases">https://github.com/jgm/pandoc/releases</a></li>
+</ul>
+<p>Select the <code>.msi</code> file from the latest release (e.g. <code>pandoc-3.8.3-windows-x86_64.msi</code> for release 3.8.3, as of January 2026) and run the installer by double-clicking on it.</p>
+<p>Alternatively, one may download the ZIP file from the link above, unpack it, and move the binaries to a directory of your choice (not tested; more information is available via the link below).</p>
+<p>For other options (Chocolatey or Winget package manager, or Conda Forge), see:</p>
+<ul>
+<li><a href="https://pandoc.org/installing.html">https://pandoc.org/installing.html</a></li>
+</ul>
+<p><strong>Note:</strong> Using the <code>.msi</code> method should remove older versions of Pandoc and update PATH variables automatically, while other methods may cause multiple versions to be installed.</p>
+<hr />
+<h4 id="2-verifying-that-pandoc-works">2. Verifying that Pandoc works</h4>
+<p>These instructions are taken from:</p>
+<ul>
+<li><a href="https://pandoc.org/getting-started.html">https://pandoc.org/getting-started.html</a></li>
+</ul>
+<h5 id="steps">Steps</h5>
+<ol>
+<li>Search for <code>cmd</code> in the Windows Start menu to launch <strong>Command Prompt</strong>. It should also be possible to use <strong>Windows PowerShell</strong>.</li>
+<li>If you are using <code>cmd</code>, type the following before using Pandoc to set the encoding to UTF-8:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>chcp 65001
+</code></pre></div>
+<ol>
+<li>Type the following and press Enter to check if Pandoc is installed:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>pandoc --version
+</code></pre></div>
+<p>It should say something like:</p>
+<p><em>pandoc 3.8.3</em>
+   <em>Features: +server +lua</em>
+   <em>Scripting engine: Lua 5.4</em>
+   <em>User data directory: C:\Users\YourUserName\AppData\Roaming\pandoc</em>
+   <em>Copyright (C) 2006-2025 John MacFarlane. Web: <a href="https://pandoc.org">https://pandoc.org</a></em></p>
+<p><em>This is free software; see the source for copying conditions. There is no</em>
+   <em>warranty, not even for merchantability or fitness for a particular purpose.</em></p>
+<ol>
+<li>
+<p>Navigate to a directory of your choice using the <code>cd</code> command.
+   See: <a href="https://stackoverflow.com/questions/17753986/how-to-change-directory-using-windows-command-line">https://stackoverflow.com/questions/17753986/how-to-change-directory-using-windows-command-line</a>
+   (This link is useful if you need to switch to a different drive.)</p>
+</li>
+<li>
+<p>Create a new directory to test Pandoc:</p>
+<p><code>batch
+   mkdir pandoc-test</code></p>
+</li>
+<li>
+<p>Navigate into the new directory:</p>
+<p>```batch
+   cd pandoc-test
+   <div class="highlight"><pre><span></span><code>It should now show `pandoc-test` before the blinking cursor in the command prompt.
+If the directory is not shown, run:
+
+ ```batch
+echo %cd%
+</code></pre></div></p>
+</li>
+<li>
+<p>Outside the command prompt (using Notepad, for example), create a file called <code>test1.md</code> in your <code>pandoc-test</code> directory. If Windows is hiding file extensions then please make sure that the displayed file name corresponds to the actual file name, and that no hidden  '.txt' extension is added. Paste the following text into your file, then save the file.</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>---
+
+title: Test
+...
+
+# Test!
+
+This is a test of *pandoc*.
+
+- list one
+- list two
+</code></pre></div>
+<ol>
+<li>
+<p>Back in the command prompt (still in the <code>pandoc-test</code> directory), type  <code>dir</code> and press Enter. You should see <code>test1.md</code> listed.</p>
+</li>
+<li>
+<p>Convert the file to HTML by typing:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>pandoc test1.md -f markdown -t html -s -o test1.html
+</code></pre></div>
+<p><strong>Info:</strong>
+   - <code>test1.md</code> tells Pandoc which file to convert.
+   - <code>-s</code> creates a <em>standalone</em> file with a header and footer.
+   - <code>-o test1.html</code> specifies the output file name.</p>
+<p>Note that <code>-f markdown</code> and <code>-t html</code> could be omitted, since the default is to convert from Markdown to HTML.</p>
+<ol>
+<li>
+<p>Type the following to open the HTML file in your browser:</p>
+<div class="highlight"><pre><span></span><code>.\test1.html
+</code></pre></div>
+<p>Alternatively, open the folder in File Explorer and double-click <code>test1.html</code>.</p>
+</li>
+</ol>
+<hr />
+<h4 id="3-completion">3. Completion</h4>
+<p>If the HTML file opens and displays well then you have successfully installed Pandoc and converted a Markdown file to HTML.
+Unit tests are automatically run in <a href="https://en.m.wikipedia.org/wiki/Continuous_integration">Continuous Integration</a> (CI) using github actions (see <code>.github/workflows/tests.yml</code>) on Pull Requests or merges into <code>main</code> or <code>development</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2025 DESTinY Consortium
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/destiny-evidence" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["content.action.edit"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
