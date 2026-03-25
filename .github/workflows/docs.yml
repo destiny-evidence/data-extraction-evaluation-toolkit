@@ -50,7 +50,7 @@ jobs:
       # gh-pages (https://tinyurl.com/gh-pages-from-branch), which will be created the
       # first time this workflow step is run.
       - name: Publish documentation on GitHub pages
-        if: success() && github.event_name != 'pull_request'
+        if: success()
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4
         with:
           github_token: ${{  secrets.GITHUB_TOKEN }}
