@@ -33,13 +33,6 @@ def n_labels(y_true: list[int], y_pred: list[int]) -> float:  # noqa: ARG001
     return sum(y_true)
 
 
-def exact_match(y_true: list, y_pred: list) -> float:
-    """Fraction of predictions that exactly match the ground truth."""
-    if not y_true:
-        return 0.0
-    return sum(t == p for t, p in zip(y_true, y_pred, strict=False)) / len(y_true)
-
-
 BINARY_METRICS: dict[str, MetricFunction] = {
     "accuracy": accuracy_score,
     "recall": recall_score,
@@ -50,20 +43,26 @@ BINARY_METRICS: dict[str, MetricFunction] = {
 
 NON_BINARY_METRICS: dict[str, MetricFunction] = {
     "accuracy": accuracy_score,
-    "exact_match": exact_match,
 }
 
 # Keep METRICS as the default (boolean) set for backward compatibility
 METRICS: dict[str, MetricFunction] = BINARY_METRICS
 
+METRICS_BY_ATTRIBUTE_TYPE: dict[AttributeType, dict[str, MetricFunction]] = {
+    AttributeType.BOOL: BINARY_METRICS,
+    AttributeType.STRING: NON_BINARY_METRICS,
+    AttributeType.INTEGER: NON_BINARY_METRICS,
+    AttributeType.FLOAT: NON_BINARY_METRICS,
+    AttributeType.LIST: NON_BINARY_METRICS,
+    AttributeType.DICT: NON_BINARY_METRICS,
+}
+
 
 def get_metrics_for_attribute_type(
     attribute_type: AttributeType,
 ) -> dict[str, MetricFunction]:
-    """Return the appropriate metrics for an attribute's data type."""
-    if attribute_type == AttributeType.BOOL:
-        return BINARY_METRICS
-    return NON_BINARY_METRICS
+    """Return the metric set registered for the given attribute data type."""
+    return METRICS_BY_ATTRIBUTE_TYPE[attribute_type]
 
 
 class AttributeMetric(BaseModel):
