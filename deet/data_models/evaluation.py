@@ -41,27 +41,43 @@ BINARY_METRICS: dict[str, MetricFunction] = {
     "n_labels": n_labels,
 }
 
-NON_BINARY_METRICS: dict[str, MetricFunction] = {
+# Per-value exact match; appropriate for categorical string extraction.
+STRING_METRICS: dict[str, MetricFunction] = {
     "accuracy": accuracy_score,
 }
+
+# Same as string metrics: integer labels compared with sklearn accuracy.
+INTEGER_METRICS: dict[str, MetricFunction] = STRING_METRICS
+
+# Regression-style metrics (e.g. MAE) are not wired yet.
+FLOAT_METRICS: dict[str, MetricFunction] = {}
+
+# Structured values need dedicated metrics (set overlap, tree edit distance, etc.).
+LIST_METRICS: dict[str, MetricFunction] = {}
+DICT_METRICS: dict[str, MetricFunction] = {}
 
 # Keep METRICS as the default (boolean) set for backward compatibility
 METRICS: dict[str, MetricFunction] = BINARY_METRICS
 
 METRICS_BY_ATTRIBUTE_TYPE: dict[AttributeType, dict[str, MetricFunction]] = {
     AttributeType.BOOL: BINARY_METRICS,
-    AttributeType.STRING: NON_BINARY_METRICS,
-    AttributeType.INTEGER: NON_BINARY_METRICS,
-    AttributeType.FLOAT: NON_BINARY_METRICS,
-    AttributeType.LIST: NON_BINARY_METRICS,
-    AttributeType.DICT: NON_BINARY_METRICS,
+    AttributeType.STRING: STRING_METRICS,
+    AttributeType.INTEGER: INTEGER_METRICS,
+    AttributeType.FLOAT: FLOAT_METRICS,
+    AttributeType.LIST: LIST_METRICS,
+    AttributeType.DICT: DICT_METRICS,
 }
 
 
 def get_metrics_for_attribute_type(
     attribute_type: AttributeType,
 ) -> dict[str, MetricFunction]:
-    """Return the metric set registered for the given attribute data type."""
+    """
+    Return the metric set registered for the given attribute data type.
+
+    Some types map to an empty dict when no suitable default metrics are
+    implemented yet (float, list, dict); callers may still merge in custom metrics.
+    """
     return METRICS_BY_ATTRIBUTE_TYPE[attribute_type]
 
 
