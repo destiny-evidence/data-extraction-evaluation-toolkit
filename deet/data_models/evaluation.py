@@ -46,11 +46,15 @@ STRING_METRICS: dict[str, MetricFunction] = {
     "accuracy": accuracy_score,
 }
 
-# Same as string metrics: integer labels compared with sklearn accuracy.
-INTEGER_METRICS: dict[str, MetricFunction] = STRING_METRICS
+# Discrete integer extraction; per-value match via sklearn accuracy.
+INTEGER_METRICS: dict[str, MetricFunction] = {
+    "accuracy": accuracy_score,
+}
 
 # Regression-style metrics (e.g. MAE) are not wired yet.
-FLOAT_METRICS: dict[str, MetricFunction] = {}
+FLOAT_METRICS: dict[str, MetricFunction] = {
+    "accuracy": accuracy_score,
+}
 
 # Structured values need dedicated metrics (set overlap, tree edit distance, etc.).
 LIST_METRICS: dict[str, MetricFunction] = {}
