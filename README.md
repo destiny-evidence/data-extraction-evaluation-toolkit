@@ -132,19 +132,19 @@ deet link-documents-fulltexts --link-map-path link_map.csv references.json
 
 Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option `--output-path`. This defaults to `linked_documents`
 
-#### Extracting data from parsed/linked data
+#### Setting up your prompts
 
-Once you have linked this data to pdfs if you are doing full text data extraction, you are ready to extract data from them.
+When you extract data, deet will try to extract attributes using prompts specified in the EPPIJson file.
+
+If you want to edit the prompts used for data extraction, and give further details on the attributes, you can create a prompt CSV, by running `deet init-prompt-csv`. This CSV will contain a row for each attribute: enter or amend the prompt column to set the prompt that will be passed to the LLM for that attribute. Delete rows if you do not want to extract data for that attribute.
+
+#### Extracting data from parsed/linked data
 
 Use the command `deet extract-data` to extract data from imported documents.
 
-Once again, you will need to specify an EPPIJson file you want to import from, e.g.
+Once again, you will need to specify an EPPIJson file you want to import from,  and you may want to specify the way you want to fill in prompts:
 
-`deet extract-data references.json`
-
-By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.
-
-If you want to edit the prompts used for data extraction, you can do this by setting the `--prompt-population` option to `cli`, to fill in prompts in the command line, or by setting `--prompt-population` to `file`, and pointing to a csv detailing a prompt for each attribute with `--csv-path`. To create a template for this csv, run `deet init-prompt-csv`.
+`deet extract-data --prompt-population file --csv-path prompt_definitions.csv references.json`
 
 To set further configuration options, you can supply a path to a configuration file with the option `--config-path`. To create a template for this file detailing configurable options, run
 
