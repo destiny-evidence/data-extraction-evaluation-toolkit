@@ -212,13 +212,6 @@ def init_prompt_csv(
 @app.command()
 def extract_data(  # noqa: PLR0913
     gs_data_path: GS_DATA_PATH,
-    link_map_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to an optional link map (create this by running "
-            "`deet init-linkage-mapping-file`)"
-        ),
-    ] = None,
     config_path: Annotated[
         Path,
         typer.Option(
@@ -253,6 +246,15 @@ def extract_data(  # noqa: PLR0913
             "running `deet link-documents-fulltexts`."
         ),
     ] = DEFAULT_LINKED_DOCUMENTS_PATH,
+    link_map_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="A path to a link map (create this by running "
+            "`deet init-linkage-mapping-file`). You must specify"
+            "either a link map or a directory containing linked"
+            "documents"
+        ),
+    ] = None,
     pdf_dir: Annotated[
         Path,
         typer.Option(

@@ -63,33 +63,49 @@ def prepare_documents(
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
         return documents
     if config.default_context_type == ContextType.FULL_DOCUMENT:
+        if link_map_path is not None:
+            echo_and_log(f"Linking documents using link map: {link_map_path}")
+            linker = DocumentReferenceLinker(
+                references=documents,
+                document_base_dir=pdf_dir,
+                document_reference_mapping=link_map_path,
+                linking_strategies=[LinkingStrategy.MAPPING_FILE],
+            )
+            documents = linker.link_many_references_parsed_documents()
+            for linked_document in documents:
+                file_path = (
+                    linked_document_path
+                    / f"{linked_document.safe_identity.document_id}.json"
+                )
+                linked_document.save(file_path)
+
+            if not documents:
+                no_links = (
+                    f"context type {config.default_context_type} selected"
+                    " but no linked documents could be found or created"
+                )
+                fail_with_message(no_links)
+
+            return documents
         if linked_document_path.exists():
-            return [Document.load(f) for f in linked_document_path.glob("*.json")]
-        echo_and_log(
-            "Linked document path does not exist. Attempting to linkdocs by ID."
-        )
-        linker = DocumentReferenceLinker(
-            references=documents,
-            document_base_dir=pdf_dir,
-            document_reference_mapping=link_map_path,
-            linking_strategies=[LinkingStrategy.MAPPING_FILE],
-        )
-        documents = linker.link_many_references_parsed_documents()
-        for linked_document in documents:
-            file_path = (
-                linked_document_path
-                / f"{linked_document.safe_identity.document_id}.json"
+            echo_and_log(f"Loading linked documents from {linked_document_path}")
+            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
+            if documents:
+                return documents
+            fail_with_message(
+                "Linked document path does not contain any linked documents."
+                " Please use a link map"
+                " to create linked documents "
+                "(`deet init-linkage-mapping-file`)"
             )
-            linked_document.save(file_path)
-
-        if not documents:
-            no_links = (
-                f"context type {config.default_context_type} selected"
-                " but no linked documents could be found or created"
+        else:
+            fail_with_message(
+                "Linked document path does not exist. Please use a link map"
+                " to create linked documents "
+                "(`deet init-linkage-mapping-file`)"
             )
-            fail_with_message(no_links)
+    else:
+        message = f"context type {config.default_context_type} not supported"
+        fail_with_message(message)
 
-        return documents
-    message = f"context type {config.default_context_type} not supported"
-    fail_with_message(message)
-    return documents
+    return None
