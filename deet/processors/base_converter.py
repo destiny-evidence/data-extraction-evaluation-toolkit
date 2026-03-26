@@ -151,13 +151,14 @@ class AnnotationConverter(
             file_path = target_dir / self.outfile_names[file_type]
             logger.debug(f"writing file {file_type} to {file_path}")
             if file_type == Outfiles.ATTRIBUTE_LABEL_MAPPING:
-                file_path.write_text(json.dumps(data_list))
+                file_path.write_text(json.dumps(data_list), encoding="utf-8")
             else:
                 file_path.write_text(
                     json.dumps(
                         [item.model_dump(mode="json") for item in data_list],  # type: ignore[attr-defined]
                         indent=2,
-                    )
+                    ),
+                    encoding="utf-8",
                 )
             saved_files[file_type.value] = str(file_path)
 

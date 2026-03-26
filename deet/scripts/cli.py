@@ -98,7 +98,8 @@ def export_config_template(
         else:
             raise typer.Abort()  # noqa: RSE102
     output_path.write_text(
-        yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False)
+        yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
+        encoding="utf-8",
     )
     echo_and_log(f"✅ Default config exported to {output_path}", fg=typer.colors.GREEN)
     echo_and_log(
@@ -335,7 +336,8 @@ def extract_data(  # noqa: PLR0913
 
     config_out = experiment_out_dir / "config.yaml"
     config_out.write_text(
-        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False)
+        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False),
+        encoding="utf-8",
     )
 
     evaluator = GoldStandardLLMEvaluator(

@@ -156,7 +156,7 @@ class GoldStandardLLMEvaluator:
         filepath: Path,
     ) -> None:
         """Export a csv with side-by-side comparisons of gs and LLM decisions."""
-        with filepath.open("w") as f:
+        with filepath.open("w", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f,
                 fieldnames=[

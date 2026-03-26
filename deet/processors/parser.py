@@ -565,9 +565,9 @@ class DocumentParser:
             out = dir_base / (filename_base + "." + ext)
             logger.debug(f"writing out {ext} to {out}.")
             if ext == "md":
-                out.write_text(text)
+                out.write_text(text, encoding="utf-8")
             if ext == "json" and metadata is not None:
-                out.write_text(json.dumps(metadata))
+                out.write_text(json.dumps(metadata), encoding="utf-8")
             if ext == "jpeg" and images is not None:
                 for img_name, img in images.items():
                     img_out = dir_base / (filename_base + "_" + img_name)
