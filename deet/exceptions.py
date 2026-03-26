@@ -106,3 +106,13 @@ class NoAbstractError(Exception):
         Exception (_type_): _description_
 
     """
+
+
+class LitellmModelNotMappedError(Exception):
+    """
+    Raised when litellm reports the model is missing from its registry.
+
+    ``litellm.get_max_tokens`` can raise a bare ``Exception`` with a
+    characteristic message; we translate that to this type so callers can
+    handle it without a broad ``except Exception``.
+    """

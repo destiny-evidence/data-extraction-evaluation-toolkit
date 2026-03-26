@@ -1,10 +1,12 @@
 """Tests for the LLM data extractor module."""
 
 import json
+from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from loguru import logger
 from pydantic import ValidationError
 
 from deet.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
@@ -15,6 +17,7 @@ from deet.data_models.eppi import (
     EppiAttributeSelectionType,
     EppiDocument,
 )
+from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunOutput
 from deet.extractors.llm_data_extractor import (
     DataExtractionConfig,
     LLMDataExtractor,
@@ -34,6 +37,7 @@ def mock_settings(monkeypatch):
     mock_settings_obj.llm_model = "test-model"
     mock_settings_obj.llm_temperature = 0.1
     mock_settings_obj.llm_max_tokens = 1024
+    mock_settings_obj.llm_max_context_tokens = None
     mock_settings_obj.azure_deployment = "test-deployment"
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
@@ -119,6 +123,10 @@ def mock_litellm_completion():
         }
         mock_response = MagicMock()
         mock_response.choices[0].message.content = json.dumps(response_content)
+        mock_usage = MagicMock()
+        mock_usage.prompt_tokens = 100
+        mock_usage.completion_tokens = 42
+        mock_response.usage = mock_usage
         mock_completion.return_value = mock_response
         yield mock_completion
 
@@ -138,7 +146,52 @@ def test_prompt_config_missing_file(tmp_path: Path):
         PromptConfig(system_prompt=tmp_path / "nonexistent.txt")
 
 
+def test_model_validator_populates_max_context_tokens(mock_settings):
+    """Test that model_validator sets max_context_tokens from model when None."""
+    with patch(
+        "deet.extractors.llm_data_extractor.get_model_max_tokens",
+        return_value=128000,
+    ):
+        config = DataExtractionConfig()
+    assert config.max_context_tokens == 128000
+
+
+def test_model_validator_respects_user_override(mock_settings):
+    """Test that model_validator does not override explicit max_context_tokens."""
+    with patch(
+        "deet.extractors.llm_data_extractor.get_model_max_tokens",
+        return_value=128000,
+    ):
+        config = DataExtractionConfig(max_context_tokens=5000)
+    assert config.max_context_tokens == 5000
+
+
+def test_model_validator_uses_llm_max_context_tokens_from_settings(mock_settings):
+    """Test max_context_tokens from settings when LLM_MAX_CONTEXT_TOKENS set."""
+    mock_settings.llm_max_context_tokens = 4000
+    with patch(
+        "deet.extractors.llm_data_extractor.get_model_max_tokens",
+        return_value=128000,
+    ) as mock_get_max:
+        config = DataExtractionConfig()
+    assert config.max_context_tokens == 4000
+    mock_get_max.assert_not_called()
+
+
 # core class
+def test_llm_extractor_logs_max_tokens_when_set(mock_settings):
+    """Test that LLMDataExtractor logs max_tokens when config has it set."""
+    log_buf = StringIO()
+    handler_id = logger.add(log_buf, format="{message}")
+    try:
+        config = DataExtractionConfig(max_tokens=512)
+        with patch("pathlib.Path.read_text", return_value="Default system prompt"):
+            LLMDataExtractor(config=config)
+        assert "max_tokens=512" in log_buf.getvalue()
+    finally:
+        logger.remove(handler_id)
+
+
 def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
     """Test LLMDataExtractor initialization with a custom system prompt."""
     custom_prompt_file = tmp_path / "custom.txt"
@@ -212,17 +265,58 @@ def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     assert sample_eppi_document.context == sample_eppi_document.abstract
 
 
-def test_prepare_context_truncation(llm_extractor, sample_eppi_document):
-    """Test that context is truncated if it exceeds max length."""
-    payload = "This is the very long full text of the document."
-    llm_extractor.config.max_context_length = 10
-    context = llm_extractor._prepare_context(payload=payload)
-    assert len(context) <= 13  # 10 chars + "..."
-    assert context.endswith("...")
+def test_call_llm_raises_when_payload_exceeds_max_by_default(
+    llm_extractor, sample_eppi_attributes, mock_litellm_completion
+):
+    """Test _call_llm raises when payload exceeds max and truncation is off."""
+    long_context = " ".join(["word"] * 2000)
+    prompt = json.dumps(
+        {"context": long_context, "attributes": []},
+        ensure_ascii=False,
+    )
+    llm_extractor.config.max_context_tokens = 1000
+    llm_extractor.config.truncate_on_overflow = False
+    with pytest.raises(ValueError, match="exceeds max_context_tokens"):
+        llm_extractor._call_llm(prompt=prompt)
+
+
+def test_call_llm_truncates_when_truncate_on_overflow_enabled(
+    llm_extractor, sample_eppi_attributes, mock_litellm_completion
+):
+    """Test that _call_llm truncates context when truncate_on_overflow is True."""
+    long_context = " ".join(["word"] * 2000)
+    prompt = json.dumps(
+        {"context": long_context, "attributes": []},
+        ensure_ascii=False,
+    )
+    llm_extractor.config.max_context_tokens = 1000
+    llm_extractor.config.truncate_on_overflow = True
+    llm_extractor._call_llm(prompt=prompt)
+    call_args = mock_litellm_completion.call_args
+    user_content = json.loads(call_args.kwargs["messages"][1]["content"])
+    assert len(user_content["context"]) < len(long_context)
+
+
+def test_call_llm_truncates_to_empty_when_system_and_attributes_exceed_max(
+    llm_extractor, sample_eppi_attributes, mock_litellm_completion
+):
+    """Test that _call_llm sets context to empty when system+attributes exceed max."""
+    long_context = " ".join(["word"] * 100)
+    prompt = json.dumps(
+        {"context": long_context, "attributes": []},
+        ensure_ascii=False,
+    )
+    llm_extractor.config.max_context_tokens = 5
+    llm_extractor.config.truncate_on_overflow = True
+    llm_extractor._call_llm(prompt=prompt)
+    call_args = mock_litellm_completion.call_args
+    user_content = json.loads(call_args.kwargs["messages"][1]["content"])
+    assert user_content["context"] == ""
 
 
 def test_prepare_context_not_implemented(
-    llm_extractor: LLMDataExtractor, sample_eppi_document
+    llm_extractor: LLMDataExtractor,
+    sample_eppi_document,
 ):
     """Test that RAG and CUSTOM context types raise NotImplementedError."""
     payload = "This is the full text."
@@ -268,7 +362,9 @@ def test_call_llm(mock_litellm_completion, mock_settings, llm_provider):
         )
 
         llm_extractor = create_llm_extractor(config, mock_settings)
-        response, messages = llm_extractor._call_llm(prompt)
+        response, messages, output_tokens, input_tokens = llm_extractor._call_llm(
+            prompt
+        )
 
         mock_litellm_completion.assert_called_once()
         call_args = mock_litellm_completion.call_args
@@ -286,6 +382,8 @@ def test_call_llm(mock_litellm_completion, mock_settings, llm_provider):
         assert response is not None
         assert isinstance(messages, list)
         assert len(messages) >= 1
+        assert output_tokens == 42
+        assert input_tokens == 100
     else:
         with pytest.raises(ValidationError, match=r"provider"):
             config = DataExtractionConfig(
@@ -354,15 +452,20 @@ def test_extract_from_document(
 ):
     """Test the end-to-end flow of extract_from_document."""
     payload = "This is the full text of the document."
-    annotations, messages = llm_extractor.extract_from_document(
+    result = llm_extractor.extract_from_document(
         sample_eppi_attributes,
         payload=payload,
         context_type=ContextType.FULL_DOCUMENT,
     )
-    assert len(annotations) == 1
-    assert isinstance(messages, list)
-    assert len(messages) >= 1
-    assert annotations[0].attribute.attribute_id == 1234
+    assert isinstance(result, DocumentExtractionResult)
+    assert len(result.annotations) == 1
+    assert isinstance(result.messages, list)
+    assert len(result.messages) >= 1
+    assert result.output_tokens == 42
+    assert result.input_tokens == 100
+    assert result.model is not None
+    assert result.timestamp is not None
+    assert result.annotations[0].attribute.attribute_id == 1234
     mock_litellm_completion.assert_called_once()
 
 
@@ -387,15 +490,31 @@ def test_extract_from_documents(
     mock_litellm_completion,
     tmp_path,
 ):
-    """Test extracting from multiple documents (directory mode)."""
+    """Test extracting from multiple documents (document mode)."""
     sample_eppi_documents = [sample_eppi_document]
     llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
-    all_annotations = llm_extractor.extract_from_documents(
+    output_file = tmp_path / "results.json"
+    run_output = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
         documents=sample_eppi_documents,
+        output_file=output_file,
     )
-    assert len(all_annotations) == 1
+    assert isinstance(run_output, ExtractionRunOutput)
+    assert len(run_output.annotated_documents) == 1
     assert mock_litellm_completion.call_count == 1
+
+    saved = json.loads(output_file.read_text())
+    assert "annotated_documents" in saved
+    assert "metadata" in saved
+    assert len(saved["annotated_documents"]) == 1
+
+    meta = saved["metadata"]
+    assert meta["total_input_tokens"] == 100
+    assert meta["total_output_tokens"] == 42
+    doc_id_str = str(sample_eppi_document.safe_identity.document_id)
+    assert meta["per_document_tokens"][doc_id_str]["input_tokens"] == 100
+    assert meta["per_document_tokens"][doc_id_str]["output_tokens"] == 42
+    assert "total_cost_usd" in meta
 
 
 def test_extract_from_documents_continues_on_error(
@@ -405,13 +524,16 @@ def test_extract_from_documents_continues_on_error(
     mock_litellm_completion,
     tmp_path,
 ):
-    """Test that when one file fails, processing continues and returns empty dict."""
+    """Test that when one document fails, processing continues with empty results."""
     sample_eppi_documents = [sample_eppi_document]
     llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
     mock_litellm_completion.side_effect = ValueError("LLM call failed")
-    all_annotations = llm_extractor.extract_from_documents(
+    run_output = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
         documents=sample_eppi_documents,
     )
-    assert all_annotations == []
+    assert isinstance(run_output, ExtractionRunOutput)
+    assert run_output.annotated_documents == []
+    assert run_output.metadata.total_input_tokens == 0
+    assert run_output.metadata.total_output_tokens == 0
     assert mock_litellm_completion.call_count == 1

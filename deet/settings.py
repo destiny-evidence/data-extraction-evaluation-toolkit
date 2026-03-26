@@ -25,6 +25,13 @@ class LLMProvider(StrEnum):
     OLLAMA = auto()
 
 
+# Fallback max input context (tokens) when litellm cannot resolve the model.
+# Used by ``DataExtractionConfig`` when ``max_context_tokens`` is inferred and
+# ``get_model_max_tokens`` returns None. Single source of truth (do not duplicate
+# in tokenisation or extractors).
+DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK: int = 128_000
+
+
 class DataExtractionSettings(BaseSettings):
     """
     Settings model for data extraction behavior and provider credentials.
@@ -63,6 +70,15 @@ class DataExtractionSettings(BaseSettings):
         default=None,
         description=(
             "Maximum number of tokens to generate (None means provider default)."
+        ),
+    )
+    llm_max_context_tokens: int | None = Field(
+        default=None,
+        description=(
+            "Maximum input context length in tokens (system + attributes + "
+            "document). None = infer from model (litellm registry), else "
+            f"{DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK} via "
+            "DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK. Override to manage costs."
         ),
     )
 

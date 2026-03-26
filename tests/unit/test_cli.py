@@ -214,6 +214,8 @@ def test_extract_data_missing_csv_path(gs_data_path, config_path, mock_converter
 def mock_extraction_pipeline(config, out_dir, processed_data):
     """Set up mocks for extract-data command."""
     mock_llm_docs = [MagicMock()]
+    mock_run_output = MagicMock()
+    mock_run_output.annotated_documents = mock_llm_docs
 
     with (
         patch(
@@ -234,7 +236,7 @@ def mock_extraction_pipeline(config, out_dir, processed_data):
 
         mock_extractor = mock_extractor_class.return_value
         mock_extractor.config = config
-        mock_extractor.extract_from_documents.return_value = mock_llm_docs
+        mock_extractor.extract_from_documents.return_value = mock_run_output
 
         mock_evaluator = mock_evaluator_class.return_value
 
@@ -410,6 +412,8 @@ def test_extract_data_with_prompt_population(
     mock_processed.annotated_documents = processed_data.annotated_documents
 
     mock_llm_docs = [MagicMock()]
+    mock_run_output = MagicMock()
+    mock_run_output.annotated_documents = mock_llm_docs
 
     with (
         patch.object(
@@ -433,7 +437,7 @@ def test_extract_data_with_prompt_population(
 
         mock_extractor = mock_extractor_class.return_value
         mock_extractor.config = config
-        mock_extractor.extract_from_documents.return_value = mock_llm_docs
+        mock_extractor.extract_from_documents.return_value = mock_run_output
 
         result = runner.invoke(
             app,

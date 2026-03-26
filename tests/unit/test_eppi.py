@@ -117,6 +117,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
         "ExtURL": "",
         "ExtType": "",
         # These fields are added by the annotation converter
+        "prompt": "",  # Always empty for EPPI
         "output_data_type": AttributeType.BOOL.value,  # Always boolean for EPPI
         "attribute_id": "5730447",  # Converted to string
         "attribute_label": "Test EPPI Attribute",
@@ -128,6 +129,7 @@ def test_eppi_attribute_creation_from_json_data() -> None:
     attr = EppiAttribute.model_validate(attr_data)
     assert attr.attribute_id == 5730447
     assert attr.attribute_label == "Test EPPI Attribute"
+    assert attr.prompt == ""  # Default empty for EPPI
     assert attr.output_data_type.to_python_type() is bool  # Default boolean for EPPI
     # Test the EPPI-specific fields are properly populated
     assert attr.attribute_set_description == "Test set description"
@@ -270,6 +272,7 @@ def test_eppi_gold_standard_annotation_creation_from_json_data() -> None:
         "AttributeId": 5730447,
         "AttributeName": "Test EPPI Attribute",
         "AttributeType": "Selectable (show checkbox)",
+        "prompt": "",
         "output_data_type": AttributeType.BOOL.value,
         "attribute_id": "5730447",
         "attribute_label": "Test EPPI Attribute",
@@ -470,7 +473,7 @@ def test_import_prompts_with_csv_missing_prompt_read_all_attributes(
     assert processed_data.attributes[3].prompt is None
 
 
-# eppi document citation generation
+# EppiDocument date parsing
 @pytest.mark.parametrize(
     ("date_input", "expected_day", "expected_month", "expected_year"),
     [
@@ -493,13 +496,13 @@ def test_parse_date_string_valid_formats(
     expected_day: int,
     expected_month: int,
     expected_year: int,
-):
+) -> None:
     """Test parsing various valid date formats."""
     doc = EppiDocument(
         citation=ReferenceFileInput(),
         document_id=123,
         name="Test Doc",
-        date_created=date_input,  # type:ignore[arg-type]
+        date_created=date_input,  # type: ignore[arg-type]
     )
     assert doc.date_created is not None
     assert isinstance(doc.date_created, datetime)
@@ -508,7 +511,7 @@ def test_parse_date_string_valid_formats(
     assert doc.date_created.year == expected_year
 
 
-def test_parse_date_string_none_value():
+def test_parse_date_string_none_value() -> None:
     """Test that None date_created remains None."""
     doc = EppiDocument(
         document_id=123,
@@ -519,12 +522,12 @@ def test_parse_date_string_none_value():
     assert doc.date_created is None
 
 
-def test_parse_date_string_empty_string():
+def test_parse_date_string_empty_string() -> None:
     """Test that empty string date_created becomes None."""
     doc = EppiDocument(
         document_id=123,
         name="Test Doc",
-        date_created="",  # type:ignore[arg-type]
+        date_created="",  # type: ignore[arg-type]
         citation=ReferenceFileInput(),
     )
     assert doc.date_created is None
@@ -537,12 +540,12 @@ def test_parse_date_string_invalid_format_raises():
             citation=ReferenceFileInput(),
             document_id=123,
             name="Test Doc",
-            date_created="not-a-date",  # type:ignore[arg-type]
+            date_created="not-a-date",  # type: ignore[arg-type]
         )
 
 
-# destiny citation validator
-def test_populate_citation_field_from_reference(sample_eppi_data):
+# EppiDocument citation population
+def test_populate_citation_field_from_reference(sample_eppi_data: dict) -> None:
     """Test that citation field is populated from EPPI reference data."""
     reference = sample_eppi_data["References"][0]
     doc = EppiDocument.model_validate(reference)
@@ -553,10 +556,9 @@ def test_populate_citation_field_from_reference(sample_eppi_data):
     assert doc.name == "A title"
 
 
-def test_populate_citation_field_preserves_existing():
+def test_populate_citation_field_preserves_existing() -> None:
     """Test that existing citation field is not overwritten."""
     existing_citation = parse_citation_to_destiny({"abstract": "abstract"})
-
     doc = EppiDocument(
         document_id=123,
         name="Test Doc",
@@ -565,7 +567,7 @@ def test_populate_citation_field_preserves_existing():
     assert doc.citation is existing_citation
 
 
-def test_populate_citation_with_doi():
+def test_populate_citation_with_doi() -> None:
     """Test citation population with DOI field."""
     reference_data = {
         "ItemId": 12345,
@@ -582,7 +584,7 @@ def test_populate_citation_with_doi():
     assert doc.doi == "10.1234/test.doi.5678"
 
 
-def test_populate_citation_with_malformed_doi():
+def test_populate_citation_with_malformed_doi() -> None:
     """Test citation population sanitises malformed DOI."""
     reference_data = {
         "ItemId": 12345,
