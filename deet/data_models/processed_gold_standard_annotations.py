@@ -316,11 +316,7 @@ class ProcessedAnnotationData(
 
     def export_linkage_mapper_csv(self, file_path: Path) -> None:
         """Export a csv mapper to link document IDs and filenames."""
-<<<<<<< HEAD
         with file_path.open("w", newline="", encoding="utf-8") as f:
-=======
-        with file_path.open("w", encoding="utf-8") as f:
->>>>>>> main
             writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
             writer.writeheader()
             for d in self.documents:
