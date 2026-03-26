@@ -172,7 +172,21 @@ Please add to the docs whenever you feel it would be useful. The docs are built 
 
 To add your own documentation, add markdown files to the `docs/` directory _and_ add these to the `nav` block in `mkdocs.yml`. To add API documentation, add docstrings to the code and ensure that the relevant modules are included in the `nav` block in `mkdocs.yml`.
 
-To build the docs locally, run `mkdocs build --strict` from the root of the repository and open `site/index.html` in a browser. The documentation website is currently automatically built and deployed to GitHub Pages on pushes to the `main` branch, and uses the `gh-pages` branch to serve the docs.
+To build the docs locally, make sure you have the docs dependencies installed by running
+
+```sh
+uv sync --all-extras --all-groups
+```
+
+which will install the documentation dependencies alongside all other dependencies, including developer dependencies. Alternatively,
+
+```sh
+uv sync --group docs
+```
+
+will install _only_ the documentation dependencies, but may uninstall other optional dependencies you have installed.
+
+Then, from the root of the repository, run `mkdocs build --strict` from the root of the repository and open `site/index.html` in a browser. The documentation website is currently automatically built and deployed to GitHub Pages on pushes to the `main` branch, and uses the `gh-pages` branch to serve the docs.
 
 The documentation website is available at [https://destiny-evidence.github.io/deet](https://destiny-evidence.github.io/deet).
 
