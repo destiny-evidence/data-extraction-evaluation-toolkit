@@ -15,7 +15,7 @@ from sklearn.metrics import (  # type:ignore[import-untyped]
     recall_score,
 )
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, AttributeType
 
 MetricFunction = Callable[[list, list], float | np.floating | np.ndarray]
 
@@ -33,13 +33,56 @@ def n_labels(y_true: list[int], y_pred: list[int]) -> float:  # noqa: ARG001
     return sum(y_true)
 
 
-METRICS: dict[str, MetricFunction] = {
+BINARY_METRICS: dict[str, MetricFunction] = {
     "accuracy": accuracy_score,
     "recall": recall_score,
     "precision": precision_score,
     "f1_score": f1_score,
     "n_labels": n_labels,
 }
+
+# Per-value exact match; appropriate for categorical string extraction.
+STRING_METRICS: dict[str, MetricFunction] = {
+    "accuracy": accuracy_score,
+}
+
+# Discrete integer extraction; per-value match via sklearn accuracy.
+INTEGER_METRICS: dict[str, MetricFunction] = {
+    "accuracy": accuracy_score,
+}
+
+# Regression-style metrics (e.g. MAE) are not wired yet.
+FLOAT_METRICS: dict[str, MetricFunction] = {
+    "accuracy": accuracy_score,
+}
+
+# Structured values need dedicated metrics (set overlap, tree edit distance, etc.).
+LIST_METRICS: dict[str, MetricFunction] = {}
+DICT_METRICS: dict[str, MetricFunction] = {}
+
+# Keep METRICS as the default (boolean) set for backward compatibility
+METRICS: dict[str, MetricFunction] = BINARY_METRICS
+
+METRICS_BY_ATTRIBUTE_TYPE: dict[AttributeType, dict[str, MetricFunction]] = {
+    AttributeType.BOOL: BINARY_METRICS,
+    AttributeType.STRING: STRING_METRICS,
+    AttributeType.INTEGER: INTEGER_METRICS,
+    AttributeType.FLOAT: FLOAT_METRICS,
+    AttributeType.LIST: LIST_METRICS,
+    AttributeType.DICT: DICT_METRICS,
+}
+
+
+def get_metrics_for_attribute_type(
+    attribute_type: AttributeType,
+) -> dict[str, MetricFunction]:
+    """
+    Return the metric set registered for the given attribute data type.
+
+    Some types map to an empty dict when no suitable default metrics are
+    implemented yet (float, list, dict); callers may still merge in custom metrics.
+    """
+    return METRICS_BY_ATTRIBUTE_TYPE[attribute_type]
 
 
 class AttributeMetric(BaseModel):

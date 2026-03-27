@@ -227,7 +227,9 @@ def extract_data(  # noqa: PLR0913
             "extracted. Leave blank to use the prompts in your gold standard "
             "data. Set to `file` to provide a file of prompt definitions "
             "(make sure this is supplied below). Set to `cli` to define prompts"
-            " interactively in the CLI."
+            " interactively in the CLI. With `file`, only attributes that appear "
+            "in the CSV with a non-empty `prompt` are kept for extraction and "
+            "evaluation (see also `--csv-path`)."
         ),
     ] = None,
     csv_path: Annotated[
@@ -235,6 +237,8 @@ def extract_data(  # noqa: PLR0913
         typer.Option(
             help="A path to read custom prompt definitions from."
             " This must be set if using prompt population from file."
+            " Rows with blank `prompt` are ignored; attribute IDs not listed are "
+            "dropped from the run."
         ),
     ] = None,
     linked_document_path: Annotated[
@@ -326,7 +330,7 @@ def extract_data(  # noqa: PLR0913
         link_map_path=link_map_path,
     )
 
-    llm_annotated_documents = data_extractor.extract_from_documents(
+    run_output = data_extractor.extract_from_documents(
         attributes=processed_annotation_data.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
@@ -342,7 +346,7 @@ def extract_data(  # noqa: PLR0913
 
     evaluator = GoldStandardLLMEvaluator(
         gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
-        llm_annotated_documents=llm_annotated_documents,
+        llm_annotated_documents=run_output.annotated_documents,
         attributes=processed_annotation_data.attributes,
         custom_metrics=custom_evaluation_metrics,
         extraction_run_id=extraction_run_id,
