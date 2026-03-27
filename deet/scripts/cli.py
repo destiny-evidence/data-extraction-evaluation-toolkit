@@ -54,9 +54,9 @@ LINK_MAP_PATH = Annotated[
 ]
 
 LINK_MAP_PATH_READ = Annotated[
-    Path | None,
+    Path,
     typer.Option(
-        help="A path to an optional link map (create this by running "
+        help="A path to a link map (create this by running "
         "`deet init-linkage-mapping-file`)"
     ),
 ]
@@ -134,11 +134,11 @@ def init_linkage_mapping_file(
 @app.command()
 def link_documents_fulltexts(
     gs_data_path: GS_DATA_PATH,
+    link_map_path: LINK_MAP_PATH_READ = DEFAULT_LINK_MAP,
     gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
     pdf_dir: Annotated[
         Path, typer.Option(help="Path to a directory containing pdfs.")
     ] = DEFAULT_PDF_PATH,
-    link_map_path: LINK_MAP_PATH_READ = None,
     output_path: Annotated[
         Path,
         typer.Option(help="A path to a directory to write the linked documents to."),
@@ -154,7 +154,7 @@ def link_documents_fulltexts(
     `deet.processors.linker` for more details.
 
     """
-    from deet.processors.linker import DocumentReferenceLinker
+    from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
@@ -163,6 +163,7 @@ def link_documents_fulltexts(
         references=processed_annotation_data.documents,
         document_base_dir=pdf_dir,
         document_reference_mapping=link_map_path,
+        linking_strategies=[LinkingStrategy.MAPPING_FILE],
     )
     linked_documents = linker.link_many_references_parsed_documents()
 
@@ -252,8 +253,10 @@ def extract_data(  # noqa: PLR0913
     link_map_path: Annotated[
         Path | None,
         typer.Option(
-            help="A path to an optional link map (create this by running "
-            "`deet init-linkage-mapping-file`)"
+            help="A path to a link map (create this by running "
+            "`deet init-linkage-mapping-file`). You must specify"
+            "either a link map or a directory containing linked"
+            "documents"
         ),
     ] = None,
     pdf_dir: Annotated[
