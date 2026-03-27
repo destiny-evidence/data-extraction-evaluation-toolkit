@@ -134,7 +134,7 @@ def init_linkage_mapping_file(
 @app.command()
 def link_documents_fulltexts(
     gs_data_path: GS_DATA_PATH,
-    link_map_path: LINK_MAP_PATH_READ,
+    link_map_path: LINK_MAP_PATH_READ = DEFAULT_LINK_MAP,
     gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
     pdf_dir: Annotated[
         Path, typer.Option(help="Path to a directory containing pdfs.")
