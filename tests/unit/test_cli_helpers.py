@@ -150,43 +150,6 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     assert mock_load.call_count == 2
 
 
-def test_prepare_documents_context_full_doc_link_by_id(
-    config, tmp_path, mock_documents
-):
-    """Create linked documents when linked_document_path doesn't exist."""
-    config.default_context_type = ContextType.FULL_DOCUMENT
-    linked_doc_path = tmp_path / "linked_documents"
-    # Don't create the directory - it shouldn't exist
-    pdf_dir = tmp_path / "pdfs"
-    pdf_dir.mkdir()
-
-    mock_linked_doc = MagicMock(spec=Document)
-    mock_linked_doc.safe_identity.document_id = "test_doc_123"
-
-    with (
-        patch("deet.extractors.cli_helpers.echo_and_log"),
-        patch(
-            "deet.extractors.cli_helpers.DocumentReferenceLinker"
-        ) as mock_linker_class,
-    ):
-        mock_linker = mock_linker_class.return_value
-        mock_linker.link_many_references_parsed_documents.return_value = [
-            mock_linked_doc
-        ]
-
-        result = prepare_documents(
-            documents=mock_documents,
-            config=config,
-            linked_document_path=linked_doc_path,
-            pdf_dir=pdf_dir,
-            link_map_path=None,
-        )
-
-    assert result == [mock_linked_doc]
-    mock_linker.link_many_references_parsed_documents.assert_called_once()
-    mock_linked_doc.save.assert_called_once()
-
-
 def test_prepare_documents_unsupported_context_type(config, tmp_path, mock_documents):
     """Test that unsupported context type fails with message."""
     # Create a mock unsupported context type
@@ -242,4 +205,10 @@ def test_prepare_documents_failed_to_link(config, tmp_path, mock_documents):
             )
 
         mock_fail.assert_called_once()
-        assert "no linked documents could be found" in mock_fail.call_args[0][0]
+        assert any(
+            msg in mock_fail.call_args[0][0]
+            for msg in (
+                "no linked documents could be found",
+                "Linked document path does not exist",
+            )
+        )

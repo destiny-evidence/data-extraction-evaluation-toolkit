@@ -555,7 +555,9 @@ def test_linker_init_default_strategies():
     doc.init_document_identity()
 
     linker = DocumentReferenceLinker(references=[doc])
-    assert linker.linking_strategies == list(LinkingStrategy)
+    assert (
+        linker.linking_strategies == DocumentReferenceLinker.LINKING_STRATEGY_HIERARCHY
+    )
 
 
 # linking factory

@@ -54,9 +54,9 @@ LINK_MAP_PATH = Annotated[
 ]
 
 LINK_MAP_PATH_READ = Annotated[
-    Path | None,
+    Path,
     typer.Option(
-        help="A path to an optional link map (create this by running "
+        help="A path to a link map (create this by running "
         "`deet init-linkage-mapping-file`)"
     ),
 ]
@@ -134,11 +134,11 @@ def init_linkage_mapping_file(
 @app.command()
 def link_documents_fulltexts(
     gs_data_path: GS_DATA_PATH,
+    link_map_path: LINK_MAP_PATH_READ = DEFAULT_LINK_MAP,
     gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
     pdf_dir: Annotated[
         Path, typer.Option(help="Path to a directory containing pdfs.")
     ] = DEFAULT_PDF_PATH,
-    link_map_path: LINK_MAP_PATH_READ = None,
     output_path: Annotated[
         Path,
         typer.Option(help="A path to a directory to write the linked documents to."),
@@ -154,7 +154,7 @@ def link_documents_fulltexts(
     `deet.processors.linker` for more details.
 
     """
-    from deet.processors.linker import DocumentReferenceLinker
+    from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
@@ -163,6 +163,7 @@ def link_documents_fulltexts(
         references=processed_annotation_data.documents,
         document_base_dir=pdf_dir,
         document_reference_mapping=link_map_path,
+        linking_strategies=[LinkingStrategy.MAPPING_FILE],
     )
     linked_documents = linker.link_many_references_parsed_documents()
 
@@ -227,7 +228,9 @@ def extract_data(  # noqa: PLR0913
             "extracted. Leave blank to use the prompts in your gold standard "
             "data. Set to `file` to provide a file of prompt definitions "
             "(make sure this is supplied below). Set to `cli` to define prompts"
-            " interactively in the CLI."
+            " interactively in the CLI. With `file`, only attributes that appear "
+            "in the CSV with a non-empty `prompt` are kept for extraction and "
+            "evaluation (see also `--csv-path`)."
         ),
     ] = None,
     csv_path: Annotated[
@@ -235,6 +238,8 @@ def extract_data(  # noqa: PLR0913
         typer.Option(
             help="A path to read custom prompt definitions from."
             " This must be set if using prompt population from file."
+            " Rows with blank `prompt` are ignored; attribute IDs not listed are "
+            "dropped from the run."
         ),
     ] = None,
     linked_document_path: Annotated[
@@ -248,8 +253,10 @@ def extract_data(  # noqa: PLR0913
     link_map_path: Annotated[
         Path | None,
         typer.Option(
-            help="A path to an optional link map (create this by running "
-            "`deet init-linkage-mapping-file`)"
+            help="A path to a link map (create this by running "
+            "`deet init-linkage-mapping-file`). You must specify"
+            "either a link map or a directory containing linked"
+            "documents"
         ),
     ] = None,
     pdf_dir: Annotated[
@@ -326,7 +333,7 @@ def extract_data(  # noqa: PLR0913
         link_map_path=link_map_path,
     )
 
-    llm_annotated_documents = data_extractor.extract_from_documents(
+    run_output = data_extractor.extract_from_documents(
         attributes=processed_annotation_data.attributes,
         documents=documents,
         context_type=data_extractor.config.default_context_type,
@@ -342,7 +349,7 @@ def extract_data(  # noqa: PLR0913
 
     evaluator = GoldStandardLLMEvaluator(
         gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
-        llm_annotated_documents=llm_annotated_documents,
+        llm_annotated_documents=run_output.annotated_documents,
         attributes=processed_annotation_data.attributes,
         custom_metrics=custom_evaluation_metrics,
         extraction_run_id=extraction_run_id,

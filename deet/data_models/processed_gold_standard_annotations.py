@@ -144,8 +144,8 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
 
         except ValueError as e:
             logger.error(
-                f"Error processing row for attribute {attribute_id}: {e}"
-                "setting attribute type to bool."
+                f"Error processing row for attribute {attribute_id}: {e}. "
+                "Setting attribute type to bool."
             )
             matching_attribute.output_data_type = DEFAULT_ATTRIBUTE_TYPE
             return False
@@ -316,7 +316,7 @@ class ProcessedAnnotationData(
 
     def export_linkage_mapper_csv(self, file_path: Path) -> None:
         """Export a csv mapper to link document IDs and filenames."""
-        with file_path.open("w", encoding="utf-8") as f:
+        with file_path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
             writer.writeheader()
             for d in self.documents:
