@@ -129,7 +129,7 @@ ignore = [
     "TD002", # name for TO DO
     "TD003", # pedantic issue number requester in to dos
 ]
-per-file-ignores = {"deet/processors/parser.py" = ["PLC0415"], "deet/utils/assess_text_quality.py" = ["PLC0415"], "tests*" = ["ANN001", "ANN200", "ANN201", "ARG001", "D100", "D103", "INP001", "PLR0913", "PLR2004", "S101", "SLF001"]}
+per-file-ignores = {"deet/processors/parser.py" = ["PLC0415"], "deet/utils/assess_text_quality.py" = ["PLC0415"], "tests*" = ["ANN001", "ANN201", "ANN202", "ARG001", "D100", "D103", "INP001", "PLR0913", "PLR2004", "S101", "SLF001"]}
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
