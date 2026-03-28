@@ -7,6 +7,7 @@ import yaml  # type:ignore[import-untyped]
 from typer.testing import CliRunner
 
 from deet.extractors.llm_data_extractor import DataExtractionConfig
+from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app, init_linkage_mapping_file
 
@@ -316,37 +317,63 @@ def test_global_options_non_verbose():
     assert "deet" in result.output
 
 
-def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, mock_converter):
-    """Test that verbose flag actually produces log output to stderr."""
-    # Run without verbose - minimal/no log output
-    result_quiet = runner.invoke(
-        app,
-        [
-            "init-linkage-mapping-file",
-            str(gs_data_path),
-            "--link-map-path",
-            str(link_map_path),
-        ],
-        catch_exceptions=False,
-    )
-    assert result_quiet.exit_code == 0
+def test_verbose_flag_shows_log_output(gs_data_path, link_map_path, processed_data):
+    """Test that verbose flag produces additional log output compared to default."""
+    import copy
 
-    link_map_path.unlink()
+    # Create fresh copies for each run to avoid mutation issues
+    def make_fresh_mock():
+        fresh_data = copy.deepcopy(processed_data)
+        return MagicMock(process_annotation_file=lambda _: fresh_data)
 
-    # Run with verbose - should have more log output
-    result_verbose = runner.invoke(
-        app,
-        [
-            "--verbose",
-            "init-linkage-mapping-file",
-            str(gs_data_path),
-            "--link-map-path",
-            str(link_map_path),
-        ],
-        catch_exceptions=False,
-    )
+    # First run without --verbose
+    logger.remove()
+    with patch.object(
+        SupportedImportFormat.EPPI_JSON,
+        "get_annotation_converter",
+        return_value=make_fresh_mock(),
+    ):
+        result_non_verbose = runner.invoke(
+            app,
+            [
+                "init-linkage-mapping-file",
+                str(gs_data_path),
+                "--link-map-path",
+                str(link_map_path),
+            ],
+            catch_exceptions=False,
+        )
+    assert result_non_verbose.exit_code == 0
+    non_verbose_output = result_non_verbose.output
+
+    # delete link map csv we just created
+    if link_map_path.exists():
+        link_map_path.unlink()
+
+    # Now run with --verbose using fresh data
+    logger.remove()
+    with patch.object(
+        SupportedImportFormat.EPPI_JSON,
+        "get_annotation_converter",
+        return_value=make_fresh_mock(),
+    ):
+        result_verbose = runner.invoke(
+            app,
+            [
+                "--verbose",
+                "init-linkage-mapping-file",
+                str(gs_data_path),
+                "--link-map-path",
+                str(link_map_path),
+            ],
+            catch_exceptions=False,
+        )
     assert result_verbose.exit_code == 0
-    assert len(result_verbose.output) >= len(result_quiet.output)
+    verbose_output = result_verbose.output
+
+    # Verbose mode should produce additional output (e.g., debug logs)
+    assert verbose_output != non_verbose_output
+    assert len(verbose_output) > len(non_verbose_output)
 
 
 def test_init_linkage_mapping_file_via_cli(gs_data_path, link_map_path, mock_converter):

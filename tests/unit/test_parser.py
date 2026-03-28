@@ -47,7 +47,7 @@ def mock_text_from_rendered(monkeypatch):
     """Stub `marker.output.text_from_rendered`."""
 
     # Mock it at the import location (marker.output module)
-    def fake_text_from_rendered(rendered):  # noqa: ANN202
+    def fake_text_from_rendered(rendered):
         return ("dummy markdown text", "md", [])
 
     monkeypatch.setattr(
@@ -60,7 +60,7 @@ def mock_text_from_rendered(monkeypatch):
 def mock_text_from_rendered_img_meta(monkeypatch):
     """Stub `marker.output.text_from_rendered` with metadata and images."""
 
-    def fake_text_from_rendered(rendered):  # noqa: ANN202
+    def fake_text_from_rendered(rendered):
         images = {
             "image1.jpg": Image.new("RGB", (10, 10)),
             "image2.jpg": Image.new("RGB", (20, 20)),
