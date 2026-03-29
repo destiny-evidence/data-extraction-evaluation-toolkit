@@ -8,8 +8,10 @@ from typing import Annotated
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.data_models.project import DeetProject
 from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
+from deet.scripts.commands import project
 from deet.utils.cli_utils import echo_and_log, fail_with_message
 
 APP_HELP = (
@@ -27,8 +29,9 @@ APP_HELP = (
 
 app = typer.Typer(help=APP_HELP, add_completion=True)
 
+app.add_typer(project.app, name="project")
+
 # Shared argument definitions and defaults
-DEFAULT_CONFIG_PATH = Path("default_extraction_config.yaml")
 
 GS_DATA_PATH = Annotated[
     Path,
@@ -44,7 +47,6 @@ GS_DATA_FORMAT = Annotated[
     ),
 ]
 
-DEFAULT_LINK_MAP = Path("link_map.csv")
 
 LINK_MAP_PATH = Annotated[
     Path,
@@ -62,88 +64,13 @@ LINK_MAP_PATH_READ = Annotated[
 ]
 
 DEFAULT_PDF_PATH = Path("pdfs")
-
-DEFAULT_PROMPT_DEFINITION_PATH = Path("prompt_definitions.csv")
-
 DEFAULT_EXPERIMENT_OUT_DIR = Path("data-extraction-experiments/")
 DEFAULT_METRICS_CSV = Path("metrics.csv")
 DEFAULT_OUTPUT_COMPARISON_CSV = Path("goldstandard_llm_comparison.csv")
 
-DEFAULT_LINKED_DOCUMENTS_PATH = Path("linked_documents")
-
 
 @app.command()
-def export_config_template(
-    output_path: Annotated[
-        Path,
-        typer.Option(help="The output path where your config file will be written"),
-    ] = DEFAULT_CONFIG_PATH,
-) -> None:
-    """Export the default DataExtractionConfig to a YAML file."""
-    import yaml  # type:ignore[import-untyped]
-
-    from deet.extractors.llm_data_extractor import DataExtractionConfig
-
-    config = DataExtractionConfig()
-    if output_path.exists():
-        message = (
-            "Config template exists. Proceeding will "
-            "overwrite this and you may lose work if you have edited this."
-            " Do you want to continue?"
-        )
-        proceed = typer.confirm(message)
-        if proceed:
-            echo_and_log("Proceeding to overwrite config template")
-            output_path.unlink()
-        else:
-            raise typer.Abort()  # noqa: RSE102
-    output_path.write_text(
-        yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
-        encoding="utf-8",
-    )
-    echo_and_log(f"✅ Default config exported to {output_path}", fg=typer.colors.GREEN)
-    echo_and_log(
-        "✏️  Edit this file to adjust options for data extraction.", fg=typer.colors.BLUE
-    )
-
-
-@app.command()
-def init_linkage_mapping_file(
-    gs_data_path: GS_DATA_PATH,
-    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
-    link_map_path: LINK_MAP_PATH = DEFAULT_LINK_MAP,
-) -> None:
-    """Create a mapping to link documents and their full texts."""
-    if link_map_path.exists():
-        message = (
-            f"mapping already exists at {link_map_path}. Overwriting"
-            " may cause you to lose work. Do you want to continue?"
-        )
-        proceed = typer.confirm(message)
-        if proceed:
-            echo_and_log("Proceeding to overwrite config template")
-            link_map_path.unlink()
-        else:
-            raise typer.Abort()  # noqa: RSE102
-
-    converter = gs_data_format.get_annotation_converter()
-    processed_annotation_data = converter.process_annotation_file(gs_data_path)
-    processed_annotation_data.export_linkage_mapper_csv(link_map_path)
-
-
-@app.command()
-def link_documents_fulltexts(
-    gs_data_path: GS_DATA_PATH,
-    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
-    pdf_dir: Annotated[
-        Path, typer.Option(help="Path to a directory containing pdfs.")
-    ] = DEFAULT_PDF_PATH,
-    link_map_path: LINK_MAP_PATH_READ = None,
-    output_path: Annotated[
-        Path,
-        typer.Option(help="A path to a directory to write the linked documents to."),
-    ] = DEFAULT_LINKED_DOCUMENTS_PATH,
-) -> None:
+def link_documents_fulltexts() -> None:
     """
     Link documents to their fulltexts.
 
@@ -156,61 +83,32 @@ def link_documents_fulltexts(
     """
     from deet.processors.linker import DocumentReferenceLinker
 
-    converter = gs_data_format.get_annotation_converter()
-    processed_annotation_data = converter.process_annotation_file(gs_data_path)
+    deet_project = DeetProject.load()
+    processed_annotation_data = deet_project.process_data()
 
     linker = DocumentReferenceLinker(
         references=processed_annotation_data.documents,
-        document_base_dir=pdf_dir,
-        document_reference_mapping=link_map_path,
+        document_base_dir=deet_project.pdf_dir,
+        document_reference_mapping=deet_project.link_map_path,
     )
     linked_documents = linker.link_many_references_parsed_documents()
 
-    if not output_path.exists():
-        output_path.mkdir()
+    if not deet_project.linked_documents_path.exists():
+        deet_project.linked_documents_path.mkdir()
 
     if len(linked_documents) == 0:
         fail_with_message("Error. Could not link any documents!")
 
     for linked_document in linked_documents:
-        file_path = output_path / f"{linked_document.safe_identity.document_id}.json"
+        file_path = (
+            deet_project.linked_documents_path
+            / f"{linked_document.safe_identity.document_id}.json"
+        )
         linked_document.save(file_path)
 
 
 @app.command()
-def init_prompt_csv(
-    gs_data_path: GS_DATA_PATH,
-    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
-    csv_path: Annotated[
-        Path, typer.Option(help="A path to a file to write your prompt definitions to.")
-    ] = DEFAULT_PROMPT_DEFINITION_PATH,
-) -> None:
-    """
-    Write a csv to define prompts for your dataset with.
-
-    This writes a row for each attribute in your dataset. Edit the prompt
-    column to edit the prompt to be used for that attribute. Attributes
-    without values in the prompt column will not be extracted.
-    """
-    converter = gs_data_format.get_annotation_converter()
-    processed_annotation_data = converter.process_annotation_file(gs_data_path)
-    if csv_path.exists():
-        message = (
-            "Prompt definition csv already exists. Proceeding will "
-            "overwrite this and you may lose work. Do you want to continue?"
-        )
-        proceed = typer.confirm(message)
-        if proceed:
-            echo_and_log("Proceeding to overwrite prompt definition csv")
-            csv_path.unlink()
-        else:
-            raise typer.Abort()  # noqa: RSE102
-    processed_annotation_data.export_attributes_csv_file(filepath=csv_path)
-
-
-@app.command()
-def extract_data(  # noqa: PLR0913
-    gs_data_path: GS_DATA_PATH,
+def extract_data(
     config_path: Annotated[
         Path,
         typer.Option(
@@ -218,8 +116,7 @@ def extract_data(  # noqa: PLR0913
             "extraction config. A template can be generated by running "
             "`deet export-config-template."
         ),
-    ] = DEFAULT_CONFIG_PATH,
-    gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
+    ] = project.DEFAULT_CONFIG_PATH,
     prompt_population: Annotated[
         CustomPromptPopulationMethod | None,
         typer.Option(
@@ -232,44 +129,6 @@ def extract_data(  # noqa: PLR0913
             "evaluation (see also `--csv-path`)."
         ),
     ] = None,
-    csv_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to read custom prompt definitions from."
-            " This must be set if using prompt population from file."
-            " Rows with blank `prompt` are ignored; attribute IDs not listed are "
-            "dropped from the run."
-        ),
-    ] = None,
-    linked_document_path: Annotated[
-        Path,
-        typer.Option(
-            help="A path to a directory containing documents that have been "
-            "linked to their fulltexts. This directory can be populated by "
-            "running `deet link-documents-fulltexts`."
-        ),
-    ] = DEFAULT_LINKED_DOCUMENTS_PATH,
-    link_map_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to an optional link map (create this by running "
-            "`deet init-linkage-mapping-file`)"
-        ),
-    ] = None,
-    pdf_dir: Annotated[
-        Path,
-        typer.Option(
-            help="Path to a directory containing pdfs. We will attempt to link"
-            " these by document ID."
-        ),
-    ] = DEFAULT_PDF_PATH,
-    out_dir: Annotated[
-        Path,
-        typer.Option(
-            help="A path to a directory where you want to store the results of"
-            " this, and further instances of extract-data for this project."
-        ),
-    ] = DEFAULT_EXPERIMENT_OUT_DIR,
     run_name: Annotated[
         str,
         typer.Option(
@@ -307,17 +166,16 @@ def extract_data(  # noqa: PLR0913
 
     config = load_or_init_config(config_path=config_path)
 
-    extraction_run_id, experiment_out_dir = init_extraction_run(out_dir, run_name)
+    deet_project = DeetProject.load()
+    processed_annotation_data = deet_project.process_data()
 
-    converter = gs_data_format.get_annotation_converter()
-    processed_annotation_data = converter.process_annotation_file(gs_data_path)
+    extraction_run_id, experiment_out_dir = init_extraction_run(
+        deet_project.out_dir, run_name
+    )
 
-    if prompt_population == CustomPromptPopulationMethod.FILE and not csv_path:
-        message = "CSV prompt population selected without specifying csv_path"
-        fail_with_message(message)
     if prompt_population is not None:
         processed_annotation_data.populate_custom_prompts(
-            method=prompt_population, filepath=csv_path
+            method=prompt_population, filepath=deet_project.prompt_csv_path
         )
 
     data_extractor = LLMDataExtractor(config=config)
@@ -325,9 +183,9 @@ def extract_data(  # noqa: PLR0913
     documents = prepare_documents(
         processed_annotation_data.documents,
         config,
-        linked_document_path=linked_document_path,
-        pdf_dir=pdf_dir,
-        link_map_path=link_map_path,
+        linked_document_path=deet_project.linked_documents_path,
+        pdf_dir=deet_project.pdf_dir,
+        link_map_path=deet_project.link_map_path,
     )
 
     run_output = data_extractor.extract_from_documents(

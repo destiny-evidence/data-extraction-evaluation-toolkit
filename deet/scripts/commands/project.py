@@ -1,0 +1,65 @@
+"""Sub-commands for project initialisation wizard."""
+
+from pathlib import Path
+
+import typer
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+
+from deet.data_models.project import DeetProject
+from deet.utils.cli_utils import echo_and_log
+
+app = typer.Typer(help="Project-related commands")
+console = Console()
+
+DEFAULT_CONFIG_PATH = Path("default_extraction_config.yaml")
+
+
+def export_config_template() -> None:
+    """Export the default DataExtractionConfig to a YAML file."""
+    import yaml  # type:ignore[import-untyped]
+
+    from deet.extractors.llm_data_extractor import DataExtractionConfig
+
+    config = DataExtractionConfig()
+    DEFAULT_CONFIG_PATH.write_text(
+        yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
+        encoding="utf-8",
+    )
+    echo_and_log(
+        f"✅ Default config exported to {DEFAULT_CONFIG_PATH}", fg=typer.colors.GREEN
+    )
+    echo_and_log(
+        "✏️  Edit this file to adjust options for data extraction.", fg=typer.colors.BLUE
+    )
+
+
+@app.command()
+def init() -> None:
+    """Initialise a new project."""
+    welcome = Panel(
+        "[bold cyan]deet Project Initialiser[/]\n\n"
+        "Let's collect a few bits of information about your new project.\n"
+        "Press Ctrl-C at any time to abort.\n",
+        title="🚤  Welcome",
+        border_style="bright_blue",
+        box=box.ROUNDED,
+    )
+    console.print(welcome)
+
+    project = DeetProject.init_interactive()
+    processed_data = project.process_data()
+    console.print("Successfully parsed processed data.")
+
+    console.print("Initialising prompt definition file.")
+    processed_data.export_attributes_csv_file(filepath=project.prompt_csv_path)
+
+    console.print("Initialising reference-pdf link mapping file.")
+    processed_data.export_linkage_mapper_csv(file_path=project.link_map_path)
+
+    console.print("Writing default config file")
+    export_config_template()
+
+    console.print("Saving project")
+    project.dump_to_toml()

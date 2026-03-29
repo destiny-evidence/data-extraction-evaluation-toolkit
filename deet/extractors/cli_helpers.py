@@ -48,7 +48,7 @@ def prepare_documents(
     documents: Sequence[Document],
     config: DataExtractionConfig,
     linked_document_path: Path,
-    pdf_dir: Path,
+    pdf_dir: Path | None,
     link_map_path: Path | None,
 ) -> Sequence[Document]:
     """
@@ -63,7 +63,7 @@ def prepare_documents(
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
         return documents
     if config.default_context_type == ContextType.FULL_DOCUMENT:
-        if linked_document_path.exists():
+        if linked_document_path is not None and linked_document_path.exists():
             return [Document.load(f) for f in linked_document_path.glob("*.json")]
         echo_and_log(
             "Linked document path does not exist. Attempting to linkdocs by ID."
