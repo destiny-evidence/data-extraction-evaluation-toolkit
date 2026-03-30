@@ -212,6 +212,8 @@ will install deet from the development branch.
 
 ## Package users
 
+You can also use deet as a python package, within another project.
+
 Assuming you are using UV to manage dependencies within your project, you can add deet via
 
 ```bash
