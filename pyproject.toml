@@ -30,15 +30,12 @@ authors = [
     {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
 dependencies = [
-    "destiny-sdk>=0.3.0",
+    "destiny-sdk>=0.11.0",
     "diskcache>=5.6.3",
-    "ipython>=9.10.0",
-    "litellm>=1.77.4",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",
     "openai>=1.0.0",
-    "pandas>=3.0.0",
     "pdfminer>=20191125",
     "pillow>=10.4.0",
     "pydantic-extra-types>=2.10.5",
