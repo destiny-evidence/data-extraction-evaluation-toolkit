@@ -110,18 +110,21 @@ Most commands start by importing gold standard data, and require that you specif
 - (optionally) the gold standard annotations of those documents made by humans
 
 DEET currently supports importing this data from an EPPIJson file.
+The following examples assume you have an EPPIJson file called `references.json` in your current working directory.
 
-If you want to extract data from the full text of documents, you will need to link your documents to those full texts.
+If you want to extract data from the full text of documents, you will need to link your documents to those full texts. Let's assume you have a folder of pdfs in the `pdfs` directory.
 
-Assuming you have an EPPIJson file called `references.json` in your current working directory, and a folder of PDFs for those documents in a directory called `pdfs`, you can link these together with
+The first step to link these together is to create a "link map" file which maps each reference to the filename of it's corresponding full text.
+
+Create this by running
 
 ```bash
-deet link-documents-fulltexts references.json
+deet init-linkage-mapping-file references.json
 ```
 
-You can specify the pdf folder to look through (which does not have to be in your current directory) by setting the option --pdf-dir, but this defaults to `pdfs`.
+Then edit this file, making sure to carefully add the filename of each document in the `file_path` column.
 
-Deet will try to link documents to pdfs using IDs, or a combination of author and year, but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the `deet init-linkage-mapping-file` command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file
+You can then link the documents using the link map as follows.
 
 ```bash
 deet link-documents-fulltexts --link-map-path link_map.csv references.json
@@ -129,19 +132,19 @@ deet link-documents-fulltexts --link-map-path link_map.csv references.json
 
 Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option `--output-path`. This defaults to `linked_documents`
 
-#### Extracting data from parsed/linked data
+#### Setting up your prompts
 
-Once you have linked this data to pdfs if you are doing full text data extraction, you are ready to extract data from them.
+When you extract data, deet will try to extract attributes using prompts specified in the EPPIJson file.
+
+If you want to edit the prompts used for data extraction, and give further details on the attributes, you can create a prompt CSV, by running `deet init-prompt-csv`. This CSV will contain a row for each attribute: enter or amend the prompt column to set the prompt that will be passed to the LLM for that attribute. Delete rows if you do not want to extract data for that attribute.
+
+#### Extracting data from parsed/linked data
 
 Use the command `deet extract-data` to extract data from imported documents.
 
-Once again, you will need to specify an EPPIJson file you want to import from, e.g.
+Once again, you will need to specify an EPPIJson file you want to import from,  and you may want to specify the way you want to fill in prompts:
 
-`deet extract-data references.json`
-
-By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.
-
-If you want to edit the prompts used for data extraction, you can do this by setting the `--prompt-population` option to `cli`, to fill in prompts in the command line, or by setting `--prompt-population` to `file`, and pointing to a csv detailing a prompt for each attribute with `--csv-path`. To create a template for this csv, run `deet init-prompt-csv`.
+`deet extract-data --prompt-population file --csv-path prompt_definitions.csv references.json`
 
 To set further configuration options, you can supply a path to a configuration file with the option `--config-path`. To create a template for this file detailing configurable options, run
 

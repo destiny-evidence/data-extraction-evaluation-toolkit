@@ -56,9 +56,9 @@ LINK_MAP_PATH = Annotated[
 ]
 
 LINK_MAP_PATH_READ = Annotated[
-    Path | None,
+    Path,
     typer.Option(
-        help="A path to an optional link map (create this by running "
+        help="A path to a link map (create this by running "
         "`deet init-linkage-mapping-file`)"
     ),
 ]
@@ -81,7 +81,7 @@ def link_documents_fulltexts() -> None:
     `deet.processors.linker` for more details.
 
     """
-    from deet.processors.linker import DocumentReferenceLinker
+    from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 
     deet_project = DeetProject.load()
     processed_annotation_data = deet_project.process_data()
@@ -90,6 +90,7 @@ def link_documents_fulltexts() -> None:
         references=processed_annotation_data.documents,
         document_base_dir=deet_project.pdf_dir,
         document_reference_mapping=deet_project.link_map_path,
+        linking_strategies=[LinkingStrategy.MAPPING_FILE],
     )
     linked_documents = linker.link_many_references_parsed_documents()
 

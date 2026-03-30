@@ -316,14 +316,18 @@ class ProcessedAnnotationData(
 
     def export_linkage_mapper_csv(self, file_path: Path) -> None:
         """Export a csv mapper to link document IDs and filenames."""
-        with file_path.open("w", encoding="utf-8") as f:
+        with file_path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
             writer.writeheader()
             for d in self.documents:
-                d.init_document_identity()
+                if (
+                    d.document_identity is None
+                    or d.document_identity.document_id is None
+                ):
+                    d.init_document_identity()
                 if d.document_identity is None:
-                    message = f"document_identity was not set for document {d}"
-                    raise ValueError(message)
+                    no_doc_id_err = f"document_identity was not set for document {d}"
+                    raise ValueError(no_doc_id_err)
                 writer.writerow(
                     {
                         "document_id": d.document_identity.document_id,
