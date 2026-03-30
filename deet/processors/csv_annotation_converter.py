@@ -393,7 +393,7 @@ class CSVAnnotationConverter(AnnotationConverter):
                 raise ValueError(msg)
 
             # validate required fields
-            meta_fields = {"name", "document_id"}
+            meta_fields = {"document_id"}
             missing = meta_fields - set(colnames)
             if missing:
                 msg = f"Required columns missing: {missing}"
