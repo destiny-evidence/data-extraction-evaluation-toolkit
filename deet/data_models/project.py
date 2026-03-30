@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from enum import StrEnum, auto
 from pathlib import Path
 
+import typer
 from dotenv import set_key
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -155,11 +156,18 @@ class DeetProject(BaseModel):
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.is_file():
             target.touch()
+            write_file = True
+        else:
+            write_file = typer.confirm(
+                f"{self.environment_file} env file already exists."
+                " Would you like to overwrite it?"
+            )
 
-        for name, field in DataExtractionSettings.model_fields.items():
-            answer = inquire_pydantic_field(field)
-            if answer:
-                set_key(target, name, answer, quote_mode="always")
+        if write_file:
+            for name, field in DataExtractionSettings.model_fields.items():
+                answer = inquire_pydantic_field(field)
+                if answer:
+                    set_key(target, name, answer, quote_mode="always")
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
