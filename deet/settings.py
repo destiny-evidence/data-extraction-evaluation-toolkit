@@ -41,7 +41,9 @@ class DataExtractionSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=[".env", Path.home() / ".deet" / ".env"],
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     # General
@@ -95,6 +97,7 @@ class DataExtractionSettings(BaseSettings):
     base_disk_cache_dir: Path = Field(
         default=(Path.home() / ".deet_cache"),
         description="the base directory for disk-based caches.",
+        json_schema_extra={"skip_prompt": True},
     )
 
 

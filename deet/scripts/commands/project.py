@@ -49,17 +49,33 @@ def init() -> None:
     console.print(welcome)
 
     project = DeetProject.init_interactive()
-    processed_data = project.process_data()
-    console.print("Successfully parsed processed data.")
 
-    console.print("Initialising prompt definition file.")
-    processed_data.export_attributes_csv_file(filepath=project.prompt_csv_path)
+    settings = Panel(
+        "[bold cyan] Success![/]\n\n" "Now let us configure your settings",
+        title="✅  Project successfully set up!",
+        border_style="bright_blue",
+        box=box.ROUNDED,
+    )
 
-    console.print("Initialising reference-pdf link mapping file.")
-    processed_data.export_linkage_mapper_csv(file_path=project.link_map_path)
+    console.print(settings)
+    project.populate_env()
 
-    console.print("Writing default config file")
+    echo_and_log("Writing default config file")
     export_config_template()
 
-    console.print("Saving project")
+    processed_data = project.process_data()
+    echo_and_log("Successfully parsed processed data.")
+
+    echo_and_log("Initialising prompt definition file.")
+    processed_data.export_attributes_csv_file(filepath=project.prompt_csv_path)
+
+    echo_and_log("Initialising reference-pdf link mapping file.")
+    processed_data.export_linkage_mapper_csv(file_path=project.link_map_path)
+
     project.dump_to_toml()
+    settings = Panel(
+        "[bold green] Success![/]\n\n" "Your project is now ready to use",
+        title="✅  Project successfully set up!",
+        border_style="bright_blue",
+        box=box.ROUNDED,
+    )

@@ -4,15 +4,34 @@ Handles the one-time definition of configuration options.
 """
 
 from datetime import UTC, datetime
+from enum import StrEnum, auto
 from pathlib import Path
 
+from dotenv import set_key
 from loguru import logger
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.processors.converter_register import SupportedImportFormat
+from deet.settings import DataExtractionSettings
+from deet.utils.cli_utils import inquire_pydantic_field
 
 PROJECT_FILE = Path("project.toml")
+
+
+class EnvironmentFile(StrEnum):
+    """A choice of where to store settings."""
+
+    PROJECT = auto()
+    SYSTEM = auto()
+
+    def env_file(self) -> Path:
+        """Map option to env file."""
+        mapping = {
+            EnvironmentFile.PROJECT: Path(".env"),
+            EnvironmentFile.SYSTEM: Path.home() / ".deet" / ".env",
+        }
+        return mapping[self]
 
 
 class DeetProject(BaseModel):
@@ -29,14 +48,21 @@ class DeetProject(BaseModel):
         ..., description="Absolute path to source data"
     )
     gold_standard_data_format: SupportedImportFormat = Field(..., description="Format")
-    pdf_dir: Path | None = Field(..., description="Path to folder containing PDFs")
+    pdf_dir: Path | None = Field(None, description="Path to folder containing PDFs")
     out_dir: Path = Field(default=Path("data-extraction-experiments/"))
     prompt_csv_path: Path = Path("prompt_definitions.csv")
     link_map_path: Path = Path("link_map.csv")
     linked_documents_path: Path = Path("linked_documents")
+    environment_file: EnvironmentFile = EnvironmentFile.SYSTEM
+
+    model_config = ConfigDict(
+        json_encoders={Path: str},
+        extra="ignore",
+    )
 
     @field_validator("gold_standard_data_path", mode="before")
-    def _abs_and_check_exists(self, value: str | Path) -> Path:
+    @classmethod
+    def _abs_and_check_exists(cls, value: str | Path) -> Path:
         p = Path(value) if not isinstance(value, Path) else value
         abs_path = p.resolve()
         if not abs_path.is_file():
@@ -45,7 +71,8 @@ class DeetProject(BaseModel):
         return abs_path
 
     @field_validator("pdf_dir", mode="before")
-    def _process_pdf_dir(self, value: str | Path) -> Path | None:
+    @classmethod
+    def _process_pdf_dir(cls, value: str | Path) -> Path | None:
         if value == "":
             return None
         p = Path(value) if not isinstance(value, Path) else value
@@ -94,12 +121,38 @@ class DeetProject(BaseModel):
             invalid_message="Must be valid file folder",
         ).execute()
 
+        data["environment_file"] = inquirer.select(
+            message=(
+                "Where would you like to store your API credentials"
+                " and other settings? \n\nChoose system if you want to "
+                " use the same credentials across deet projects,"
+                " or choose project if you want to use specific"
+                " credentials for this project."
+            ),
+            choices=list(EnvironmentFile),
+        ).execute()
+
         return cls.model_validate(data)
 
     @classmethod
     def load(cls, filename: Path = PROJECT_FILE) -> "DeetProject":
         """Load a project from a toml file."""
-        return cls.model_validate_json(filename.read_text())
+        import toml
+
+        data = toml.load(filename.open())
+        return cls.model_validate(data["project"])
+
+    def populate_env(self) -> None:
+        """Populate environment file."""
+        target = self.environment_file.env_file()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if not target.is_file():
+            target.touch()
+
+        for name, field in DataExtractionSettings.model_fields.items():
+            answer = inquire_pydantic_field(field)
+            if answer:
+                set_key(target, name, answer, quote_mode="always")
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
