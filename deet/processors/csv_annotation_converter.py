@@ -558,9 +558,15 @@ class CSVAnnotationConverter(AnnotationConverter):
             ProcessedAnnotationData containing all processed data.
 
         """
+        if set_attribute_type is not None:
+            msg = (
+                "CsvAnnotationConverter does not support set_attribute_type; "
+                "use attribute_fields instead."
+            )
+            raise NotImplementedError(msg)
         logger.info(f"Processing annotation file: {file_path}")
 
-        fieldnames, reference_fields, attribute_fields, rows = self.load_csv(
+        colnames, reference_fields, attribute_fields, rows = self.load_csv(
             file_path, attribute_fields, reference_fields
         )
 
