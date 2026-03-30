@@ -13,6 +13,8 @@ This page shows different ways to install `deet` across platforms and use-cases
 
     If you are Linux user, press `Ctrl` + `Shift` + `t`
 
+If you are using an IDE, like VS Code or PyCharm, you can also open the integrated terminal.
+
 ### Installing a package manager
 
 === "Windows"
@@ -253,8 +255,6 @@ uv sync
     ```sh
     source .venv/bin/activate
     ```
-
-If you are using an IDE, like VS Code or PyCharm, you can also open the integrated terminal.
 
 ### Installing pre-commit hooks
 
