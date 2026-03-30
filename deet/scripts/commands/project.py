@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from deet.data_models.project import DeetProject
-from deet.utils.cli_utils import echo_and_log
+from deet.utils.cli_utils import echo_and_log, fail_with_message
 
 app = typer.Typer(help="Project-related commands")
 console = Console()
@@ -38,6 +38,16 @@ def export_config_template() -> None:
 @app.command()
 def init() -> None:
     """Initialise a new project."""
+    try:
+        project = DeetProject.load()
+        echo_and_log("Warning! Project already exists")
+        overwrite = typer.confirm(
+            "Would you like to continue?" "This may overwrite data and settings"
+        )
+        if not overwrite:
+            fail_with_message("Exiting..")
+    except SystemExit:
+        echo_and_log("Creating new project")
     welcome = Panel(
         "[bold cyan]deet Project Initialiser[/]\n\n"
         "Let's collect a few bits of information about your new project.\n"

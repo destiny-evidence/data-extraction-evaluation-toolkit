@@ -139,7 +139,14 @@ class DeetProject(BaseModel):
         """Load a project from a toml file."""
         import toml
 
-        data = toml.load(filename.open())
+        try:
+            data = toml.load(filename.open())
+        except FileNotFoundError as err:
+            import sys
+
+            sys.tracebacklimit = -1
+            no_project = "This directory doesn't contain a deet project."
+            raise SystemExit(no_project) from err
         return cls.model_validate(data["project"])
 
     def populate_env(self) -> None:
