@@ -1,6 +1,6 @@
 # Installation
 
-This page shows different ways to install DEET across platforms and use-cases
+This page shows different ways to install `deet` across platforms and use-cases
 
 ## Basic setup and dependencies
 
