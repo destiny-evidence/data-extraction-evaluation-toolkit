@@ -410,9 +410,10 @@ class CSVAnnotationConverter(AnnotationConverter):
 
                 unknown = set(reference_fields.values()) - set(colnames)
                 if unknown:
-                    msg = f"Citation fields not found in CSV: {unknown}"
+                    msg = f"Reference fields not found in CSV: {unknown}"
                     raise ValueError(msg)
 
+            # normalize and validate provided attribute fields
             if attribute_fields is None:
                 logger.info("No attribute fields provided")
                 excluded_fields = meta_fields | set(reference_fields.values())
@@ -420,7 +421,13 @@ class CSVAnnotationConverter(AnnotationConverter):
                     h for h in colnames if h not in excluded_fields
                 ]
             else:
-                resolved_attribute_fields = attribute_fields
+                resolved_attribute_fields = [
+                    self._normalize_text(field) for field in attribute_fields
+                ]
+                unknown_attributes = set(resolved_attribute_fields) - set(colnames)
+                if unknown_attributes:
+                    msg = f"Attribute fields not found in CSV: {unknown_attributes}"
+                    raise ValueError(msg)
 
             # Read rows into mem once
             rows = list(csv_reader)
