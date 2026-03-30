@@ -459,6 +459,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#setting-up-your-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up your prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#extracting-data-from-parsedlinked-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -841,6 +852,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#setting-up-your-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up your prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#extracting-data-from-parsedlinked-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1074,23 +1096,25 @@ uv<span class="w"> </span>sync
 <li>the attributes that should be extracted from them, and</li>
 <li>(optionally) the gold standard annotations of those documents made by humans</li>
 </ul>
-<p>DEET currently supports importing this data from an EPPIJson file.</p>
-<p>If you want to extract data from the full text of documents, you will need to link your documents to those full texts.</p>
-<p>Assuming you have an EPPIJson file called <code>references.json</code> in your current working directory, and a folder of PDFs for those documents in a directory called <code>pdfs</code>, you can link these together with</p>
-<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>link-documents-fulltexts<span class="w"> </span>references.json
+<p>DEET currently supports importing this data from an EPPIJson file.
+The following examples assume you have an EPPIJson file called <code>references.json</code> in your current working directory.</p>
+<p>If you want to extract data from the full text of documents, you will need to link your documents to those full texts. Let's assume you have a folder of pdfs in the <code>pdfs</code> directory.</p>
+<p>The first step to link these together is to create a "link map" file which maps each reference to the filename of it's corresponding full text.</p>
+<p>Create this by running</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>init-linkage-mapping-file<span class="w"> </span>references.json
 </code></pre></div>
-<p>You can specify the pdf folder to look through (which does not have to be in your current directory) by setting the option --pdf-dir, but this defaults to <code>pdfs</code>.</p>
-<p>Deet will try to link documents to pdfs using IDs, or a combination of author and year, but if you want to specify a file containing a map between your EPPIJson document_ids and the filenames of your pdfs, you can create a template for this with the <code>deet init-linkage-mapping-file</code> command. Once you have filled the template by specifying the file name for each document, you can link documents by pointing to this file</p>
+<p>Then edit this file, making sure to carefully add the filename of each document in the <code>file_path</code> column.</p>
+<p>You can then link the documents using the link map as follows.</p>
 <div class="highlight"><pre><span></span><code>deet<span class="w"> </span>link-documents-fulltexts<span class="w"> </span>--link-map-path<span class="w"> </span>link_map.csv<span class="w"> </span>references.json
 </code></pre></div>
 <p>Linking will parse the pdfs, and save the contents (along with the bibliographic records to wherever is specified in the option <code>--output-path</code>. This defaults to <code>linked_documents</code></p>
+<h4 id="setting-up-your-prompts">Setting up your prompts</h4>
+<p>When you extract data, deet will try to extract attributes using prompts specified in the EPPIJson file.</p>
+<p>If you want to edit the prompts used for data extraction, and give further details on the attributes, you can create a prompt CSV, by running <code>deet init-prompt-csv</code>. This CSV will contain a row for each attribute: enter or amend the prompt column to set the prompt that will be passed to the LLM for that attribute. Delete rows if you do not want to extract data for that attribute.</p>
 <h4 id="extracting-data-from-parsedlinked-data">Extracting data from parsed/linked data</h4>
-<p>Once you have linked this data to pdfs if you are doing full text data extraction, you are ready to extract data from them.</p>
 <p>Use the command <code>deet extract-data</code> to extract data from imported documents.</p>
-<p>Once again, you will need to specify an EPPIJson file you want to import from, e.g.</p>
-<p><code>deet extract-data references.json</code></p>
-<p>By default, extract-data will try to extract attributes using prompts specified in the EPPIJson file.</p>
-<p>If you want to edit the prompts used for data extraction, you can do this by setting the <code>--prompt-population</code> option to <code>cli</code>, to fill in prompts in the command line, or by setting <code>--prompt-population</code> to <code>file</code>, and pointing to a csv detailing a prompt for each attribute with <code>--csv-path</code>. To create a template for this csv, run <code>deet init-prompt-csv</code>.</p>
+<p>Once again, you will need to specify an EPPIJson file you want to import from,  and you may want to specify the way you want to fill in prompts:</p>
+<p><code>deet extract-data --prompt-population file --csv-path prompt_definitions.csv references.json</code></p>
 <p>To set further configuration options, you can supply a path to a configuration file with the option <code>--config-path</code>. To create a template for this file detailing configurable options, run</p>
 <div class="highlight"><pre><span></span><code>deet<span class="w"> </span>export-config-template
 </code></pre></div>
@@ -1106,7 +1130,14 @@ Please see the <a href="CONTRIBUTING/">contributing guidelines</a> for details o
 <h2 id="adding-documentation">Adding documentation</h2>
 <p>Please add to the docs whenever you feel it would be useful. The docs are built using <a href="https://www.mkdocs.org/">mkdocs</a> and mix automatically-generated API documentation with more general documentation. An automatically generated html static site is built from the <code>docs/</code> directory, and the API documentation is generated from docstrings in the code.</p>
 <p>To add your own documentation, add markdown files to the <code>docs/</code> directory <em>and</em> add these to the <code>nav</code> block in <code>mkdocs.yml</code>. To add API documentation, add docstrings to the code and ensure that the relevant modules are included in the <code>nav</code> block in <code>mkdocs.yml</code>.</p>
-<p>To build the docs locally, run <code>mkdocs build --strict</code> from the root of the repository and open <code>site/index.html</code> in a browser. The documentation website is currently automatically built and deployed to GitHub Pages on pushes to the <code>main</code> branch, and uses the <code>gh-pages</code> branch to serve the docs.</p>
+<p>To build the docs locally, make sure you have the docs dependencies installed by running</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras<span class="w"> </span>--all-groups
+</code></pre></div>
+<p>which will install the documentation dependencies alongside all other dependencies, including developer dependencies. Alternatively,</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>docs
+</code></pre></div>
+<p>will install <em>only</em> the documentation dependencies, but may uninstall other optional dependencies you have installed.</p>
+<p>Then, from the root of the repository, run <code>mkdocs build --strict</code> from the root of the repository and open <code>site/index.html</code> in a browser. The documentation website is currently automatically built and deployed to GitHub Pages on pushes to the <code>main</code> branch, and uses the <code>gh-pages</code> branch to serve the docs.</p>
 <p>The documentation website is available at <a href="https://destiny-evidence.github.io/deet">https://destiny-evidence.github.io/deet</a>.</p>
 <h2 id="platform-specific-installation-instructions">Platform-specific installation instructions</h2>
 <h3 id="pandoc">PANDOC</h3>
