@@ -329,7 +329,10 @@ class MappingImporter:
 class DocumentReferenceLinker:
     """Core class for linking references/citations with parsed document text."""
 
-    LINKING_STRATEGY_HIERARCHY = list(LinkingStrategy)  # retain the enum's order
+    LINKING_STRATEGY_HIERARCHY = [
+        LinkingStrategy.MAPPING_FILE,
+        LinkingStrategy.FILENAME_ID,
+    ]
 
     def __init__(
         self,
