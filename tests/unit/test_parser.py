@@ -1,10 +1,13 @@
+from datetime import UTC, datetime
 from pathlib import Path
+from time import sleep
 
 import pytest
 from PIL import Image
 from pydantic import ValidationError
 
 from deet.exceptions import (
+    EmptyPdfExtractionError,
     FileParserMismatchError,
     InvalidFileTypeError,
     InvalidInputFileTypeError,
@@ -16,51 +19,57 @@ from deet.processors.parser import (
     MarkerParser,
     PandocParser,
     ParsedOutput,
+    PdfminerParser,
 )
 from deet.utils.assess_text_quality import check_language
 
 
 @pytest.fixture
 def fake_converter(monkeypatch):
-    """
-    Stub the global `converter` that comes from `marker.converters.pdf`.
-    It should return an object that `text_from_rendered` can consume.
-    """
+    """Stub MarkerParser._get_converter to return a mock converter."""
 
-    # The real converter returns a dict; we only need the text part.
     class DummyRendered:
         metadata = {"author": "Nik", "year": 2025}
 
-    dummy = DummyRendered()
-    # `converter(file)` simply returns the dummy object
+    class MockConverter:
+        def __call__(self, file):  # noqa: ANN204
+            return DummyRendered()
+
     monkeypatch.setattr(
-        "deet.processors.parser.converter",
-        lambda _: dummy,
+        MarkerParser,
+        "_get_converter",
+        classmethod(lambda _: MockConverter()),
     )
-    return dummy
 
 
 @pytest.fixture
 def mock_text_from_rendered(monkeypatch):
     """Stub `marker.output.text_from_rendered`."""
-    # It returns (text, extension, images)
+
+    # Mock it at the import location (marker.output module)
+    def fake_text_from_rendered(rendered):
+        return ("dummy markdown text", "md", [])
+
     monkeypatch.setattr(
-        "deet.processors.parser.text_from_rendered",
-        lambda _: ("dummy markdown text", "md", []),
+        "marker.output.text_from_rendered",
+        fake_text_from_rendered,
     )
 
 
 @pytest.fixture
 def mock_text_from_rendered_img_meta(monkeypatch):
-    """Stub `marker.output.text_from_rendered`."""
-    dummy_img = Image.new("RGB", (10, 10))
+    """Stub `marker.output.text_from_rendered` with metadata and images."""
+
+    def fake_text_from_rendered(rendered):
+        images = {
+            "image1.jpg": Image.new("RGB", (10, 10)),
+            "image2.jpg": Image.new("RGB", (20, 20)),
+        }
+        return ("dummy markdown text", "md", images)
+
     monkeypatch.setattr(
-        "deet.processors.parser.text_from_rendered",
-        lambda _: (
-            "dummy markdown text",
-            "md",
-            {"img1.jpg": dummy_img, "img2.jpg": dummy_img},
-        ),
+        "marker.output.text_from_rendered",
+        fake_text_from_rendered,
     )
 
 
@@ -81,6 +90,26 @@ def mock_check_language(monkeypatch):
     monkeypatch.setattr(
         "deet.processors.parser.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
+    )
+
+
+@pytest.fixture
+def mock_pdfminerparser_parse(monkeypatch):
+    """Stub PdfminerParser.parse to avoid actual PDF parsing."""
+
+    def _stub_parse(
+        cls,
+        input_,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,
+    ) -> ParsedOutput:
+        return ParsedOutput(text="dummy pdfminer text", parser_library="pdfminer")
+
+    monkeypatch.setattr(
+        "deet.processors.parser.PdfminerParser.parse",
+        classmethod(_stub_parse),
     )
 
 
@@ -156,6 +185,7 @@ def test_markerparser_success(
     assert parsed_out.text == "dummy markdown text"
     assert parsed_out.images is None
     assert parsed_out.metadata is None
+    assert parsed_out.parser_library == "marker"
 
 
 def test_markerparser_returns_metadata_and_images(
@@ -172,6 +202,54 @@ def test_markerparser_returns_metadata_and_images(
     assert isinstance(result.images, dict)  # images
     for img in result.images.values():
         assert isinstance(img, Image.Image)
+
+
+def test_pdfminerparser_success(mock_pdfminerparser_parse, mock_check_language):
+    """When PdfminerParser is used for a PDF, the returned text matches the stub."""
+    parser = DocumentParser()
+    parsed_out = parser("any.pdf", parser=PdfminerParser)
+    assert isinstance(parsed_out, ParsedOutput)
+    assert isinstance(parsed_out.text, str)
+    assert parsed_out.text == "dummy pdfminer text"
+    assert parsed_out.images is None
+    assert parsed_out.metadata is None
+
+
+def test_pdfminerparser_raises_on_empty_extraction(tmp_path):
+    """PdfminerParser raises EmptyPdfExtractionError when PDF has no text."""
+    # Minimal valid PDF (empty page) - PDF Association smallest-possible-pdf-1.0
+    minimal_pdf_bytes = (
+        b"%PDF-1.0\n"
+        b"1 0 obj<< /Type/Catalog/Pages 2 0 R>>endobj\n"
+        b"2 0 obj<< /Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+        b"3 0 obj<< /Type/Page/Parent 2 0 R/Resources<<>>/MediaBox[0 0 9 9]>>endobj\n"
+        b"xref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000052 00000 n \n"
+        b"0000000101 00000 n \ntrailer<< /Root 1 0 R/Size 4>>\nstartxref\n174\n%%EOF"
+    )
+    empty_pdf = tmp_path / "empty.pdf"
+    empty_pdf.write_bytes(minimal_pdf_bytes)
+    with pytest.raises(EmptyPdfExtractionError, match="no extractable text"):
+        PdfminerParser.parse(input_=empty_pdf)
+
+
+def test_pdfminerparser_raises_on_metadata_or_images(
+    mock_pdfminerparser_parse, mock_check_language
+):
+    """PdfminerParser raises when return_metadata or return_images requested."""
+    parser = DocumentParser()
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("any.pdf", parser=PdfminerParser, return_metadata=True)
+    with pytest.raises(InvalidOutputFileTypeError):
+        parser("any.pdf", parser=PdfminerParser, return_images=True)
+
+
+def test_documentparser_default_pdf_uses_pdfminer(
+    mock_pdfminerparser_parse, mock_check_language
+):
+    """When no parser is supplied for a PDF, the default PdfminerParser is used."""
+    parser = DocumentParser()
+    parsed_out = parser("doc.pdf")
+    assert parsed_out.text == "dummy pdfminer text"
 
 
 def test_parse_epub_success(mock_pypandoc, mock_check_language):
@@ -282,7 +360,9 @@ def test_check_language_unimplemented_lang():
 
 
 def test_language_quality_in_pydantic_model():
-    parsed_data = ParsedOutput(text="this is an english sentence.")
+    parsed_data = ParsedOutput(
+        text="this is an english sentence.", parser_library="marker"
+    )
 
     assert isinstance(parsed_data, ParsedOutput)
     assert isinstance(parsed_data.text, str)
@@ -344,3 +424,98 @@ def test_parse_jats_xml_string_missing_filetype(monkeypatch, mock_check_language
             parser=PandocParser,
             input_is_string=True,
         )
+
+
+@pytest.mark.parametrize(
+    ("parser_class", "expected_library"),
+    [
+        (MarkerParser, "marker"),
+        (PdfminerParser, "pdfminer"),
+        (PandocParser, "pandoc"),
+    ],
+)
+def test_parsed_output_parser_library_field(
+    parser_class,
+    expected_library,
+    mock_pypandoc,
+    mock_check_language,
+    fake_converter,
+    mock_text_from_rendered,
+    mock_pdfminerparser_parse,
+):
+    """Ensure ParsedOutput contains correct parser_library field for parser."""
+    parser = DocumentParser()
+
+    # Use appropriate file extension for each parser
+    file_map = {
+        "marker": "test.pdf",
+        "pdfminer": "test.pdf",
+        "pandoc": "test.epub",
+    }
+
+    result = parser(file_map[expected_library], parser=parser_class)
+
+    assert result.parser_library == expected_library
+
+
+def test_parsed_output_invalid_parser_library():
+    """Test that ParsedOutput rejects invalid parser_library values."""
+    with pytest.raises(ValidationError, match="parser_library"):
+        ParsedOutput(text="test text", parser_library="invalid_parser")
+
+
+def test_parsed_output_parser_library_required():
+    """Test that parser_library field is required."""
+    with pytest.raises(ValidationError, match="parser_library"):
+        ParsedOutput(text="test text")
+
+
+@pytest.mark.parametrize(
+    "valid_library",
+    ["marker", "pdfminer", "pandoc"],  # add more as you add more parsers
+)
+def test_parsed_output_accepts_valid_parser_libraries(
+    valid_library, mock_check_language
+):
+    """Test that ParsedOutput accepts all valid parser_library values."""
+    result = ParsedOutput(text="test text", parser_library=valid_library)
+    assert result.parser_library == valid_library
+
+
+def test_parsed_output_timestamp_auto_generated(mock_check_language):
+    """Test that timestamp is automatically generated for ParsedOutput."""
+    before = datetime.now(tz=UTC)
+    result = ParsedOutput(text="test text", parser_library="marker")
+    after = datetime.now(tz=UTC)
+
+    assert isinstance(result.timestamp, datetime)
+    assert result.timestamp.tzinfo == UTC
+    assert before <= result.timestamp <= after
+
+
+def test_parsed_output_timestamp_can_be_set(mock_check_language):
+    """Test that timestamp can be explicitly set."""
+    custom_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
+    result = ParsedOutput(
+        text="test text", parser_library="marker", timestamp=custom_time
+    )
+
+    assert result.timestamp == custom_time
+
+
+def test_parsed_output_timestamp_preserved_across_parsers(
+    mock_pypandoc,
+    mock_check_language,
+    fake_converter,
+    mock_text_from_rendered,
+    mock_pdfminerparser_parse,
+):
+    """Test that each parse operation gets its own timestamp."""
+    parser = DocumentParser()
+
+    result1 = parser("test1.pdf", parser=MarkerParser)
+    sleep(0.1)  # increasing delay so as to work better on windows
+    result2 = parser("test2.epub", parser=PandocParser)
+
+    assert result1.timestamp != result2.timestamp
+    assert result1.timestamp < result2.timestamp

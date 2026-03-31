@@ -1,34 +1,38 @@
 """EPPI-specific data models extending the core models."""
 
-import csv
 import re
 from collections.abc import Callable
+from datetime import UTC, datetime
 from enum import StrEnum
-from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from destiny_sdk.enhancements import EnhancementFileInput, EnhancementType, Visibility
 from destiny_sdk.parsers import EPPIParser
 from destiny_sdk.parsers.exceptions import ExternalIdentifierNotFoundError
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from deet.data_models.base import (  # ContextType,
-    AnnotationType,
     Attribute,
     AttributeType,
-    ContextType,
-    Document,
-    DocumentIDSource,
     GoldStandardAnnotation,
 )
+from deet.data_models.documents import Document, GoldStandardAnnotatedDocument
 
 eppi_destiny_parser = EPPIParser(tags=["deet"])
 
 DOI_REGEX = re.compile(
     r"(10\.\d{4,9}/[-._;()/:a-zA-Z0-9%<>\[\]+&]+)"
 )  # for sanitising DOIs
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
@@ -41,7 +45,7 @@ def sanitise_doi(doi_candidate: str, *, raise_on_fail: bool = False) -> str:
         raise ValueError(bad_doi)
     logger.debug(
         "not found a valid DOI, returning empty string."
-        " to modify this behavioru, set raise_on_fail=True"
+        " to modify this behaviour, set raise_on_fail=True"
     )
     return ""
 
@@ -113,6 +117,16 @@ class EppiAttributeSelectionType(StrEnum):
     OUTCOME = "Outcome"
     INTERVENTION = "Intervention"
     NOT_SELECTABLE = "Not Selectable (no checkbox)"
+    UNSPECIFIED = "Unspecified"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "EppiAttributeSelectionType | None":
+        """Handle case-insensitive assignment & lookup."""
+        if isinstance(value, str):
+            for member in cls:
+                if member.value.lower() == value.lower():
+                    return member
+        return None
 
 
 class EppiAttribute(Attribute):
@@ -132,12 +146,12 @@ class EppiAttribute(Attribute):
         validation_alias=AliasChoices("AttributeId", "attribute_id")
     )
     attribute_selection_type: EppiAttributeSelectionType = Field(
+        default=EppiAttributeSelectionType.UNSPECIFIED,
         validation_alias=AliasChoices(
             "AttributeType", "attribute_type", "attribute_selection_type"
-        )
+        ),
     )
-    question_target: str = ""  # Always empty for EPPI
-    output_data_type: AttributeType = AttributeType.BOOL
+    output_data_type: AttributeType = DEFAULT_ATTRIBUTE_TYPE
     attribute_label: str = Field(alias="AttributeName")
 
     # EPPI-specific fields - these map automatically from camelCase JSON
@@ -162,12 +176,6 @@ class EppiAttribute(Attribute):
     parent_attribute_id: int | None = Field(
         description="ID of the parent attribute in the hierarchy", default=None
     )
-    # attribute_selection_type: EppiAttributeSelectionType | None = Field(
-    #     description="Whether the attribute is Selectable in the "
-    #     " EPPI-Reviewer interface or not",
-    #     default=None,
-    #     alias="AttributeType",
-    # )
     attribute_description: str | None = Field(
         description="Detailed description explaining what this attribute represents",
         default=None,
@@ -183,23 +191,68 @@ class EppiDocument(Document):
     """
 
     name: str = Field(default="", validation_alias=AliasChoices("Title", "name"))
-    context: str = ""
-    context_type: ContextType = ContextType.EMPTY
     document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
-    document_id_source: DocumentIDSource = DocumentIDSource.EPPI_ITEM_ID
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 
-    parent_title: str | None = None
-    short_title: str | None = None
-    date_created: str | None = None
-    edited_by: str | None = None
-    year: str | None = None
-    month: str | None = None
-    abstract: str | None = None
-    authors: str | None = None
-    keywords: str | None = None
+    parent_title: str | None = Field(
+        default=None, validation_alias=AliasChoices("ParentTitle", "parent_title")
+    )
+    short_title: str | None = Field(
+        default=None, validation_alias=AliasChoices("ShortTitle", "short_title")
+    )
+    date_created: datetime | None = Field(
+        default=None, validation_alias=AliasChoices("DateCreated", "date_created")
+    )
+    created_by: str | None = Field(
+        default=None, validation_alias=AliasChoices("CreatedBy", "created_by")
+    )
+    edited_by: str | None = Field(
+        default=None, validation_alias=AliasChoices("EditedBy", "edited_by")
+    )
+    year: int | None = Field(
+        default=None, validation_alias=AliasChoices("Year", "year")
+    )
+    month: str | None = Field(
+        default=None, validation_alias=AliasChoices("Month", "month")
+    )
+    abstract: str | None = Field(
+        default=None, validation_alias=AliasChoices("Abstract", "abstract")
+    )
+    authors: str | None = Field(
+        default=None, validation_alias=AliasChoices("Authors", "authors")
+    )
+    keywords: str | None = Field(
+        default=None, validation_alias=AliasChoices("Keywords", "keywords")
+    )
     doi: str | None = Field(default=None, validation_alias=AliasChoices("DOI", "doi"))
+
+    @field_validator("date_created", mode="before")
+    @classmethod
+    def parse_date_string(cls, value: str) -> datetime | None:
+        """Parse a string datetime to native datetime."""
+        if value is None or value == "":
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            # add as we encounter other formats, if ever relevant
+            formats = [
+                "%d/%m/%Y",  # OG EPPI
+                "%Y-%m-%d %H:%M:%S%z",  # ISO format with timezone,
+                # result of dumping is_final EppiDocument to json
+                "%Y-%m-%d",  # simple ISO date
+            ]
+
+            for fmt in formats:
+                try:
+                    return datetime.strptime(value, fmt).replace(tzinfo=UTC)
+                except ValueError:
+                    continue
+            no_parsage = "unable to parse date_created."
+            raise ValueError(no_parsage)
+
+        return None
 
     @model_validator(mode="before")
     @classmethod
@@ -208,7 +261,11 @@ class EppiDocument(Document):
         Populate the `citation` field with a Destiny
         reference derived from the EPPI data.
         """
-        if not isinstance(data, dict):
+        # if not isinstance(data, dict):
+        #     return data
+        if "citation" in data:
+            # we have already created citation,
+            # no need to do it again
             return data
 
         citation = parse_citation_to_destiny(reference=data)
@@ -269,10 +326,10 @@ class EppiGoldStandardAnnotation(GoldStandardAnnotation):
     )
 
 
-class EppiGoldStandardAnnotatedDocument(EppiDocument):
+class EppiGoldStandardAnnotatedDocument(
+    GoldStandardAnnotatedDocument[EppiDocument, EppiGoldStandardAnnotation]
+):
     """EPPI-specific gold standard annotated document."""
-
-    annotations: list[EppiGoldStandardAnnotation]
 
 
 class EppiCodeSet(BaseModel):
@@ -322,189 +379,6 @@ class EppiRawData(BaseModel):
                 flattened = flatten_hierarchy_func(attributes_list)
                 all_attributes.extend(flattened)
         return all_attributes
-
-
-class ProcessedAnnotationData(BaseModel):
-    """
-    Structured result from annotation processing.
-
-    This model provides a clean, validated structure for all processed
-    annotation data with useful properties and methods.
-    """
-
-    attributes: list[EppiAttribute]
-    documents: list[EppiDocument]
-    annotations: list[EppiGoldStandardAnnotation]
-    annotated_documents: list[EppiGoldStandardAnnotatedDocument]
-    attribute_id_to_label: dict[int, str]
-    raw_data: EppiRawData
-
-    def _custom_prompts_cli(self) -> None:
-        """
-        Use an interactive CLI to have the user enter custom prompts.
-
-        Args:
-            attribute (Attribute): a single (Eppi)Attribute
-
-        """
-        for attribute in self.attributes:
-            attribute.enter_custom_prompt()
-
-    def export_attributes_csv_file(self, filepath: Path) -> None:
-        """
-        Write a csv file containing all attributes for prompt population.
-
-        Args:
-            filepath (Path): outfile path.
-
-
-        """
-        if filepath.suffix != ".csv":
-            bad_filetype = "file ending must be .csv"
-            raise ValueError(bad_filetype)
-        for attribute in self.attributes:
-            attribute.write_to_csv(filepath=filepath)
-
-        logger.info(f"wrote attributes to file {filepath}.")
-
-    def _import_prompts_csv_file(
-        self, filepath: Path, *, overwrite: bool = True
-    ) -> None:
-        """
-        Import prompts from a csv file.
-
-        Args:
-            filepath (Path): attribute/prompt input file.
-            overwrite (bool, optional): Overwrite existing prompts. Defaults to True.
-
-        """
-        if not filepath.exists():
-            no_file = f"CSV file not found: {filepath}"
-            raise FileNotFoundError(no_file)
-
-        if filepath.suffix != ".csv":
-            bad_suffix = "File must have .csv extension"
-            raise ValueError(bad_suffix)
-
-        with filepath.open(mode="r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-
-            if reader.fieldnames is None:
-                empty_csv = "CSV file is empty or has no headers"
-                raise ValueError(empty_csv)
-
-            required_fields = ["attribute_id", "prompt"]
-            for field in required_fields:
-                if field not in reader.fieldnames:
-                    csv_missing_fields = (
-                        f"CSV must contain '{field}' column. "
-                        f"Found columns: {', '.join(reader.fieldnames)}"
-                    )
-
-                    raise ValueError(csv_missing_fields)
-
-            rows_processed = 0
-            for row in reader:
-                # find attribute_id match
-                attribute_id = int(row["attribute_id"])
-                matching_attribute = None
-
-                for attribute in self.attributes:
-                    if attribute.attribute_id == attribute_id:
-                        matching_attribute = attribute
-                        break
-
-                if matching_attribute is None:
-                    logger.warning(
-                        f"No attribute found with ID {attribute_id}, skipping row"
-                    )
-                    continue
-
-                # populate prompt using the Attribute method
-                try:
-                    matching_attribute.populate_prompt_from_dict(
-                        row, overwrite=overwrite
-                    )
-                    rows_processed += 1
-                except ValueError as e:
-                    logger.error(
-                        f"Error processing row for attribute {attribute_id}: {e}"
-                    )
-
-            logger.info(f"Processed {rows_processed} prompts from {filepath}")
-
-    def populate_custom_prompts(
-        self, method: Literal["cli", "file"], filepath: Path | None = None, **kwargs
-    ) -> None:
-        """
-        Populate custom prompts.
-
-        Args:
-            method (Literal["cli", "file"])
-            filepath (Path | None): infile path.
-
-        Raises:
-            FileNotFoundError: if method is file and there's no filepath.
-
-        """
-        if method == "cli":
-            self._custom_prompts_cli()
-        elif method == "file":
-            if filepath is None:
-                missing_filepath = "please specify a filepath!"
-                raise FileNotFoundError(missing_filepath)
-            self._import_prompts_csv_file(filepath=filepath, **kwargs)
-        else:
-            not_impl = f"method {method} is not implemented. use cli or file."
-            raise NotImplementedError(not_impl)
-
-    @property
-    def total_attributes(self) -> int:
-        """Total number of attributes processed."""
-        return len(self.attributes)
-
-    @property
-    def total_documents(self) -> int:
-        """Total number of documents processed."""
-        return len(self.documents)
-
-    @property
-    def total_annotations(self) -> int:
-        """Total number of annotations processed."""
-        return len(self.annotations)
-
-    @property
-    def total_annotated_documents(self) -> int:
-        """Total number of documents with annotations."""
-        return len(self.annotated_documents)
-
-    def get_attributes_by_attribute_type(
-        self, attribute_type: AttributeType
-    ) -> list[EppiAttribute]:
-        """Get all attributes of a specific type."""
-        return [
-            attr for attr in self.attributes if attr.output_data_type == attribute_type
-        ]
-
-    def get_documents_with_annotations(self) -> list[EppiDocument]:
-        """Get only documents that have annotations."""
-        annotated_doc_ids = {doc.document_id for doc in self.annotated_documents}
-        return [doc for doc in self.documents if doc.document_id in annotated_doc_ids]
-
-    def get_annotations_by_annotation_type(
-        self, annotation_type: AnnotationType
-    ) -> list[EppiGoldStandardAnnotation]:
-        """Get all annotations of a specific type (human/llm)."""
-        return [
-            ann for ann in self.annotations if ann.annotation_type == annotation_type
-        ]
-
-    def get_attribute_by_id(self, attribute_id: int) -> EppiAttribute | None:
-        """Get an attribute by its ID."""
-        for attr in self.attributes:
-            if attr.attribute_id == attribute_id:
-                return attr
-        return None
 
 
 class AttributeAnswerCoT(BaseModel):

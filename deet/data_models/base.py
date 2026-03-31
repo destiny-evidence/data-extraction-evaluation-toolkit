@@ -1,11 +1,10 @@
-"""Core data models for document processing and annotation."""
+"""Core data models regarding annotations."""
 
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal, Never, TypeVar, cast
 
-from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.config import JsonDict, JsonValue
@@ -22,16 +21,6 @@ class AnnotationType(StrEnum):
     LLM = auto()
 
 
-class ContextType(StrEnum):
-    """Types of context that can be provided to the LLM."""
-
-    EMPTY = auto()
-    FULL_DOCUMENT = auto()
-    ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
-
-
 class AttributeType(StrEnum):
     """Enum of permitted attribute data types."""
 
@@ -41,6 +30,46 @@ class AttributeType(StrEnum):
     BOOL = auto()
     LIST = auto()
     DICT = auto()
+
+    def missing_annotation_default(
+        self,
+    ) -> bool | str | int | float | list[Never] | dict[str, Never]:
+        """
+        Return default ``output_data`` when no gold-standard annotation exists.
+
+        Used when synthesizing a placeholder annotation (e.g. comparing LLM output
+        to gold standard where a value was never annotated).
+
+        Returns a fresh ``list`` or ``dict`` for mutable types so callers do not share
+        state.
+
+        Raises:
+            ValueError: If this member has no defined default.
+
+        Note:
+            This is not ``Enum._missing_``; that hook resolves *unrecognised raw
+            values* when constructing enum members, not per-type defaults.
+
+        """
+        match self:
+            case AttributeType.BOOL:
+                return False
+            case AttributeType.LIST:
+                return []
+            case AttributeType.STRING:
+                return ""
+            case AttributeType.INTEGER:
+                return 0
+            case AttributeType.FLOAT:
+                return 0.0
+            case AttributeType.DICT:
+                return {}
+            case _:
+                unsupported = (
+                    "No default for missing annotation when attribute type is "
+                    f"{self!s}"
+                )
+                raise ValueError(unsupported)
 
     def __str__(self) -> str:
         """Return the string value for JSON serialization."""
@@ -71,15 +100,7 @@ class AttributeType(StrEnum):
         return mapping[self]
 
 
-class DocumentIDSource(StrEnum):
-    """
-    Sources for a given document_id. Can be e.g. eppi_item_id.
-
-    To be extended if e.g. we start working with
-    non-eppi gold standard references.
-    """
-
-    EPPI_ITEM_ID = auto()
+DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
 
 
 class Attribute(BaseModel):
@@ -92,7 +113,6 @@ class Attribute(BaseModel):
     model_config = ConfigDict()
 
     prompt: str | None = None  # an optional prompt.
-    question_target: str  # 'How many patients were recruited?' - the prompt/question
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
@@ -221,32 +241,11 @@ class Attribute(BaseModel):
                 continue
 
 
-class Document(BaseModel):
-    """
-    Represents a document.
-
-    This can be used both for references itemised
-    in a document listing gold standard annotations (e.g. eppi.json)
-    AND
-    for a document coming from a file (e.g. pdf) without
-    linking to a gold standard annotations document with references.
-    """
-
-    model_config = ConfigDict()
-
-    name: str
-    citation: ReferenceFileInput
-    context: str | list[str]
-    context_type: ContextType
-    document_id: int
-    document_id_source: DocumentIDSource
-    filename: str | None = None
+AttributeTypeVar = TypeVar("AttributeTypeVar", bound=Attribute)
 
 
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
-
-    model_config = ConfigDict()
 
     attribute: Attribute
     output_data: Any
@@ -282,12 +281,9 @@ class GoldStandardAnnotation(BaseModel):
         return data
 
 
-class GoldStandardAnnotatedDocument(Document):
-    """A document with its gold standard annotations."""
-
-    model_config = ConfigDict()
-
-    annotations: list[GoldStandardAnnotation]
+GoldStandardAnnotationTypeVar = TypeVar(
+    "GoldStandardAnnotationTypeVar", bound=GoldStandardAnnotation
+)
 
 
 # models specifically for interfacing with the LLM below

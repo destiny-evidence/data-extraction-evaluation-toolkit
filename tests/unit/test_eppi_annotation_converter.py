@@ -1,5 +1,6 @@
 """Tests for eppi_annotation_converter using real EPPI data."""
 
+import csv
 import json
 from pathlib import Path
 from unittest.mock import mock_open, patch
@@ -8,7 +9,14 @@ import pytest
 from pytest_mock import MockerFixture
 
 from deet.data_models.base import AttributeType
-from deet.data_models.eppi import EppiAttributeSelectionType, EppiDocument, EppiRawData
+from deet.data_models.eppi import (
+    EppiAttributeSelectionType,
+    EppiDocument,
+    EppiRawData,
+)
+from deet.data_models.processed_gold_standard_annotations import (
+    ProcessedEppiAnnotationData,
+)
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
@@ -17,11 +25,12 @@ def test_load_eppi_json_annotations(
 ) -> None:
     """Test loading EPPI JSON annotations via process_annotation_file."""
     converter = EppiAnnotationConverter()
-    mocker.patch.object(  # @sagaruprety note i've removed the json.loads wrapper
+    mocker.patch.object(
         Path, "open", mocker.mock_open(read_data=json.dumps(sample_eppi_data))
-    )  # @harryjmoss is this the right way to use non-`unittest` mocking?
+    )
     result = converter.process_annotation_file("fake_path.json")
     assert hasattr(result, "raw_data")
+    assert result.raw_data is not None
     assert len(result.raw_data.code_sets) == 2
     assert len(result.raw_data.references) > 0
 
@@ -40,7 +49,81 @@ def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
         assert len(result.documents) > 0
 
 
-def test_convert_to_eppi_attributes(sample_eppi_data: dict) -> None:
+@pytest.fixture
+def processed_eppi_annotations(sample_eppi_data: dict) -> ProcessedEppiAnnotationData:
+    """Create fixture to test methods that operate on ProcessedEppiAnnotationData."""
+    converter = EppiAnnotationConverter()
+    with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
+        return converter.process_annotation_file("fake_path.json")
+
+
+@pytest.fixture
+def attribute_csv(tmp_path, processed_eppi_annotations):
+    """Create fixture to write csv file from processed eppi annotation data."""
+    csv_file = tmp_path / "attribute_definitions.csv"
+    processed_eppi_annotations.export_attributes_csv_file(csv_file)
+    return csv_file
+
+
+def test_export_attributes_csv(attribute_csv, processed_eppi_annotations):
+    """
+    Test whether csv has been written, has the expected number of rows, and
+    has at an attribute_id and prompt field in the headers.
+    """
+    with attribute_csv.open() as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+
+    headers = rows[0]
+    assert "attribute_id" in headers
+    assert "prompt" in headers
+
+    assert len(rows) - 1 == len(processed_eppi_annotations.attributes)
+
+
+@pytest.fixture
+def edited_attribute_csv(tmp_path, attribute_csv):
+    """
+    Edit the csv, putting a new prompt in the prompt column.
+    Write it to a new fixture.
+    """
+    edited_definitions = tmp_path / "edited_attribute_definitions.csv"
+    with attribute_csv.open() as fr, edited_definitions.open("w") as fw:
+        reader = csv.reader(fr)
+        writer = csv.writer(fw)
+        for i, row in enumerate(reader):
+            if i == 0:
+                writer.writerow(row)
+            else:
+                row[0] = "New edited prompt"
+                writer.writerow(row)
+    return edited_definitions
+
+
+def test_populate_custom_prompts_csv(edited_attribute_csv, processed_eppi_annotations):
+    """
+    Test whether populating custom prompts from the edited csv correctly sets
+    the prompt for each attribute.
+    """
+    processed_eppi_annotations.populate_custom_prompts(
+        method="file", filepath=edited_attribute_csv
+    )
+    for attribute in processed_eppi_annotations.attributes:
+        assert attribute.prompt == "New edited prompt"
+
+
+def test_populate_custom_prompts_cli(processed_eppi_annotations):
+    """Test the CLI form populating custom prompts."""
+    side_effect_list = []
+    for _ in processed_eppi_annotations.attributes:
+        side_effect_list.extend(["y", "New edited prompt", "y"])
+    with patch("builtins.input", side_effect=side_effect_list):
+        processed_eppi_annotations.populate_custom_prompts(method="cli")
+    for attribute in processed_eppi_annotations.attributes:
+        assert attribute.prompt == "New edited prompt"
+
+
+def test_convert_to_eppi_attributes_default(sample_eppi_data: dict) -> None:
     """Test converting to EPPI attributes."""
     converter = EppiAnnotationConverter()
     raw_data = EppiRawData.model_validate(sample_eppi_data)
@@ -58,7 +141,24 @@ def test_convert_to_eppi_attributes(sample_eppi_data: dict) -> None:
     assert (
         first_attr.output_data_type == AttributeType.BOOL.value
     ), "Should be bool for EPPI"
-    assert first_attr.question_target == "", "Should be empty for EPPI"
+    assert first_attr.prompt in (None, ""), "Should be empty for EPPI"
+
+
+def test_convert_to_eppi_attributes_custom_attribute_type(sample_eppi_data) -> None:
+    """Test converting to EPPI attributes /w custom attribute type."""
+    converter = EppiAnnotationConverter()
+    raw_data = EppiRawData.model_validate(sample_eppi_data)
+
+    all_attributes_raw = converter._extract_attributes_from_codesets(raw_data)
+
+    attributes = converter.convert_to_eppi_attributes(
+        all_attributes_raw, set_attribute_type=AttributeType.STRING
+    )
+    assert len(attributes) > 0
+    assert all(hasattr(attr, "attribute_id") for attr in attributes)
+    assert all(hasattr(attr, "attribute_label") for attr in attributes)
+    assert all(hasattr(attr, "output_data_type") for attr in attributes)
+    assert all(attr.output_data_type == AttributeType.STRING for attr in attributes)
 
 
 def test_convert_to_eppi_attributes_field_population(
@@ -80,7 +180,7 @@ def test_convert_to_eppi_attributes_field_population(
         assert attr.attribute_id is not None
         assert attr.attribute_label is not None
         assert attr.output_data_type == AttributeType.BOOL.value
-        assert attr.question_target == ""
+        assert attr.prompt in (None, "")
 
         # EPPI-specific fields should be populated
         # (not None unless explicitly None in JSON)
@@ -225,7 +325,7 @@ def test_process_attribute_data(
 
     assert len(attributes) == 1
     attr = attributes[0]
-    assert attr.question_target == ""  # empty for EPPI
+    assert attr.prompt in (None, "")  # empty for EPPI
     assert attr.output_data_type == AttributeType.BOOL  # bool for EPPI
 
 
@@ -242,7 +342,7 @@ def test_create_document_from_reference_data(
     assert doc.citation is not None
 
 
-def test_integration_full_workflow(sample_eppi_data: dict) -> None:
+def test_full_workflow(sample_eppi_data: dict) -> None:
     """Test full integration workflow."""
     converter = EppiAnnotationConverter()
     with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
@@ -270,9 +370,52 @@ def test_integration_full_workflow(sample_eppi_data: dict) -> None:
         assert hasattr(first_doc, "document_id")
         assert hasattr(first_doc, "citation")
 
-        # NOTE: This fixture does not include the data needed for
-        # `process_annotation_file()` to attach annotations to documents.
-        # Attribute-label resolution is tested separately.
+
+@pytest.mark.parametrize(
+    ("attribute_type_str", "expected_type"),
+    [
+        ("string", AttributeType.STRING),
+        ("integer", AttributeType.INTEGER),
+        ("bool", AttributeType.BOOL),
+        ("list", AttributeType.LIST),
+        ("dict", AttributeType.DICT),
+    ],
+)
+def test_full_workflow_custom_att_type_str_valid(
+    sample_eppi_data, attribute_type_str: str, expected_type: AttributeType
+) -> None:
+    """Testing full workflow with valid custom att type as string."""
+    converter = EppiAnnotationConverter()
+    with patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))):
+        result = converter.process_annotation_file(
+            "fake_path.json", set_attribute_type=attribute_type_str
+        )
+        first_attr = result.attributes[0]
+        assert first_attr.output_data_type == expected_type
+
+
+@pytest.mark.parametrize(
+    "attribute_type_str",
+    [
+        "STRING",
+        "custom",
+        "foo",
+        "!bar",
+    ],
+)
+def test_full_workflow_custom_att_type_str_invalid(
+    sample_eppi_data,
+    attribute_type_str: str,
+) -> None:
+    """Testing full workflow with invalid custom att type as string."""
+    converter = EppiAnnotationConverter()
+    with (
+        patch("pathlib.Path.open", mock_open(read_data=json.dumps(sample_eppi_data))),
+        pytest.raises(ValueError, match="is not a valid AttributeType"),
+    ):
+        converter.process_annotation_file(
+            "fake_path.json", set_attribute_type=attribute_type_str
+        )
 
 
 def test_convert_to_eppi_annotations_uses_codeset_attribute_label(
