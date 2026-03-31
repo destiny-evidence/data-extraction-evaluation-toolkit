@@ -500,6 +500,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deet.data_models.base.AttributeType.to_json_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_json_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deet.data_models.base.AttributeType.to_python_type" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3978,6 +3989,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deet.data_models.base.AttributeType.to_json_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_json_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deet.data_models.base.AttributeType.to_python_type" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7378,11 +7400,11 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">16</span>
-<span class="normal">17</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">17</span>
 <span class="normal">18</span>
 <span class="normal">19</span>
-<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnnotationType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="normal">20</span>
+<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnnotationType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enumeration of annotation types.&quot;&quot;&quot;</span>
 
     <span class="n">HUMAN</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
@@ -7440,20 +7462,7 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 93</span>
-<span class="normal"> 94</span>
-<span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span>
-<span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
 <span class="normal">107</span>
 <span class="normal">108</span>
 <span class="normal">109</span>
@@ -7575,7 +7584,20 @@
 <span class="normal">225</span>
 <span class="normal">226</span>
 <span class="normal">227</span>
-<span class="normal">228</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Attribute</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Attribute</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Core attribute definition for data extraction tasks.</span>
 
@@ -7743,20 +7765,7 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">183</span>
-<span class="normal">184</span>
-<span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">196</span>
 <span class="normal">197</span>
 <span class="normal">198</span>
 <span class="normal">199</span>
@@ -7788,7 +7797,20 @@
 <span class="normal">225</span>
 <span class="normal">226</span>
 <span class="normal">227</span>
-<span class="normal">228</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">enter_custom_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">enter_custom_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Use CLI to add a prompt.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">print_tabulated</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -7915,20 +7937,7 @@ row represents an attribute.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span>
 <span class="normal">149</span>
@@ -7956,7 +7965,20 @@ row represents an attribute.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span>
-<span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_prompt_from_dict</span><span class="p">(</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_prompt_from_dict</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">input_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -8020,12 +8042,12 @@ row represents an attribute.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_tabulated</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_tabulated</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Print tabulated version of the contents of this attribute.&quot;&quot;&quot;</span>
     <span class="n">dictified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
     <span class="n">data</span> <span class="o">=</span> <span class="p">[[</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dictified</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
@@ -8100,20 +8122,7 @@ row represents an attribute.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">120</span>
 <span class="normal">121</span>
 <span class="normal">122</span>
 <span class="normal">123</span>
@@ -8124,7 +8133,20 @@ row represents an attribute.</p>
 <span class="normal">128</span>
 <span class="normal">129</span>
 <span class="normal">130</span>
-<span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Write an attribute as a line to a csv file - fields represent columns.</span>
 
@@ -8191,71 +8213,83 @@ row represents an attribute.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span>
-<span class="normal">50</span>
-<span class="normal">51</span>
-<span class="normal">52</span>
-<span class="normal">53</span>
-<span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span>
-<span class="normal">68</span>
-<span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span>
-<span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AttributeType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 24</span>
+<span class="normal"> 25</span>
+<span class="normal"> 26</span>
+<span class="normal"> 27</span>
+<span class="normal"> 28</span>
+<span class="normal"> 29</span>
+<span class="normal"> 30</span>
+<span class="normal"> 31</span>
+<span class="normal"> 32</span>
+<span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
+<span class="normal"> 38</span>
+<span class="normal"> 39</span>
+<span class="normal"> 40</span>
+<span class="normal"> 41</span>
+<span class="normal"> 42</span>
+<span class="normal"> 43</span>
+<span class="normal"> 44</span>
+<span class="normal"> 45</span>
+<span class="normal"> 46</span>
+<span class="normal"> 47</span>
+<span class="normal"> 48</span>
+<span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AttributeType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum of permitted attribute data types.&quot;&quot;&quot;</span>
 
     <span class="n">STRING</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
@@ -8320,6 +8354,18 @@ row represents an attribute.</p>
             <span class="n">AttributeType</span><span class="o">.</span><span class="n">DICT</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">return</span> <span class="n">mapping</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JsonValue</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map AttributeType to JS types for the JSON schema.&quot;&quot;&quot;</span>
+        <span class="n">mapping</span><span class="p">:</span> <span class="n">JsonDict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">AttributeType</span><span class="o">.</span><span class="n">STRING</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="n">AttributeType</span><span class="o">.</span><span class="n">INTEGER</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+            <span class="n">AttributeType</span><span class="o">.</span><span class="n">FLOAT</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+            <span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">},</span>
+            <span class="n">AttributeType</span><span class="o">.</span><span class="n">LIST</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{}},</span>
+            <span class="n">AttributeType</span><span class="o">.</span><span class="n">DICT</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">mapping</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -8352,9 +8398,9 @@ row represents an attribute.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the string value for JSON serialization.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
 </code></pre></div></td></tr></table></div>
@@ -8412,8 +8458,7 @@ values</em> when constructing enum members, not per-type defaults.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
-<span class="normal">34</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">34</span>
 <span class="normal">35</span>
 <span class="normal">36</span>
 <span class="normal">37</span>
@@ -8450,7 +8495,8 @@ values</em> when constructing enum members, not per-type defaults.</p>
 <span class="normal">68</span>
 <span class="normal">69</span>
 <span class="normal">70</span>
-<span class="normal">71</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">missing_annotation_default</span><span class="p">(</span>
+<span class="normal">71</span>
+<span class="normal">72</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">missing_annotation_default</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Never</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Never</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -8498,6 +8544,49 @@ values</em> when constructing enum members, not per-type defaults.</p>
 <div class="doc doc-object doc-function">
 
 
+<h5 id="deet.data_models.base.AttributeType.to_json_type" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_json_type</span><span class="p">()</span></code>
+
+</h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Map AttributeType to JS types for the JSON schema.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>deet/data_models/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_json_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JsonValue</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Map AttributeType to JS types for the JSON schema.&quot;&quot;&quot;</span>
+    <span class="n">mapping</span><span class="p">:</span> <span class="n">JsonDict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">AttributeType</span><span class="o">.</span><span class="n">STRING</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+        <span class="n">AttributeType</span><span class="o">.</span><span class="n">INTEGER</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+        <span class="n">AttributeType</span><span class="o">.</span><span class="n">FLOAT</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+        <span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">},</span>
+        <span class="n">AttributeType</span><span class="o">.</span><span class="n">LIST</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{}},</span>
+        <span class="n">AttributeType</span><span class="o">.</span><span class="n">DICT</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">mapping</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h5 id="deet.data_models.base.AttributeType.to_python_type" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">to_python_type</span><span class="p">()</span></code>
 
@@ -8511,8 +8600,7 @@ values</em> when constructing enum members, not per-type defaults.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">77</span>
-<span class="normal">78</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">78</span>
 <span class="normal">79</span>
 <span class="normal">80</span>
 <span class="normal">81</span>
@@ -8521,7 +8609,8 @@ values</em> when constructing enum members, not per-type defaults.</p>
 <span class="normal">84</span>
 <span class="normal">85</span>
 <span class="normal">86</span>
-<span class="normal">87</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_python_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
+<span class="normal">87</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_python_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Map AttributeType to actual Python types.&quot;&quot;&quot;</span>
     <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">AttributeType</span><span class="o">.</span><span class="n">STRING</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -8574,20 +8663,7 @@ values</em> when constructing enum members, not per-type defaults.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">234</span>
-<span class="normal">235</span>
-<span class="normal">236</span>
-<span class="normal">237</span>
-<span class="normal">238</span>
-<span class="normal">239</span>
-<span class="normal">240</span>
-<span class="normal">241</span>
-<span class="normal">242</span>
-<span class="normal">243</span>
-<span class="normal">244</span>
-<span class="normal">245</span>
-<span class="normal">246</span>
-<span class="normal">247</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">247</span>
 <span class="normal">248</span>
 <span class="normal">249</span>
 <span class="normal">250</span>
@@ -8608,7 +8684,20 @@ values</em> when constructing enum members, not per-type defaults.</p>
 <span class="normal">265</span>
 <span class="normal">266</span>
 <span class="normal">267</span>
-<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardAnnotation</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardAnnotation</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A single gold standard annotation for an attribute.&quot;&quot;&quot;</span>
 
     <span class="n">attribute</span><span class="p">:</span> <span class="n">Attribute</span>
@@ -8679,26 +8768,26 @@ values</em> when constructing enum members, not per-type defaults.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">249</span>
-<span class="normal">250</span>
-<span class="normal">251</span>
-<span class="normal">252</span>
-<span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
-<span class="normal">257</span>
-<span class="normal">258</span>
-<span class="normal">259</span>
-<span class="normal">260</span>
-<span class="normal">261</span>
-<span class="normal">262</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">262</span>
 <span class="normal">263</span>
 <span class="normal">264</span>
 <span class="normal">265</span>
 <span class="normal">266</span>
 <span class="normal">267</span>
-<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
 <span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">ensure_correct_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure output_data is of the type required by annotation_type.&quot;&quot;&quot;</span>
@@ -8763,20 +8852,7 @@ attribute object.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">312</span>
-<span class="normal">313</span>
-<span class="normal">314</span>
-<span class="normal">315</span>
-<span class="normal">316</span>
-<span class="normal">317</span>
-<span class="normal">318</span>
-<span class="normal">319</span>
-<span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span>
-<span class="normal">325</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">325</span>
 <span class="normal">326</span>
 <span class="normal">327</span>
 <span class="normal">328</span>
@@ -8791,7 +8867,31 @@ attribute object.</p>
 <span class="normal">337</span>
 <span class="normal">338</span>
 <span class="normal">339</span>
-<span class="normal">340</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMAnnotationResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMAnnotationResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    LLM response model for a single annotation.</span>
 
@@ -8803,7 +8903,18 @@ attribute object.</p>
     <span class="n">attribute_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the EPPI attribute being annotated&quot;</span>
     <span class="p">)</span>
-    <span class="n">output_data</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">output_data</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The LLM&#39;s annotation.&quot;</span><span class="p">,</span>
+        <span class="n">json_schema_extra</span><span class="o">=</span><span class="n">cast</span><span class="p">(</span>
+            <span class="n">JsonDict</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;anyOf&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">attribute_type</span><span class="o">.</span><span class="n">to_json_type</span><span class="p">()</span> <span class="k">for</span> <span class="n">attribute_type</span> <span class="ow">in</span> <span class="n">AttributeType</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
     <span class="n">additional_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="o">...</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
@@ -8872,20 +8983,7 @@ attribute object.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">277</span>
-<span class="normal">278</span>
-<span class="normal">279</span>
-<span class="normal">280</span>
-<span class="normal">281</span>
-<span class="normal">282</span>
-<span class="normal">283</span>
-<span class="normal">284</span>
-<span class="normal">285</span>
-<span class="normal">286</span>
-<span class="normal">287</span>
-<span class="normal">288</span>
-<span class="normal">289</span>
-<span class="normal">290</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">290</span>
 <span class="normal">291</span>
 <span class="normal">292</span>
 <span class="normal">293</span>
@@ -8904,7 +9002,20 @@ attribute object.</p>
 <span class="normal">306</span>
 <span class="normal">307</span>
 <span class="normal">308</span>
-<span class="normal">309</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMInputSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMInputSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Schema for data going into the LLM.&quot;&quot;&quot;</span>
 
     <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span>
@@ -9044,20 +9155,7 @@ Defaults to "attribute_label".</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">286</span>
-<span class="normal">287</span>
-<span class="normal">288</span>
-<span class="normal">289</span>
-<span class="normal">290</span>
-<span class="normal">291</span>
-<span class="normal">292</span>
-<span class="normal">293</span>
-<span class="normal">294</span>
-<span class="normal">295</span>
-<span class="normal">296</span>
-<span class="normal">297</span>
-<span class="normal">298</span>
-<span class="normal">299</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">299</span>
 <span class="normal">300</span>
 <span class="normal">301</span>
 <span class="normal">302</span>
@@ -9067,7 +9165,20 @@ Defaults to "attribute_label".</p>
 <span class="normal">306</span>
 <span class="normal">307</span>
 <span class="normal">308</span>
-<span class="normal">309</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
 <span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">fill_prompt</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">fill_from_field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;attribute_label&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -9135,19 +9246,19 @@ to list[GoldStandardAnnotation] after attribute resolution.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">343</span>
-<span class="normal">344</span>
-<span class="normal">345</span>
-<span class="normal">346</span>
-<span class="normal">347</span>
-<span class="normal">348</span>
-<span class="normal">349</span>
-<span class="normal">350</span>
-<span class="normal">351</span>
-<span class="normal">352</span>
-<span class="normal">353</span>
-<span class="normal">354</span>
-<span class="normal">355</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMResponseSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMResponseSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Root schema for LLM annotation extraction response.</span>
 
@@ -33270,15 +33381,15 @@ standard data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span>
-<span class="normal">395</span>
-<span class="normal">396</span>
-<span class="normal">397</span>
-<span class="normal">398</span>
-<span class="normal">399</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">callback</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">callback</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">global_options</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Display verbose logs.&quot;</span><span class="p">)</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -33572,9 +33683,9 @@ filename with author and year, then by matching by document id. See
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run CLI app.&quot;&quot;&quot;</span>
     <span class="n">app</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -33587,7 +33698,7 @@ filename with author and year, then by matching by document id. See
 
 
 <h4 id="deet.scripts.cli.test_llm_config" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">test_llm_config</span><span class="p">()</span></code>
+            <code class="highlight language-python"><span class="n">test_llm_config</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="n">DEFAULT_CONFIG_PATH</span><span class="p">)</span></code>
 
 </h4>
 
@@ -33624,16 +33735,38 @@ filename with author and year, then by matching by document id. See
 <span class="normal">385</span>
 <span class="normal">386</span>
 <span class="normal">387</span>
-<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">test_llm_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_llm_config</span><span class="p">(</span>
+    <span class="n">config_path</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Path</span><span class="p">,</span>
+        <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;A path to a config file containing options for data &quot;</span>
+            <span class="s2">&quot;extraction config. A template can be generated by running &quot;</span>
+            <span class="s2">&quot;`deet export-config-template.&quot;</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG_PATH</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Test llm config.&quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">deet.data_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Attribute</span><span class="p">,</span> <span class="n">AttributeType</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">deet.extractors.cli_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">load_or_init_config</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">deet.extractors.llm_data_extractor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-        <span class="n">DataExtractionConfig</span><span class="p">,</span>
         <span class="n">LLMDataExtractor</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">config</span> <span class="o">=</span> <span class="n">DataExtractionConfig</span><span class="p">()</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_or_init_config</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="n">config_path</span><span class="p">)</span>
     <span class="n">data_extractor</span> <span class="o">=</span> <span class="n">LLMDataExtractor</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
     <span class="n">attr</span> <span class="o">=</span> <span class="n">Attribute</span><span class="p">(</span>
         <span class="n">output_data_type</span><span class="o">=</span><span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span><span class="p">,</span>
