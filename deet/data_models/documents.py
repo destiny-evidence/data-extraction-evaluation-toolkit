@@ -359,6 +359,11 @@ class Document(BaseModel):
             year=str(labs_ref.publication_year),
         )
 
+        if self.document_id is not None:
+            if return_id:
+                return self.document_id
+            return None
+
         logger.info("populating id & id source...")
         self.document_identity.populate_id(existing_ids=existing_ids)
         if self.document_id is None:

@@ -189,6 +189,7 @@ class GoldStandardLLMEvaluator:
                     "attribute_id",
                     "attribute_label",
                     "human_extraction",
+                    "Human_additional_text",
                     "llm_extraction",
                     "llm_reasoning",
                     "extraction_run_id",
@@ -209,6 +210,9 @@ class GoldStandardLLMEvaluator:
                             "human_extraction": doc.get_attribute_annotation(
                                 attribute
                             ).output_data,
+                            "Human_additional_text": doc.get_attribute_annotation(
+                                attribute
+                            ).additional_text,
                             "llm_extraction": llm_annotation.get_attribute_annotation(
                                 attribute
                             ).output_data,

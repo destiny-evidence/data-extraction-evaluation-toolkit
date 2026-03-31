@@ -40,6 +40,7 @@ class DataExtractionSettings(BaseSettings):
     are forbidden to help catch configuration drift early.
     """
 
+    ##You can specify the path to your .env file here as absolute path to avoid errors
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )

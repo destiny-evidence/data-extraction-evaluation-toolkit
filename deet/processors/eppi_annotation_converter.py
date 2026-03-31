@@ -383,8 +383,16 @@ class EppiAnnotationConverter(AnnotationConverter):
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
-        all_annotations_raw = []
-        documents_by_title: dict[str, EppiDocument] = {}
+        all_annotations_raw: list[dict[str, Any]] = []
+        documents: list[EppiDocument] = []
+        documents_by_id: dict[int, EppiDocument] = {}
+        # retrieving document titles by IDs where necessary
+        id_to_title_mapping: dict[int, str] = {}
+        # Map document IDs to any annotations (Codes) directly attached to the
+        # corresponding Reference entry. This provides a fallback for datasets
+        # where `ItemAttributeFullTextDetails` is empty but `Codes` are still
+        # scoped to a single reference/document (e.g. EBMeNL-style exports).
+        annotations_by_id: dict[int, list[dict[str, Any]]] = {}
 
         # NL: really, the existing_ids thing is quite redundant here,
         # as we assume we're getting our eppi item ids as document_ids.
@@ -392,31 +400,72 @@ class EppiAnnotationConverter(AnnotationConverter):
         # checking against a set of already populated ids, and
         # b) there is a world where eppi.jsons contain invalid item ids.
         existing_ids: set[int] = set()
+
         for reference in data.get("References", []):
-            reference_codes = reference.get("Codes", [])
+            reference_codes: list[dict[str, Any]] = reference.get("Codes", [])
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
-            if doc_title and doc_title not in documents_by_title:
-                logger.debug(f"already populated ids in this job: {existing_ids!s} ")
-                document = EppiDocument(**reference)
-                # init doc id
-                new_id = document.init_document_identity(existing_ids=existing_ids)
-                if new_id:
-                    existing_ids.add(new_id)
-                documents_by_title[doc_title] = document
+            doc_id = reference.get("ItemId", "")
+            if doc_id == "":
+                raise ValueError(
+                    "Document is missing required field 'ItemId'. "
+                    "All documents must have an ItemId."
+                    f"Error found in document with title: {doc_title}"
+                )
+
+            if doc_id in existing_ids:
+                raise ValueError(
+                    f"Duplicate document ID {doc_id} found in the input data. "
+                    "All document IDs must be unique. "
+                    "Please check the input JSON for this duplicate item."
+                )
+
+            existing_ids.add(doc_id)
+            id_to_title_mapping[doc_id] = doc_title
+
+            document = EppiDocument(**reference)
+            # init doc id
+            new_id = document.init_document_identity(existing_ids=existing_ids)
+            if new_id != doc_id:
+                logger.warning(
+                    f"Document ID {doc_id} was not valid and has been coerced to {new_id}. "
+                    "Please check the input JSON for this item."
+                )
+
+            # store mapping from ID to (possibly empty) title, and collect documents
+            id_to_title_mapping[doc_id] = doc_title
+            documents.append(document)
+            documents_by_id[doc_id] = document
+
+            # Track Codes attached to this reference by document ID so that
+            # we can fall back to them when no annotations can be matched via
+            # ItemAttributeFullTextDetails/DocTitle.
+            if reference_codes:
+                annotations_by_id.setdefault(doc_id, []).extend(reference_codes)
 
         pdf_to_title_mapping = self._create_pdf_to_title_mapping(
             data.get("References", [])
         )
 
-        annotated_documents = []
-        all_annotations = []
+        annotated_documents: list[EppiGoldStandardAnnotatedDocument] = []
+        all_annotations: list[EppiGoldStandardAnnotation] = []
 
-        for doc_title, doc in documents_by_title.items():
+        for doc_id, doc in documents_by_id.items():
+            doc_title = id_to_title_mapping.get(doc_id, "")
+            # First try to resolve annotations using
+            # ItemAttributeFullTextDetails / DocTitle matching.
             doc_annotations = self._find_document_annotations(
                 all_annotations_raw, doc_title, pdf_to_title_mapping
             )
+
+            # Fallback: if no annotations were found via text details but the
+            # reference itself had Codes attached, treat those as the
+            # annotations for this document. This ensures that fields like
+            # `AdditionalText` present on Codes are not silently dropped when
+            # ItemAttributeFullTextDetails is empty.
+            if not doc_annotations and doc_id in annotations_by_id:
+                doc_annotations = annotations_by_id[doc_id]
 
             if doc_annotations:
                 annotations = self.convert_to_eppi_annotations(
@@ -434,16 +483,26 @@ class EppiAnnotationConverter(AnnotationConverter):
             annotated_documents.append(annotated_doc)
             all_annotations.extend(annotations)
 
+        # Validate that we have created one Document per input reference.
+        n_docs = len(documents)
+        n_refs = len(data.get("References", []))
+        if n_docs != n_refs:
+            mismatch_msg = (
+                "Mismatch between number of processed documents and input references. "
+                f"Processed documents: {n_docs}; References in input: {n_refs}."
+            )
+            raise ValueError(mismatch_msg)
+
         logger.info(
             f"Processed {len(attributes)} attributes,"
-            f" {len(documents_by_title)} documents, "
+            f" {len(documents)} documents, "
             f"{len(all_annotations)} annotations,"
             f" {len(annotated_documents)} annotated documents"
         )
 
         return ProcessedEppiAnnotationData(
             attributes=attributes,
-            documents=list(documents_by_title.values()),
+            documents=documents,
             annotations=all_annotations,
             annotated_documents=annotated_documents,
             attribute_id_to_label=attribute_id_to_label,
