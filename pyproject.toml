@@ -143,6 +143,7 @@ mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools]
+package-data = {"deet.prompts" = ["*.txt"]}
 package-dir = {"" = "."}
 packages = {find = {exclude = ["test_env*", "tests*"]}}
 
