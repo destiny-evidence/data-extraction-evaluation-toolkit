@@ -13,6 +13,8 @@ This page shows different ways to install `deet` across platforms and use-cases
 
     If you are Linux user, press `Ctrl` + `Shift` + `t`
 
+If you are using an IDE, like VS Code or PyCharm, you can also open the integrated terminal.
+
 ### Installing a package manager
 
 === "Windows"
@@ -186,7 +188,7 @@ Now you have the basics set up, continue to [CLI users](#cli-users) if you want 
 
 ## CLI users
 
-If you just want to use the CLI. We recommend you install the package globally into an isolated managed environment. You can do this using `uv tool install <package>`.
+If you just want to use the CLI, we recommend you install the package globally into an isolated managed environment. You can do this using `uv tool install <package>`.
 
 To install `deet`
 
@@ -211,6 +213,8 @@ uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluati
 will install deet from the development branch.
 
 ## Package users
+
+You can also use deet as a python package, within another project.
 
 Assuming you are using UV to manage dependencies within your project, you can add deet via
 
@@ -249,10 +253,8 @@ uv sync
 === "Mac/Linux"
 
     ```sh
-    source .venv/bin/activate
+    .venv/bin/activate
     ```
-
-If you are using an IDE, like VS Code or PyCharm, you can also open the integrated terminal.
 
 ### Installing pre-commit hooks
 
@@ -261,4 +263,16 @@ This will check any committed changes to aid code consistency.
 
 ```sh
 pre-commit install
+```
+
+## Settings and environment variables
+
+`deet` reads general settings from a `.env` file within the directory you are running it from.
+Settings will be set to default values if this file does not exist, but if you want to use deet with azure models (default behaviour), you will need to provide a set of credentials.
+
+To do this, open a file called `.env` in the directory you are running `deet`, and add the following lines, replacing the placeholders with your own credentials:
+
+```sh
+AZURE_API_KEY="your-azure-api-key-here"
+AZURE_API_BASE=https://your-resource.openai.azure.com/
 ```

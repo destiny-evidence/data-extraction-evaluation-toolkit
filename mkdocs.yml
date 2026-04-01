@@ -65,6 +65,9 @@ plugins:
           options:
             docstring_style: google
             show_submodules: true
+            extensions:
+              - griffe_pydantic:
+                schema: true
           paths: [.]
   - include-markdown:
       opening_tag: "{!"
