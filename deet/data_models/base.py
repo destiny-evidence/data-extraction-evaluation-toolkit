@@ -94,8 +94,11 @@ class AttributeType(StrEnum):
             AttributeType.INTEGER: {"type": "integer"},
             AttributeType.FLOAT: {"type": "number"},
             AttributeType.BOOL: {"type": "boolean"},
-            AttributeType.LIST: {"type": "array", "items": {}},
-            AttributeType.DICT: {"type": "object", "additionalProperties": True},
+            AttributeType.LIST: {
+                "type": "array",
+                "items": {"type": "object", "additionalProperties": False},
+            },
+            AttributeType.DICT: {"type": "object", "additionalProperties": False},
         }
         return mapping[self]
 
