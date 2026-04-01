@@ -35,12 +35,17 @@ theme:
 
 nav:
   - Overview: index.md
+  - Installation: installation.md
   - API reference: api.md
   - License: LICENSE.md
   - Contributing: CONTRIBUTING.md
 
 markdown_extensions:
   - pymdownx.tasklist
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
