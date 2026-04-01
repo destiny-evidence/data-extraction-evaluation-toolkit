@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Sequence
+from importlib.resources import files
 from pathlib import Path
 from typing import Any, cast
 
@@ -49,6 +50,11 @@ from deet.utils.tokenisation import (
 settings = get_settings()
 
 
+def default_system_prompt() -> str:
+    """Get default system prompt included in the package."""
+    return (files("deet.prompts") / "system_prompt.txt").read_text()
+
+
 class PromptConfig(BaseModel):
     """Configuration for prompts used in data extraction."""
 
@@ -56,8 +62,7 @@ class PromptConfig(BaseModel):
 
     system_prompt: str | Path = Field(
         description="System prompt that defines the task and role",
-        default_factory=lambda: Path(__file__).parent.parent.parent
-        / "prompts/system_prompt.txt",
+        default_factory=default_system_prompt,
     )
 
     @model_validator(mode="after")
