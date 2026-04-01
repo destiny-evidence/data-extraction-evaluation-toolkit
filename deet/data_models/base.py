@@ -3,10 +3,11 @@
 import csv
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, Never, TypeVar, cast
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.config import JsonDict, JsonValue
 from tabulate import tabulate
 
 MAX_PROMPT_LENGTH = 500
@@ -30,6 +31,46 @@ class AttributeType(StrEnum):
     LIST = auto()
     DICT = auto()
 
+    def missing_annotation_default(
+        self,
+    ) -> bool | str | int | float | list[Never] | dict[str, Never]:
+        """
+        Return default ``output_data`` when no gold-standard annotation exists.
+
+        Used when synthesizing a placeholder annotation (e.g. comparing LLM output
+        to gold standard where a value was never annotated).
+
+        Returns a fresh ``list`` or ``dict`` for mutable types so callers do not share
+        state.
+
+        Raises:
+            ValueError: If this member has no defined default.
+
+        Note:
+            This is not ``Enum._missing_``; that hook resolves *unrecognised raw
+            values* when constructing enum members, not per-type defaults.
+
+        """
+        match self:
+            case AttributeType.BOOL:
+                return False
+            case AttributeType.LIST:
+                return []
+            case AttributeType.STRING:
+                return ""
+            case AttributeType.INTEGER:
+                return 0
+            case AttributeType.FLOAT:
+                return 0.0
+            case AttributeType.DICT:
+                return {}
+            case _:
+                unsupported = (
+                    "No default for missing annotation when attribute type is "
+                    f"{self!s}"
+                )
+                raise ValueError(unsupported)
+
     def __str__(self) -> str:
         """Return the string value for JSON serialization."""
         return self.value
@@ -43,6 +84,18 @@ class AttributeType(StrEnum):
             AttributeType.BOOL: bool,
             AttributeType.LIST: list,
             AttributeType.DICT: dict,
+        }
+        return mapping[self]
+
+    def to_json_type(self) -> JsonValue:
+        """Map AttributeType to JS types for the JSON schema."""
+        mapping: JsonDict = {
+            AttributeType.STRING: {"type": "string"},
+            AttributeType.INTEGER: {"type": "integer"},
+            AttributeType.FLOAT: {"type": "number"},
+            AttributeType.BOOL: {"type": "boolean"},
+            AttributeType.LIST: {"type": "array", "items": {}},
+            AttributeType.DICT: {"type": "object", "additionalProperties": True},
         }
         return mapping[self]
 
@@ -281,7 +334,18 @@ class LLMAnnotationResponse(BaseModel):
     attribute_id: int = Field(
         ..., description="The ID of the EPPI attribute being annotated"
     )
-    output_data: Any
+    output_data: Any = Field(
+        ...,
+        description="The LLM's annotation.",
+        json_schema_extra=cast(
+            JsonDict,
+            {
+                "anyOf": [
+                    attribute_type.to_json_type() for attribute_type in AttributeType
+                ]
+            },
+        ),
+    )
     additional_text: str | None = Field(
         ...,
         description=(

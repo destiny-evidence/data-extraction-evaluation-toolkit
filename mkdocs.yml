@@ -1,0 +1,70 @@
+site_name: "Data Extraction & Evaluation Toolkit (DEET)"
+site_description: "Documentation website for Data Extraction & Evaluation Toolkit (DEET)"
+site_author: "DESTinY Consortium"
+copyright: "Copyright © 2025 DESTinY Consortium"
+repo_url: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
+repo_name: "destiny-evidence/data-extraction-evaluation-toolkit"
+edit_uri: edit/main/docs/
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+
+theme:
+  name: "material"
+  features:
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Overview: index.md
+  - API reference: api.md
+  - License: LICENSE.md
+  - Contributing: CONTRIBUTING.md
+
+markdown_extensions:
+  - pymdownx.tasklist
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+  - mermaid2
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          inventories:
+            - "https://docs.python.org/3/objects.inv"
+          options:
+            docstring_style: google
+            show_submodules: true
+          paths: [.]
+  - include-markdown:
+      opening_tag: "{!"
+      closing_tag: "!}"
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: "https://github.com/destiny-evidence"

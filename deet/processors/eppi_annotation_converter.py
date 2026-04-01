@@ -383,18 +383,26 @@ class EppiAnnotationConverter(AnnotationConverter):
             attr.attribute_id: attr.attribute_label for attr in attributes
         }
 
-        all_annotations_raw = []
+        all_annotations_raw: list[dict[str, Any]] = []
         documents: list[EppiDocument] = []
-        documents_by_id: dict[
-            int, EppiDocument
-        ] = {}  # assume this needs changing because we will want to support IDs containing strings
-        id_to_title_mapping: dict[
-            int, str
-        ] = {}  # retrieving document titles by IDs where necessary
+        documents_by_id: dict[int, EppiDocument] = {}
+        # retrieving document titles by IDs where necessary
+        id_to_title_mapping: dict[int, str] = {}
+        # Map document IDs to any annotations (Codes) directly attached to the
+        # corresponding Reference entry. This provides a fallback for datasets
+        # where `ItemAttributeFullTextDetails` is empty but `Codes` are still
+        # scoped to a single reference/document (e.g. EBMeNL-style exports).
+        annotations_by_id: dict[int, list[dict[str, Any]]] = {}
+
+        # NL: really, the existing_ids thing is quite redundant here,
+        # as we assume we're getting our eppi item ids as document_ids.
+        # however, a) it demonstrates the desired functionality of
+        # checking against a set of already populated ids, and
+        # b) there is a world where eppi.jsons contain invalid item ids.
         existing_ids: set[int] = set()
 
         for reference in data.get("References", []):
-            reference_codes = reference.get("Codes", [])
+            reference_codes: list[dict[str, Any]] = reference.get("Codes", [])
             all_annotations_raw.extend(reference_codes)
 
             doc_title = reference.get("Title", "")
@@ -405,11 +413,6 @@ class EppiAnnotationConverter(AnnotationConverter):
                     "All documents must have an ItemId."
                     f"Error found in document with title: {doc_title}"
                 )
-            # NL: really, the existing_ids thing is quite redundant here,
-            # as we assume we're getting our eppi item ids as document_ids.
-            # however, a) it demonstrates the desired functionality of
-            # checking against a set of already populated ids, and
-            # b) there is a world where eppi.jsons contain invalid item ids.
 
             if doc_id in existing_ids:
                 raise ValueError(
@@ -424,9 +427,7 @@ class EppiAnnotationConverter(AnnotationConverter):
             document = EppiDocument(**reference)
             # init doc id
             new_id = document.init_document_identity(existing_ids=existing_ids)
-            if (
-                new_id != doc_id
-            ):  # NB I disabled coercion unless no ID is provided. It is impossible to provide no ID due to validating ID presence above :)
+            if new_id != doc_id:
                 logger.warning(
                     f"Document ID {doc_id} was not valid and has been coerced to {new_id}. "
                     "Please check the input JSON for this item."
@@ -437,21 +438,34 @@ class EppiAnnotationConverter(AnnotationConverter):
             documents.append(document)
             documents_by_id[doc_id] = document
 
+            # Track Codes attached to this reference by document ID so that
+            # we can fall back to them when no annotations can be matched via
+            # ItemAttributeFullTextDetails/DocTitle.
+            if reference_codes:
+                annotations_by_id.setdefault(doc_id, []).extend(reference_codes)
+
         pdf_to_title_mapping = self._create_pdf_to_title_mapping(
             data.get("References", [])
         )
-        # print("PDF to title mapping: ", pdf_to_title_mapping)
 
-        annotated_documents = []
-        all_annotations = []
+        annotated_documents: list[EppiGoldStandardAnnotatedDocument] = []
+        all_annotations: list[EppiGoldStandardAnnotation] = []
 
-        for (
-            doc_id,
-            doc,
-        ) in documents_by_id.items():  # using id dict rather than title dict
+        for doc_id, doc in documents_by_id.items():
+            doc_title = id_to_title_mapping.get(doc_id, "")
+            # First try to resolve annotations using
+            # ItemAttributeFullTextDetails / DocTitle matching.
             doc_annotations = self._find_document_annotations(
-                all_annotations_raw, id_to_title_mapping[doc_id], pdf_to_title_mapping
+                all_annotations_raw, doc_title, pdf_to_title_mapping
             )
+
+            # Fallback: if no annotations were found via text details but the
+            # reference itself had Codes attached, treat those as the
+            # annotations for this document. This ensures that fields like
+            # `AdditionalText` present on Codes are not silently dropped when
+            # ItemAttributeFullTextDetails is empty.
+            if not doc_annotations and doc_id in annotations_by_id:
+                doc_annotations = annotations_by_id[doc_id]
 
             if doc_annotations:
                 annotations = self.convert_to_eppi_annotations(

@@ -8,7 +8,7 @@ from functools import cached_property
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Generic, Literal, Self, TypeVar
+from typing import Any, Generic, Literal, Self, TypeVar
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -19,7 +19,6 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
-    AttributeType,
     GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
 )
@@ -117,9 +116,12 @@ class DocumentIdentity(BaseModel):
         for id_source in hierarchy:
             try:
                 id_factory = self._create_id_factory(id_source)
-                logger.debug(f"created id_factory: {id_factory}")
+                logger.debug(f"created id_factory: {id_factory.__name__}")
                 potential_id = id_factory()
-                logger.debug(f"created potential id: {potential_id}")
+                logger.debug(
+                    f"created potential id: {potential_id} "
+                    f"using factory {id_factory.__name__}"
+                )
 
                 # id collisions?
                 if potential_id not in existing_ids:
@@ -357,6 +359,11 @@ class Document(BaseModel):
             year=str(labs_ref.publication_year),
         )
 
+        if self.document_id is not None:
+            if return_id:
+                return self.document_id
+            return None
+
         logger.info("populating id & id source...")
         # self.document_identity.populate_id(existing_ids=existing_ids)
         # if self.document_id is None:
@@ -540,7 +547,7 @@ class GoldStandardAnnotatedDocument(
     def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
-        output_data: bool | list
+        output_data: Any
         for annotation in self.annotations:
             if annotation.attribute.attribute_id == attribute.attribute_id:
                 if result is not None:
@@ -553,17 +560,15 @@ class GoldStandardAnnotatedDocument(
                 result = annotation
 
         if result is None:
-            if attribute.output_data_type == AttributeType.BOOL:
-                output_data = False
-            elif attribute.output_data_type == AttributeType.LIST:
-                output_data = []
-            else:
+            try:
+                output_data = attribute.output_data_type.missing_annotation_default()
+            except ValueError as err:
                 not_found = (
                     "Attribute not found in annotations."
                     " Don't know how to interpret this when attribute is of type "
+                    f"{attribute.output_data_type}"
                 )
-                f"{attribute.output_data_type}"
-                raise ValueError(not_found)
+                raise ValueError(not_found) from err
             return GoldStandardAnnotation(
                 attribute=attribute,
                 output_data=output_data,

@@ -141,6 +141,7 @@ def test_convert_to_eppi_attributes_default(sample_eppi_data: dict) -> None:
     assert (
         first_attr.output_data_type == AttributeType.BOOL.value
     ), "Should be bool for EPPI"
+    assert first_attr.prompt in (None, ""), "Should be empty for EPPI"
 
 
 def test_convert_to_eppi_attributes_custom_attribute_type(sample_eppi_data) -> None:
@@ -179,6 +180,7 @@ def test_convert_to_eppi_attributes_field_population(
         assert attr.attribute_id is not None
         assert attr.attribute_label is not None
         assert attr.output_data_type == AttributeType.BOOL.value
+        assert attr.prompt in (None, "")
 
         # EPPI-specific fields should be populated
         # (not None unless explicitly None in JSON)
@@ -323,6 +325,7 @@ def test_process_attribute_data(
 
     assert len(attributes) == 1
     attr = attributes[0]
+    assert attr.prompt in (None, "")  # empty for EPPI
     assert attr.output_data_type == AttributeType.BOOL  # bool for EPPI
 
 

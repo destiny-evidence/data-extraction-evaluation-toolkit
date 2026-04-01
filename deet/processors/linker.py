@@ -4,7 +4,6 @@ import csv
 import json
 from collections.abc import Callable, Generator, Sequence
 from enum import StrEnum, auto
-from functools import partial
 from pathlib import Path
 from typing import Literal, Self, cast
 
@@ -330,7 +329,10 @@ class MappingImporter:
 class DocumentReferenceLinker:
     """Core class for linking references/citations with parsed document text."""
 
-    LINKING_STRATEGY_HIERARCHY = list(LinkingStrategy)  # retain the enum's order
+    LINKING_STRATEGY_HIERARCHY = [
+        LinkingStrategy.MAPPING_FILE,
+        LinkingStrategy.FILENAME_ID,
+    ]
 
     def __init__(
         self,
