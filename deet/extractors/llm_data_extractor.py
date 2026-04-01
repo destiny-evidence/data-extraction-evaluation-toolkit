@@ -95,22 +95,38 @@ class DataExtractionConfig(BaseModel):
     model_config = ConfigDict()
 
     # LLM
-    model: str = settings.llm_model
-    provider: LLMProvider = settings.llm_provider
-    temperature: float = settings.llm_temperature
-    max_tokens: int | None = settings.llm_max_tokens
+    model: str = Field(
+        default="gpt-4o-mini",
+        description="LLM model identifier used for completions.",
+    )
+    provider: LLMProvider = Field(default=LLMProvider.AZURE, description="LLM Provider")
+    temperature: float = Field(
+        default=0.1,
+        description="Sampling temperature for the LLM.",
+        ge=0.0,
+    )
+    max_tokens: int | None = Field(
+        default=None,
+        description=(
+            "Maximum number of tokens to generate (None means provider default)."
+        ),
+    )
+
+    max_context_tokens: int | None = Field(
+        default=None,
+        description=(
+            "Maximum input context length in tokens (system + attributes + "
+            "document). None = infer from model (litellm registry), else "
+            f"{DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK} via "
+            "DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK. Override to manage costs."
+        ),
+    )
 
     # Context
     default_context_type: ContextType = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
-    max_context_tokens: int | None = Field(
-        default_factory=lambda: settings.llm_max_context_tokens,
-        description=(
-            "Maximum context length in tokens (total payload: system + attributes + "
-            "context). None = infer from model. Override to manage costs."
-        ),
-    )
+
     truncate_on_overflow: bool = Field(
         default=False,
         description=(

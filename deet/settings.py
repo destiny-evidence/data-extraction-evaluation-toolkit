@@ -25,6 +25,18 @@ class LLMProvider(StrEnum):
     OLLAMA = auto()
 
 
+class LogLevel(StrEnum):
+    """Supported log levels for logging."""
+
+    TRACE = auto()
+    DEBUG = auto()
+    INFO = auto()
+    SUCCESS = auto()
+    WARNING = auto()
+    ERROR = auto()
+    CRITICAL = auto()
+
+
 # Fallback max input context (tokens) when litellm cannot resolve the model.
 # Used by ``DataExtractionConfig`` when ``max_context_tokens`` is inferred and
 # ``get_model_max_tokens`` returns None. Single source of truth (do not duplicate
@@ -47,41 +59,14 @@ class DataExtractionSettings(BaseSettings):
     )
 
     # General
-    log_level: str = Field(default="DEBUG", description="log level for the app logger.")
+    log_level: LogLevel = Field(
+        default=LogLevel.DEBUG, description="log level for the app logger."
+    )
 
     runtime: Runtime = Field(
         default=Runtime.LOCAL,
         description="Runtime environment.",
-    )
-
-    llm_provider: LLMProvider = Field(
-        default=LLMProvider.AZURE, description="LLM Provider"
-    )
-
-    # LLM configuration
-    llm_model: str = Field(
-        default="gpt-4o-mini",
-        description="LLM model identifier used for completions.",
-    )
-    llm_temperature: float = Field(
-        default=0.1,
-        description="Sampling temperature for the LLM.",
-        ge=0.0,
-    )
-    llm_max_tokens: int | None = Field(
-        default=None,
-        description=(
-            "Maximum number of tokens to generate (None means provider default)."
-        ),
-    )
-    llm_max_context_tokens: int | None = Field(
-        default=None,
-        description=(
-            "Maximum input context length in tokens (system + attributes + "
-            "document). None = infer from model (litellm registry), else "
-            f"{DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK} via "
-            "DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK. Override to manage costs."
-        ),
+        json_schema_extra={"skip_prompt": True},
     )
 
     # Provider credentials / settings (secrets redacted)
