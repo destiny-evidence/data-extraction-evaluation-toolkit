@@ -108,6 +108,8 @@ Once again, you will need to specify an EPPIJson file you want to import from,  
 deet extract-data --prompt-population file --csv-path prompt_definitions.csv references.json
 ```
 
+### Data extraction configuration
+
 To set further configuration options, you can supply a path to a configuration file with the option `--config-path`. To create a template for this file detailing configurable options, run
 
 ```sh
@@ -115,3 +117,19 @@ deet export-config-template
 ```
 
 You can edit this file to change the configuration options for your extract-data pipeline.
+
+#### LLM Model and provider
+
+By default, data extraction runs using gpt-4o-mini through Azure.
+
+If you want to run models locally with [ollama](https://ollama.com/), you can set the `provider` option to `ollama`,
+and the `model` option to any model you have running.
+
+#### Context type
+
+By default, data extraction will attempt to extract data from the full text of a record.
+If, however, you only wish to use the abstract, you can set `default_context_type` from `full_document` to `abstract_only`.
+
+#### Further configuration options
+
+A full list of configurable options is available in the [API documentation](api.md/#deet.extractors.llm_data_extractor.DataExtractionConfig).
