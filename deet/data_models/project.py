@@ -3,6 +3,7 @@ Data models for DeetProject.
 Handles the one-time definition of configuration options.
 """
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum, auto
 from pathlib import Path
@@ -204,3 +205,36 @@ class DeetProject(BaseModel):
         """Process the project's gold standard data."""
         converter = self.gold_standard_data_format.get_annotation_converter()
         return converter.process_annotation_file(self.gold_standard_data_path)
+
+
+@dataclass(frozen=True)
+class ExperimentArtefacts:
+    """Defines the structure of an data extraction experiment directory."""
+
+    base_dir: Path
+    run_id: str
+
+    @property
+    def metrics(self) -> Path:
+        """Return location of experiment metrics."""
+        return self.base_dir / "metrics.csv"
+
+    @property
+    def comparison(self) -> Path:
+        """Return location of csv comparing goldstandard to llm extractions."""
+        return self.base_dir / "goldstandard_llm_comparison.csv"
+
+    @property
+    def prompts_snapshot(self) -> Path:
+        """Return location of csv capturing prompts used."""
+        return self.base_dir / "prompts_used.csv"
+
+    @property
+    def config_snapshot(self) -> Path:
+        """Return location of csv capturing config used."""
+        return self.base_dir / "config.yaml"
+
+    @property
+    def llm_annotations(self) -> Path:
+        """Return location of json containing llm extractions."""
+        return self.base_dir / "llm_annotations.json"

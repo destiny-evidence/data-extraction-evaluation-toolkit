@@ -8,6 +8,7 @@ import yaml  # type:ignore[import-untyped]
 from loguru import logger
 
 from deet.data_models.documents import ContextType, Document
+from deet.data_models.project import ExperimentArtefacts
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.utils.cli_utils import echo_and_log, fail_with_message
@@ -29,7 +30,7 @@ def load_or_init_config(config_path: Path) -> DataExtractionConfig:
 def init_extraction_run(
     out_dir: Path,
     run_name: str,
-) -> tuple[str, Path]:
+) -> ExperimentArtefacts:
     """Set up ID, folder and logging for data extraction run."""
     extraction_run_id = (
         datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
@@ -41,7 +42,7 @@ def init_extraction_run(
 
     logger.add(experiment_out_dir / "deet.log", level="DEBUG")
 
-    return extraction_run_id, experiment_out_dir
+    return ExperimentArtefacts(base_dir=experiment_out_dir, run_id=extraction_run_id)
 
 
 def prepare_documents(

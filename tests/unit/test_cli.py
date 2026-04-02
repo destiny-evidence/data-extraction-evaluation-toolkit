@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
-from deet.scripts.cli import app, init_linkage_mapping_file
+from deet.scripts.cli import app
 
 runner = CliRunner()
 
@@ -104,25 +104,6 @@ def test_export_default_config_writes_yaml(tmp_path):
     data = yaml.safe_load(output_file.read_text())
     config_dict = DataExtractionConfig().model_dump(mode="json")
     assert data == config_dict
-
-
-def test_init_linkage_mapping_file(link_map_path, processed_data):
-    """Test init-linkage-mapping-file command."""
-    gs_data_path = link_map_path.parent / "dummy.json"
-
-    with patch(
-        "deet.processors.converter_register.SupportedImportFormat.get_annotation_converter"
-    ) as mock_get_converter:
-        mock_converter = mock_get_converter.return_value
-        mock_converter.process_annotation_file.return_value = processed_data
-
-        init_linkage_mapping_file(
-            gs_data_path=gs_data_path,
-            gs_data_format=SupportedImportFormat.EPPI_JSON,
-            link_map_path=link_map_path,
-        )
-
-    assert link_map_path.exists()
 
 
 def test_init_prompt_csv_confirmation(gs_data_path, csv_path, mock_converter):
