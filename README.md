@@ -1,6 +1,6 @@
 # data-extraction-evaluation-toolkit
 
-A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks.
+The Data Extraction and Evaluation Toolkit (DEET) is a suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks.
 
 [Docs](https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/)
 
@@ -9,6 +9,21 @@ A suite of tools, data models, etc. for extracting data from documents (e.g. pap
 A key innovation of the [Destiny project](https://destiny-evidence.github.io/website/) is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
 
 This software enables this end-to-end process for data extraction and evaluation tasks. **`data-extraction-evaluation-toolkit`**; or **`deet`** is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
+
+Currently, the app covers the following tools:
+
+- **Document parsing** (from a range of formats; typically into `markdown`)
+- **Gold standard data ingestion and standardisation** (currently only `eppi.json` datasets are supported out of the box, for other datasets, use the data models in `data_models/base.py` to ingest your gold standard references.)
+- **LLM-powered data extraction**
+- **Orchetration of tools into `Pipeline`s** (these tools can be existing `DEET` modules, custom python functions, or scripts (`R`, `python`, `bash` currently suppported.))
+- **Linking of gold standard references & pdf-derived parsed documents**
+- **A fully-fledged cli for typical `deet` tasks**
+- **Comparison & evaluation of LLM vs human annotations**
+
+Our roadmap for future development contains:
+
+- **A framework for repeatable pipeline runs with slight modifications for comparison**
+- **Support for prompt versioning tool**
 
 ## Quickstart
 
@@ -30,21 +45,6 @@ uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolki
 The `data-extraction-evaluation-toolkit` (`deet`) contains mutliple modules which can be leveraged alone, or orchestrated together to form a `Pipeline`. The goal of `DEET` is to be modular and extensible, allowing users to customise a specific pipeline or workflow to their needs.
 
 Typical pipelines can be run using the CLI app `deet --help`
-
-Currently, the app covers the following tools:
-
-- **Document parsing** (from a range of formats; typically into `markdown`)
-- **Gold standard data ingestion and standardisation** (currently only `eppi.json` datasets are supported out of the box, for other datasets, use the data models in `data_models/base.py` to ingest your gold standard references.)
-- **LLM-powered data extraction**
-- **Orchetration of tools into `Pipeline`s** (these tools can be existing `DEET` modules, custom python functions, or scripts (`R`, `python`, `bash` currently suppported.))
-- **Linking of gold standard references & pdf-derived parsed documents**
-- **A fully-fledged cli for typical `deet` tasks**
-- **Comparison & evaluation of LLM vs human annotations**
-
-Our roadmap for future development contains:
-
-- **A framework for repeatable pipeline runs with slight modifications for comparison**
-- **Support for prompt versioning tool**
 
 ## Contributing
 
