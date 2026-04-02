@@ -130,7 +130,7 @@ def extract_data(
             "in the CSV with a non-empty `prompt` are kept for extraction and "
             "evaluation (see also `--csv-path`)."
         ),
-    ] = None,
+    ] = CustomPromptPopulationMethod.FILE,
     run_name: Annotated[
         str,
         typer.Option(
@@ -203,6 +203,9 @@ def extract_data(
         output_file=experiment_out_dir / "annotated_docs.json",
         show_progress=True,
     )
+
+    prompts_out = experiment_out_dir / "prompts.csv"
+    processed_annotation_data.export_attributes_csv_file(prompts_out)
 
     config_out = experiment_out_dir / "config.yaml"
     config_out.write_text(
