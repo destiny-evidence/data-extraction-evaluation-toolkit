@@ -60,7 +60,9 @@ class DataExtractionSettings(BaseSettings):
 
     # General
     log_level: LogLevel = Field(
-        default=LogLevel.DEBUG, description="log level for the app logger."
+        default=LogLevel.DEBUG,
+        description="log level for the app logger.",
+        json_schema_extra={"skip_prompt": True},
     )
 
     runtime: Runtime = Field(

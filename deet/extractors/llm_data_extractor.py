@@ -4,7 +4,7 @@ import json
 from collections.abc import Sequence
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import litellm
 from loguru import logger
@@ -33,6 +33,7 @@ from deet.data_models.extraction import (
     ExtractionRunMetadata,
     ExtractionRunOutput,
 )
+from deet.data_models.ui_schema import UI
 from deet.exceptions import LitellmModelNotMappedError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
@@ -100,11 +101,15 @@ class DataExtractionConfig(BaseModel):
     model_config = ConfigDict()
 
     # LLM
-    model: str = Field(
-        default="gpt-4o-mini",
-        description="LLM model identifier used for completions.",
+    provider: Annotated[
+        LLMProvider, UI(help="Choose from a list of supported LLM providers.")
+    ] = Field(default=LLMProvider.AZURE, description="LLM Provider")
+    model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
+        Field(
+            default="gpt-4o-mini",
+            description="LLM model identifier used for completions.",
+        )
     )
-    provider: LLMProvider = Field(default=LLMProvider.AZURE, description="LLM Provider")
     temperature: float = Field(
         default=0.1,
         description="Sampling temperature for the LLM.",
@@ -128,7 +133,9 @@ class DataExtractionConfig(BaseModel):
     )
 
     # Context
-    default_context_type: ContextType = Field(
+    default_context_type: Annotated[
+        ContextType, UI(help="Where to extract data from.")
+    ] = Field(
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
 

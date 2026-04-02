@@ -3,15 +3,17 @@
 from pathlib import Path
 
 import typer
+from InquirerPy import inquirer
 from rich import box
-from rich.console import Console
 from rich.panel import Panel
 
 from deet.data_models.project import DeetProject
-from deet.utils.cli_utils import echo_and_log, fail_with_message
+from deet.settings import LogLevel
+from deet.ui import console, notify
+from deet.ui.wizards import run_model_wizard
+from deet.utils.cli_utils import fail_with_message
 
 app = typer.Typer(help="Project-related commands")
-console = Console()
 
 DEFAULT_CONFIG_PATH = Path("default_extraction_config.yaml")
 
@@ -27,42 +29,55 @@ def export_config_template() -> None:
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
         encoding="utf-8",
     )
-    echo_and_log(
-        f"✅ Default config exported to {DEFAULT_CONFIG_PATH}", fg=typer.colors.GREEN
+    notify(
+        f"✅ Default config exported to {DEFAULT_CONFIG_PATH}", level=LogLevel.SUCCESS
     )
-    echo_and_log(
-        "✏️  Edit this file to adjust options for data extraction.", fg=typer.colors.BLUE
+    notify(
+        "✏️  Edit this file to adjust options for data extraction.", level=LogLevel.INFO
     )
 
 
 @app.command()
 def init() -> None:
     """Initialise a new project."""
-    try:
+    if DeetProject.exists():
         project = DeetProject.load()
-        echo_and_log("Warning! Project already exists")
-        overwrite = typer.confirm(
-            "Would you like to continue?" "This may overwrite data and settings"
+        notify(
+            (
+                "A Project already exists in this directory. "
+                "Continuing could overwrite data and settings"
+            ),
+            level=LogLevel.WARNING,
         )
-        if not overwrite:
+        if not inquirer.confirm("Overwrite existing project?").execute():
             fail_with_message("Exiting..")
-    except SystemExit:
-        echo_and_log("Creating new project")
+
+    console.clear()
     welcome = Panel(
         "[bold cyan]deet Project Initialiser[/]\n\n"
         "Let's collect a few bits of information about your new project.\n"
         "Press Ctrl-C at any time to abort.\n",
         title="🚤  Welcome",
         border_style="bright_blue",
-        box=box.ROUNDED,
+        box=box.DOUBLE,
     )
     console.print(welcome)
 
-    project = DeetProject.init_interactive()
+    project = run_model_wizard(DeetProject)
+    project.setup()
+
+    console.clear()
+    success = Panel(
+        "[bold green] Success![/]\n\n" "Your project is now ready to use",
+        title="✅  Project successfully set up!",
+        border_style="green",
+        box=box.ROUNDED,
+    )
+    console.print(success)
 
     settings = Panel(
-        "[bold cyan] Success![/]\n\n" "Now let us configure your settings",
-        title="✅  Project successfully set up!",
+        "[bold cyan] Configuration[/]\n\n" "Now let us configure your settings",
+        title="⚙️  Project settings",
         border_style="bright_blue",
         box=box.ROUNDED,
     )
@@ -70,22 +85,4 @@ def init() -> None:
     console.print(settings)
     project.populate_env()
 
-    echo_and_log("Writing default config file")
     export_config_template()
-
-    processed_data = project.process_data()
-    echo_and_log("Successfully parsed processed data.")
-
-    echo_and_log("Initialising prompt definition file.")
-    processed_data.export_attributes_csv_file(filepath=project.prompt_csv_path)
-
-    echo_and_log("Initialising reference-pdf link mapping file.")
-    processed_data.export_linkage_mapper_csv(file_path=project.link_map_path)
-
-    project.dump_to_toml()
-    settings = Panel(
-        "[bold green] Success![/]\n\n" "Your project is now ready to use",
-        title="✅  Project successfully set up!",
-        border_style="bright_blue",
-        box=box.ROUNDED,
-    )
