@@ -28,13 +28,13 @@ class LLMProvider(StrEnum):
 class LogLevel(StrEnum):
     """Supported log levels for logging."""
 
-    TRACE = auto()
-    DEBUG = auto()
-    INFO = auto()
-    SUCCESS = auto()
-    WARNING = auto()
-    ERROR = auto()
-    CRITICAL = auto()
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    SUCCESS = "SUCCESS"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 # Fallback max input context (tokens) when litellm cannot resolve the model.
