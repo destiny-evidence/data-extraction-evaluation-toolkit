@@ -48,7 +48,7 @@ Most commands start by importing gold standard data, and require that you specif
 
 - bibliographic records of documents,
 - the attributes that should be extracted from them, and
-- (optionally) the gold standard annotations of those documents made by humans
+- the gold standard annotations of those documents made by humans
 
 DEET currently supports importing this data from an EPPIJson file.
 The following examples assume you have an EPPIJson file called `references.json` in your current working directory.
@@ -88,7 +88,7 @@ Linking will parse the pdfs, and save the contents (along with the bibliographic
 
 ## Setting up your prompts
 
-When you extract data, deet will try to extract attributes using prompts derived from the EPPIJson file.
+When you extract data, deet will try to extract attributes, using prompts, derived from the EPPIJson file.
 
 If you want to edit the prompts used for data extraction, and give further details on the attributes, you can create a prompt CSV, by running
 
