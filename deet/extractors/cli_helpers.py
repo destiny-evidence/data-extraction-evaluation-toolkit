@@ -11,7 +11,7 @@ from deet.data_models.documents import ContextType, Document
 from deet.data_models.project import ExperimentArtefacts
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
-from deet.utils.cli_utils import echo_and_log, fail_with_message
+from deet.ui import fail_with_message, notify
 
 
 def load_or_init_config(config_path: Path) -> DataExtractionConfig:
@@ -19,9 +19,9 @@ def load_or_init_config(config_path: Path) -> DataExtractionConfig:
     if config_path.exists():
         config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
     else:
-        echo_and_log(
+        notify(
             f"Config file: {config_path} does not exist."
-            " Initialising config with default settings."
+            " Initialising config with default settings.",
         )
         config = DataExtractionConfig()
     return config
@@ -65,7 +65,7 @@ def prepare_documents(
         return documents
     if config.default_context_type == ContextType.FULL_DOCUMENT:
         if link_map_path is not None:
-            echo_and_log(f"Linking documents using link map: {link_map_path}")
+            notify(f"Linking documents using link map: {link_map_path}")
             linker = DocumentReferenceLinker(
                 references=documents,
                 document_base_dir=pdf_dir,
@@ -89,7 +89,7 @@ def prepare_documents(
 
             return documents
         if linked_document_path.exists():
-            echo_and_log(f"Loading linked documents from {linked_document_path}")
+            notify(f"Loading linked documents from {linked_document_path}")
             documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
             if documents:
                 return documents

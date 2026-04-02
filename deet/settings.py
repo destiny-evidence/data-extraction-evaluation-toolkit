@@ -3,9 +3,12 @@
 from enum import StrEnum, auto
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from deet.data_models.ui_schema import UI
 
 
 class Runtime(StrEnum):
@@ -72,11 +75,11 @@ class DataExtractionSettings(BaseSettings):
     )
 
     # Provider credentials / settings (secrets redacted)
-    azure_api_key: SecretStr | None = Field(
+    azure_api_key: Annotated[SecretStr | None, UI()] = Field(
         default=None,
         description="Azure OpenAI API key if using Azure provider.",
     )
-    azure_api_base: SecretStr | None = Field(
+    azure_api_base: Annotated[SecretStr | None, UI()] = Field(
         default=None, description="Base URL for azure openAI."
     )
 

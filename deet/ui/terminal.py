@@ -1,6 +1,7 @@
 """Single import for the rich console, and methods to write to it."""
 
 from rich.console import Console
+from rich.panel import Panel
 from rich.theme import Theme
 
 from deet.settings import LogLevel
@@ -21,4 +22,8 @@ console = Console(theme=DEET_THEME)
 def render_to_console(message: str, level: LogLevel) -> None:
     """Render message to terminal using Rich."""
     style = level.value.lower()
-    console.print(message, style=style)
+    panel = Panel(
+        message,
+        title=f"[{style}]{style.upper()}[/]",
+    )
+    console.print(panel, style=style)

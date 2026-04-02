@@ -10,31 +10,24 @@ from rich.panel import Panel
 
 from deet.data_models.project import DeetProject
 from deet.settings import LogLevel
-from deet.ui import console, notify
+from deet.ui import console, fail_with_message, notify
 from deet.ui.wizards import run_model_wizard
-from deet.utils.cli_utils import fail_with_message
 
 app = typer.Typer(help="Project-related commands")
 
 DEFAULT_CONFIG_PATH = Path("default_extraction_config.yaml")
 
 
-def export_config_template() -> None:
+def export_config_template(project: DeetProject) -> None:
     """Export the default DataExtractionConfig to a YAML file."""
     import yaml  # type:ignore[import-untyped]
 
     from deet.extractors.llm_data_extractor import DataExtractionConfig
 
     config = DataExtractionConfig()
-    DEFAULT_CONFIG_PATH.write_text(
+    project.config_path.write_text(
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
         encoding="utf-8",
-    )
-    notify(
-        f"✅ Default config exported to {DEFAULT_CONFIG_PATH}", level=LogLevel.SUCCESS
-    )
-    notify(
-        "✏️  Edit this file to adjust options for data extraction.", level=LogLevel.INFO
     )
 
 
@@ -86,7 +79,7 @@ def init() -> None:
     console.print(settings)
     project.populate_env()
 
-    export_config_template()
+    export_config_template(project)
 
 
 @app.command()

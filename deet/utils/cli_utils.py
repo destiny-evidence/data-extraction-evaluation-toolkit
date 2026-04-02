@@ -2,16 +2,10 @@
 
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
-from enum import Enum
-from typing import Any, NoReturn, get_args
+from typing import Any
 
 import typer
-from InquirerPy import inquirer
 from loguru import logger
-from pydantic import SecretStr
-from pydantic.fields import FieldInfo
-
-UNCHANGED_SECRET = "<unchanged>"  # noqa: S105
 
 
 @contextmanager
@@ -38,39 +32,3 @@ def echo_and_log(message: Any, **kwargs) -> None:  # noqa: ANN401
     """
     typer.secho(message, **kwargs)
     logger.bind(is_echo=True).info(f"typer .secho: {message}")
-
-
-def fail_with_message(message: str) -> NoReturn:
-    """Print message and exit CLI."""
-    echo_and_log(message, fg=typer.colors.RED, err=True)
-    raise typer.Exit(code=1)
-
-
-def inquire_pydantic_field(field: FieldInfo) -> str | int | float | None:
-    """Prompt user to provide data for pydantic field."""
-    widget_args: dict[str, Any] = {
-        "message": field.description,
-        "default": field.get_default(),
-        "filter": lambda ans: ans.strip(),
-    }
-    extra = field.json_schema_extra
-    if isinstance(extra, dict) and extra.get("skip_prompt"):
-        return None
-    if isinstance(field.annotation, type) and issubclass(field.annotation, Enum):
-        widget_args["choices"] = [e.value for e in field.annotation]
-        answer = inquirer.select(**widget_args).execute()
-    elif field.annotation is float:
-        widget_args["float_allowed"] = True
-        answer = inquirer.number(**widget_args).execute()
-    elif field.annotation is int or int in get_args(field.annotation):
-        answer = inquirer.number(**widget_args).execute()
-    elif field.annotation is SecretStr or SecretStr in get_args(field.annotation):
-        if field.get_default() is None:
-            widget_args["default"] = UNCHANGED_SECRET
-        answer = inquirer.secret(**widget_args).execute()
-        if answer == UNCHANGED_SECRET:
-            answer = None
-    else:
-        answer = inquirer.text(**widget_args).execute()
-
-    return answer

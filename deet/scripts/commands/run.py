@@ -8,6 +8,7 @@ import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.project import DeetProject
+from deet.ui import fail_with_message
 from deet.ui.wizards import run_model_wizard
 
 app = typer.Typer(help="Data extraction experiments")
@@ -81,12 +82,16 @@ def extract(
     else:
         config = load_or_init_config(config_path=config_path)
 
-    experiment_artefacts = init_extraction_run(deet_project.out_dir, run_name)
+    experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
 
     if prompt_population is not None:
         processed_annotation_data.populate_custom_prompts(
             method=prompt_population, filepath=deet_project.prompt_csv_path
         )
+        if not processed_annotation_data.attributes:
+            fail_with_message(
+                "No attributes selected. Perhaps you forgot to edit your prompt file"
+            )
 
     data_extractor = LLMDataExtractor(config=config)
 

@@ -11,15 +11,14 @@ from typing import Annotated
 
 import typer
 from dotenv import set_key
-from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.ui_schema import UI
 from deet.processors.converter_register import SupportedImportFormat
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import notify
-from deet.utils.cli_utils import inquire_pydantic_field
+from deet.ui.wizards import get_ui_metadata, inquire_pydantic_field
 
 PROJECT_FILE = Path("project.toml")
 
@@ -46,6 +45,7 @@ class DeetProject(BaseModel):
         interactive wizard.
     """
 
+    # Wizard fields, configurable by users
     name: Annotated[
         str,
         UI(
@@ -53,7 +53,7 @@ class DeetProject(BaseModel):
             valid="Must be at least 2 characters",
         ),
     ] = Field(..., description="The name of a deet project", min_length=2)
-    created_at: datetime = datetime.now(UTC)
+
     gold_standard_data_path: Annotated[
         Path,
         UI(
@@ -102,34 +102,53 @@ class DeetProject(BaseModel):
         ),
     ] = Field(None, description="Path to folder containing PDFs")
 
-    out_dir: Path = Field(default=Path("data-extraction-experiments/"))
-    prompt_csv_path: Path = Path("prompts/prompt_definitions.csv")
-    link_map_path: Path = Path("link_map.csv")
-    linked_documents_path: Path = Path("linked_documents")
+    # Project metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    # Root is set during load() or defaults to cwd
+    _root: Path = PrivateAttr(default_factory=Path.cwd)
+
+    @property
+    def root(self) -> Path:
+        """Return project root."""
+        return self._root
+
+    # Computed paths - file and folder structure within project dir
+    @property
+    def experiments_dir(self) -> Path:
+        """Return path to experiments directory."""
+        return self.root / "data-extraction-experiments"
+
+    @property
+    def prompt_csv_path(self) -> Path:
+        """Return path to prompt definition file."""
+        return self.root / "prompts" / "prompt_definitions.csv"
+
+    @property
+    def link_map_path(self) -> Path:
+        """Return path to link map."""
+        return self.root / "link_map.csv"
+
+    @property
+    def linked_documents_path(self) -> Path:
+        """Return path to linked documents folder."""
+        return self.root / "linked_documents"
+
+    @property
+    def config_path(self) -> Path:
+        """Return path to config file."""
+        return self.root / "default_extraction_config.yaml"
+
+    @property
+    def env_path(self) -> Path:
+        """Return path to project .env file."""
+        return self.root / ".env"
+
+    # Configuration and validation
     model_config = ConfigDict(
         json_encoders={Path: str},
         extra="ignore",
     )
-
-    def setup(self) -> None:
-        """
-        Set a project up.
-
-        Create directory structure, process gold-standard data, and create
-            prompt csv and link map
-        """
-        self.create_directory_structure()
-        processed_data = self.process_data()
-        notify("Successfully parsed processed data.", level=LogLevel.SUCCESS)
-
-        processed_data.export_attributes_csv_file(filepath=self.prompt_csv_path)
-        notify("Initialised prompt definition file.", level=LogLevel.SUCCESS)
-
-        processed_data.export_linkage_mapper_csv(file_path=self.link_map_path)
-        notify("Initialised reference-pdf link mapping file.", level=LogLevel.SUCCESS)
-
-        self.dump_to_toml()
 
     @field_validator("gold_standard_data_path", mode="before")
     @classmethod
@@ -149,6 +168,24 @@ class DeetProject(BaseModel):
         p = Path(value) if not isinstance(value, Path) else value
         return p.resolve()
 
+    def setup(self) -> None:
+        """
+        Set a project up.
+
+        Create directory structure, process gold-standard data, and create
+            prompt csv and link map
+        """
+        processed_data = self.process_data()
+        notify("Successfully parsed processed data.", level=LogLevel.SUCCESS)
+
+        processed_data.export_attributes_csv_file(filepath=self.prompt_csv_path)
+        notify("Initialised prompt definition file.", level=LogLevel.SUCCESS)
+
+        processed_data.export_linkage_mapper_csv(file_path=self.link_map_path)
+        notify("Initialised reference-pdf link mapping file.", level=LogLevel.SUCCESS)
+
+        self.dump_to_toml()
+
     def dump_to_toml(self, target: Path = PROJECT_FILE) -> None:
         """Write a minimal ``project.toml`` file to save project options."""
         import toml
@@ -156,16 +193,6 @@ class DeetProject(BaseModel):
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
             toml.dump(data, f)
-
-    def create_directory_structure(self) -> None:
-        """Create necessary directories for project."""
-        Path("./prompts").mkdir(exist_ok=True)
-        logger.info("creating directories")
-
-    @classmethod
-    def exists(cls) -> bool:
-        """Check if project exists in current directory."""
-        return PROJECT_FILE.exists()
 
     @classmethod
     def load(cls, filename: Path = PROJECT_FILE) -> "DeetProject":
@@ -182,6 +209,11 @@ class DeetProject(BaseModel):
             raise SystemExit(no_project) from err
         return cls.model_validate(data["project"])
 
+    @classmethod
+    def exists(cls) -> bool:
+        """Check if project exists in current directory."""
+        return PROJECT_FILE.exists()
+
     def populate_env(self) -> None:
         """Populate environment file."""
         target = self.environment_file.env_file()
@@ -197,9 +229,13 @@ class DeetProject(BaseModel):
 
         if write_file:
             for name, field in DataExtractionSettings.model_fields.items():
-                answer = inquire_pydantic_field(field)
-                if answer:
-                    set_key(target, name, answer, quote_mode="always")
+                ui = get_ui_metadata(field)
+                if ui is not None:
+                    answer = inquire_pydantic_field(
+                        DataExtractionSettings, name, field, ui
+                    )
+                    if answer:
+                        set_key(target, name, answer, quote_mode="always")
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
