@@ -9,8 +9,6 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Annotated
 
-import typer
-from dotenv import set_key
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -27,9 +25,8 @@ from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
     SupportedImportFormat,
 )
-from deet.settings import DataExtractionSettings, LogLevel
+from deet.settings import LogLevel
 from deet.ui import notify
-from deet.ui.wizards import get_ui_metadata, inquire_pydantic_field
 
 PROJECT_FILE = Path("project.toml")
 
@@ -222,29 +219,6 @@ class DeetProject(BaseModel):
     def exists(cls) -> bool:
         """Check if project exists in current directory."""
         return PROJECT_FILE.exists()
-
-    def populate_env(self) -> None:
-        """Populate environment file."""
-        target = self.environment_file.env_file()
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.is_file():
-            target.touch()
-            write_file = True
-        else:
-            write_file = typer.confirm(
-                f"{self.environment_file} env file already exists."
-                " Would you like to overwrite it?"
-            )
-
-        if write_file:
-            for name, field in DataExtractionSettings.model_fields.items():
-                ui = get_ui_metadata(field)
-                if ui is not None:
-                    answer = inquire_pydantic_field(
-                        DataExtractionSettings, name, field, ui
-                    )
-                    if answer:
-                        set_key(target, name, answer, quote_mode="always")
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""

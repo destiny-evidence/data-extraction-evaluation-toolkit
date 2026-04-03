@@ -9,7 +9,7 @@ import typer
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.project import DeetProject
 from deet.ui import fail_with_message
-from deet.ui.wizards import run_model_wizard
+from deet.ui.terminal import run_model_wizard
 
 app = typer.Typer(help="Data extraction experiments")
 

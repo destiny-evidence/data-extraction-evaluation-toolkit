@@ -5,6 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
+from dotenv import set_key
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -89,6 +90,25 @@ class DataExtractionSettings(BaseSettings):
         description="the base directory for disk-based caches.",
         json_schema_extra={"skip_prompt": True},
     )
+
+    def dump_to_env(self, target_path: Path) -> None:
+        """Serialise settings object to a .env file."""
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if not target_path.exists():
+            target_path.touch()
+
+        for field_name in type(self).model_fields:
+            value = getattr(self, field_name)
+            if value is not None:
+                if isinstance(value, SecretStr):
+                    str_value = value.get_secret_value()
+                else:
+                    str_value = str(value)
+
+                set_key(
+                    str(target_path), field_name.upper(), str_value, quote_mode="always"
+                )
 
 
 @lru_cache(maxsize=1)

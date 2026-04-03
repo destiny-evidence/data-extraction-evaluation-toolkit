@@ -14,7 +14,7 @@ from rich.align import Align
 from rich.panel import Panel
 
 from deet.data_models.ui_schema import UI
-from deet.ui import console
+from deet.ui.terminal import console
 
 T = TypeVar("T", bound=BaseModel)
 UNCHANGED_SECRET = "<unchanged>"  # noqa: S105
@@ -155,3 +155,12 @@ def run_model_wizard(model_class: type[T]) -> T:
         answers[f_name] = answer
 
     return model_class.model_validate(answers)
+
+
+def continue_after_key(message: str = "Press Enter to continue...") -> None:
+    """Pause execution until the user acknowledges."""
+    inquirer.secret(
+        message=message,
+        qmark="⌨️ ",
+        transformer=lambda _: "",
+    ).execute()

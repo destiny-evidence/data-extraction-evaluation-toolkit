@@ -5,13 +5,17 @@ from typing import Annotated
 
 import typer
 from InquirerPy import inquirer
-from rich import box
-from rich.panel import Panel
 
-from deet.data_models.project import DeetProject
-from deet.settings import LogLevel
-from deet.ui import console, fail_with_message, notify
-from deet.ui.wizards import run_model_wizard
+from deet.data_models.project import DeetProject, EnvironmentFile
+from deet.settings import DataExtractionSettings, LogLevel
+from deet.ui import fail_with_message, notify
+from deet.ui.terminal import console, continue_after_key, run_model_wizard
+from deet.ui.terminal.components import info_panel
+from deet.ui.terminal.templates import (
+    configure_env_md,
+    project_init_md,
+    project_sucess_md,
+)
 
 app = typer.Typer(help="Project-related commands")
 
@@ -47,39 +51,22 @@ def init() -> None:
             fail_with_message("Exiting..")
 
     console.clear()
-    welcome = Panel(
-        "[bold cyan]deet Project Initialiser[/]\n\n"
-        "Let's collect a few bits of information about your new project.\n"
-        "Press Ctrl-C at any time to abort.\n",
-        title="🚤  Welcome",
-        border_style="bright_blue",
-        box=box.DOUBLE,
-    )
-    console.print(welcome)
+    console.print(info_panel(project_init_md(), title=":speedboat: project set-up"))
+    continue_after_key()
 
     project = run_model_wizard(DeetProject)
     project.setup()
+    export_config_template(project)
+
+    if project.environment_file == EnvironmentFile.PROJECT:
+        console.clear()
+        console.print(info_panel(configure_env_md(), ":key: Credential management"))
+        continue_after_key()
+        settings = run_model_wizard(DataExtractionSettings)
+        settings.dump_to_env(project.env_path)
 
     console.clear()
-    success = Panel(
-        "[bold green] Success![/]\n\n" "Your project is now ready to use",
-        title="✅  Project successfully set up!",
-        border_style="green",
-        box=box.ROUNDED,
-    )
-    console.print(success)
-
-    settings = Panel(
-        "[bold cyan] Configuration[/]\n\n" "Now let us configure your settings",
-        title="⚙️  Project settings",
-        border_style="bright_blue",
-        box=box.ROUNDED,
-    )
-
-    console.print(settings)
-    project.populate_env()
-
-    export_config_template(project)
+    console.print(info_panel(project_sucess_md(project)))
 
 
 @app.command()
