@@ -11,11 +11,22 @@ from typing import Annotated
 
 import typer
 from dotenv import set_key
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    DirectoryPath,
+    Field,
+    FilePath,
+    PrivateAttr,
+    field_validator,
+)
 
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.ui_schema import UI
-from deet.processors.converter_register import SupportedImportFormat
+from deet.processors.converter_register import (
+    SUPPORTED_EXTENSIONS,
+    SupportedImportFormat,
+)
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import notify
 from deet.ui.wizards import get_ui_metadata, inquire_pydantic_field
@@ -55,7 +66,7 @@ class DeetProject(BaseModel):
     ] = Field(..., description="The name of a deet project", min_length=2)
 
     gold_standard_data_path: Annotated[
-        Path,
+        FilePath,
         UI(
             help=(
                 "A file containing a list of documents from which you wish to"
@@ -91,7 +102,7 @@ class DeetProject(BaseModel):
     ] = Field(default=EnvironmentFile.SYSTEM, description="Environment file")
 
     pdf_dir: Annotated[
-        Path | None,
+        DirectoryPath | None,
         UI(
             help=(
                 "If you want to extract data from full texts, "
@@ -150,23 +161,21 @@ class DeetProject(BaseModel):
         extra="ignore",
     )
 
-    @field_validator("gold_standard_data_path", mode="before")
+    @field_validator("gold_standard_data_path", mode="after")
     @classmethod
-    def _abs_and_check_exists(cls, value: str | Path) -> Path:
-        p = Path(value) if not isinstance(value, Path) else value
-        abs_path = p.resolve()
-        if not abs_path.is_file():
-            no_gs = f"Gold-standard file does not exist: {abs_path}"
-            raise ValueError(no_gs)
+    def _abs_and_check_suffix(cls, value: Path) -> Path:
+        abs_path = value.resolve()
+        if abs_path.suffix not in SUPPORTED_EXTENSIONS:
+            unsupported_ext = f"Unsupported extension, allowed: {SUPPORTED_EXTENSIONS}"
+            raise ValueError(unsupported_ext)
         return abs_path
 
-    @field_validator("pdf_dir", mode="before")
+    @field_validator("pdf_dir", mode="after")
     @classmethod
-    def _process_pdf_dir(cls, value: str | Path) -> Path | None:
+    def _process_pdf_dir(cls, value: Path) -> Path | None:
         if value == "":
             return None
-        p = Path(value) if not isinstance(value, Path) else value
-        return p.resolve()
+        return value.resolve()
 
     def setup(self) -> None:
         """

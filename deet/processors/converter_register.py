@@ -10,6 +10,9 @@ if TYPE_CHECKING:
     from deet.processors.base_converter import AnnotationConverter
 
 
+SUPPORTED_EXTENSIONS: set[str] = {".csv", ".json"}
+
+
 class SupportedImportFormat(StrEnum):
     """Supported formats to import gold standard annotation data from."""
 
