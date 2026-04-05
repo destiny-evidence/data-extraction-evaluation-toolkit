@@ -12,4 +12,7 @@ def info_panel(content: str, title: str = "INFO") -> Panel:
         title=title,
         border_style="bright_blue",
         box=box.DOUBLE,
+        padding=(1, 2),
+        expand=False,
+        width=120,
     )

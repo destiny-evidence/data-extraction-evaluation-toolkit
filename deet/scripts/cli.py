@@ -1,35 +1,30 @@
 # ruff: noqa: PLC0415
 """A CLI app to run deet pipelines."""
 
+import contextlib
 import warnings
 
 import typer
 
+from deet.data_models.project import DeetProject
 from deet.logger import logger
 from deet.scripts.commands import project, run
+from deet.scripts.context import CLIState
+from deet.ui.terminal import console, render_template
+from deet.ui.terminal.components import info_panel
+from deet.ui.terminal.templates import APP_HELP
 
-APP_HELP = (
-    "deet (data extraction evaluation toolkit) 🚤\n\n"
-    "Use the deet CLI to extract data from documents with LLMs, and evaluate "
-    "extraction by comparing to human-annotated data. To run any of the list "
-    "of commands below, type `deet *command*`, and type `deet *command* --help` "
-    "to see more information about the command. For example, `deet extract-data "
-    "--help` \n"
-    "Prefix any command with --verbose to see complete log output."
-    "will give you more information about how to use the extract-data command.\n\n"
-    "Run `deet --install-completion` to enable your shell to autocomplete deet "
-    "commands."
-)
-
-app = typer.Typer(help=APP_HELP, add_completion=True)
+app = typer.Typer(help=APP_HELP, add_completion=True, rich_markup_mode="rich")
 
 app.add_typer(project.app, name="project")
 app.add_typer(run.app, name="run")
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def global_options(
-    *, verbose: bool = typer.Option(default=False, help="Display verbose logs.")
+    ctx: typer.Context,
+    *,
+    verbose: bool = typer.Option(default=False, help="Display verbose logs."),
 ) -> None:
     """Set global options for all deet commands."""
     log_level = "DEBUG" if verbose else "INFO"
@@ -41,6 +36,18 @@ def global_options(
     )
     if not verbose:
         warnings.filterwarnings("ignore", message=".*is ill-defined.*")
+
+    cli_state = CLIState()
+
+    with contextlib.suppress(FileNotFoundError):
+        cli_state.project = DeetProject.load()
+
+    ctx.obj = cli_state
+
+    if ctx.invoked_subcommand is None:
+        md_text = render_template("welcome", project=cli_state.project)
+        console.clear()
+        console.print(info_panel(md_text))
 
 
 def main() -> None:

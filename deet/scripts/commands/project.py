@@ -6,16 +6,17 @@ from typing import Annotated
 import typer
 from InquirerPy import inquirer
 
-from deet.data_models.project import DeetProject, EnvironmentFile
+from deet.data_models.project import DeetProject
+from deet.scripts.context import project_required
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import fail_with_message, notify
-from deet.ui.terminal import console, continue_after_key, run_model_wizard
-from deet.ui.terminal.components import info_panel
-from deet.ui.terminal.templates import (
-    configure_env_md,
-    project_init_md,
-    project_sucess_md,
+from deet.ui.terminal import (
+    console,
+    continue_after_key,
+    render_template,
+    run_model_wizard,
 )
+from deet.ui.terminal.components import info_panel
 
 app = typer.Typer(help="Project-related commands")
 
@@ -36,13 +37,13 @@ def export_config_template(project: DeetProject) -> None:
 
 
 @app.command()
-def init() -> None:
+def init(ctx: typer.Context) -> None:
     """Initialise a new project."""
-    if DeetProject.exists():
-        project = DeetProject.load()
+    existing_project: DeetProject = ctx.obj.project
+    if existing_project is not None:
         notify(
             (
-                "A Project already exists in this directory. "
+                f"Project {existing_project.name} already exists in this directory. "
                 "Continuing could overwrite data and settings"
             ),
             level=LogLevel.WARNING,
@@ -51,26 +52,28 @@ def init() -> None:
             fail_with_message("Exiting..")
 
     console.clear()
-    console.print(info_panel(project_init_md(), title=":speedboat: project set-up"))
+    init_md = render_template("project/init")
+    console.print(info_panel(init_md, title=":speedboat: project set-up"))
     continue_after_key()
 
     project = run_model_wizard(DeetProject)
     project.setup()
     export_config_template(project)
 
-    if project.environment_file == EnvironmentFile.PROJECT:
-        console.clear()
-        console.print(info_panel(configure_env_md(), ":key: Credential management"))
-        continue_after_key()
-        settings = run_model_wizard(DataExtractionSettings)
-        settings.dump_to_env(project.env_path)
+    console.clear()
+    configure_env_md = render_template("project/configure_env.md")
+    console.print(info_panel(configure_env_md, ":key: Credential management"))
+    continue_after_key()
+    settings = run_model_wizard(DataExtractionSettings)
+    settings.dump_to_env(project.env_path)
 
     console.clear()
-    console.print(info_panel(project_sucess_md(project)))
+    console.print(info_panel(render_template("project/success.md", project=project)))
 
 
 @app.command()
-def link_documents_fulltexts() -> None:
+@project_required
+def link(ctx: typer.Context) -> None:
     """
     Link documents to their fulltexts.
 
@@ -83,7 +86,7 @@ def link_documents_fulltexts() -> None:
     """
     from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 
-    deet_project = DeetProject.load()
+    deet_project: DeetProject = ctx.obj.project
     processed_annotation_data = deet_project.process_data()
 
     linker = DocumentReferenceLinker(
@@ -109,6 +112,7 @@ def link_documents_fulltexts() -> None:
 
 
 @app.command()
+@project_required
 def test_llm_config(
     config_path: Annotated[
         Path,

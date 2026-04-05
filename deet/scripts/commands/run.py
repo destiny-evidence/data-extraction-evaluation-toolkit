@@ -2,20 +2,28 @@
 """CLI sub-commands for running data extraction experiments (and evaluating them)."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from deet.data_models.project import DeetProject
+
 
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
-from deet.data_models.project import DeetProject
+from deet.scripts.context import project_required
 from deet.ui import fail_with_message
-from deet.ui.terminal import run_model_wizard
+from deet.ui.terminal import console, render_template, run_model_wizard
+from deet.ui.terminal.components import info_panel
+from deet.ui.terminal.wizards import continue_after_key
 
 app = typer.Typer(help="Data extraction experiments")
 
 
 @app.command()
+@project_required
 def extract(
+    ctx: typer.Context,
     config_path: Annotated[
         Path | None,
         typer.Option(
@@ -74,10 +82,18 @@ def extract(
         LLMDataExtractor,
     )
 
-    deet_project = DeetProject.load()
+    deet_project: DeetProject = ctx.obj.project
     processed_annotation_data = deet_project.process_data()
 
     if config_path is None:
+        console.clear()
+        console.print(
+            info_panel(
+                render_template("extraction/config_init"),
+                "Data extraction config wizard",
+            )
+        )
+        continue_after_key()
         config = run_model_wizard(DataExtractionConfig)
     else:
         config = load_or_init_config(config_path=config_path)

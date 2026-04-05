@@ -33,6 +33,7 @@ dependencies = [
     "destiny-sdk[labs]>=0.9.1",
     "diskcache>=5.6.3",
     "inquirerpy>=0.3.4",
+    "jinja2>=3.1.6",
     "litellm>=1.77.4",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
@@ -146,7 +147,7 @@ mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.setuptools]
-package-data = {"deet.prompts" = ["*.txt"]}
+package-data = {"deet.prompts" = ["*.txt"], "deet.ui.terminal.templates" = ["**/*.md"]}
 package-dir = {"" = "."}
 packages = {find = {exclude = ["test_env*", "tests*"]}}
 

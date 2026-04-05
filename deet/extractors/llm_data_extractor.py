@@ -40,7 +40,7 @@ from deet.settings import (
     LLMProvider,
     get_settings,
 )
-from deet.utils.cli_utils import optional_progress
+from deet.ui.terminal.render import optional_progress
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,

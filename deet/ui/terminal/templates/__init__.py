@@ -1,7 +1,5 @@
-from deet.ui.terminal.templates.project import (
-    configure_env_md,
-    project_init_md,
-    project_sucess_md,
-)
+from deet.ui.terminal.templates.help_text import APP_HELP
 
-__all__ = ["configure_env_md", "project_init_md", "project_sucess_md"]
+__all__ = [
+    "APP_HELP",
+]
