@@ -32,6 +32,7 @@ DEET_THEME = Theme(
 )
 
 console = Console(theme=DEET_THEME)
+error_console = Console(theme=DEET_THEME, stderr=True)
 
 
 def render_to_console(message: str, level: LogLevel) -> None:
@@ -41,7 +42,10 @@ def render_to_console(message: str, level: LogLevel) -> None:
         message,
         title=f"[{style}]{style.upper()}[/]",
     )
-    console.print(panel, style=style)
+    if level in (LogLevel.ERROR, LogLevel.CRITICAL):
+        error_console.print(panel, style=style)
+    else:
+        console.print(panel, style=style)
 
 
 @contextmanager
