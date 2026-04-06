@@ -9,6 +9,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Annotated
 
+import yaml
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -21,6 +22,7 @@ from pydantic import (
 
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.ui_schema import UI
+from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
     SupportedImportFormat,
@@ -190,6 +192,12 @@ class DeetProject(BaseModel):
         processed_data.export_linkage_mapper_csv(file_path=self.link_map_path)
         notify("Initialised reference-pdf link mapping file.", level=LogLevel.SUCCESS)
 
+        self.export_config_template()
+        notify("Exported default config template", level=LogLevel.SUCCESS)
+
+        self.experiments_dir.mkdir(parents=True, exist_ok=True)
+        self.linked_documents_path.mkdir(parents=True, exist_ok=True)
+
         self.dump_to_toml()
 
     def dump_to_toml(self, target: Path = PROJECT_FILE) -> None:
@@ -199,6 +207,14 @@ class DeetProject(BaseModel):
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
             toml.dump(data, f)
+
+    def export_config_template(self) -> None:
+        """Export a default config template."""
+        config = DataExtractionConfig()
+        self.config_path.write_text(
+            yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
+            encoding="utf-8",
+        )
 
     @classmethod
     def load(cls, filename: Path = PROJECT_FILE) -> "DeetProject":

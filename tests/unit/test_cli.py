@@ -6,10 +6,12 @@ import pytest
 import yaml  # type:ignore[import-untyped]
 from typer.testing import CliRunner
 
+from deet.data_models.project import DeetProject
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.logger import logger
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
+from deet.settings import DataExtractionSettings
 
 runner = CliRunner()
 
@@ -88,6 +90,25 @@ def test_cli_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "export-config-template" in result.output
+
+
+def test_init_project_initialises(tmp_path):
+    fake_project = MagicMock(spec=DeetProject)
+    fake_settings = MagicMock(spec=DataExtractionSettings)
+
+    with (
+        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.commands.project.continue_after_key"),
+        patch("deet.scripts.commands.project.console.clear"),
+    ):
+        mock_wizard.side_effect = [fake_project, fake_settings]
+
+        result = runner.invoke(app, ["project", "init"])
+
+    assert result.exit_code == 0
+    assert mock_wizard.call_count == 2
+    fake_project.setup.assert_called_once()
+    fake_settings.dump_to_env.assert_called_once()
 
 
 def test_export_default_config_writes_yaml(tmp_path):
