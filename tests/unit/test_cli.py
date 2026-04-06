@@ -89,10 +89,10 @@ def test_cli_help():
     """Make sure cli is callable."""
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "export-config-template" in result.output
+    assert "data extraction" in result.output
 
 
-def test_init_project_initialises(tmp_path):
+def test_init_project_initialises():
     fake_project = MagicMock(spec=DeetProject)
     fake_settings = MagicMock(spec=DataExtractionSettings)
 

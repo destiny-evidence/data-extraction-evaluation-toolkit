@@ -10,14 +10,13 @@ APP_HELP = flow("""
     Use the deet CLI to extract data from documents with LLMs,
     and evaluate extraction by comparing to human-annotated data.
 
-    To run any of the list of commands below, type `deet *command*`,
-    and type `deet *command* --help` to see more information about the command.
+    run `deet project --help` for information on commands to create and configure
+    a project.
 
-    For example, `deet extract-data --help`
-    will give you more information about how to use the extract-data command.
+    run `deet run --help` for information on commands to extract data
 
     Prefix any command with --verbose to see complete log output.
 
-    "Run `deet --install-completion` to enable your shell to autocomplete deet "
-    "commands."
+    Run `deet --install-completion` to enable your shell to autocomplete deet
+    commands.
 """)
