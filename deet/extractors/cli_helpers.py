@@ -14,6 +14,7 @@ from deet.data_models.project import ExperimentArtefacts
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.ui import fail_with_message, notify
+from deet.ui.terminal.wizards import run_model_wizard
 
 
 def load_config_from_context(
@@ -28,8 +29,7 @@ def load_config_from_context(
                 "from a project directory, or provide a config file."
             )
             fail_with_message(no_config)
-        config_path = ctx.obj.project.config_path
-
+        return run_model_wizard(DataExtractionConfig)
     try:
         return DataExtractionConfig.from_yaml(config_path)
     except FileNotFoundError:
