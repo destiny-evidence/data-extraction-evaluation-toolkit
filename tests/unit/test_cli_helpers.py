@@ -101,7 +101,9 @@ def test_load_or_init_config_file_doesnt_exist_reverts_project(config_path, conf
     mock_ctx = MagicMock()
     mock_ctx.obj.project = mock_project
 
-    loaded_config = load_config_from_context(mock_ctx, None)
+    with patch("deet.extractors.cli_helpers.run_model_wizard") as mock_wizard:
+        mock_wizard.return_value = config
+        loaded_config = load_config_from_context(mock_ctx, None)
 
     assert isinstance(loaded_config, DataExtractionConfig)
     assert loaded_config.model_dump() == config.model_dump()
