@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Annotated, Any, cast
 
 import litellm
+import yaml
 from loguru import logger
 from pydantic import (
     BaseModel,
@@ -176,6 +177,15 @@ class DataExtractionConfig(BaseModel):
             # Use shared fallback when model max tokens cannot be inferred.
             self.max_context_tokens = DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK
         return self
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> "DataExtractionConfig":
+        """Load config object from a yaml file."""
+        if not path.exists():
+            not_found = f"Config file not found at: {path}"
+            raise FileNotFoundError(not_found)
+
+        return cls.model_validate(yaml.safe_load(path.read_text()))
 
 
 class LLMDataExtractor:

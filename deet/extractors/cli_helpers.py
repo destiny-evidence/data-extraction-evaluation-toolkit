@@ -4,8 +4,10 @@ import datetime
 from collections.abc import Sequence
 from pathlib import Path
 
-import yaml  # type:ignore[import-untyped]
+import typer
+import yaml
 from loguru import logger
+from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.project import ExperimentArtefacts
@@ -14,17 +16,28 @@ from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.ui import fail_with_message, notify
 
 
-def load_or_init_config(config_path: Path) -> DataExtractionConfig:
-    """Load config, or initialise default config."""
-    if config_path.exists():
-        config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
-    else:
-        notify(
-            f"Config file: {config_path} does not exist."
-            " Initialising config with default settings.",
-        )
-        config = DataExtractionConfig()
-    return config
+def load_config_from_context(
+    ctx: typer.Context, config_path: Path | None
+) -> DataExtractionConfig:
+    """Load config from project context or path, or fail informatively."""
+    if config_path is None:
+        if not ctx.obj.project:
+            no_config = (
+                "This command is being run outside of a deet project, "
+                "and no config file has been provided. Either run this "
+                "from a project directory, or provide a config file."
+            )
+            fail_with_message(no_config)
+        config_path = ctx.obj.project.config_path
+
+    try:
+        return DataExtractionConfig.from_yaml(config_path)
+    except FileNotFoundError:
+        fail_with_message(f"Config file not found: {config_path}")
+    except yaml.YAMLError as e:
+        fail_with_message(f"YAML Syntax Error in {config_path}:\n{e}")
+    except ValidationError as e:
+        fail_with_message(f"Config validation error in {config_path}:\n{e}")
 
 
 def init_extraction_run(

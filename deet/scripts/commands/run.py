@@ -13,9 +13,6 @@ import typer
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.scripts.context import project_required
 from deet.ui import fail_with_message
-from deet.ui.terminal import console, render_template, run_model_wizard
-from deet.ui.terminal.components import info_panel
-from deet.ui.terminal.wizards import continue_after_key
 
 app = typer.Typer(help="Data extraction experiments")
 
@@ -74,29 +71,17 @@ def extract(
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import (
         init_extraction_run,
-        load_or_init_config,
+        load_config_from_context,
         prepare_documents,
     )
     from deet.extractors.llm_data_extractor import (
-        DataExtractionConfig,
         LLMDataExtractor,
     )
 
     deet_project: DeetProject = ctx.obj.project
     processed_annotation_data = deet_project.process_data()
 
-    if config_path is None:
-        console.clear()
-        console.print(
-            info_panel(
-                render_template("extraction/config_init"),
-                "Data extraction config wizard",
-            )
-        )
-        continue_after_key()
-        config = run_model_wizard(DataExtractionConfig)
-    else:
-        config = load_or_init_config(config_path=config_path)
+    config = load_config_from_context(ctx, config_path)
 
     experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
 

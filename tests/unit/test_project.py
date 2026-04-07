@@ -23,7 +23,7 @@ def valid_project_data(tmp_path, sample_eppi_data):
     }
 
 
-def test_deet_project_creates_artifacts(tmp_path, valid_project_data, monkeypatch):
+def test_deet_project_creates_artefacts(tmp_path, valid_project_data, monkeypatch):
     monkeypatch.chdir(tmp_path)
     project = DeetProject(**valid_project_data)
 
