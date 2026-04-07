@@ -104,7 +104,7 @@ def test_llm_config(
             help="A path to a config file containing options for data "
             "extraction config. Leave empty to test the project config."
         ),
-    ],
+    ] = None,
 ) -> None:
     """Test llm config."""
     from deet.data_models.base import Attribute, AttributeType

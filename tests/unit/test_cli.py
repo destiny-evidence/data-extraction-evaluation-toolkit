@@ -196,7 +196,7 @@ def test_init_project_overwrites_after_confirm():
 
     assert result.exit_code == 0
     assert mock_wizard.call_count == 2
-    fake_project.setup.assert_called_once()
+    new_project.setup.assert_called_once()
     fake_settings.dump_to_env.assert_called_once()
 
 
@@ -241,12 +241,12 @@ def test_extract_happy_path(tmp_path):
 
     with (
         patch("deet.data_models.project.DeetProject.load") as mock_loader,
-        patch("deet.scripts.commands.run.run_model_wizard") as mock_wizard,
+        patch("deet.extractors.cli_helpers.run_model_wizard") as mock_wizard,
         patch(
             "deet.extractors.llm_data_extractor.LLMDataExtractor"
         ) as mock_extractor_cls,
-        patch("deet.scripts.commands.run.continue_after_key"),
-        patch("deet.scripts.commands.run.console.clear"),
+        patch("deet.extractors.cli_helpers.continue_after_key"),
+        patch("deet.extractors.cli_helpers.console.clear"),
         patch("deet.extractors.cli_helpers.prepare_documents") as mock_prepare,
         patch(
             "deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator"
@@ -279,7 +279,7 @@ def test_test_llm_config():
     mock_cfg = MagicMock(spec=DataExtractionConfig)
 
     with (
-        patch("deet.scripts.commands.project.load_config_from_context") as mock_load,
+        patch("deet.extractors.cli_helpers.load_config_from_context") as mock_load,
         patch(
             "deet.extractors.llm_data_extractor.LLMDataExtractor"
         ) as mock_extractor_cls,
@@ -289,6 +289,6 @@ def test_test_llm_config():
         mock_extractor = mock_extractor_cls.return_value
         mock_extractor.extract_from_document.return_value = MagicMock(annotations=[1])
 
-        result = runner.invoke(app, ["run", "test-llm-config"])
+        result = runner.invoke(app, ["project", "test-llm-config"])
 
     assert result.exit_code == 0
