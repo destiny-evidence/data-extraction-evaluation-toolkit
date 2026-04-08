@@ -13,11 +13,13 @@ def test_echo_and_log(capsys):
     test_message = "Test message for echo and log"
 
     with patch("deet.utils.cli_utils.logger") as mock_logger:
+        mock_logger.bind.return_value = mock_logger
         echo_and_log(test_message)
 
-    # check stdout (typer echo/secho) contains the message
+    # check stdout (typer echo/secho) contains the message once
     captured = capsys.readouterr()
-    assert test_message in captured.out
+    occurences = captured.out.count(test_message)
+    assert occurences == 1
 
     # check logger.info was called with the message
     mock_logger.info.assert_called_once()

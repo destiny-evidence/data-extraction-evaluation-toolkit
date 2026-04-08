@@ -31,7 +31,7 @@ def echo_and_log(message: Any, **kwargs) -> None:  # noqa: ANN401
     NOTE: pass typer-style stuff via kwargs.
     """
     typer.secho(message, **kwargs)
-    logger.info(f"typer .secho: {message}")
+    logger.bind(is_echo=True).info(f"typer .secho: {message}")
 
 
 def fail_with_message(message: str) -> NoReturn:
