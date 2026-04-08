@@ -515,17 +515,22 @@ class CSVAnnotationConverter(AnnotationConverter):
             # --- Build Annotations ---
             annotations: list[GoldStandardAnnotation] = []
             for label, attr in attr_by_label.items():
-                raw_value = row.get(label)
                 python_type = attr.output_data_type.to_python_type()
 
-                try:
-                    converted_value = python_type(raw_value)
-                except (TypeError, ValueError) as e:
-                    msg = (
-                        f"Type conversion failed for row {row_idx}, "
-                        f"field '{label}': {e}"
-                    )
-                    raise ValueError(msg) from e
+                raw_value = row.get(label)
+                converted_value: Any = None
+
+                if raw_value is not None:
+                    raw_value = raw_value.strip()
+                    if raw_value != "":
+                        if python_type is bool:
+                            converted_value = raw_value.lower() in ["true", "t"]
+                        elif python_type is int:
+                            converted_value = int(raw_value)
+                        elif python_type is float:
+                            converted_value = float(raw_value)
+                        else:
+                            converted_value = raw_value
 
                 annotation = GoldStandardAnnotation(
                     attribute=attr,
