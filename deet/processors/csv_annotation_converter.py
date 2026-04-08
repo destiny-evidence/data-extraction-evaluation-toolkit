@@ -271,13 +271,17 @@ class CSVAnnotationConverter(AnnotationConverter):
             if column_name not in row:
                 continue  # or raise, depending on strictness
 
+            value = row[column_name].strip()
+            if value == "":
+                value = None
+
             parts = key.split(".")
             d = result
 
             for part in parts[:-1]:
                 d = d.setdefault(part, {})
 
-            d[parts[-1]] = row[column_name].strip()
+            d[parts[-1]] = value
 
         return result
 
