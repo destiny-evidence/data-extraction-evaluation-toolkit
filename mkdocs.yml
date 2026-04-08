@@ -35,12 +35,18 @@ theme:
 
 nav:
   - Overview: index.md
+  - Installation: installation.md
+  - CLI: cli.md
   - API reference: api.md
   - License: LICENSE.md
   - Contributing: CONTRIBUTING.md
 
 markdown_extensions:
   - pymdownx.tasklist
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -59,6 +65,9 @@ plugins:
           options:
             docstring_style: google
             show_submodules: true
+            extensions:
+              - griffe_pydantic:
+                schema: true
           paths: [.]
   - include-markdown:
       opening_tag: "{!"
