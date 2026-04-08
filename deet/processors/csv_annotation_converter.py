@@ -295,13 +295,20 @@ class CSVAnnotationConverter(AnnotationConverter):
             List of `Authorship` objects representing each author with their position.
 
         """
-        authorship = []
-        author_list = authors.split(";")
-        for i, author in enumerate(author_list):
+        # Split on semicolons, strip whitespace, and remove any empty entries
+        clean_authors = [
+            author.strip() for author in authors.split(";") if author.strip()
+        ]
+
+        authorship: list[Authorship] = []
+        if not clean_authors:
+            return authorship
+
+        for i, author in enumerate(clean_authors):
             position = AuthorPosition.MIDDLE
             if i == 0:
                 position = AuthorPosition.FIRST
-            if i == len(author_list) - 1:
+            if i == len(clean_authors) - 1:
                 position = AuthorPosition.LAST
             authorship.append(Authorship(display_name=author, position=position))
         return authorship
