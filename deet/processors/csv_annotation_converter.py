@@ -389,7 +389,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         reference names, and rows.
         """
         path = Path(file_path)
-        with path.open(newline="") as f:
+        with path.open(newline="", encoding="utf-8-sig") as f:
             csv_reader = csv.DictReader(f)
 
             # normalize headers BEFORE reading rows
