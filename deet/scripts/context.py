@@ -23,7 +23,12 @@ R = TypeVar("R")
 
 
 def project_required(f: Callable[P, R]) -> Callable[P, R]:
-    """Exit CLI command if project does not exist."""
+    """
+    Check typer context for existence of a project, and exit if no project exists.
+
+    This is used to decorate cli commands which we want to exit gracefully
+    when they are run outside of a project directory.
+    """
 
     @wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:

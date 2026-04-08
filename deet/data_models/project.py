@@ -126,7 +126,12 @@ class DeetProject(BaseModel):
     # Computed paths - file and folder structure within project dir
     @property
     def experiments_dir(self) -> Path:
-        """Return path to experiments directory."""
+        """
+        Return path to experiments directory.
+
+        Each time we run data extraction in this project, the results
+        of the experiment will be stored here.
+        """
         return self.root / "data-extraction-experiments"
 
     @property
@@ -163,6 +168,7 @@ class DeetProject(BaseModel):
     @field_validator("gold_standard_data_path", mode="after")
     @classmethod
     def _abs_and_check_suffix(cls, value: Path) -> Path:
+        """Return absolute path, and check if extension is supported."""
         abs_path = value.resolve()
         if abs_path.suffix not in SUPPORTED_EXTENSIONS:
             unsupported_ext = f"Unsupported extension, allowed: {SUPPORTED_EXTENSIONS}"
@@ -172,6 +178,7 @@ class DeetProject(BaseModel):
     @field_validator("pdf_dir", mode="after")
     @classmethod
     def _process_pdf_dir(cls, value: Path) -> Path | None:
+        """Parse empty string to None (not cwd), otherwise resolve path."""
         if value == "":
             return None
         return value.resolve()
