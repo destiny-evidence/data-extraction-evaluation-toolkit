@@ -3,11 +3,19 @@ Data models for DeetProject.
 Handles the one-time definition of configuration options.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from deet.data_models.processed_gold_standard_annotations import (
+        ProcessedAnnotationData,
+    )
+
 
 import yaml
 from pydantic import (
@@ -20,9 +28,7 @@ from pydantic import (
     field_validator,
 )
 
-from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.ui_schema import UI
-from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
     SupportedImportFormat,
@@ -30,7 +36,7 @@ from deet.processors.converter_register import (
 from deet.settings import LogLevel
 from deet.ui import notify
 
-PROJECT_FILE = Path("project.toml")
+PROJECT_FILE = Path("project.yaml")
 
 
 class EnvironmentFile(StrEnum):
@@ -205,18 +211,18 @@ class DeetProject(BaseModel):
         self.experiments_dir.mkdir(parents=True, exist_ok=True)
         self.linked_documents_path.mkdir(parents=True, exist_ok=True)
 
-        self.dump_to_toml()
+        self.dump_to_yaml()
 
-    def dump_to_toml(self, target: Path = PROJECT_FILE) -> None:
-        """Write a minimal ``project.toml`` file to save project options."""
-        import toml
-
+    def dump_to_yaml(self, target: Path = PROJECT_FILE) -> None:
+        """Write a minimal ``project.yaml`` file to save project options."""
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
-            toml.dump(data, f)
+            yaml.safe_dump(data, f)
 
     def export_config_template(self) -> None:
         """Export a default config template."""
+        from deet.extractors.llm_data_extractor import DataExtractionConfig
+
         config = DataExtractionConfig()
         self.config_path.write_text(
             yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
@@ -224,11 +230,9 @@ class DeetProject(BaseModel):
         )
 
     @classmethod
-    def load(cls, filename: Path = PROJECT_FILE) -> "DeetProject":
+    def load(cls, filename: Path = PROJECT_FILE) -> DeetProject:
         """Load a project from a toml file."""
-        import toml
-
-        data = toml.load(filename.open())
+        data = yaml.safe_load(filename.read_text())
         return cls.model_validate(data["project"])
 
     @classmethod
@@ -244,7 +248,7 @@ class DeetProject(BaseModel):
 
 @dataclass(frozen=True)
 class ExperimentArtefacts:
-    """Defines the structure of an data extraction experiment directory."""
+    """Defines the structure of a data extraction experiment directory."""
 
     base_dir: Path
     run_id: str

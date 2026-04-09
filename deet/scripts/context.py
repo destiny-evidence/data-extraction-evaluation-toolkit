@@ -1,13 +1,18 @@
 """decorators to handle typer context in commands."""
 
-from collections.abc import Callable
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import wraps
-from typing import ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, ParamSpec, TypeVar, cast
 
 import typer
 
-from deet.data_models.project import DeetProject
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from deet.data_models.project import DeetProject
+
 from deet.ui import fail_with_message
 
 

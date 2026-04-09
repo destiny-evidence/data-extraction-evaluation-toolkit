@@ -1,12 +1,15 @@
 """Sub-commands for project initialisation and configuration."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from deet.data_models.project import DeetProject
+
 
 import typer
 from InquirerPy import inquirer
 
-from deet.data_models.project import DeetProject
 from deet.scripts.context import project_required
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import fail_with_message, notify
@@ -24,6 +27,8 @@ app = typer.Typer(help="Project-related commands")
 @app.command()
 def init(ctx: typer.Context) -> None:
     """Initialise a new project."""
+    from deet.data_models.project import DeetProject
+
     existing_project: DeetProject = ctx.obj.project
     if existing_project is not None:
         notify(

@@ -6,9 +6,8 @@ import warnings
 
 import typer
 
-from deet.data_models.project import DeetProject
 from deet.logger import logger
-from deet.scripts.commands import project, run
+from deet.scripts.commands import project
 from deet.scripts.context import CLIState
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
@@ -17,7 +16,7 @@ from deet.ui.terminal.templates import APP_HELP
 app = typer.Typer(help=APP_HELP, add_completion=True, rich_markup_mode="rich")
 
 app.add_typer(project.app, name="project")
-app.add_typer(run.app, name="run")
+# app.add_typer(run.app, name="run")
 
 
 @app.callback(invoke_without_command=True)
@@ -27,6 +26,8 @@ def global_options(
     verbose: bool = typer.Option(default=False, help="Display verbose logs."),
 ) -> None:
     """Set global options for all deet commands."""
+    from deet.data_models.project import DeetProject
+
     log_level = "DEBUG" if verbose else "INFO"
     logger.add(
         typer.echo,
