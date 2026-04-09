@@ -28,7 +28,7 @@ You should therefore run deet from within a project directory.
 
 ??? "Navigation in the command line"
 
-    To navigate to another directory in the command line, use the `cd` command. `cd ..` will move up a level, cd `deet-project` will move into the `deet-project` folder, assuming it exists in the current directory. Type `ls` to see the files and folders in your current directory. `mkdir deet-project` will create a new directory called deet-project.
+    To navigate to another directory in the command line, use the `cd` command. `cd ..` will move up a level, `cd deet-project` will move into the `deet-project` folder, assuming it exists in the current directory. Type `ls` to see the files and folders in your current directory. `mkdir deet-project` will create a new directory called deet-project.
 
 ## Settings
 
