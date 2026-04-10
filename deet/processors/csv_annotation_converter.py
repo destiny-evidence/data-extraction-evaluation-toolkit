@@ -204,7 +204,11 @@ class CSVAnnotationConverter(AnnotationConverter):
 
         """
         n_rows = len(rows)
-        raw_column_types: defaultdict[str, list] = defaultdict(list)
+
+        # Collect observed value types per column (skipping missing values).
+        # Used as evidence for downstream column type inference.
+        # Example: column_type_observations = {age: [int, int], gender: [str, str]}
+        column_type_evidence: defaultdict[str, list] = defaultdict(list)
 
         if sample_size is None:
             sample_size = n_rows
@@ -212,16 +216,18 @@ class CSVAnnotationConverter(AnnotationConverter):
         for col_name in column_names:
             row_num = 0
 
-            while len(raw_column_types[col_name]) < sample_size and row_num < n_rows:
+            while (
+                len(column_type_evidence[col_name]) < sample_size and row_num < n_rows
+            ):
                 att_type = self._infer_type(rows[row_num][col_name])
 
                 if att_type is not None:
-                    raw_column_types[col_name].append(att_type)
+                    column_type_evidence[col_name].append(att_type)
 
                 row_num += 1
 
         resolved_column_types: dict[str, AttributeType] = {}
-        for col_name, col_types in raw_column_types.items():
+        for col_name, col_types in column_type_evidence.items():
             try:
                 resolved_column_types[col_name] = self._resolve_types(col_types)
             except ValueError as e:
@@ -231,7 +237,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         return resolved_column_types
 
     @staticmethod
-    def _build_reference_dict_from_row(
+    def _build_destiny_reference_dict_from_row(
         mapping: dict[str, str],
         row: dict[str, Any],
     ) -> dict[str, Any]:
@@ -239,7 +245,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         Build a nested dictionary of reference data from a CSV row.
 
         Maps flat CSV columns to the nested structure expected by
-        destiny_sdk.enhancements models, The resulting dictionary can be used to create
+        destiny_sdk.enhancements models, The resulting dictionary is used to create
         `EnhancementFileInput` and `ReferenceFileInput` objects.
 
         Args:
@@ -250,6 +256,42 @@ class CSVAnnotationConverter(AnnotationConverter):
         Returns:
             Nested dictionary representing the reference data. Example:
 
+        -----------------------------------------------
+        USER GUIDE
+        -----------
+        The `mapping` argument defines how CSV columns map to Destiny SDK fields.
+
+        Format:
+            mapping = {
+                "<destiny_field>": "<csv_column_name>",
+            }
+        Rules:
+            - Keys are dot-separated Destiny SDK field paths.
+            - Values are CSV column names.
+
+        SUPPORTED FIELDS
+        ----------------
+        - abstract
+        - authorship
+        - cited_by_count
+        - created_date
+        - updated_date
+        - publication_date
+        - publication_year
+        - publisher
+        - title
+        - pagination.volume
+        - pagination.issue
+        - pagination.first_page
+        - pagination.last_page
+        - publication_venue.display_name
+        - publication_venue.issn
+        - publication_venue.venue_type
+        - publication_venue.issn_l
+        - publication_venue.host_organization_name
+
+        -----------------------------------------------
+
         Example:
         mapping = {"publication_venue.display_name": "journal", "abstract": "abstract"}
         row = {"journal": "Nature Climate Change", "abstract": "ABCDEFXXXXXX"}
@@ -258,6 +300,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             "publication_venue": {"display_name": "Nature Climate Change"},
             "abstract": "ABCDEFXXXXXX"
             }
+
 
         """
         result: dict[str, Any] = {}
@@ -280,12 +323,12 @@ class CSVAnnotationConverter(AnnotationConverter):
 
         return result
 
-    @staticmethod
-    def _build_authorship_list(authors: str) -> list[Authorship]:
+    def _build_destiny_authorship_list(self, authors: str) -> list[Authorship]:
         """
         Build a list of a `Authorship` objects  (as defined in destiny_sdk.enhancements)
         from a string. The returned list is in the format expected by
         `BibliographicMetadataEnhancement` for authorship.
+        The default separator is a semicolon (;).
 
         Args:
             authors: A semicolon-separated string of author names. eg:("Alice; Bob; Mo")
@@ -316,7 +359,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         self,
         row: dict,
         mapping: dict[str, Any],
-        source: str = "DEET CSV converter",
+        source: str = "deet CSV converter",
     ) -> ReferenceFileInput:
         """
 
@@ -333,12 +376,12 @@ class CSVAnnotationConverter(AnnotationConverter):
             mapping: Dictionary mapping nested keys (dot-separated strings) to CSV
                  column names.
             source: Optional string indicating the source of the data; defaults to
-                "DEET CSV converter"
+                "deet CSV converter"
         Returns:
             ReferenceFileInput object containing all extracted enhancements
 
         """
-        reference_dict = self._build_reference_dict_from_row(mapping, row)
+        reference_dict = self._build_destiny_reference_dict_from_row(mapping, row)
 
         abstract = (
             AbstractContentEnhancement(
@@ -350,7 +393,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         )
 
         reference_dict["authorship"] = (
-            self._build_authorship_list(reference_dict["authorship"])
+            self._build_destiny_authorship_list(reference_dict["authorship"])
             if "authorship" in reference_dict
             and isinstance(reference_dict["authorship"], str)
             else None
