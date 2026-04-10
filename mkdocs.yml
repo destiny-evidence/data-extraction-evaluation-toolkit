@@ -41,7 +41,7 @@ nav:
     - setup/quickstart.md
   - Core concepts:
     - concepts/project.md
-  - CLI User Guide: 
+  - CLI User Guide:
     - cli/cli.md
   - Python Guide:
     - python/introduction.md
@@ -72,7 +72,7 @@ plugins:
   - ezglossary:
       list_definitions: true
       list_references: true
-      tooltip: full 
+      tooltip: full
   - mermaid2
   - mkdocstrings:
       default_handler: python
