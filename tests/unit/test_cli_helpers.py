@@ -239,7 +239,40 @@ def test_prepare_documents_failed_to_link(config, tmp_path, mock_documents):
         assert any(
             msg in mock_fail.call_args[0][0]
             for msg in (
+                "No link map supplied",
                 "no linked documents could be found",
                 "Linked document path does not exist",
             )
         )
+
+
+def test_prepare_documents_no_pdf(config, tmp_path, mock_documents):
+    """Test failure when no linked documents could be found or created."""
+    config.default_context_type = ContextType.FULL_DOCUMENT
+    linked_doc_path = tmp_path / "linked_documents"
+    # Don't create the directory
+    pdf_dir = None
+
+    with (
+        patch("deet.extractors.cli_helpers.notify"),
+        patch(
+            "deet.extractors.cli_helpers.DocumentReferenceLinker"
+        ) as mock_linker_class,
+        patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail,
+    ):
+        mock_linker = mock_linker_class.return_value
+        # Return empty list - no documents could be linked
+        mock_linker.link_many_references_parsed_documents.return_value = []
+        mock_fail.side_effect = SystemExit(1)
+
+        with pytest.raises(SystemExit):
+            prepare_documents(
+                documents=mock_documents,
+                config=config,
+                linked_document_path=linked_doc_path,
+                pdf_dir=pdf_dir,
+                link_map_path=None,
+            )
+
+        mock_fail.assert_called_once()
+        assert "no pdf dir supplied" in mock_fail.call_args[0][0]

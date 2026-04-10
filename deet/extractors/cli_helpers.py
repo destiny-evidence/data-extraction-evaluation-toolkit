@@ -87,7 +87,27 @@ def prepare_documents(
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
         return documents
     if config.default_context_type == ContextType.FULL_DOCUMENT:
-        if link_map_path is not None:
+        if linked_document_path.exists():
+            notify(f"Loading linked documents from {linked_document_path}")
+            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
+            if documents:
+                return documents
+
+            notify(f"Couldn't find linked documents in {linked_document_path}")
+        if pdf_dir is None:
+            no_linked_docs_no_pdf = (
+                "Full text extraction specified but"
+                " linked document path does not contain documents,"
+                " and no pdf dir supplied"
+            )
+            fail_with_message(no_linked_docs_no_pdf)
+
+        if link_map_path is None:
+            fail_with_message(
+                "No link map supplied"
+                f" and no linked documents in {linked_document_path}"
+            )
+        else:
             notify(f"Linking documents using link map: {link_map_path}")
             linker = DocumentReferenceLinker(
                 references=documents,
@@ -111,23 +131,7 @@ def prepare_documents(
                 fail_with_message(no_links)
 
             return documents
-        if linked_document_path.exists():
-            notify(f"Loading linked documents from {linked_document_path}")
-            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
-            if documents:
-                return documents
-            fail_with_message(
-                "Linked document path does not contain any linked documents."
-                " Please use a link map"
-                " to create linked documents "
-                "(`deet init-linkage-mapping-file`)"
-            )
-        else:
-            fail_with_message(
-                "Linked document path does not exist. Please use a link map"
-                " to create linked documents "
-                "(`deet init-linkage-mapping-file`)"
-            )
+
     else:
         message = f"context type {config.default_context_type} not supported"
         fail_with_message(message)
