@@ -506,6 +506,7 @@ class CSVAnnotationConverter(AnnotationConverter):
                     citation=row_reference,
                     document_id=row["document_id"],
                 )
+                document.init_document_identity()
             except KeyError as e:
                 msg = f"Missing required document field {e} in row {row_idx}"
                 raise KeyError(msg) from e
