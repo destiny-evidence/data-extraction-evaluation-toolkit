@@ -60,7 +60,8 @@ class CSVAnnotationConverter(AnnotationConverter):
         attribute_mapping_filename: str = DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
     ) -> None:
         """
-        Initialize the converter with configurable output paths.
+        Initialize the converter output configurations (base directory + filenames) to
+        save the multiple files created during csv processing.
 
         Args:
             base_output_dir: Base directory for saving processed files
@@ -70,6 +71,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             attribute_mapping_filename: Filename for attribute ID to label mapping
 
         """
+        # If no directory given, write everything relative to current working directory
         if base_output_dir is None:
             logger.debug(
                 "`base_output_dir` set to None; "
@@ -77,6 +79,10 @@ class CSVAnnotationConverter(AnnotationConverter):
             )
             base_output_dir = ""
         self.base_output_dir = Path(base_output_dir)
+
+        # Output registry:
+        # For each output type, provides the filename and how to serialize/validate it.
+        # Used when writing and reloading the results
 
         self.OUTFILE_LOADERS: dict[Outfiles, tuple[str, TypeAdapter]] = {
             Outfiles.ATTRIBUTES: (
