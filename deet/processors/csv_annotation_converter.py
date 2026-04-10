@@ -103,11 +103,6 @@ class CSVAnnotationConverter(AnnotationConverter):
         return ProcessedAnnotationData
 
     @staticmethod
-    def _normalize_text(value: str) -> str:
-        """Strip white space and lowercase text."""
-        return value.strip().lower()
-
-    @staticmethod
     def _find_duplicate_column_names(column_names: list[str]) -> list[dict]:
         """
         Find duplicate column names and return their positions.
@@ -394,7 +389,7 @@ class CSVAnnotationConverter(AnnotationConverter):
 
             # normalize headers BEFORE reading rows
             raw_headers = csv_reader.fieldnames or []
-            colnames: list[str] = [self._normalize_text(h) for h in raw_headers]
+            colnames: list[str] = [h.strip().lower() for h in raw_headers]
             csv_reader.fieldnames = colnames
 
             # validate duplicates
@@ -416,7 +411,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             else:
                 # normalize reference fields
                 reference_fields = {
-                    k: self._normalize_text(v) for k, v in reference_fields.items()
+                    k: v.strip().lower() for k, v in reference_fields.items()
                 }
 
                 unknown = set(reference_fields.values()) - set(colnames)
@@ -433,7 +428,7 @@ class CSVAnnotationConverter(AnnotationConverter):
                 ]
             else:
                 resolved_attribute_fields = [
-                    self._normalize_text(field) for field in attribute_fields
+                    field.strip().lower() for field in attribute_fields
                 ]
                 unknown_attributes = set(resolved_attribute_fields) - set(colnames)
                 if unknown_attributes:
