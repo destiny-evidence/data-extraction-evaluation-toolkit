@@ -1,13 +1,15 @@
 """
 Data models for DeetProject.
-Handles the one-time definition of configuration options.
+
+DeetProjects handle the one-time definition of configuration options,
+and create standardised directory structures to store resources like
+prompt csvs, link maps, experiment results.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
@@ -37,21 +39,6 @@ from deet.settings import LogLevel
 from deet.ui import notify
 
 PROJECT_FILE = Path("project.yaml")
-
-
-class EnvironmentFile(StrEnum):
-    """A choice of where to store settings."""
-
-    PROJECT = auto()
-    SYSTEM = auto()
-
-    def env_file(self) -> Path:
-        """Map option to env file."""
-        mapping = {
-            EnvironmentFile.PROJECT: Path(".env"),
-            EnvironmentFile.SYSTEM: Path.home() / ".deet" / ".env",
-        }
-        return mapping[self]
 
 
 class DeetProject(BaseModel):
@@ -94,17 +81,6 @@ class DeetProject(BaseModel):
             )
         ),
     ] = Field(..., description="Format of gold standard annotations")
-
-    environment_file: Annotated[
-        EnvironmentFile,
-        UI(
-            help=(
-                "Where to store your API keys."
-                " Select system if you want to re-use credentials across deet projects,"
-                " or Project if you wish to use specific credentials for this project"
-            )
-        ),
-    ] = Field(default=EnvironmentFile.SYSTEM, description="Environment file")
 
     pdf_dir: Annotated[
         DirectoryPath | None,
@@ -159,11 +135,6 @@ class DeetProject(BaseModel):
     def config_path(self) -> Path:
         """Return path to config file."""
         return self.root / "default_extraction_config.yaml"
-
-    @property
-    def env_path(self) -> Path:
-        """Return path to project .env file."""
-        return self.root / ".env"
 
     # Configuration and validation
     model_config = ConfigDict(

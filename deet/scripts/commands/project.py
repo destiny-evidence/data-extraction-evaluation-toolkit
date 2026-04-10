@@ -54,7 +54,7 @@ def init(ctx: typer.Context) -> None:
     console.print(info_panel(configure_env_md, ":key: Credential management"))
     continue_after_key()
     settings = run_model_wizard(DataExtractionSettings)
-    settings.dump_to_env(project.env_path)
+    settings.dump_to_env()
 
     console.clear()
     console.print(info_panel(render_template("project/success.md", project=project)))
