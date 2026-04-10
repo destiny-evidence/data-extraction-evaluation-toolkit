@@ -15,6 +15,7 @@ from destiny_sdk.enhancements import (
     Visibility,
 )
 from destiny_sdk.references import ReferenceFileInput
+from loguru import logger
 from pydantic import TypeAdapter
 
 from deet.data_models.base import (
@@ -30,7 +31,6 @@ from deet.data_models.documents import (
 from deet.data_models.processed_gold_standard_annotations import (
     ProcessedAnnotationData,
 )
-from deet.logger import logger
 from deet.processors.base_converter import (
     DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
     DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
