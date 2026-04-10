@@ -41,6 +41,31 @@ from deet.processors.base_converter import (
     Outfiles,
 )
 
+ALLOWED_REFERENCE_MAPPING_KEYS = {
+    "abstract",
+    "authorship",
+    "cited_by_count",
+    "created_date",
+    "updated_date",
+    "publication_date",
+    "publication_year",
+    "publisher",
+    "title",
+    "pagination.volume",
+    "pagination.issue",
+    "pagination.first_page",
+    "pagination.last_page",
+    "publication_venue.display_name",
+    "publication_venue.issn",
+    "publication_venue.venue_type",
+    "publication_venue.issn_l",
+    "publication_venue.host_organization_name",
+}
+
+
+class ColumnTypeInferenceError(Exception):
+    """Raised when column type inference fails due to incompatible types."""
+
 
 class CSVAnnotationConverter(AnnotationConverter):
     """
@@ -149,7 +174,9 @@ class CSVAnnotationConverter(AnnotationConverter):
         except ValueError:
             return str
 
-    # TODO: need to add list and dictionary handling
+    # TODO: Extend support for list and dict AttributeType values.
+    # Discussed use case: 'tags' associated with a document ([USA, Germnay, India])
+
     @staticmethod
     def _resolve_types(types: list) -> AttributeType:
         """
@@ -173,8 +200,9 @@ class CSVAnnotationConverter(AnnotationConverter):
             return AttributeType.INTEGER
         if unique.issubset({float, int}) and bool not in unique:
             return AttributeType.FLOAT
-        msg = "Multiple incompatible types found"
-        raise ValueError(msg)
+
+        msg = f"Multiple incompatible types found: {unique}"
+        raise ColumnTypeInferenceError(msg)
 
     def _infer_column_types(
         self,
@@ -234,11 +262,7 @@ class CSVAnnotationConverter(AnnotationConverter):
 
         resolved_column_types: dict[str, AttributeType] = {}
         for col_name, col_types in column_type_evidence.items():
-            try:
-                resolved_column_types[col_name] = self._resolve_types(col_types)
-            except ValueError as e:
-                msg = f"Error inferring type for field '{col_name}': {e}"
-                raise ValueError(msg) from e
+            resolved_column_types[col_name] = self._resolve_types(col_types)
 
         return resolved_column_types
 
@@ -312,9 +336,6 @@ class CSVAnnotationConverter(AnnotationConverter):
         result: dict[str, Any] = {}
 
         for key, column_name in mapping.items():
-            if column_name not in row:
-                continue  # or raise, depending on strictness
-
             value = row[column_name].strip()
             if value == "":
                 value = None
@@ -329,12 +350,12 @@ class CSVAnnotationConverter(AnnotationConverter):
 
         return result
 
+    # TODO: Allow users to provide seperator
     def _build_destiny_authorship_list(self, authors: str) -> list[Authorship]:
         """
         Build a list of a `Authorship` objects  (as defined in destiny_sdk.enhancements)
         from a string. The returned list is in the format expected by
         `BibliographicMetadataEnhancement` for authorship.
-        The default separator is a semicolon (;).
 
         Args:
             authors: A semicolon-separated string of author names. eg:("Alice; Bob; Mo")
@@ -458,6 +479,11 @@ class CSVAnnotationConverter(AnnotationConverter):
                 logger.info("No reference fields provided")
                 reference_fields = {}
             else:
+                invalid_keys = set(reference_fields) - ALLOWED_REFERENCE_MAPPING_KEYS
+                if invalid_keys:
+                    msg = f"Invalid mapping keys: {invalid_keys}"
+                    raise ValueError(msg)
+
                 # normalize reference fields
                 reference_fields = {
                     k: v.strip().lower() for k, v in reference_fields.items()
@@ -534,9 +560,6 @@ class CSVAnnotationConverter(AnnotationConverter):
             A tuple containing: Document and List[GoldStandardAnnotatedDocument]
 
         """
-        attr_by_label = {a.attribute_label: a for a in attributes}
-
-        # ---  ---
         annotated_documents: list[GoldStandardAnnotatedDocument] = []
         documents: list[Document] = []
 
@@ -558,6 +581,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             documents.append(document)
 
             # --- Build Annotations ---
+            attr_by_label = {a.attribute_label: a for a in attributes}
             annotations: list[GoldStandardAnnotation] = []
             for label, attr in attr_by_label.items():
                 python_type = attr.output_data_type.to_python_type()
