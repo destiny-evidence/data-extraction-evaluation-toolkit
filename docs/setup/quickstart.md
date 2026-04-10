@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD033 -->
+
 # deet tutorial
 
 This guide will help you to run first data extraction experiments using either the cli or python
@@ -5,19 +7,19 @@ This guide will help you to run first data extraction experiments using either t
 ## Setting up a project
 
 A `DeetProject` is a workspace for a data extraction task for a specific dataset.
-Each project should have its own directory on your machine. 
+Each project should have its own directory on your machine.
 This is where we will store configuration options and the results of your data extraction experiments.
 
 ### Initialising
 
 <div class="grid cards" markdown>
 
--   **CLI**
+- **CLI**
 
     ---
 
     To set up a project using the CLI, run `deet project init` from the directory
-    where you would like to store your project. 
+    where you would like to store your project.
     This will interactively collect the information required to set your project up,
     and also prompt you to enter credentials for making API calls to LLMs.
 
@@ -30,11 +32,11 @@ This is where we will store configuration options and the results of your data e
     !!! example "Result (Terminal)"
         ![Type: GIF of CLI Wizard](../assets/images/project_init.gif)
 
--   **Python**
+- **Python**
 
     ---
 
-    To set up a project in python, simply instantiate a DeetProject object, 
+    To set up a project in python, simply instantiate a DeetProject object,
     and then call `DeetProject.setup()`
 
     ```python
@@ -65,7 +67,7 @@ After you have edited this file, you can link the documents
 
 <div class="grid cards" markdown>
 
--   **CLI**
+- **CLI**
 
     ---
 
@@ -75,7 +77,7 @@ After you have edited this file, you can link the documents
     deet project link
     ```
 
--   **Python**
+- **Python**
 
     ---
 
@@ -101,9 +103,56 @@ After you have edited this file, you can link the documents
 
 ### Writing and editing prompts
 
-Setting up a project creates a file called `prompts/prompt_definitions.csv` with a row for each of the attributes you can extract from your data. Edit this file, creating a prompt in the `prompt` column. Leave the `prompt` column blank for any attribute you do not wish to extract. You can also edit the `output_data_type` column (see [deet.data_models.base.AttributeType](../reference/api.md#deet.data_models.base.AttributeType)) if the automatically parsed data type is incorrect.
+Setting up a project creates a file called `prompts/prompt_definitions.csv` with a row for each of the attributes you can extract from your data.
+Edit this file, creating a prompt in the `prompt` column.
+Leave the `prompt` column blank for any attribute you do not wish to extract.
+You can also edit the `output_data_type` column (see [deet.data_models.base.AttributeType](../reference/api.md#deet.data_models.base.AttributeType)) if the automatically parsed data type is incorrect.
 
 {{ read_csv('examples/quickstart/prompts/prompt_definitions.csv') }}
 
-
 ### Running an extraction experiment
+
+Now that you've defined your prompts, you are ready to extract data from your documents
+
+<div class="grid cards" markdown>
+
+- **CLI**
+
+    ---
+
+    In the CLI, you can do this by running
+
+    ```sh
+    deet run extract
+    ```
+
+- **Python**
+
+    ---
+
+    To do this in python, use the LLMDataExtractor.
+    You can use a DataExtractionConfig object to set configuration options
+
+    ```python
+    from deet.extractors.llm_data_extractor import LLMDataExtractor, DataExtractionConfig
+    from deet.data_models.enums import CustomPromptPopulationMethod
+    from deet.extractors.cli_helpers import (
+        init_extraction_run,
+        load_config_from_context,
+        prepare_documents,
+    )
+
+    config = DataExtractionConfig(
+        # configure options here, or leave blank to use defaults
+    )
+
+    processed_annotation_data = project.process_data()
+
+    # Populate your custom prompts
+    processed_annotation_data.populate_custom_prompts(
+        method=CustomPromptPopulationMethod.FILE,
+        filepath=project.prompt_csv_path
+    )
+    ```
+
+</div>
