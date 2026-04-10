@@ -19,12 +19,12 @@ from deet.ui.terminal.components import info_panel
 from deet.ui.terminal.wizards import continue_after_key, run_model_wizard
 
 
-def load_config_from_context(
-    ctx: typer.Context, config_path: Path | None
+def load_config_from_typer_context(
+    typer_context: typer.Context, config_path: Path | None
 ) -> DataExtractionConfig:
     """Load config from project context or path, or fail informatively."""
     if config_path is None:
-        if not ctx.obj.project:
+        if not typer_context.obj.project:
             no_config = (
                 "This command is being run outside of a deet project, "
                 "and no config file has been provided. Either run this "

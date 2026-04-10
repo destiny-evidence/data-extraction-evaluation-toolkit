@@ -18,7 +18,7 @@ from deet.ui import fail_with_message
 
 @dataclass
 class CLIState:
-    """Structured data store for typer.ctx."""
+    """Structured data store for typer context."""
 
     project: DeetProject | None = None
 
@@ -37,11 +37,11 @@ def project_required(f: Callable[P, R]) -> Callable[P, R]:
 
     @wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        raw_ctx = kwargs.get("ctx")
+        raw_typer_context = kwargs.get("typer_context")
 
-        ctx = cast(typer.Context | None, raw_ctx)
+        typer_context = cast(typer.Context | None, raw_typer_context)
 
-        if not ctx or not ctx.obj or not ctx.obj.project:
+        if not typer_context or not typer_context.obj or not typer_context.obj.project:
             no_project = (
                 "This command must be run from a directory that contains a project"
                 " create one by running `deet project init`"

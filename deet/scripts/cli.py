@@ -8,7 +8,7 @@ import typer
 
 from deet.logger import logger
 from deet.scripts.commands import project, run
-from deet.scripts.context import CLIState
+from deet.scripts.typer_context import CLIState
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
 from deet.ui.terminal.templates import APP_HELP
@@ -21,7 +21,7 @@ app.add_typer(run.app, name="run")
 
 @app.callback(invoke_without_command=True)
 def global_options(
-    ctx: typer.Context,
+    typer_context: typer.Context,
     *,
     verbose: bool = typer.Option(default=False, help="Display verbose logs."),
 ) -> None:
@@ -43,9 +43,9 @@ def global_options(
     with contextlib.suppress(FileNotFoundError):
         cli_state.project = DeetProject.load()
 
-    ctx.obj = cli_state
+    typer_context.obj = cli_state
 
-    if ctx.invoked_subcommand is None:
+    if typer_context.invoked_subcommand is None:
         md_text = render_template("welcome", project=cli_state.project)
         console.clear()
         console.print(info_panel(md_text))

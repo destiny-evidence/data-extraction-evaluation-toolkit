@@ -1,3 +1,4 @@
+# ruff: noqa: PLC0415
 """Sub-commands for project initialisation and configuration."""
 
 from pathlib import Path
@@ -10,7 +11,7 @@ if TYPE_CHECKING:
 import typer
 from InquirerPy import inquirer
 
-from deet.scripts.context import project_required
+from deet.scripts.typer_context import project_required
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import fail_with_message, notify
 from deet.ui.terminal import (
@@ -25,11 +26,11 @@ app = typer.Typer(help="Project-related commands")
 
 
 @app.command()
-def init(ctx: typer.Context) -> None:
+def init(typer_context: typer.Context) -> None:
     """Initialise a new project."""
     from deet.data_models.project import DeetProject
 
-    existing_project: DeetProject = ctx.obj.project
+    existing_project: DeetProject = typer_context.obj.project
     if existing_project is not None:
         notify(
             (
@@ -62,7 +63,7 @@ def init(ctx: typer.Context) -> None:
 
 @app.command()
 @project_required
-def link(ctx: typer.Context) -> None:
+def link(typer_context: typer.Context) -> None:
     """
     Link documents to their fulltexts.
 
@@ -75,7 +76,7 @@ def link(ctx: typer.Context) -> None:
     """
     from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 
-    deet_project: DeetProject = ctx.obj.project
+    deet_project: DeetProject = typer_context.obj.project
     processed_annotation_data = deet_project.process_data()
 
     linker = DocumentReferenceLinker(
@@ -102,7 +103,7 @@ def link(ctx: typer.Context) -> None:
 
 @app.command()
 def test_llm_config(
-    ctx: typer.Context,
+    typer_context: typer.Context,
     config_path: Annotated[
         Path | None,
         typer.Option(
@@ -114,11 +115,11 @@ def test_llm_config(
     """Test llm config."""
     from deet.data_models.base import Attribute, AttributeType
     from deet.extractors.cli_helpers import (
-        load_config_from_context,
+        load_config_from_typer_context,
     )
     from deet.extractors.llm_data_extractor import LLMDataExtractor
 
-    config = load_config_from_context(ctx, config_path)
+    config = load_config_from_typer_context(typer_context, config_path)
     data_extractor = LLMDataExtractor(config=config)
     attr = Attribute(
         output_data_type=AttributeType.BOOL,

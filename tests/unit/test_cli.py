@@ -11,7 +11,7 @@ from deet.data_models.project import DeetProject
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
-from deet.scripts.context import CLIState, project_required
+from deet.scripts.typer_context import CLIState, project_required
 from deet.settings import DataExtractionSettings
 
 runner = CliRunner()
@@ -98,7 +98,7 @@ app_mock = typer.Typer()
 
 @app_mock.command()
 @project_required
-def command_with_project_required(ctx: typer.Context):
+def command_with_project_required(typer_context: typer.Context):
     typer.echo("This command works")
 
 
