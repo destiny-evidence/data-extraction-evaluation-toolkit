@@ -11,7 +11,7 @@ from deet.data_models.project import DeetProject
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
-from deet.scripts.context import CLIState, project_required
+from deet.scripts.typer_context import CLIState, project_required
 from deet.settings import DataExtractionSettings
 
 runner = CliRunner()
@@ -98,7 +98,7 @@ app_mock = typer.Typer()
 
 @app_mock.command()
 @project_required
-def command_with_project_required(ctx: typer.Context):
+def command_with_project_required(typer_context: typer.Context):
     typer.echo("This command works")
 
 
@@ -265,7 +265,7 @@ def test_extract_happy_path(tmp_path):
 
         mock_evaluator = mock_evaluator_cls.return_value
 
-        result = runner.invoke(app, ["run", "extract"], obj=state)
+        result = runner.invoke(app, ["experiments", "extract"], obj=state)
 
     assert result.exit_code == 0
     mock_extractor.extract_from_documents.assert_called_once()
@@ -279,7 +279,9 @@ def test_test_llm_config():
     mock_cfg = MagicMock(spec=DataExtractionConfig)
 
     with (
-        patch("deet.extractors.cli_helpers.load_config_from_context") as mock_load,
+        patch(
+            "deet.extractors.cli_helpers.load_config_from_typer_context"
+        ) as mock_load,
         patch(
             "deet.extractors.llm_data_extractor.LLMDataExtractor"
         ) as mock_extractor_cls,
@@ -292,3 +294,20 @@ def test_test_llm_config():
         result = runner.invoke(app, ["project", "test-llm-config"])
 
     assert result.exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "extract-data",
+        "export-config-template",
+        "init-linkage-mapping-file",
+        "link-documents-fulltexts",
+        "init-prompt-csv",
+        "test-llm-config",
+    ],
+)
+def test_deprecated_commands_return_deprecation_warning(command):
+    result = runner.invoke(app, [command])
+    assert "deprecated" in result.stdout.lower()
+    assert command in result.stdout.lower()

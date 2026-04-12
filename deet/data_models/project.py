@@ -1,13 +1,23 @@
 """
 Data models for DeetProject.
-Handles the one-time definition of configuration options.
+
+DeetProjects handle the one-time definition of configuration options,
+and create standardised directory structures to store resources like
+prompt csvs, link maps, experiment results.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum, auto
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from deet.data_models.processed_gold_standard_annotations import (
+        ProcessedAnnotationData,
+    )
+
 
 import yaml
 from pydantic import (
@@ -20,9 +30,7 @@ from pydantic import (
     field_validator,
 )
 
-from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.ui_schema import UI
-from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
     SupportedImportFormat,
@@ -30,22 +38,7 @@ from deet.processors.converter_register import (
 from deet.settings import LogLevel
 from deet.ui import notify
 
-PROJECT_FILE = Path("project.toml")
-
-
-class EnvironmentFile(StrEnum):
-    """A choice of where to store settings."""
-
-    PROJECT = auto()
-    SYSTEM = auto()
-
-    def env_file(self) -> Path:
-        """Map option to env file."""
-        mapping = {
-            EnvironmentFile.PROJECT: Path(".env"),
-            EnvironmentFile.SYSTEM: Path.home() / ".deet" / ".env",
-        }
-        return mapping[self]
+PROJECT_FILE = Path("project.yaml")
 
 
 class DeetProject(BaseModel):
@@ -89,17 +82,6 @@ class DeetProject(BaseModel):
         ),
     ] = Field(..., description="Format of gold standard annotations")
 
-    environment_file: Annotated[
-        EnvironmentFile,
-        UI(
-            help=(
-                "Where to store your API keys."
-                " Select system if you want to re-use credentials across deet projects,"
-                " or Project if you wish to use specific credentials for this project"
-            )
-        ),
-    ] = Field(default=EnvironmentFile.SYSTEM, description="Environment file")
-
     pdf_dir: Annotated[
         DirectoryPath | None,
         UI(
@@ -126,7 +108,12 @@ class DeetProject(BaseModel):
     # Computed paths - file and folder structure within project dir
     @property
     def experiments_dir(self) -> Path:
-        """Return path to experiments directory."""
+        """
+        Return path to experiments directory.
+
+        Each time we run data extraction in this project, the results
+        of the experiment will be stored here.
+        """
         return self.root / "data-extraction-experiments"
 
     @property
@@ -149,11 +136,6 @@ class DeetProject(BaseModel):
         """Return path to config file."""
         return self.root / "default_extraction_config.yaml"
 
-    @property
-    def env_path(self) -> Path:
-        """Return path to project .env file."""
-        return self.root / ".env"
-
     # Configuration and validation
     model_config = ConfigDict(
         json_encoders={Path: str},
@@ -163,6 +145,7 @@ class DeetProject(BaseModel):
     @field_validator("gold_standard_data_path", mode="after")
     @classmethod
     def _abs_and_check_suffix(cls, value: Path) -> Path:
+        """Return absolute path, and check if extension is supported."""
         abs_path = value.resolve()
         if abs_path.suffix not in SUPPORTED_EXTENSIONS:
             unsupported_ext = f"Unsupported extension, allowed: {SUPPORTED_EXTENSIONS}"
@@ -172,6 +155,7 @@ class DeetProject(BaseModel):
     @field_validator("pdf_dir", mode="after")
     @classmethod
     def _process_pdf_dir(cls, value: Path) -> Path | None:
+        """Parse empty string to None (not cwd), otherwise resolve path."""
         if value == "":
             return None
         return value.resolve()
@@ -198,18 +182,18 @@ class DeetProject(BaseModel):
         self.experiments_dir.mkdir(parents=True, exist_ok=True)
         self.linked_documents_path.mkdir(parents=True, exist_ok=True)
 
-        self.dump_to_toml()
+        self.dump_to_yaml()
 
-    def dump_to_toml(self, target: Path = PROJECT_FILE) -> None:
-        """Write a minimal ``project.toml`` file to save project options."""
-        import toml
-
+    def dump_to_yaml(self, target: Path = PROJECT_FILE) -> None:
+        """Write a minimal ``project.yaml`` file to save project options."""
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
-            toml.dump(data, f)
+            yaml.safe_dump(data, f)
 
     def export_config_template(self) -> None:
         """Export a default config template."""
+        from deet.extractors.llm_data_extractor import DataExtractionConfig
+
         config = DataExtractionConfig()
         self.config_path.write_text(
             yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
@@ -217,11 +201,9 @@ class DeetProject(BaseModel):
         )
 
     @classmethod
-    def load(cls, filename: Path = PROJECT_FILE) -> "DeetProject":
+    def load(cls, filename: Path = PROJECT_FILE) -> DeetProject:
         """Load a project from a toml file."""
-        import toml
-
-        data = toml.load(filename.open())
+        data = yaml.safe_load(filename.read_text())
         return cls.model_validate(data["project"])
 
     @classmethod
@@ -237,7 +219,7 @@ class DeetProject(BaseModel):
 
 @dataclass(frozen=True)
 class ExperimentArtefacts:
-    """Defines the structure of an data extraction experiment directory."""
+    """Defines the structure of a data extraction experiment directory."""
 
     base_dir: Path
     run_id: str

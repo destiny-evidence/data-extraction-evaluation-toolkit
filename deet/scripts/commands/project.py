@@ -1,13 +1,17 @@
+# ruff: noqa: PLC0415
 """Sub-commands for project initialisation and configuration."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from deet.data_models.project import DeetProject
+
 
 import typer
 from InquirerPy import inquirer
 
-from deet.data_models.project import DeetProject
-from deet.scripts.context import project_required
+from deet.scripts.typer_context import project_required
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import fail_with_message, notify
 from deet.ui.terminal import (
@@ -18,13 +22,15 @@ from deet.ui.terminal import (
 )
 from deet.ui.terminal.components import info_panel
 
-app = typer.Typer(help="Project-related commands")
+app = typer.Typer(help="Commands to create and configure deet projects.")
 
 
 @app.command()
-def init(ctx: typer.Context) -> None:
+def init(typer_context: typer.Context) -> None:
     """Initialise a new project."""
-    existing_project: DeetProject = ctx.obj.project
+    from deet.data_models.project import DeetProject
+
+    existing_project: DeetProject = typer_context.obj.project
     if existing_project is not None:
         notify(
             (
@@ -49,7 +55,7 @@ def init(ctx: typer.Context) -> None:
     console.print(info_panel(configure_env_md, ":key: Credential management"))
     continue_after_key()
     settings = run_model_wizard(DataExtractionSettings)
-    settings.dump_to_env(project.env_path)
+    settings.dump_to_env()
 
     console.clear()
     console.print(info_panel(render_template("project/success.md", project=project)))
@@ -57,7 +63,65 @@ def init(ctx: typer.Context) -> None:
 
 @app.command()
 @project_required
-def link(ctx: typer.Context) -> None:
+def regenerate_link_map(typer_context: typer.Context) -> None:
+    """
+    Regenerate a "link map" from a project.
+
+    A link map is created on project.setup(); this re-creates it,
+    and allows re-creating it with different configuration options.
+    """
+    if not inquirer.confirm(
+        "Overwrite existing link map? Make sure you have saved your work."
+    ).execute():
+        fail_with_message("Exiting..")
+    deet_project: DeetProject = typer_context.obj.project
+    processed_annotation_data = deet_project.process_data()
+
+    processed_annotation_data.export_linkage_mapper_csv(
+        file_path=deet_project.link_map_path
+    )
+
+
+@app.command()
+@project_required
+def regenerate_prompt_csv(typer_context: typer.Context) -> None:
+    """
+    Regenerate a prompt csv from a project.
+
+    A prompt csv is created on project.setup(); this re-creates it.
+    """
+    if not inquirer.confirm(
+        "Overwrite existing prompt csv? Make sure you have saved your work."
+    ).execute():
+        fail_with_message("Exiting..")
+    deet_project: DeetProject = typer_context.obj.project
+    processed_annotation_data = deet_project.process_data()
+
+    processed_annotation_data.export_attributes_csv_file(
+        filepath=deet_project.prompt_csv_path
+    )
+
+
+@app.command()
+@project_required
+def regenerate_config_template(typer_context: typer.Context) -> None:
+    """
+    Regenerate config template from a project.
+
+    A config template with defaults for each option is created on project.setup();
+    this re-creates it.
+    """
+    if not inquirer.confirm(
+        "Overwrite existing config template? Make sure you have saved your work."
+    ).execute():
+        fail_with_message("Exiting..")
+    deet_project: DeetProject = typer_context.obj.project
+    deet_project.export_config_template()
+
+
+@app.command()
+@project_required
+def link(typer_context: typer.Context) -> None:
     """
     Link documents to their fulltexts.
 
@@ -70,7 +134,7 @@ def link(ctx: typer.Context) -> None:
     """
     from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 
-    deet_project: DeetProject = ctx.obj.project
+    deet_project: DeetProject = typer_context.obj.project
     processed_annotation_data = deet_project.process_data()
 
     linker = DocumentReferenceLinker(
@@ -97,7 +161,7 @@ def link(ctx: typer.Context) -> None:
 
 @app.command()
 def test_llm_config(
-    ctx: typer.Context,
+    typer_context: typer.Context,
     config_path: Annotated[
         Path | None,
         typer.Option(
@@ -109,11 +173,11 @@ def test_llm_config(
     """Test llm config."""
     from deet.data_models.base import Attribute, AttributeType
     from deet.extractors.cli_helpers import (
-        load_config_from_context,
+        load_config_from_typer_context,
     )
     from deet.extractors.llm_data_extractor import LLMDataExtractor
 
-    config = load_config_from_context(ctx, config_path)
+    config = load_config_from_typer_context(typer_context, config_path)
     data_extractor = LLMDataExtractor(config=config)
     attr = Attribute(
         output_data_type=AttributeType.BOOL,

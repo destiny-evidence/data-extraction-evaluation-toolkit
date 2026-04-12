@@ -57,7 +57,7 @@ class DataExtractionSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=[".env", Path.home() / ".deet" / ".env"],
+        env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -76,13 +76,15 @@ class DataExtractionSettings(BaseSettings):
     )
 
     # Provider credentials / settings (secrets redacted)
-    azure_api_key: Annotated[SecretStr | None, UI()] = Field(
+    azure_api_key: Annotated[
+        SecretStr | None, UI(help="Press enter to leave this unchanged")
+    ] = Field(
         default=None,
         description="Azure OpenAI API key if using Azure provider.",
     )
-    azure_api_base: Annotated[SecretStr | None, UI()] = Field(
-        default=None, description="Base URL for azure openAI."
-    )
+    azure_api_base: Annotated[
+        SecretStr | None, UI(help="Press enter to leave this unchanged")
+    ] = Field(default=None, description="Base URL for azure openAI.")
 
     # disk cache folder
     base_disk_cache_dir: Path = Field(
@@ -91,7 +93,7 @@ class DataExtractionSettings(BaseSettings):
         json_schema_extra={"skip_prompt": True},
     )
 
-    def dump_to_env(self, target_path: Path) -> None:
+    def dump_to_env(self, target_path: Path = Path(".env")) -> None:
         """Serialise settings object to a .env file."""
         target_path.parent.mkdir(parents=True, exist_ok=True)
 

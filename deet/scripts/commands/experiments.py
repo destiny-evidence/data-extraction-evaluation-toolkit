@@ -11,16 +11,21 @@ if TYPE_CHECKING:
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
-from deet.scripts.context import project_required
+from deet.scripts.typer_context import project_required
 from deet.ui import fail_with_message
 
-app = typer.Typer(help="Data extraction experiments")
+app = typer.Typer(
+    help=(
+        "Commands to create and evaluate data extraction "
+        "experiments within your project."
+    )
+)
 
 
 @app.command()
 @project_required
 def extract(
-    ctx: typer.Context,
+    typer_context: typer.Context,
     config_path: Annotated[
         Path | None,
         typer.Option(
@@ -71,17 +76,17 @@ def extract(
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import (
         init_extraction_run,
-        load_config_from_context,
+        load_config_from_typer_context,
         prepare_documents,
     )
     from deet.extractors.llm_data_extractor import (
         LLMDataExtractor,
     )
 
-    deet_project: DeetProject = ctx.obj.project
+    deet_project: DeetProject = typer_context.obj.project
     processed_annotation_data = deet_project.process_data()
 
-    config = load_config_from_context(ctx, config_path)
+    config = load_config_from_typer_context(typer_context, config_path)
 
     experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
 
