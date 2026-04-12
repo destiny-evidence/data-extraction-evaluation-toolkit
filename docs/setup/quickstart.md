@@ -32,6 +32,12 @@ This is where we will store configuration options and the results of your data e
     !!! example "Result (Terminal)"
         ![Type: GIF of CLI Wizard](../assets/images/project_init.gif)
 
+    ??? note "Non-interactive project creation"
+        If you wish to create a project without the interactive wizard, you can enter
+        project data as command line arguments. Run `deet project init --help` for 
+        more details. If you do this, you will need to create a `.env` file yourself
+        to store API credentials (see [settings](../reference/api.md#deet.settings))
+
 - **Python**
 
     ---
@@ -54,6 +60,16 @@ This is where we will store configuration options and the results of your data e
     ```
 
     You should create a `.env` file yourself to store necessary API keys (see [settings](../reference/api.md#deet.settings))
+
+    ??? note "Importing CLI commands"
+        All CLI commands are defined as python functions. This means that any CLI
+        command can be run directly in python.
+        ```python
+        from deet.scripts.commands.project import init
+        init()
+        ```
+        This is often the simplest way to use `deet` in python. However, the following
+        examples show how commands can be run using the underlying library
 
 </div>
 
@@ -85,6 +101,9 @@ After you have edited this file, you can link the documents
 
     ```python
     from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
+    from deet.data_models.project import DeetProject
+
+    project = DeetProject.load()
 
     processed_annotation_data = project.process_data()
 
@@ -112,7 +131,7 @@ You can also edit the `output_data_type` column (see [deet.data_models.base.Attr
 
 ### Running an extraction experiment
 
-Now that you've defined your prompts, you are ready to extract data from your documents
+Now that you've defined your prompts, you are ready to extract data from your documents.
 
 <div class="grid cards" markdown>
 
@@ -123,8 +142,18 @@ Now that you've defined your prompts, you are ready to extract data from your do
     In the CLI, you can do this by running
 
     ```sh
-    deet run extract
+    deet experiments extract
     ```
+
+    This will take you through an interactive wizard where you can select configuration
+    options for your project.
+
+    If you wish to skip the interactive wizard, simply pass a path to a configuration file
+    to the `--config-path` argument.
+
+    Running `deet experiments extract` will create a folder in your project's 
+    `data-extraction-experiments` directory, run the data extraction pipeline,
+    and save the results of that experiment to the newly created folder.
 
 - **Python**
 
@@ -141,10 +170,15 @@ Now that you've defined your prompts, you are ready to extract data from your do
         load_config_from_context,
         prepare_documents,
     )
+    from deet.data_models.project import DeetProject
+
+    project = DeetProject.load()
 
     config = DataExtractionConfig(
         # configure options here, or leave blank to use defaults
     )
+    data_extractor = LLMDataExtractor(config=config)
+
 
     processed_annotation_data = project.process_data()
 
@@ -153,6 +187,23 @@ Now that you've defined your prompts, you are ready to extract data from your do
         method=CustomPromptPopulationMethod.FILE,
         filepath=project.prompt_csv_path
     )
+
+    documents = prepare_documents(
+        processed_annotation_data.documents,
+        config,
+        linked_document_path=project.linked_documents_path,
+        pdf_dir=project.pdf_dir,
+        link_map_path=project.link_map_path,
+    )
+
+    run_output = data_extractor.extract_from_documents(
+        attributes=processed_annotation_data.attributes,
+        documents=documents,
+        context_type=data_extractor.config.default_context_type,
+        output_file=experiment_artefacts.llm_annotations,
+        show_progress=True,
+    )
+
     ```
 
 </div>
