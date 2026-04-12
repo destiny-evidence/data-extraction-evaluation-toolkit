@@ -1,4 +1,4 @@
-# ruff: noqa: PLC0415
+# ruff: noqa: PLC0415, B008
 """Sub-commands for project initialisation and configuration."""
 
 from pathlib import Path
@@ -10,7 +10,9 @@ if TYPE_CHECKING:
 
 import typer
 from InquirerPy import inquirer
+from pydantic import ValidationError
 
+from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.typer_context import project_required
 from deet.settings import DataExtractionSettings, LogLevel
 from deet.ui import fail_with_message, notify
@@ -26,11 +28,69 @@ app = typer.Typer(help="Commands to create and configure deet projects.")
 
 
 @app.command()
-def init(typer_context: typer.Context) -> None:
-    """Initialise a new project."""
+def init(  # noqa: PLR0913
+    typer_context: typer.Context,
+    *,
+    name: str = typer.Option(
+        None, "--name", "-n", help="Project name (min 2 characters)"
+    ),
+    data_path: Path = typer.Option(
+        None,
+        "--data",
+        "-d",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        resolve_path=True,
+        help="Path to your gold standard annotation data",
+    ),
+    data_type: SupportedImportFormat = typer.Option(
+        SupportedImportFormat.EPPI_JSON,
+        "--format",
+        "-t",
+        help="Format of your gold standard annotated data.",
+    ),
+    pdf_dir: Path | None = typer.Option(
+        None,
+        "--pdfs",
+        "-p",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+        help="The folder where your pdfs for data extraction are stored.",
+    ),
+    force_overwrite: bool = typer.Option(
+        False,  # noqa: FBT003
+        "--force",
+        "-f",
+        help="Overwrite existing project data",
+    ),
+) -> None:
+    """
+    Initialise a new project.
+
+    Leave command line arguments empty to enter interactive wizard.
+    """
     from deet.data_models.project import DeetProject
 
     existing_project: DeetProject = typer_context.obj.project
+
+    if any([name, data_path, pdf_dir]):
+        if existing_project and not force_overwrite:
+            fail_with_message("Project already exists. ")
+        try:
+            project = DeetProject(
+                name=name,
+                gold_standard_data_path=data_path,
+                gold_standard_data_format=data_type,
+                pdf_dir=pdf_dir,
+            )
+        except ValidationError as e:
+            fail_with_message(f"Invalid project configuration:\n{e}")
+        project.setup()
+        return
+
     if existing_project is not None:
         notify(
             (
@@ -67,8 +127,7 @@ def regenerate_link_map(typer_context: typer.Context) -> None:
     """
     Regenerate a "link map" from a project.
 
-    A link map is created on project.setup(); this re-creates it,
-    and allows re-creating it with different configuration options.
+    A link map is created on project.setup(); this re-creates it.
     """
     if not inquirer.confirm(
         "Overwrite existing link map? Make sure you have saved your work."
@@ -125,11 +184,11 @@ def link(typer_context: typer.Context) -> None:
     """
     Link documents to their fulltexts.
 
-    This creates a document containing the parsed output of its corresponding
-    fulltext in the folder defined in `output_path`. Linking will be
-    attempted using a mapping file, if provided, then by matching the
-    filename with author and year, then by matching by document id. See
-    `deet.processors.linker` for more details.
+    This creates a document with the parsed output of the corresponding fulltext
+    for each of the documents in your project.
+
+    Linking will be attempted using your project's link_map.csv.
+    See `deet.processors.linker` for more details.
 
     """
     from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy

@@ -30,8 +30,9 @@ def extract(
         Path | None,
         typer.Option(
             help="A path to a config file containing options for data "
-            "extraction config. A template with defaults is generated"
+            "extraction configuration. A template with defaults is generated"
             " on project setup."
+            "\nLeave this blank to configure interactively."
         ),
     ] = None,
     prompt_population: Annotated[

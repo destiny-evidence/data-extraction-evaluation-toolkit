@@ -97,7 +97,7 @@ class DeetProject(BaseModel):
     # Project metadata
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
-    # Root is set during load() or defaults to cwd
+    # Root defaults to cwd
     _root: Path = PrivateAttr(default_factory=Path.cwd)
 
     @property
@@ -156,7 +156,7 @@ class DeetProject(BaseModel):
     @classmethod
     def _process_pdf_dir(cls, value: Path) -> Path | None:
         """Parse empty string to None (not cwd), otherwise resolve path."""
-        if value == "":
+        if value == "" or value is None:
             return None
         return value.resolve()
 
