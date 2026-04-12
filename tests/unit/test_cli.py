@@ -200,6 +200,81 @@ def test_init_project_overwrites_after_confirm():
     fake_settings.dump_to_env.assert_called_once()
 
 
+def test_init_project_noninteractive(tmp_path):
+    data_file = tmp_path / "references.json"
+    data_file.touch()
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=None),
+        patch("deet.data_models.project.DeetProject.setup", return_value=None),
+    ):
+        result = runner.invoke(
+            app,
+            ["project", "init", "-n", "test-project", "-d", str(data_file)],
+        )
+
+    assert result.exit_code == 0
+
+
+def test_init_project_noninteractive_fails_with_insufficient_args(tmp_path):
+    data_file = tmp_path / "references.json"
+    data_file.touch()
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=None),
+        patch("deet.data_models.project.DeetProject.setup", return_value=None),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "project",
+                "init",
+                "-n",
+                "test-project",
+            ],
+        )
+
+    assert "validation error for DeetProject" in result.output
+    assert result.exit_code == 1
+
+
+def test_init_project_noninteractive_no_overwrite(tmp_path, valid_project_data):
+    sample_project = DeetProject.model_validate(valid_project_data)
+
+    data_file = tmp_path / "references.json"
+    data_file.touch()
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=sample_project),
+        patch("deet.data_models.project.DeetProject.setup", return_value=None),
+    ):
+        result = runner.invoke(
+            app,
+            ["project", "init", "-n", "test-project", "-d", str(data_file)],
+        )
+
+    assert "Project already exists" in result.stderr
+    assert result.exit_code == 1
+
+
+def test_init_project_noninteractive_force_overwrite(tmp_path, valid_project_data):
+    sample_project = DeetProject.model_validate(valid_project_data)
+
+    data_file = tmp_path / "references.json"
+    data_file.touch()
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=sample_project),
+        patch("deet.data_models.project.DeetProject.setup", return_value=None),
+    ):
+        result = runner.invoke(
+            app,
+            ["project", "init", "-n", "test-project", "-d", str(data_file), "-f"],
+        )
+
+    assert result.exit_code == 0
+
+
 def test_link(valid_project_data):
     sample_project = DeetProject.model_validate(valid_project_data)
 
