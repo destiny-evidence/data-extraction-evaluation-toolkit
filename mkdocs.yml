@@ -40,7 +40,9 @@ nav:
     - setup/installation.md
     - setup/quickstart.md
   - Core concepts:
+    - concepts/data-extraction.md
     - concepts/project.md
+    - concepts/experiment.md
   - CLI User Guide:
     - cli/cli.md
   - Python Guide:

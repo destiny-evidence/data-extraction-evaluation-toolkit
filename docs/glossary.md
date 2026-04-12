@@ -5,3 +5,9 @@ term:Ground Truth
 
 term:data extraction
 : Extracting structured information from a document
+
+term:experiment configuration
+: All of the variables 
+
+term:data extraction experiment
+: An instance of an automated data extraction pipeline, used to 

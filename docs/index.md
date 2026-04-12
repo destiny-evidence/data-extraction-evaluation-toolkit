@@ -19,6 +19,10 @@ although in principle it can be used to extract any type of data from any type o
 
 ## Using deet
 
-Standard data extraction pipelines can be executed by using `deet` as a CLI tool (with varying levels of interactivity)
+Standard data extraction pipelines can be executed by using `deet` as a CLI tool.
+This doesn't require any familiarity with python.
 
-For more flexibility, use `deet` as a python package
+For more flexibility, you can use `deet` as a python package, or contribute to
+deet by extending it.
+
+To get started with any mode of using `deet`, follow the [tutorial](setup/installation.md)
