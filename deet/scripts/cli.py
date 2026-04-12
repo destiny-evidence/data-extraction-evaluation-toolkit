@@ -8,6 +8,14 @@ import typer
 
 from deet.logger import logger
 from deet.scripts.commands import experiments, project
+from deet.scripts.commands.deprecated import (
+    export_config_template_legacy,
+    extract_data_legacy,
+    init_linkage_mapping_file_legacy,
+    init_prompt_csv_legacy,
+    link_documents_fulltexts_legacy,
+    test_llm_config_legacy,
+)
 from deet.scripts.typer_context import CLIState
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
@@ -17,6 +25,18 @@ app = typer.Typer(help=APP_HELP, add_completion=True, rich_markup_mode="rich")
 
 app.add_typer(project.app, name="project")
 app.add_typer(experiments.app, name="experiments")
+
+# Legacy commands - these just return instructions on how to use the new CLI
+app.command(name="export-config-template", hidden=True)(export_config_template_legacy)
+app.command(name="extract-data", hidden=True)(extract_data_legacy)
+app.command(name="init-linkage-mapping-file", hidden=True)(
+    init_linkage_mapping_file_legacy
+)
+app.command(name="init-prompt-csv", hidden=True)(init_prompt_csv_legacy)
+app.command(name="link-documents-fulltexts", hidden=True)(
+    link_documents_fulltexts_legacy
+)
+app.command(name="test-llm-config", hidden=True)(test_llm_config_legacy)
 
 
 @app.callback(invoke_without_command=True)

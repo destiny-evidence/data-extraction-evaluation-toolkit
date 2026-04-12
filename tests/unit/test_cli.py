@@ -294,3 +294,20 @@ def test_test_llm_config():
         result = runner.invoke(app, ["project", "test-llm-config"])
 
     assert result.exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "extract-data",
+        "export-config-template",
+        "init-linkage-mapping-file",
+        "link-documents-fulltexts",
+        "init-prompt-csv",
+        "test-llm-config",
+    ],
+)
+def test_deprecated_commands_return_deprecation_warning(command):
+    result = runner.invoke(app, [command])
+    assert "deprecated" in result.stdout.lower()
+    assert command in result.stdout.lower()

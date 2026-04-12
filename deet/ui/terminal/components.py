@@ -2,6 +2,7 @@
 
 from rich import box
 from rich.align import Align
+from rich.console import RenderableType
 from rich.markdown import Markdown
 from rich.panel import Panel
 
@@ -16,6 +17,17 @@ def info_panel(content: str, title: str = "INFO") -> Panel:
         padding=(1, 2),
         expand=False,
         width=120,
+    )
+
+
+def deprecation_panel(content: RenderableType) -> Panel:
+    """Return a panel for deprecation warnings."""
+    return Panel(
+        content,
+        title="[bold red]Deprecation warning[/bold red]",
+        border_style="red",
+        expand=False,
+        padding=(1, 2),
     )
 
 

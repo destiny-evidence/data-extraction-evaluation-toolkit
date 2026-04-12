@@ -104,6 +104,23 @@ def regenerate_prompt_csv(typer_context: typer.Context) -> None:
 
 @app.command()
 @project_required
+def regenerate_config_template(typer_context: typer.Context) -> None:
+    """
+    Regenerate config template from a project.
+
+    A config template with defaults for each option is created on project.setup();
+    this re-creates it.
+    """
+    if not inquirer.confirm(
+        "Overwrite existing config template? Make sure you have saved your work."
+    ).execute():
+        fail_with_message("Exiting..")
+    deet_project: DeetProject = typer_context.obj.project
+    deet_project.export_config_template()
+
+
+@app.command()
+@project_required
 def link(typer_context: typer.Context) -> None:
     """
     Link documents to their fulltexts.
