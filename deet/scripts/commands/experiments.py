@@ -14,7 +14,12 @@ from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.scripts.typer_context import project_required
 from deet.ui import fail_with_message
 
-app = typer.Typer(help="Data extraction experiments")
+app = typer.Typer(
+    help=(
+        "Commands to create and evaluate data extraction "
+        "experiments within your project."
+    )
+)
 
 
 @app.command()

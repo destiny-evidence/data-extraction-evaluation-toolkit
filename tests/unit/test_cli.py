@@ -265,7 +265,7 @@ def test_extract_happy_path(tmp_path):
 
         mock_evaluator = mock_evaluator_cls.return_value
 
-        result = runner.invoke(app, ["run", "extract"], obj=state)
+        result = runner.invoke(app, ["experiments", "extract"], obj=state)
 
     assert result.exit_code == 0
     mock_extractor.extract_from_documents.assert_called_once()

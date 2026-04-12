@@ -7,7 +7,7 @@ import warnings
 import typer
 
 from deet.logger import logger
-from deet.scripts.commands import project, run
+from deet.scripts.commands import experiments, project
 from deet.scripts.typer_context import CLIState
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
@@ -16,7 +16,7 @@ from deet.ui.terminal.templates import APP_HELP
 app = typer.Typer(help=APP_HELP, add_completion=True, rich_markup_mode="rich")
 
 app.add_typer(project.app, name="project")
-app.add_typer(run.app, name="run")
+app.add_typer(experiments.app, name="experiments")
 
 
 @app.callback(invoke_without_command=True)

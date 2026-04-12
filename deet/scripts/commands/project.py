@@ -22,7 +22,7 @@ from deet.ui.terminal import (
 )
 from deet.ui.terminal.components import info_panel
 
-app = typer.Typer(help="Project-related commands")
+app = typer.Typer(help="Commands to create and configure deet projects.")
 
 
 @app.command()
