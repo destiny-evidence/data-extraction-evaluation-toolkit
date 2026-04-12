@@ -91,7 +91,11 @@ class SecretHandler(WidgetCreator):
 
 
 class DefaultHandler(WidgetCreator):
-    """Fallback handler. Should always be last in the strategy list."""
+    """
+    Fallback handler (simple text prompt).
+
+    Should always be last in the strategy list.
+    """
 
     def can_handle(self, field_info: FieldInfo) -> bool:
         """Return True, handling whatever is not covered by other strategies."""

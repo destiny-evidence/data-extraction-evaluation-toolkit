@@ -63,6 +63,47 @@ def init(typer_context: typer.Context) -> None:
 
 @app.command()
 @project_required
+def regenerate_link_map(typer_context: typer.Context) -> None:
+    """
+    Regenerate a "link map" from a project.
+
+    A link map is created on project.setup(); this re-creates it,
+    and allows re-creating it with different configuration options.
+    """
+    if not inquirer.confirm(
+        "Overwrite existing link map? Make sure you have saved your work."
+    ).execute():
+        fail_with_message("Exiting..")
+    deet_project: DeetProject = typer_context.obj.project
+    processed_annotation_data = deet_project.process_data()
+
+    processed_annotation_data.export_linkage_mapper_csv(
+        file_path=deet_project.link_map_path
+    )
+
+
+@app.command()
+@project_required
+def regenerate_prompt_csv(typer_context: typer.Context) -> None:
+    """
+    Regenerate a prompt csv from a project.
+
+    A prompt csv is created on project.setup(); this re-creates it.
+    """
+    if not inquirer.confirm(
+        "Overwrite existing prompt csv? Make sure you have saved your work."
+    ).execute():
+        fail_with_message("Exiting..")
+    deet_project: DeetProject = typer_context.obj.project
+    processed_annotation_data = deet_project.process_data()
+
+    processed_annotation_data.export_attributes_csv_file(
+        filepath=deet_project.prompt_csv_path
+    )
+
+
+@app.command()
+@project_required
 def link(typer_context: typer.Context) -> None:
     """
     Link documents to their fulltexts.
