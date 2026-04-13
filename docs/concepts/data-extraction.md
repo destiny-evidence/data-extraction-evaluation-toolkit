@@ -1,12 +1,19 @@
 # Data Extraction
 
-The following section explains how we conceptualise data extraction in `deet`
+The following section sets out the core components of data extraction
+is conceptualised in `deet`
 
 ## Documents
 
-Documents are the individual units of text from which we extract data. `deet` is designed to extract data from scientific papers, but in principle any text can be represented as a document (Using the CLI, this is currently limited to any pdf, or any scientific paper with an abstract).
+Documents are the individual units of text from which we extract data.
+`deet` is designed to extract data from scientific papers,
+but in principle any text can be represented as a document
+(Using the CLI, this is currently limited to any pdf, or any scientific paper with an abstract).
 
-In our data model [deet.data_models.documents.Document](../reference/api.md#deet.data_models.documents.Document), documents must have a numeric ID, and a name. Since we are often dealing with messy pdfs that have to be parsed, the content field `parsed_document` is used to store the results of document parsing in text form.
+In our data model [deet.data_models.documents.Document](../reference/api.md#deet.data_models.documents.Document),
+documents must have a numeric ID, and a name.
+Since we are often dealing with messy pdfs that have to be parsed,
+the content field `parsed_document` is used to store the results of document parsing in text form.
 
 Thus
 
@@ -35,16 +42,20 @@ documents = [
 
 represent a minimal set of documents which could be passed to the data extractor.
 
-
 ## Attributes
 
-Attributes represent the concepts we want to extract from documents, such as effect sizes, study characteristics, or any other labels applied to the documents on the basis of their content. Each attribute must have an `attribute_label` and an `attribute_id` to identify it. To be used for data extraction, each attribute should have a `prompt` defined. 
+Attributes represent the concepts we want to extract from documents, such as effect sizes, study characteristics, or any other labels applied to the documents on the basis of their content.
+Each attribute must have an `attribute_label` and an `attribute_id` to identify it.
+To be used for data extraction, each attribute should have a `prompt` defined.
 
 Finally, attributes must have one of the following [`deet.data_models.base.AttributeType`](../reference/api.md#deet.data_models.base.AttributeType)s
 
 ### bool
 
-Boolean attributes are used to represent any attribute that can be either True or False. This could be, for example, whether a study is eligible for a systematic review (e.g. screening), or whether a study has a particular characteristic, or can be categorised with a particular element of a taxonomy. The following represent valid boolean attributes:
+Boolean attributes are used to represent any attribute that can be either True or False.
+This could be, for example, whether a study is eligible for a systematic review (e.g. screening),
+or whether a study has a particular characteristic, or can be categorised with a particular element of a taxonomy.
+The following represent valid boolean attributes:
 
 ```python
 from deet.data_models.base import Attribute, AttributeType
@@ -71,20 +82,18 @@ String attributes describe data extraction elements that can be represented as t
 
 ### float
 
-Float attributes describe any type of numeric data extraction elements, such as the average age of study participants, or the effect size or standard error. 
-
+Float attributes describe any type of numeric data extraction elements, such as the average age of study participants, or the effect size or standard error.
 
 ### integer
 
 Integer attributes describe the subset of numeric data extraction elements that can be represented by whole numbers, and whole numbers only, for example, the nunber of participants in a trial, or the year in which a trial was carried out.
-
 
 ### list
 
 Lists describe data extraction elements that have 0, 1, or more elements. For example, the prompt "extract all of the health outcomes described in the study" could be represented as a list
 
 !!! Warning "Not fully supported"
-    List attributes are not reliably parsed from EppiJson, and are not covered by currently implemented standard evaluation metrics 
+    List attributes are not reliably parsed from EppiJson, and are not covered by currently implemented standard evaluation metrics
 
 ### dict
 
@@ -126,8 +135,8 @@ represents a decision by a human that a document was relevant, according to the 
 
 ## Annotated documents
 
-Human or LLM annotations are attached to a document through a 
-[´deet.data_models.documents.GoldStandardAnnotationModel`](../reference/api.md#deet.data_models.documents.GoldStandardAnnotationModel). Thus
+Human or LLM annotations are attached to a document through a
+[´deet.data_models.documents.GoldStandardAnnotatedDocument`](../reference/api.md#deet.data_models.documents.GoldStandardAnnotatedDocument). Thus
 
 ```python
 from deet.data_models.documents import GoldStandardAnnotatedDocument

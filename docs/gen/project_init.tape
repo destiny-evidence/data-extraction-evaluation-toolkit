@@ -55,14 +55,6 @@ Sleep 500ms
 Enter
 Sleep 1500ms
 
-# Environment
-Down
-Sleep 500ms
-Up
-Sleep 500ms
-Enter
-Sleep 1500ms
-
 # Path to pdfs
 Backspace 15
 Type "../data/pdfs"
