@@ -256,8 +256,8 @@ class EppiAnnotationConverter(AnnotationConverter):
                 f"Attribute with ID {attribute_id} not found in attributes list. "
                 "All annotations must reference a valid attribute from the CodeSets."
             )
-            raise ValueError(attr_not_found_msg)
-
+            # raise ValueError(attr_not_found_msg)
+            return None
         # ensure the attribute has the correct label from the mapping if available
         if attribute_id_to_label is not None and attribute_id in attribute_id_to_label:
             attribute.attribute_label = attribute_id_to_label[attribute_id]
@@ -294,10 +294,14 @@ class EppiAnnotationConverter(AnnotationConverter):
 
         """
         return [
-            self._convert_single_annotation(
-                annotation, attributes_lookup, attribute_id_to_label
-            )
-            for annotation in annotations_data
+            annotation
+            for annotation in [
+                self._convert_single_annotation(
+                    ann, attributes_lookup, attribute_id_to_label
+                )
+                for ann in annotations_data
+            ]
+            if annotation is not None
         ]
 
     def _create_pdf_to_title_mapping(
