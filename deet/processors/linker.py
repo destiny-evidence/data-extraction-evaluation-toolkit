@@ -4,7 +4,6 @@ import csv
 import json
 from collections.abc import Callable, Generator, Sequence
 from enum import StrEnum, auto
-from functools import partial
 from pathlib import Path
 from typing import Literal, Self, cast
 
@@ -23,9 +22,10 @@ class LinkingStrategy(StrEnum):
     """Enum of permitted/implemented ref<>parsed_doc linking strategies."""
 
     MAPPING_FILE = auto()
-    FILENAME_AUTHOR_YEAR_LONGEST = auto()
-    FILENAME_AUTHOR_YEAR_LAST = auto()
     FILENAME_ID = auto()
+    # FILENAME_AUTHOR_YEAR_LONGEST = auto()
+    # FILENAME_AUTHOR_YEAR_LAST = auto()
+
     # to add: some sort of interactive selection thing in CLI
     # or, later on, in UI.
 
@@ -355,25 +355,25 @@ class DocumentReferenceLinker:
             if doc.document_identity.document_id is not None  # type:ignore[union-attr]
         }
         logger.debug(self._references_by_id.keys())
-        try:
-            self._references_by_author_year_longest: dict[str, Document] = {
-                doc.author_year_from_document_identity(
-                    substring_strategy="longest"
-                ): doc
-                for doc in tmp_refs
-            }
-        except ValueError:
-            logger.warning("author or year missing, returning empty dict.")
-            self._references_by_author_year_longest = {}
+        # try:
+        #     self._references_by_author_year_longest: dict[str, Document] = {
+        #         doc.author_year_from_document_identity(
+        #             substring_strategy="longest"
+        #         ): doc
+        #         for doc in tmp_refs
+        #     }
+        # except ValueError:
+        #     logger.warning("author or year missing, returning empty dict.")
+        #     self._references_by_author_year_longest = {}
 
-        try:
-            self._references_by_author_year_last: dict[str, Document] = {
-                doc.author_year_from_document_identity(substring_strategy="last"): doc
-                for doc in tmp_refs
-            }
-        except ValueError:
-            logger.warning("author or year missing, returning empty dict.")
-            self._references_by_author_year_last = {}
+        # try:
+        #     self._references_by_author_year_last: dict[str, Document] = {
+        #         doc.author_year_from_document_identity(substring_strategy="last"): doc
+        #         for doc in tmp_refs
+        #     }
+        # except ValueError:
+        #     logger.warning("author or year missing, returning empty dict.")
+        #     self._references_by_author_year_last = {}
 
         self.document_base_dir = document_base_dir
         if isinstance(document_reference_mapping, Path):
@@ -408,12 +408,12 @@ class DocumentReferenceLinker:
         """
         linking_strategy_map: dict[LinkingStrategy, Callable] = {  # extend as needed.
             LinkingStrategy.MAPPING_FILE: self._get_linkages_mapping_file,
-            LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST: partial(
-                self._get_linkages_filename_author_year, "longest"
-            ),
-            LinkingStrategy.FILENAME_AUTHOR_YEAR_LAST: partial(
-                self._get_linkages_filename_author_year, "last"
-            ),
+            # LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST: partial(
+            #     self._get_linkages_filename_author_year, "longest"
+            # ),
+            # LinkingStrategy.FILENAME_AUTHOR_YEAR_LAST: partial(
+            #     self._get_linkages_filename_author_year, "last"
+            # ),
             LinkingStrategy.FILENAME_ID: self._get_linkages_filename_id,
         }
 

@@ -195,7 +195,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         csv_attribute_ids_with_prompts: set[int] = set()
         rows_processed = 0
 
-        with filepath.open(mode="r", newline="", encoding="utf-8") as f:
+        with filepath.open(mode="r", newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             self._validate_csv_headers(reader.fieldnames)
 

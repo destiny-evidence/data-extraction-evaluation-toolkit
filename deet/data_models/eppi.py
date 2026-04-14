@@ -227,6 +227,29 @@ class EppiDocument(Document):
     )
     doi: str | None = Field(default=None, validation_alias=AliasChoices("DOI", "doi"))
 
+    @field_validator("year", mode="before")
+    @classmethod
+    def parse_year(cls, value: Any) -> int | None:
+        """
+        Allow empty or missing year values without validation errors.
+
+        EPPI JSON sometimes represents a missing year as an empty string.
+        This normalises such cases to ``None`` and parses numeric strings.
+        """
+        if value is None or value == "":
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped == "":
+                return None
+            try:
+                return int(stripped)
+            except ValueError:
+                return None
+        return value
+
     @field_validator("date_created", mode="before")
     @classmethod
     def parse_date_string(cls, value: str) -> datetime | None:
