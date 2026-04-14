@@ -197,6 +197,13 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
 
         with filepath.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
+
+            if reader.fieldnames is not None:
+                reader.fieldnames = [
+                    name.lstrip("\ufeff").strip() if name else name
+                    for name in reader.fieldnames
+                ]
+                
             self._validate_csv_headers(reader.fieldnames)
 
             for row in reader:
