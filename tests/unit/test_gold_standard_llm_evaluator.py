@@ -1,4 +1,5 @@
 import csv
+from copy import deepcopy
 from unittest.mock import patch
 
 import pytest
@@ -71,6 +72,37 @@ def test_evaluator_evaluates_with_nonfloat_metric(processed_data):
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
         assert metric.value == 1
+
+
+@pytest.fixture
+def processed_data_missing_doc(processed_data):
+    """Create ProcessedEppiAnnotationData with test attributes."""
+    processed_data_missing_doc = deepcopy(processed_data)
+    processed_data_missing_doc.annotated_documents = processed_data.annotated_documents[
+        :-1
+    ]
+    return processed_data_missing_doc
+
+
+# When a doc is missing from llm_preds, metrics should be None
+# and we should warn rather than fail
+def test_evaluator_fails_gracefully_missing_doc(
+    processed_data, processed_data_missing_doc
+):
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_data.annotated_documents,
+        llm_annotated_documents=processed_data_missing_doc.annotated_documents,
+        attributes=[processed_data.attributes[0]],
+        extraction_run_id="",
+    )
+    evaluator.evaluate_llm_annotations()
+    for m in evaluator.calculated_metrics:
+        assert m.value is None
+
+    logger.remove(logger_id)
+    assert any("not found in annotated" in m for m in messages)
 
 
 @pytest.fixture
