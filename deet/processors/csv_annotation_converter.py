@@ -563,43 +563,39 @@ class CSVAnnotationConverter(AnnotationConverter):
         annotated_documents: list[GoldStandardAnnotatedDocument] = []
         documents: list[Document] = []
 
-        for row_idx, row in enumerate(rows):
+        # --- To acces attributes by their names ---
+        attr_by_label = {a.attribute_label: a for a in attributes}
+
+        for row in rows:
+            # --- Build destiny Reference given row ---
             row_reference = self.build_destiny_reference(row, reference_fields)
-
             # --- Build Document ---
-            try:
-                document = Document(
-                    name=row["name"],
-                    citation=row_reference,
-                    document_id=row["document_id"],
-                )
-                document.init_document_identity()
-            except KeyError as e:
-                msg = f"Missing required document field {e} in row {row_idx}"
-                raise KeyError(msg) from e
-
+            document = Document(
+                name=row["name"],
+                citation=row_reference,
+                document_id=row["document_id"],
+            )
+            document.init_document_identity()
             documents.append(document)
 
-            # --- Build Annotations ---
-            attr_by_label = {a.attribute_label: a for a in attributes}
-            annotations: list[GoldStandardAnnotation] = []
+            # --- Build Document Annotations ---
+            annotations = []
             for label, attr in attr_by_label.items():
                 python_type = attr.output_data_type.to_python_type()
 
-                raw_value = row.get(label)
+                raw_value = row[label].strip()
+
                 converted_value: Any = None
 
-                if raw_value is not None:
-                    raw_value = raw_value.strip()
-                    if raw_value != "":
-                        if python_type is bool:
-                            converted_value = raw_value.lower() in ["true", "t"]
-                        elif python_type is int:
-                            converted_value = int(raw_value)
-                        elif python_type is float:
-                            converted_value = float(raw_value)
-                        else:
-                            converted_value = raw_value
+                if raw_value != "":
+                    if python_type is bool:
+                        converted_value = raw_value.lower() in ["true", "t"]
+                    elif python_type is int:
+                        converted_value = int(raw_value)
+                    elif python_type is float:
+                        converted_value = float(raw_value)
+                    else:
+                        converted_value = raw_value
 
                 annotation = GoldStandardAnnotation(
                     attribute=attr,
@@ -609,7 +605,7 @@ class CSVAnnotationConverter(AnnotationConverter):
 
                 annotations.append(annotation)
 
-            # --- Attach annotations to document ---
+            # --- Build Annotated Documents = Attach annotations to document ---
             annotated_doc = GoldStandardAnnotatedDocument(
                 document=document,
                 annotations=annotations,
