@@ -2337,6 +2337,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deet.exceptions.DuplicateAnnotationError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DuplicateAnnotationError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deet.exceptions.EmptyPdfExtractionError" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2429,6 +2440,17 @@
     <span class="md-ellipsis">
       
         MissingCitationElementError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deet.exceptions.MissingDocumentError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MissingDocumentError
       
     </span>
   </a>
@@ -6181,6 +6203,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deet.exceptions.DuplicateAnnotationError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DuplicateAnnotationError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deet.exceptions.EmptyPdfExtractionError" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6273,6 +6306,17 @@
     <span class="md-ellipsis">
       
         MissingCitationElementError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deet.exceptions.MissingDocumentError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MissingDocumentError
       
     </span>
   </a>
@@ -10438,14 +10482,14 @@ to list[GoldStandardAnnotation] after attribute resolution.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">42</span>
 <span class="normal">43</span>
 <span class="normal">44</span>
 <span class="normal">45</span>
 <span class="normal">46</span>
-<span class="normal">47</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContextType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContextType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Types of context that can be provided to the LLM.&quot;&quot;&quot;</span>
 
     <span class="n">EMPTY</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
@@ -10567,9 +10611,7 @@ linking to a gold standard annotations document with references.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">242</span>
-<span class="normal">243</span>
-<span class="normal">244</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">244</span>
 <span class="normal">245</span>
 <span class="normal">246</span>
 <span class="normal">247</span>
@@ -10833,7 +10875,9 @@ linking to a gold standard annotations document with references.</p>
 <span class="normal">505</span>
 <span class="normal">506</span>
 <span class="normal">507</span>
-<span class="normal">508</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a document.</span>
 
@@ -11204,9 +11248,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">375</span>
-<span class="normal">376</span>
-<span class="normal">377</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">377</span>
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
@@ -11251,7 +11293,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">419</span>
 <span class="normal">420</span>
 <span class="normal">421</span>
-<span class="normal">422</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">author_year_from_document_identity</span><span class="p">(</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">author_year_from_document_identity</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">substring_strategy</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;longest&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -11321,9 +11365,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">347</span>
-<span class="normal">348</span>
-<span class="normal">349</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">349</span>
 <span class="normal">350</span>
 <span class="normal">351</span>
 <span class="normal">352</span>
@@ -11347,7 +11389,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">370</span>
 <span class="normal">371</span>
 <span class="normal">372</span>
-<span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_document_identity</span><span class="p">(</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_document_identity</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">existing_ids</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -11448,9 +11492,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">440</span>
 <span class="normal">441</span>
 <span class="normal">442</span>
 <span class="normal">443</span>
@@ -11469,7 +11511,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">456</span>
 <span class="normal">457</span>
 <span class="normal">458</span>
-<span class="normal">459</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_parsed_document</span><span class="p">(</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_parsed_document</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">parsed_document</span><span class="p">:</span> <span class="n">ParsedOutput</span><span class="p">,</span>
     <span class="n">original_doc_filepath</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11517,9 +11561,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">494</span>
 <span class="normal">495</span>
 <span class="normal">496</span>
 <span class="normal">497</span>
@@ -11533,7 +11575,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">505</span>
 <span class="normal">506</span>
 <span class="normal">507</span>
-<span class="normal">508</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load linked document from .json.&quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
@@ -11572,9 +11616,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">469</span>
-<span class="normal">470</span>
-<span class="normal">471</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">471</span>
 <span class="normal">472</span>
 <span class="normal">473</span>
 <span class="normal">474</span>
@@ -11593,7 +11635,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">487</span>
 <span class="normal">488</span>
 <span class="normal">489</span>
-<span class="normal">490</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Save linked document to .json.&quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">by_alias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -11637,9 +11681,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">426</span>
 <span class="normal">427</span>
 <span class="normal">428</span>
 <span class="normal">429</span>
@@ -11649,7 +11691,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">433</span>
 <span class="normal">434</span>
 <span class="normal">435</span>
-<span class="normal">436</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_abstract_context</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_abstract_context</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the abstract, contained in `citation` field, as context.&quot;&quot;&quot;</span>
     <span class="n">abstract</span> <span class="o">=</span> <span class="n">LabsReference</span><span class="p">(</span><span class="n">reference</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">citation</span><span class="p">)</span><span class="o">.</span><span class="n">abstract</span>
     <span class="k">if</span> <span class="n">abstract</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -11684,13 +11728,13 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">463</span>
 <span class="normal">464</span>
 <span class="normal">465</span>
 <span class="normal">466</span>
-<span class="normal">467</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_context_from_parsed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_context_from_parsed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Symlink context to parsed_document.text.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parsed_document</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">parsed_document</span><span class="o">.</span><span class="n">text</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parsed_document</span><span class="o">.</span><span class="n">text</span>
@@ -11719,9 +11763,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">327</span>
 <span class="normal">328</span>
 <span class="normal">329</span>
 <span class="normal">330</span>
@@ -11739,7 +11781,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">342</span>
 <span class="normal">343</span>
 <span class="normal">344</span>
-<span class="normal">345</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">validate_final</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate Document is permitted to be `is_final`.&quot;&quot;&quot;</span>
     <span class="n">base_err_msg</span> <span class="o">=</span> <span class="s2">&quot;requirements not met for `Document().is_final`: &quot;</span>
@@ -11782,9 +11826,7 @@ of how destiny encodes the first_author field.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">297</span>
-<span class="normal">298</span>
-<span class="normal">299</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">299</span>
 <span class="normal">300</span>
 <span class="normal">301</span>
 <span class="normal">302</span>
@@ -11808,7 +11850,9 @@ of how destiny encodes the first_author field.</p>
 <span class="normal">320</span>
 <span class="normal">321</span>
 <span class="normal">322</span>
-<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">validate_linking_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate linking is completed if `is_linked=True`.&quot;&quot;&quot;</span>
     <span class="n">base_err_msg</span> <span class="o">=</span> <span class="s2">&quot;requirements not met for linking: &quot;</span>
@@ -11879,9 +11923,7 @@ non-eppi gold standard references.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
-<span class="normal">51</span>
-<span class="normal">52</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
 <span class="normal">55</span>
@@ -11891,7 +11933,9 @@ non-eppi gold standard references.</p>
 <span class="normal">59</span>
 <span class="normal">60</span>
 <span class="normal">61</span>
-<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DocumentIDSource</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DocumentIDSource</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sources for a given document_id. Can be e.g. eppi_item_id.</span>
 
@@ -11978,9 +12022,7 @@ non-eppi gold standard references.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 65</span>
-<span class="normal"> 66</span>
-<span class="normal"> 67</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 67</span>
 <span class="normal"> 68</span>
 <span class="normal"> 69</span>
 <span class="normal"> 70</span>
@@ -12152,7 +12194,9 @@ non-eppi gold standard references.</p>
 <span class="normal">236</span>
 <span class="normal">237</span>
 <span class="normal">238</span>
-<span class="normal">239</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DocumentIdentity</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DocumentIdentity</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A unified identity for a document, deriveable from multiple sources.&quot;&quot;&quot;</span>
 
     <span class="n">document_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -12437,9 +12481,7 @@ happen as RANDINT is always in hierarchy).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 76</span>
-<span class="normal"> 77</span>
-<span class="normal"> 78</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 78</span>
 <span class="normal"> 79</span>
 <span class="normal"> 80</span>
 <span class="normal"> 81</span>
@@ -12527,7 +12569,9 @@ happen as RANDINT is always in hierarchy).</p>
 <span class="normal">163</span>
 <span class="normal">164</span>
 <span class="normal">165</span>
-<span class="normal">166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_id</span><span class="p">(</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_id</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">existing_ids</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">hierarchy</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DocumentIDSource</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -12670,9 +12714,7 @@ happen as RANDINT is always in hierarchy).</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">514</span>
-<span class="normal">515</span>
-<span class="normal">516</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">516</span>
 <span class="normal">517</span>
 <span class="normal">518</span>
 <span class="normal">519</span>
@@ -12709,7 +12751,9 @@ happen as RANDINT is always in hierarchy).</p>
 <span class="normal">550</span>
 <span class="normal">551</span>
 <span class="normal">552</span>
-<span class="normal">553</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardAnnotatedDocument</span><span class="p">(</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardAnnotatedDocument</span><span class="p">(</span>
     <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">DocumentTypeVar</span><span class="p">,</span> <span class="n">GoldStandardAnnotationTypeVar</span><span class="p">]</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A document with its gold standard annotations.&quot;&quot;&quot;</span>
@@ -12729,7 +12773,7 @@ happen as RANDINT is always in hierarchy).</p>
                         <span class="sa">f</span><span class="s2">&quot;attribute: </span><span class="si">{</span><span class="n">attribute</span><span class="o">.</span><span class="n">attribute_label</span><span class="si">}</span><span class="s2">. We don&#39;t know how to&quot;</span>
                         <span class="s2">&quot;interpret which is the canonical version.&quot;</span>
                     <span class="p">)</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">multiple_matches</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">DuplicateAnnotationError</span><span class="p">(</span><span class="n">multiple_matches</span><span class="p">)</span>
                 <span class="n">result</span> <span class="o">=</span> <span class="n">annotation</span>
 
         <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -12780,9 +12824,7 @@ happen as RANDINT is always in hierarchy).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">522</span>
-<span class="normal">523</span>
-<span class="normal">524</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">524</span>
 <span class="normal">525</span>
 <span class="normal">526</span>
 <span class="normal">527</span>
@@ -12811,7 +12853,9 @@ happen as RANDINT is always in hierarchy).</p>
 <span class="normal">550</span>
 <span class="normal">551</span>
 <span class="normal">552</span>
-<span class="normal">553</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_attribute_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Attribute</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GoldStandardAnnotation</span><span class="p">:</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_attribute_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Attribute</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GoldStandardAnnotation</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the value of the annotation of the corresponding attribute.&quot;&quot;&quot;</span>
     <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">output_data</span><span class="p">:</span> <span class="n">Any</span>
@@ -12823,7 +12867,7 @@ happen as RANDINT is always in hierarchy).</p>
                     <span class="sa">f</span><span class="s2">&quot;attribute: </span><span class="si">{</span><span class="n">attribute</span><span class="o">.</span><span class="n">attribute_label</span><span class="si">}</span><span class="s2">. We don&#39;t know how to&quot;</span>
                     <span class="s2">&quot;interpret which is the canonical version.&quot;</span>
                 <span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">multiple_matches</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">DuplicateAnnotationError</span><span class="p">(</span><span class="n">multiple_matches</span><span class="p">)</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">annotation</span>
 
     <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -12892,9 +12936,7 @@ This list is indexed to enable easy retrieval by document_id.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">563</span>
 <span class="normal">564</span>
 <span class="normal">565</span>
 <span class="normal">566</span>
@@ -12920,7 +12962,9 @@ This list is indexed to enable easy retrieval by document_id.</p>
 <span class="normal">586</span>
 <span class="normal">587</span>
 <span class="normal">588</span>
-<span class="normal">589</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardAnnotatedDocumentList</span><span class="p">(</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardAnnotatedDocumentList</span><span class="p">(</span>
     <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">GoldStandardAnnotatedDocumentTypeVar</span><span class="p">]</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -12948,7 +12992,7 @@ This list is indexed to enable easy retrieval by document_id.</p>
         <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
             <span class="n">not_found</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Document with ID </span><span class="si">{</span><span class="n">document_id</span><span class="si">}</span><span class="s2"> not found in annotated&quot;</span>
             <span class="s2">&quot; doc list&quot;</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">not_found</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
+            <span class="k">raise</span> <span class="n">MissingDocumentError</span><span class="p">(</span><span class="n">not_found</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -13004,9 +13048,7 @@ matches document_identity.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/documents.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">581</span>
 <span class="normal">582</span>
 <span class="normal">583</span>
 <span class="normal">584</span>
@@ -13014,7 +13056,9 @@ matches document_identity.</p>
 <span class="normal">586</span>
 <span class="normal">587</span>
 <span class="normal">588</span>
-<span class="normal">589</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GoldStandardAnnotatedDocumentTypeVar</span><span class="p">:</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GoldStandardAnnotatedDocumentTypeVar</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get GoldStandardAnnotatedDocument where document.document_identity</span>
 <span class="sd">    matches document_identity.</span>
@@ -13024,7 +13068,7 @@ matches document_identity.</p>
     <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
         <span class="n">not_found</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Document with ID </span><span class="si">{</span><span class="n">document_id</span><span class="si">}</span><span class="s2"> not found in annotated&quot;</span>
         <span class="s2">&quot; doc list&quot;</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">not_found</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
+        <span class="k">raise</span> <span class="n">MissingDocumentError</span><span class="p">(</span><span class="n">not_found</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -21047,9 +21091,7 @@ data extracted by hand.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 30</span>
-<span class="normal"> 31</span>
-<span class="normal"> 32</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 32</span>
 <span class="normal"> 33</span>
 <span class="normal"> 34</span>
 <span class="normal"> 35</span>
@@ -21237,7 +21279,37 @@ data extracted by hand.</p>
 <span class="normal">217</span>
 <span class="normal">218</span>
 <span class="normal">219</span>
-<span class="normal">220</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardLLMEvaluator</span><span class="p">:</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GoldStandardLLMEvaluator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to manage the evaluation of LLM-extracted data against</span>
 <span class="sd">    &quot;gold-standard&quot; ground truth data.</span>
@@ -21304,19 +21376,29 @@ data extracted by hand.</p>
                 <span class="sa">f</span><span class="s2">&quot;Calculating metric for attribute: </span><span class="si">{</span><span class="n">attribute</span><span class="o">.</span><span class="n">attribute_label</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
             <span class="n">y_true</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">y_pred</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">y_pred</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gold_standard_annotated_documents</span><span class="p">:</span>
+                <span class="n">doc_id</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Extracting gold standard and LLM prediction for&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; doc </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Extracting gold standard and LLM prediction for&quot;</span> <span class="sa">f</span><span class="s2">&quot; doc </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
                 <span class="n">gs_val</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">output_data</span>
                 <span class="n">y_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gs_val</span><span class="p">)</span>
 
-                <span class="n">llm_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span>
-                    <span class="n">document</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
-                <span class="p">)</span>
-                <span class="n">llm_val</span> <span class="o">=</span> <span class="n">llm_doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">output_data</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">llm_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">MissingDocumentError</span><span class="p">:</span>
+                    <span class="n">y_pred</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LLM annotated doc not found - ID: </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">llm_val</span> <span class="o">=</span> <span class="n">llm_doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">output_data</span>
+                <span class="k">except</span> <span class="n">DuplicateAnnotationError</span><span class="p">:</span>
+                    <span class="n">llm_val</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;LLM produced multiple annotations for a single&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; attribute with doc: </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
                 <span class="n">y_pred</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llm_val</span><span class="p">)</span>
 
             <span class="n">applicable_metrics</span> <span class="o">=</span> <span class="n">get_metrics_for_attribute_type</span><span class="p">(</span>
@@ -21406,10 +21488,32 @@ data extracted by hand.</p>
             <span class="p">)</span>
             <span class="n">writer</span><span class="o">.</span><span class="n">writeheader</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gold_standard_annotated_documents</span><span class="p">:</span>
-                <span class="n">llm_annotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span>
-                    <span class="n">doc</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
-                <span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">llm_annotated_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span>
+                        <span class="n">doc</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="n">MissingDocumentError</span><span class="p">:</span>
+                    <span class="n">llm_annotated_doc</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="k">for</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">llm_annotated_doc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">llm_extraction</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">llm_reasoning</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="s2">&quot;LLM did not produce an output for this document.&quot;</span>
+                            <span class="s2">&quot; Check the logs carefully to find out why&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">llm_annotation</span> <span class="o">=</span> <span class="n">llm_annotated_doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
+                                <span class="n">attribute</span>
+                            <span class="p">)</span>
+                            <span class="n">llm_extraction</span> <span class="o">=</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">output_data</span>
+                            <span class="n">llm_reasoning</span> <span class="o">=</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">reasoning</span>
+                        <span class="k">except</span> <span class="n">DuplicateAnnotationError</span><span class="p">:</span>
+                            <span class="n">llm_extraction</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="n">llm_reasoning</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="s2">&quot;The LLM produced multiple annotations&quot;</span>
+                                <span class="s2">&quot;for this single attribute&quot;</span>
+                            <span class="p">)</span>
                     <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span>
                         <span class="p">{</span>
                             <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span><span class="p">,</span>
@@ -21419,12 +21523,8 @@ data extracted by hand.</p>
                             <span class="s2">&quot;human_extraction&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
                                 <span class="n">attribute</span>
                             <span class="p">)</span><span class="o">.</span><span class="n">output_data</span><span class="p">,</span>
-                            <span class="s2">&quot;llm_extraction&quot;</span><span class="p">:</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
-                                <span class="n">attribute</span>
-                            <span class="p">)</span><span class="o">.</span><span class="n">output_data</span><span class="p">,</span>
-                            <span class="s2">&quot;llm_reasoning&quot;</span><span class="p">:</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
-                                <span class="n">attribute</span>
-                            <span class="p">)</span><span class="o">.</span><span class="n">reasoning</span><span class="p">,</span>
+                            <span class="s2">&quot;llm_extraction&quot;</span><span class="p">:</span> <span class="n">llm_extraction</span><span class="p">,</span>
+                            <span class="s2">&quot;llm_reasoning&quot;</span><span class="p">:</span> <span class="n">llm_reasoning</span><span class="p">,</span>
                             <span class="s2">&quot;extraction_run_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extraction_run_id</span><span class="p">,</span>
                         <span class="p">}</span>
                     <span class="p">)</span>
@@ -21462,9 +21562,7 @@ compare.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">38</span>
 <span class="normal">39</span>
 <span class="normal">40</span>
 <span class="normal">41</span>
@@ -21487,7 +21585,9 @@ compare.</p>
 <span class="normal">58</span>
 <span class="normal">59</span>
 <span class="normal">60</span>
-<span class="normal">61</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">gold_standard_annotated_documents</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span>
         <span class="n">GoldStandardAnnotatedDocumentTypeVar</span>
@@ -21535,9 +21635,7 @@ compare.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
@@ -21552,7 +21650,9 @@ compare.</p>
 <span class="normal">77</span>
 <span class="normal">78</span>
 <span class="normal">79</span>
-<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_custom_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">custom_metrics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_custom_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">custom_metrics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add custom metrics. These must be valid metrics from sklearn.metrics.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">custom_metric_name</span> <span class="ow">in</span> <span class="n">custom_metrics</span><span class="p">:</span>
         <span class="n">custom_metric</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sklearn</span><span class="o">.</span><span class="n">metrics</span><span class="p">,</span> <span class="n">custom_metric_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -21592,19 +21692,7 @@ compare.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">148</span>
 <span class="normal">149</span>
 <span class="normal">150</span>
 <span class="normal">151</span>
@@ -21624,7 +21712,19 @@ compare.</p>
 <span class="normal">165</span>
 <span class="normal">166</span>
 <span class="normal">167</span>
-<span class="normal">168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">display_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">display_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Print metrics in a nice table to the command line.&quot;&quot;&quot;</span>
     <span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
 
@@ -21680,9 +21780,7 @@ Return a list of AttributeMetric objects.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 82</span>
-<span class="normal"> 83</span>
-<span class="normal"> 84</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 84</span>
 <span class="normal"> 85</span>
 <span class="normal"> 86</span>
 <span class="normal"> 87</span>
@@ -21732,7 +21830,19 @@ Return a list of AttributeMetric objects.</p>
 <span class="normal">131</span>
 <span class="normal">132</span>
 <span class="normal">133</span>
-<span class="normal">134</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_llm_annotations</span><span class="p">(</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_llm_annotations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -21747,19 +21857,29 @@ Return a list of AttributeMetric objects.</p>
             <span class="sa">f</span><span class="s2">&quot;Calculating metric for attribute: </span><span class="si">{</span><span class="n">attribute</span><span class="o">.</span><span class="n">attribute_label</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
         <span class="n">y_true</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">y_pred</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">y_pred</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gold_standard_annotated_documents</span><span class="p">:</span>
+            <span class="n">doc_id</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Extracting gold standard and LLM prediction for&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; doc </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Extracting gold standard and LLM prediction for&quot;</span> <span class="sa">f</span><span class="s2">&quot; doc </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
             <span class="n">gs_val</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">output_data</span>
             <span class="n">y_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gs_val</span><span class="p">)</span>
 
-            <span class="n">llm_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span>
-                <span class="n">document</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
-            <span class="p">)</span>
-            <span class="n">llm_val</span> <span class="o">=</span> <span class="n">llm_doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">output_data</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">llm_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">MissingDocumentError</span><span class="p">:</span>
+                <span class="n">y_pred</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LLM annotated doc not found - ID: </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">llm_val</span> <span class="o">=</span> <span class="n">llm_doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">output_data</span>
+            <span class="k">except</span> <span class="n">DuplicateAnnotationError</span><span class="p">:</span>
+                <span class="n">llm_val</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;LLM produced multiple annotations for a single&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; attribute with doc: </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
             <span class="n">y_pred</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llm_val</span><span class="p">)</span>
 
         <span class="n">applicable_metrics</span> <span class="o">=</span> <span class="n">get_metrics_for_attribute_type</span><span class="p">(</span>
@@ -21807,19 +21927,7 @@ Return a list of AttributeMetric objects.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span>
-<span class="normal">182</span>
-<span class="normal">183</span>
-<span class="normal">184</span>
-<span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">190</span>
 <span class="normal">191</span>
 <span class="normal">192</span>
 <span class="normal">193</span>
@@ -21849,7 +21957,37 @@ Return a list of AttributeMetric objects.</p>
 <span class="normal">217</span>
 <span class="normal">218</span>
 <span class="normal">219</span>
-<span class="normal">220</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_llm_comparison</span><span class="p">(</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_llm_comparison</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">filepath</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -21870,10 +22008,32 @@ Return a list of AttributeMetric objects.</p>
         <span class="p">)</span>
         <span class="n">writer</span><span class="o">.</span><span class="n">writeheader</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gold_standard_annotated_documents</span><span class="p">:</span>
-            <span class="n">llm_annotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span>
-                <span class="n">doc</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
-            <span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">llm_annotated_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_annotated_documents</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span>
+                    <span class="n">doc</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="n">MissingDocumentError</span><span class="p">:</span>
+                <span class="n">llm_annotated_doc</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">llm_annotated_doc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">llm_extraction</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">llm_reasoning</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;LLM did not produce an output for this document.&quot;</span>
+                        <span class="s2">&quot; Check the logs carefully to find out why&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">llm_annotation</span> <span class="o">=</span> <span class="n">llm_annotated_doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
+                            <span class="n">attribute</span>
+                        <span class="p">)</span>
+                        <span class="n">llm_extraction</span> <span class="o">=</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">output_data</span>
+                        <span class="n">llm_reasoning</span> <span class="o">=</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">reasoning</span>
+                    <span class="k">except</span> <span class="n">DuplicateAnnotationError</span><span class="p">:</span>
+                        <span class="n">llm_extraction</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">llm_reasoning</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="s2">&quot;The LLM produced multiple annotations&quot;</span>
+                            <span class="s2">&quot;for this single attribute&quot;</span>
+                        <span class="p">)</span>
                 <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span>
                     <span class="p">{</span>
                         <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">safe_identity</span><span class="o">.</span><span class="n">document_id</span><span class="p">,</span>
@@ -21883,12 +22043,8 @@ Return a list of AttributeMetric objects.</p>
                         <span class="s2">&quot;human_extraction&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
                             <span class="n">attribute</span>
                         <span class="p">)</span><span class="o">.</span><span class="n">output_data</span><span class="p">,</span>
-                        <span class="s2">&quot;llm_extraction&quot;</span><span class="p">:</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
-                            <span class="n">attribute</span>
-                        <span class="p">)</span><span class="o">.</span><span class="n">output_data</span><span class="p">,</span>
-                        <span class="s2">&quot;llm_reasoning&quot;</span><span class="p">:</span> <span class="n">llm_annotation</span><span class="o">.</span><span class="n">get_attribute_annotation</span><span class="p">(</span>
-                            <span class="n">attribute</span>
-                        <span class="p">)</span><span class="o">.</span><span class="n">reasoning</span><span class="p">,</span>
+                        <span class="s2">&quot;llm_extraction&quot;</span><span class="p">:</span> <span class="n">llm_extraction</span><span class="p">,</span>
+                        <span class="s2">&quot;llm_reasoning&quot;</span><span class="p">:</span> <span class="n">llm_reasoning</span><span class="p">,</span>
                         <span class="s2">&quot;extraction_run_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extraction_run_id</span><span class="p">,</span>
                     <span class="p">}</span>
                 <span class="p">)</span>
@@ -21914,13 +22070,13 @@ Return a list of AttributeMetric objects.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/evaluators/gold_standard_llm_evaluator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_metrics_to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_metrics_to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Save metrics to csv.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="o">!=</span> <span class="s2">&quot;.csv&quot;</span><span class="p">:</span>
         <span class="n">bad_filetype</span> <span class="o">=</span> <span class="s2">&quot;file ending must be .csv&quot;</span>
@@ -22050,21 +22206,102 @@ doesn't satisfy our criteria.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span>
-<span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BadDocumentIdError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BadDocumentIdError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when our `Document.document_id` field</span>
 <span class="sd">    doesn&#39;t satisfy our criteria.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        Exception (_type_): _description_</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="deet.exceptions.DuplicateAnnotationError" class="doc doc-heading">
+            <code>DuplicateAnnotationError</code>
+
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+
+
+
+        <p>Raise when multiple annotations for a single attribute are present.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>Exception</code>
+            </td>
+            <td>
+                  <code><span title="_type_">_type_</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>deet/exceptions.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DuplicateAnnotationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raise when multiple annotations for a single attribute are present.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Exception (_type_):</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
@@ -22104,19 +22341,19 @@ is represented in a way pdfminer cannot decode.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EmptyPdfExtractionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EmptyPdfExtractionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when PDF parsing yields no extractable text.</span>
 
@@ -22212,14 +22449,14 @@ is represented in a way pdfminer cannot decode.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FileParserMismatchError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FileParserMismatchError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when we have an input-file &lt;&gt; parser mismatch.</span>
 
@@ -22293,14 +22530,14 @@ is represented in a way pdfminer cannot decode.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InvalidFileTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InvalidFileTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when user supplies a not permitted file.</span>
 
@@ -22374,14 +22611,14 @@ is represented in a way pdfminer cannot decode.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InvalidInputFileTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InvalidInputFileTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when user supplies a not permitted input file type.</span>
 
@@ -22455,14 +22692,14 @@ is represented in a way pdfminer cannot decode.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InvalidOutputFileTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InvalidOutputFileTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when user supplies a not permitted output file.</span>
 
@@ -22537,15 +22774,15 @@ is incorrectly formatted.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span>
-<span class="normal">94</span>
-<span class="normal">95</span>
-<span class="normal">96</span>
-<span class="normal">97</span>
-<span class="normal">98</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">JsonStyleError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">JsonStyleError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when a json containing document-reference-linkages</span>
 <span class="sd">    is incorrectly formatted.</span>
@@ -22592,14 +22829,14 @@ handle it without a broad <code>except Exception</code>.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LitellmModelNotMappedError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LitellmModelNotMappedError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raised when litellm reports the model is missing from its registry.</span>
 
@@ -22673,14 +22910,14 @@ handle it without a broad <code>except Exception</code>.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span>
-<span class="normal">50</span>
-<span class="normal">51</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MalformedLanguageError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MalformedLanguageError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when language checker fails.</span>
 
@@ -22754,19 +22991,100 @@ handle it without a broad <code>except Exception</code>.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MissingCitationElementError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MissingCitationElementError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when required element of citation is missing.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        Exception (_type_): _description_</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="deet.exceptions.MissingDocumentError" class="doc doc-heading">
+            <code>MissingDocumentError</code>
+
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+
+
+
+        <p>Raise when looking up a document by id fails.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>Exception</code>
+            </td>
+            <td>
+                  <code><span title="_type_">_type_</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>deet/exceptions.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MissingDocumentError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raise when looking up a document by id fails.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Exception (_type_):</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
@@ -22835,14 +23153,14 @@ handle it without a broad <code>except Exception</code>.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/exceptions.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NoAbstractError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NoAbstractError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Raise when we can&#39;t find an abstract in our citation info.</span>
 
