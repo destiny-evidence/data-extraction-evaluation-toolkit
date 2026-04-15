@@ -26,6 +26,7 @@ from deet.data_models.evaluation import (
     check_metric_returns_float,
     get_metrics_for_attribute_type,
 )
+from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
 
 
 class GoldStandardLLMEvaluator:
@@ -106,13 +107,13 @@ class GoldStandardLLMEvaluator:
 
                 try:
                     llm_doc = self.llm_annotated_documents.get_by_id(doc_id)
-                except ValueError:
+                except MissingDocumentError:
                     y_pred.append(None)
                     logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
                     continue
                 try:
                     llm_val = llm_doc.get_attribute_annotation(attribute).output_data
-                except ValueError:
+                except DuplicateAnnotationError:
                     llm_val = None
                     logger.warning(
                         f"LLM produced multiple annotations for a single"
@@ -212,7 +213,7 @@ class GoldStandardLLMEvaluator:
                     llm_annotated_doc = self.llm_annotated_documents.get_by_id(
                         doc.document.safe_identity.document_id
                     )
-                except ValueError:
+                except MissingDocumentError:
                     llm_annotated_doc = None
                 for attribute in self.attributes:
                     if llm_annotated_doc is None:
@@ -228,7 +229,7 @@ class GoldStandardLLMEvaluator:
                             )
                             llm_extraction = llm_annotation.output_data
                             llm_reasoning = llm_annotation.reasoning
-                        except ValueError:
+                        except DuplicateAnnotationError:
                             llm_extraction = None
                             llm_reasoning = (
                                 "The LLM produced multiple annotations"
