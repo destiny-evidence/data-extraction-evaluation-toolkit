@@ -99,10 +99,11 @@ def test_evaluator_fails_gracefully_missing_doc(
     )
     evaluator.evaluate_llm_annotations()
     for m in evaluator.calculated_metrics:
-        assert m.value is None
+        if m.metric_name != "n_labels":
+            assert m.value is None
 
     logger.remove(logger_id)
-    assert any("not found in annotated" in m for m in messages)
+    assert any("LLM annotated doc not found" in m for m in messages)
 
 
 @pytest.fixture

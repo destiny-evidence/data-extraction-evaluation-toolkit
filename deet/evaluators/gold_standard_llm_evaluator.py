@@ -7,6 +7,7 @@ import csv
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
+from typing import Any
 
 import sklearn.metrics  # type:ignore[import-untyped]
 from loguru import logger
@@ -94,7 +95,7 @@ class GoldStandardLLMEvaluator:
                 f"Calculating metric for attribute: {attribute.attribute_label}"
             )
             y_true = []
-            y_pred = []
+            y_pred: list[Any] = []
             for document in self.gold_standard_annotated_documents:
                 logger.debug(
                     f"Extracting gold standard and LLM prediction for"
@@ -103,9 +104,15 @@ class GoldStandardLLMEvaluator:
                 gs_val = document.get_attribute_annotation(attribute).output_data
                 y_true.append(gs_val)
 
-                llm_doc = self.llm_annotated_documents.get_by_id(
-                    document.document.safe_identity.document_id
-                )
+                try:
+                    llm_doc = self.llm_annotated_documents.get_by_id(
+                        document.document.safe_identity.document_id
+                    )
+                except ValueError:
+                    y_pred.append(None)
+                    missing_id = document.document.safe_identity.document_id
+                    logger.warning(f"LLM annotated doc not found - ID: {missing_id}")
+                    continue
                 llm_val = llm_doc.get_attribute_annotation(attribute).output_data
                 y_pred.append(llm_val)
 
@@ -117,6 +124,7 @@ class GoldStandardLLMEvaluator:
             for metric_name, metric_fn in combined_metrics.items():
                 try:
                     value = float(metric_fn(y_true, y_pred))
+                    logger.warning(f"It worked for {metric_name}!")
                 except (ValueError, TypeError) as e:
                     logger.warning(
                         f"Metric '{metric_name}' not applicable for "
