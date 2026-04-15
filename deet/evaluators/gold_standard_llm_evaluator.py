@@ -129,7 +129,6 @@ class GoldStandardLLMEvaluator:
             for metric_name, metric_fn in combined_metrics.items():
                 try:
                     value = float(metric_fn(y_true, y_pred))
-                    logger.warning(f"It worked for {metric_name}!")
                 except (ValueError, TypeError) as e:
                     logger.warning(
                         f"Metric '{metric_name}' not applicable for "
