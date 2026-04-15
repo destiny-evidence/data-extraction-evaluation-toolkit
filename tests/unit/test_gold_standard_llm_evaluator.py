@@ -107,6 +107,38 @@ def test_evaluator_fails_gracefully_missing_doc(
 
 
 @pytest.fixture
+def processed_data_duplicated_annotations(processed_data):
+    """Create ProcessedEppiAnnotationData with test attributes."""
+    processed_data_duplicated_annotations = deepcopy(processed_data)
+    for doc in processed_data_duplicated_annotations.annotated_documents:
+        doc.annotations = doc.annotations + doc.annotations
+    return processed_data_duplicated_annotations
+
+
+# When an llm returns multiple values for the same attribute, metrics should be None
+# and we should warn rather than fail
+def test_evaluator_fails_gracefully_duplicated_annotations(
+    processed_data, processed_data_duplicated_annotations
+):
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_data.annotated_documents,
+        llm_annotated_documents=processed_data_duplicated_annotations.annotated_documents,
+        attributes=[processed_data.attributes[0]],
+        extraction_run_id="",
+    )
+    evaluator.evaluate_llm_annotations()
+    for m in evaluator.calculated_metrics:
+        if m.metric_name != "n_labels":
+            assert m.value is None
+
+    logger.remove(logger_id)
+    warn_string = "LLM produced multiple annotations for a single attribute"
+    assert any(warn_string in m for m in messages)
+
+
+@pytest.fixture
 def evaluator_evaluated(processed_data):
     evaluator = GoldStandardLLMEvaluator(
         gold_standard_annotated_documents=processed_data.annotated_documents,

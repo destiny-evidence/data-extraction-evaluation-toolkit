@@ -97,23 +97,27 @@ class GoldStandardLLMEvaluator:
             y_true = []
             y_pred: list[Any] = []
             for document in self.gold_standard_annotated_documents:
+                doc_id = document.document.safe_identity.document_id
                 logger.debug(
-                    f"Extracting gold standard and LLM prediction for"
-                    f" doc {document.document.safe_identity.document_id}"
+                    f"Extracting gold standard and LLM prediction for" f" doc {doc_id}"
                 )
                 gs_val = document.get_attribute_annotation(attribute).output_data
                 y_true.append(gs_val)
 
                 try:
-                    llm_doc = self.llm_annotated_documents.get_by_id(
-                        document.document.safe_identity.document_id
-                    )
+                    llm_doc = self.llm_annotated_documents.get_by_id(doc_id)
                 except ValueError:
                     y_pred.append(None)
-                    missing_id = document.document.safe_identity.document_id
-                    logger.warning(f"LLM annotated doc not found - ID: {missing_id}")
+                    logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
                     continue
-                llm_val = llm_doc.get_attribute_annotation(attribute).output_data
+                try:
+                    llm_val = llm_doc.get_attribute_annotation(attribute).output_data
+                except ValueError:
+                    llm_val = None
+                    logger.warning(
+                        f"LLM produced multiple annotations for a single"
+                        f" attribute with doc: {doc_id}"
+                    )
                 y_pred.append(llm_val)
 
             applicable_metrics = get_metrics_for_attribute_type(
