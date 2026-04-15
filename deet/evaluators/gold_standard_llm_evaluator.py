@@ -208,10 +208,32 @@ class GoldStandardLLMEvaluator:
             )
             writer.writeheader()
             for doc in self.gold_standard_annotated_documents:
-                llm_annotation = self.llm_annotated_documents.get_by_id(
-                    doc.document.safe_identity.document_id
-                )
+                try:
+                    llm_annotated_doc = self.llm_annotated_documents.get_by_id(
+                        doc.document.safe_identity.document_id
+                    )
+                except ValueError:
+                    llm_annotated_doc = None
                 for attribute in self.attributes:
+                    if llm_annotated_doc is None:
+                        llm_extraction = None
+                        llm_reasoning: str | None = (
+                            "LLM did not produce an output for this document."
+                            " Check the logs carefully to find out why"
+                        )
+                    else:
+                        try:
+                            llm_annotation = llm_annotated_doc.get_attribute_annotation(
+                                attribute
+                            )
+                            llm_extraction = llm_annotation.output_data
+                            llm_reasoning = llm_annotation.reasoning
+                        except ValueError:
+                            llm_extraction = None
+                            llm_reasoning = (
+                                "The LLM produced multiple annotations"
+                                "for this single attribute"
+                            )
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
@@ -221,12 +243,8 @@ class GoldStandardLLMEvaluator:
                             "human_extraction": doc.get_attribute_annotation(
                                 attribute
                             ).output_data,
-                            "llm_extraction": llm_annotation.get_attribute_annotation(
-                                attribute
-                            ).output_data,
-                            "llm_reasoning": llm_annotation.get_attribute_annotation(
-                                attribute
-                            ).reasoning,
+                            "llm_extraction": llm_extraction,
+                            "llm_reasoning": llm_reasoning,
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )

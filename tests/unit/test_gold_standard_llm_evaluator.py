@@ -87,7 +87,7 @@ def processed_data_missing_doc(processed_data):
 # When a doc is missing from llm_preds, metrics should be None
 # and we should warn rather than fail
 def test_evaluator_fails_gracefully_missing_doc(
-    processed_data, processed_data_missing_doc
+    processed_data, processed_data_missing_doc, tmp_path
 ):
     messages = []
     logger_id = logger.add(messages.append, level="WARNING")
@@ -105,6 +105,8 @@ def test_evaluator_fails_gracefully_missing_doc(
     logger.remove(logger_id)
     assert any("LLM annotated doc not found" in m for m in messages)
 
+    evaluator.export_llm_comparison(tmp_path / "llm_human_comparison.csv")
+
 
 @pytest.fixture
 def processed_data_duplicated_annotations(processed_data):
@@ -118,7 +120,7 @@ def processed_data_duplicated_annotations(processed_data):
 # When an llm returns multiple values for the same attribute, metrics should be None
 # and we should warn rather than fail
 def test_evaluator_fails_gracefully_duplicated_annotations(
-    processed_data, processed_data_duplicated_annotations
+    processed_data, processed_data_duplicated_annotations, tmp_path
 ):
     messages = []
     logger_id = logger.add(messages.append, level="WARNING")
@@ -136,6 +138,8 @@ def test_evaluator_fails_gracefully_duplicated_annotations(
     logger.remove(logger_id)
     warn_string = "LLM produced multiple annotations for a single attribute"
     assert any(warn_string in m for m in messages)
+
+    evaluator.export_llm_comparison(tmp_path / "llm_human_comparison.csv")
 
 
 @pytest.fixture
