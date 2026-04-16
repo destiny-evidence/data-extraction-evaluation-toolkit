@@ -377,7 +377,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             position = AuthorPosition.MIDDLE
             if i == 0:
                 position = AuthorPosition.FIRST
-            if i == len(clean_authors) - 1:
+            elif i == len(clean_authors) - 1:
                 position = AuthorPosition.LAST
             authorship.append(Authorship(display_name=author, position=position))
         return authorship
