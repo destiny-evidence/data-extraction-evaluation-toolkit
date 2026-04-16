@@ -151,3 +151,39 @@ class TestLoadCsv:
         colnames, _, _, _ = converter.load_csv("fake.csv")
         assert "name" in colnames
         assert "document_id" in colnames
+
+
+# --- build_attributes ---
+class TestBuildAttributes:
+    """Tests for build_attributes."""
+
+    def test_infers_integer_attribute(self, converter):
+        """Integer column inferred and attribute built correctly."""
+        rows = [{"num_patients": "100"}, {"num_patients": "250"}]
+        attrs = converter.build_attributes(["num_patients"], rows)
+        assert len(attrs) == 1
+        assert attrs[0].output_data_type == AttributeType.INTEGER
+        assert attrs[0].attribute_label == "num_patients"
+
+
+# --- build_destiny_authorship_list ---
+class TestBuildAuthorshipList:
+    """Tests for _build_destiny_authorship_list."""
+
+    def test_single_author(self, converter):
+        """Single author parsed with correct display name."""
+        result = converter._build_destiny_authorship_list("Alice")
+        assert len(result) == 1
+        assert result[0].display_name == "Alice"
+        assert result[0].position.value == "first"
+
+    def test_multiple_authors_positions(self, converter):
+        """First, middle, and last positions assigned correctly."""
+        result = converter._build_destiny_authorship_list("Alice; Bob; Mo")
+        assert result[0].position.value == "first"
+        assert result[1].position.value == "middle"
+        assert result[2].position.value == "last"
+
+    def test_empty_string_returns_empty(self, converter):
+        """Empty string returns empty list."""
+        assert converter._build_destiny_authorship_list("") == []
