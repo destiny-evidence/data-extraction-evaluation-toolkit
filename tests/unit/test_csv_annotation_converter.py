@@ -1,6 +1,7 @@
 """Tests for csv_annotation_converter."""
 
 import io
+import random
 from pathlib import Path
 
 import pytest
@@ -187,3 +188,125 @@ class TestBuildAuthorshipList:
     def test_empty_string_returns_empty(self, converter):
         """Empty string returns empty list."""
         assert converter._build_destiny_authorship_list("") == []
+
+
+# --- Create realistic data ---
+def add_white_space(string: str) -> str:
+    """Randomly add leading/trailing whitespace to a string."""
+    if random.random() < 0.2:  # noqa: S311
+        string = " " + string
+    if random.random() < 0.2:  # noqa: S311
+        string = string + " "
+    return string
+
+
+@pytest.fixture
+def sample_csv_fixture() -> str:
+    random.seed(42)
+    rows = [
+        "document_id, name, publication_year, journal, authors, "
+        "about_adaptation, num_patients"
+    ]
+
+    journal_names = [
+        "Nature",
+        "PSRM",
+        "Science",
+        "PNAS",
+        "NeurIPS",
+        "AAAS",
+        "Cell",
+        "NEJM",
+    ]
+    authors = [
+        "Smith J.;Johnson L.;Williams K.",
+        "Chen Y.;Li X.;Wang Z.",
+        "Garcia M.;Rodriguez L.;Martinez R.",
+        "Patel R.;Singh A.;Kaur S.",
+        "Nguyen T.;Tran P.",
+        "Oluwaseun A.;Adebola T.",
+        "Kim H.;Park J.;Lee S.",
+        "Ahmed S.;Hassan M.",
+        "Brown M.;Davis T.",
+        "Taylor B.;Anderson C.",
+    ]
+
+    # Generate 100 rows with some empty values
+    for _ in range(100):
+        # Required fields
+        document_id = _
+        name = f"name_{_}"
+
+        # Bibliographhic info (sometimes empty)
+        publication_year = add_white_space(
+            random.choice([str(random.randint(1990, 2025)), ""])  # noqa: S311
+        )
+        journal = add_white_space(random.choice([*journal_names, ""]))  # noqa: S311
+        author = add_white_space(random.choice([*authors, ""]))  # noqa: S311
+
+        # Attributes (sometimes empty)
+        about_adaptation = add_white_space(random.choice(["t", "f", ""]))  # noqa: S311
+        num_patients = add_white_space(
+            random.choice([str(random.randint(20, 500)), ""])  # noqa: S311
+        )
+
+        rows.append(
+            f"{document_id},{name},{publication_year},{journal},{author},{about_adaptation},{num_patients}"
+        )
+
+    return "\n".join(rows)
+
+
+# --- test ProcessAnnotationFile ---
+REFERENCE_FIELDS = {
+    "publication_year": "publication_year",
+    "publication_venue.display_name": "journal",
+    "authorship": "authors",
+}
+
+
+class TestProcessAnnotationFile:
+    """Tests for process_annotation_file()."""
+
+    def test_produces_expected_counts(self, converter, sample_csv_fixture, mocker):
+        """Processing returns correct number of documents and annotated documents."""
+        mocker.patch.object(Path, "open", return_value=io.StringIO(sample_csv_fixture))
+        result = converter.process_annotation_file(
+            "fake.csv", reference_fields=REFERENCE_FIELDS
+        )
+        assert len(result.documents) == 100
+        assert len(result.annotated_documents) == 100
+
+    def test_inferred_attribute_types(self, converter, sample_csv_fixture, mocker):
+        """Attribute types are correctly inferred from column values."""
+        mocker.patch.object(Path, "open", return_value=io.StringIO(sample_csv_fixture))
+        result = converter.process_annotation_file(
+            "fake.csv", reference_fields=REFERENCE_FIELDS
+        )
+        attr_by_label = {a.attribute_label: a for a in result.attributes}
+        assert attr_by_label["about_adaptation"].output_data_type == AttributeType.BOOL
+        assert attr_by_label["num_patients"].output_data_type == AttributeType.INTEGER
+
+    def test_reference_fields_excluded_from_attributes(
+        self, converter, sample_csv_fixture, mocker
+    ):
+        """Reference field columns are not included as attributes."""
+        mocker.patch.object(Path, "open", return_value=io.StringIO(sample_csv_fixture))
+        result = converter.process_annotation_file(
+            "fake.csv", reference_fields=REFERENCE_FIELDS
+        )
+        attr_labels = {a.attribute_label for a in result.attributes}
+        assert "journal" not in attr_labels
+        assert "authors" not in attr_labels
+        assert "publication_year" not in attr_labels
+
+    def test_attribute_id_to_label_mapping(self, converter, sample_csv_fixture, mocker):
+        """Attribute ID to label mapping is consistent with attributes list."""
+        mocker.patch.object(Path, "open", return_value=io.StringIO(sample_csv_fixture))
+        result = converter.process_annotation_file(
+            "fake.csv", reference_fields=REFERENCE_FIELDS
+        )
+        for attr in result.attributes:
+            assert (
+                result.attribute_id_to_label[attr.attribute_id] == attr.attribute_label
+            )
