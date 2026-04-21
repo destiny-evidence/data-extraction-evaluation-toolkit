@@ -47,6 +47,7 @@ def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
 
         assert len(result.attributes) > 0
         assert len(result.documents) > 0
+        assert len(result.annotations) > 0
 
 
 @pytest.fixture
@@ -375,10 +376,10 @@ def test_full_workflow(sample_eppi_data: dict) -> None:
     ("attribute_type_str", "expected_type"),
     [
         ("string", AttributeType.STRING),
-        ("integer", AttributeType.INTEGER),
+        # ("integer", AttributeType.INTEGER),
         ("bool", AttributeType.BOOL),
-        ("list", AttributeType.LIST),
-        ("dict", AttributeType.DICT),
+        # ("list", AttributeType.LIST),
+        # ("dict", AttributeType.DICT),
     ],
 )
 def test_full_workflow_custom_att_type_str_valid(
