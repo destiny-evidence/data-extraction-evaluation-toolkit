@@ -4,6 +4,7 @@ import csv
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+from xmlrpc.client import Boolean
 
 from destiny_sdk.enhancements import (
     AbstractContentEnhancement,
@@ -16,7 +17,7 @@ from destiny_sdk.enhancements import (
 )
 from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 
 from deet.data_models.base import (
     AnnotationType,
@@ -67,6 +68,13 @@ class ColumnTypeInferenceError(Exception):
     """Raised when column type inference fails due to incompatible types."""
 
 
+class CSVParserConfig(BaseModel):
+    """Configuration Seetings for parsing CSV."""
+
+    author_separator: str = ";"
+    auto_assign_reference_fields: Boolean = False
+
+
 class CSVAnnotationConverter(AnnotationConverter):
     """
     A class to convert raw CSV (e.g. Covidence) annotations
@@ -76,13 +84,14 @@ class CSVAnnotationConverter(AnnotationConverter):
     and produces attributes, documents, and annotated document records.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         base_output_dir: str | Path | None = DEFAULT_BASE_OUTPUT_DIR,
         attributes_filename: str = DEFAULT_ATTRIBUTES_FILENAME,
         documents_filename: str = DEFAULT_DOCUMENTS_FILENAME,
         annotated_documents_filename: str = DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
         attribute_mapping_filename: str = DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
+        config: CSVParserConfig | None = None,
     ) -> None:
         """
         Initialize the converter output configurations (base directory + filenames) to
@@ -96,6 +105,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             attribute_mapping_filename: Filename for attribute ID to label mapping
 
         """
+        self.config = config or CSVParserConfig()
         # If no directory given, write everything relative to current working directory
         if base_output_dir is None:
             logger.debug(
@@ -365,8 +375,9 @@ class CSVAnnotationConverter(AnnotationConverter):
 
         """
         # Split on semicolons, strip whitespace, and remove any empty entries
+        sep: str = self.config.author_separator
         clean_authors = [
-            author.strip() for author in authors.split(";") if author.strip()
+            author.strip() for author in authors.split(sep) if author.strip()
         ]
 
         authorship: list[Authorship] = []
@@ -445,7 +456,7 @@ class CSVAnnotationConverter(AnnotationConverter):
 
     def load_csv(
         self,
-        file_path: str | Path,
+        file_path: Path,
         attribute_fields: list[str] | None = None,
         reference_fields: dict | None = None,
     ) -> tuple[list[str], dict[str, str], list[str], list[dict[str, Any]]]:
@@ -462,23 +473,35 @@ class CSVAnnotationConverter(AnnotationConverter):
             colnames: list[str] = [h.strip().lower() for h in raw_headers]
             csv_reader.fieldnames = colnames
 
-            # validate duplicates
+            # --- validate duplicates ---
             dup_fields = self._find_duplicate_column_names(colnames)
             if dup_fields:
                 msg = f"{len(dup_fields)} Duplicate fieldnames found: {dup_fields}"
                 raise ValueError(msg)
 
-            # validate required fields
+            # --- validate required fields ---
             meta_fields = {"name", "document_id"}
             missing = meta_fields - set(colnames)
             if missing:
                 msg = f"Required columns missing: {missing}"
                 raise ValueError(msg)
 
+            # --- validate reference fields ---
+            # If reference_fields is not povided....
             if reference_fields is None:
-                logger.info("No reference fields provided")
-                reference_fields = {}
-            else:
+                if self.config.auto_assign_reference_fields:
+                    logger.info("Auto assigning reference fields")
+                    reference_fields = {
+                        ref_field: ref_field
+                        for ref_field in ALLOWED_REFERENCE_MAPPING_KEYS
+                        if ref_field in colnames
+                    }
+                else:
+                    logger.info("No reference fields provided and auto assign is False")
+                    reference_fields = {}
+
+            # If reference_fields is povided....
+            if reference_fields:
                 invalid_keys = set(reference_fields) - ALLOWED_REFERENCE_MAPPING_KEYS
                 if invalid_keys:
                     msg = f"Invalid mapping keys: {invalid_keys}"
@@ -494,6 +517,7 @@ class CSVAnnotationConverter(AnnotationConverter):
                     msg = f"Reference fields not found in CSV: {unknown}"
                     raise ValueError(msg)
 
+            # --- validate attribute fields ---
             # normalize and validate provided attribute fields
             if attribute_fields is None:
                 logger.info("No attribute fields provided")
@@ -639,6 +663,8 @@ class CSVAnnotationConverter(AnnotationConverter):
             ProcessedAnnotationData containing all processed data.
 
         """
+        file_path = Path(file_path)
+
         if set_attribute_type is not None:
             msg = (
                 "CsvAnnotationConverter does not support set_attribute_type; "
