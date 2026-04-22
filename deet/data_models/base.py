@@ -1,12 +1,13 @@
 """Core data models regarding annotations."""
 
 import csv
+from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal, Never, TypeVar, cast
 
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 from pydantic.config import JsonDict, JsonValue
 from tabulate import tabulate
 
@@ -104,6 +105,7 @@ class AttributeType(StrEnum):
 
 
 DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
+SUPPORTED_TYPES = str | int | float | bool | list | dict
 
 
 class Attribute(BaseModel):
@@ -247,11 +249,32 @@ class Attribute(BaseModel):
 AttributeTypeVar = TypeVar("AttributeTypeVar", bound=Attribute)
 
 
+def coerce_annotation_to_str(val: SUPPORTED_TYPES) -> str:
+    """Coerce an annotation to a string."""
+    return str(val) if val else ""
+
+
+def coerce_annotation_to_bool(_val: SUPPORTED_TYPES) -> bool:
+    """Coerce an annotation to a bool."""
+    return True
+
+
+ANNOTATION_COERCION_STRATEGIES: dict[AttributeType, Callable] = {
+    AttributeType.STRING: coerce_annotation_to_str,
+    AttributeType.BOOL: coerce_annotation_to_bool,
+}
+
+
 class GoldStandardAnnotation(BaseModel):
     """A single gold standard annotation for an attribute."""
 
     attribute: Attribute
-    output_data: Any
+    raw_data: Any = Field(
+        description=(
+            "The output data exactly as it was first seen"
+            " without any coercion to the correct type"
+        )
+    )
     annotation_type: AnnotationType
     additional_text: str | None = Field(
         description="Notes provided by the annotator - usually the citation "
@@ -264,24 +287,22 @@ class GoldStandardAnnotation(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def ensure_correct_type(cls, data: dict) -> dict:
-        """Ensure output_data is of the type required by annotation_type."""
-        target_att: Attribute = data["attribute"]
-
-        if isinstance(target_att, dict):
-            output_data_type = AttributeType(target_att["output_data_type"])
-        else:
-            output_data_type = target_att.output_data_type
-
-        target_type: type = output_data_type.to_python_type()
-
-        if not isinstance(data["output_data"], target_type):
-            bad_type = (
-                f"field {data['output_data']} is of "
-                f" type {type(data['output_data'])}; should be {target_type}."
-            )
-            raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
+    def handle_output_data_input(cls, data: SUPPORTED_TYPES) -> SUPPORTED_TYPES:
+        """Catch instantations with output_data and send this to raw_data."""
+        if isinstance(data, dict) and "output_data" in data and "raw_data" not in data:
+            data["raw_data"] = data.pop("output_data")
         return data
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def output_data(self) -> SUPPORTED_TYPES:
+        """Coerce raw data to correct type based on attribute."""
+        strategy = ANNOTATION_COERCION_STRATEGIES.get(self.attribute.output_data_type)
+
+        if strategy:
+            return strategy(self.raw_data)
+
+        return self.raw_data
 
 
 GoldStandardAnnotationTypeVar = TypeVar(
