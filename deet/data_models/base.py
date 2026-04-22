@@ -254,8 +254,14 @@ def coerce_annotation_to_str(val: SUPPORTED_TYPES) -> str:
     return str(val) if val else ""
 
 
-def coerce_annotation_to_bool(_val: SUPPORTED_TYPES) -> bool:
+def coerce_annotation_to_bool(val: SUPPORTED_TYPES) -> bool:
     """Coerce an annotation to a bool."""
+    if isinstance(val, str) and val.lower() in ("false", "0"):
+        return False
+
+    if isinstance(val, int | float):
+        return bool(val)
+
     return True
 
 

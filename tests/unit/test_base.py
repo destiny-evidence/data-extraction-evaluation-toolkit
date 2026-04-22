@@ -777,7 +777,7 @@ def test_gold_standard_annotation_with_llm_type_from_dict() -> None:
     assert annotation.annotation_type == AnnotationType.LLM
 
 
-def test_gold_standard_annotation_bool_type_invalid() -> None:
+def test_gold_standard_annotation_bool_is_booled() -> None:
     """Test that wrong type for bool attribute raises ValueError."""
     attr = Attribute(
         prompt="Is this valid?",
@@ -786,12 +786,37 @@ def test_gold_standard_annotation_bool_type_invalid() -> None:
         attribute_label="Test Bool Attribute",
     )
 
-    with pytest.raises(ValueError, match="should be"):
-        GoldStandardAnnotation(
-            attribute=attr,
-            output_data="not a bool",
-            annotation_type=AnnotationType.HUMAN,
-        )
+    annotation = GoldStandardAnnotation(
+        attribute=attr,
+        raw_data="not a bool",
+        annotation_type=AnnotationType.HUMAN,
+    )
+
+    assert isinstance(annotation.output_data, bool)
+    assert annotation.output_data
+
+
+def test_gold_standard_annotation_string_preserved_on_type_change() -> None:
+    """Test that wrong type for bool attribute raises ValueError."""
+    attr = Attribute(
+        prompt="Is this valid?",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Bool Attribute",
+    )
+
+    string_value = "not a bool"
+    annotation = GoldStandardAnnotation(
+        attribute=attr,
+        raw_data=string_value,
+        annotation_type=AnnotationType.HUMAN,
+    )
+    assert isinstance(annotation.output_data, bool)
+
+    attr.output_data_type = AttributeType.STRING
+
+    assert isinstance(annotation.output_data, str)
+    assert annotation.output_data == string_value
 
 
 def test_gold_standard_annotated_document_creation() -> None:
@@ -807,7 +832,7 @@ def test_gold_standard_annotated_document_creation() -> None:
 
     annotation = GoldStandardAnnotation(
         attribute=attr,
-        output_data=True,
+        raw_data=True,
         annotation_type=AnnotationType.HUMAN,
     )
 
