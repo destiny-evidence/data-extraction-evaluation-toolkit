@@ -240,7 +240,7 @@ class EppiAnnotationConverter(AnnotationConverter):
         # elsewhere a functionality that auto-maps output_data to the correct data type.
         attr = attributes_lookup.get(annotation.get("AttributeId", 0))
         if attr is not None and attr.output_data_type == AttributeType.BOOL:
-            output_data = bool(output_data)
+            output_data = True
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -293,12 +293,17 @@ class EppiAnnotationConverter(AnnotationConverter):
             List of EppiGoldStandardAnnotation models
 
         """
-        return [
-            self._convert_single_annotation(
-                annotation, attributes_lookup, attribute_id_to_label
-            )
-            for annotation in annotations_data
-        ]
+        results = []
+        for annotation in annotations_data:
+            try:
+                converted = self._convert_single_annotation(
+                    annotation, attributes_lookup, attribute_id_to_label
+                )
+                results.append(converted)
+            except ValueError as e:
+                logger.warning(f"Skipping annotation due to error: {e}")
+                continue
+        return results
 
     def process_annotation_file(
         self,
