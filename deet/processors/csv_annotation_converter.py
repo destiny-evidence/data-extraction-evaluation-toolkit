@@ -605,25 +605,11 @@ class CSVAnnotationConverter(AnnotationConverter):
             # --- Build Document Annotations ---
             annotations = []
             for label, attr in attr_by_label.items():
-                python_type = attr.output_data_type.to_python_type()
-
                 raw_value = row[label].strip()
-
-                converted_value: Any = None
-
-                if raw_value != "":
-                    if python_type is bool:
-                        converted_value = raw_value.lower() in ["true", "t"]
-                    elif python_type is int:
-                        converted_value = int(raw_value)
-                    elif python_type is float:
-                        converted_value = float(raw_value)
-                    else:
-                        converted_value = raw_value
 
                 annotation = GoldStandardAnnotation(
                     attribute=attr,
-                    output_data=converted_value,
+                    raw_data=raw_value,
                     annotation_type=AnnotationType.HUMAN,
                 )
 
