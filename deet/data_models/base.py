@@ -255,6 +255,8 @@ def coerce_annotation_to_str(val: SUPPORTED_TYPES) -> str:
 
 def coerce_annotation_to_bool(val: SUPPORTED_TYPES) -> bool:
     """Coerce an annotation to a bool."""
+    if isinstance(val, bool):
+        return val
     if isinstance(val, str) and val.lower() in ("false", "0"):
         return False
 
@@ -264,9 +266,39 @@ def coerce_annotation_to_bool(val: SUPPORTED_TYPES) -> bool:
     return True
 
 
+def coerce_annotation_to_int(val: SUPPORTED_TYPES) -> int | None:
+    """Coerce an annotation to a bool."""
+    if isinstance(val, int):
+        return val
+    if isinstance(val, str | float | bool):
+        try:
+            return int(val)
+        except ValueError:
+            logger.warning("Could not convert {val} to int")
+
+        logger.warning("Could not convert {val} to int")
+    return None
+
+
+def coerce_annotation_to_float(val: SUPPORTED_TYPES) -> float | None:
+    """Coerce an annotation to a bool."""
+    if isinstance(val, float):
+        return val
+    if isinstance(val, str | bool | int):
+        try:
+            return float(val)
+        except ValueError:
+            logger.warning("Could not convert {val} to float")
+
+        logger.warning("Could not convert {val} to float")
+    return None
+
+
 ANNOTATION_COERCION_STRATEGIES: dict[AttributeType, Callable] = {
     AttributeType.STRING: coerce_annotation_to_str,
     AttributeType.BOOL: coerce_annotation_to_bool,
+    AttributeType.INTEGER: coerce_annotation_to_int,
+    AttributeType.FLOAT: coerce_annotation_to_float,
 }
 
 
