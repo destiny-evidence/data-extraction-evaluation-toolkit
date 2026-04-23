@@ -7,6 +7,7 @@ import csv
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
+from typing import Any
 
 import sklearn.metrics  # type:ignore[import-untyped]
 from loguru import logger
@@ -25,6 +26,7 @@ from deet.data_models.evaluation import (
     check_metric_returns_float,
     get_metrics_for_attribute_type,
 )
+from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
 
 
 class GoldStandardLLMEvaluator:
@@ -94,19 +96,29 @@ class GoldStandardLLMEvaluator:
                 f"Calculating metric for attribute: {attribute.attribute_label}"
             )
             y_true = []
-            y_pred = []
+            y_pred: list[Any] = []
             for document in self.gold_standard_annotated_documents:
+                doc_id = document.document.safe_identity.document_id
                 logger.debug(
-                    f"Extracting gold standard and LLM prediction for"
-                    f" doc {document.document.safe_identity.document_id}"
+                    f"Extracting gold standard and LLM prediction for" f" doc {doc_id}"
                 )
                 gs_val = document.get_attribute_annotation(attribute).output_data
                 y_true.append(gs_val)
 
-                llm_doc = self.llm_annotated_documents.get_by_id(
-                    document.document.safe_identity.document_id
-                )
-                llm_val = llm_doc.get_attribute_annotation(attribute).output_data
+                try:
+                    llm_doc = self.llm_annotated_documents.get_by_id(doc_id)
+                except MissingDocumentError:
+                    y_pred.append(None)
+                    logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
+                    continue
+                try:
+                    llm_val = llm_doc.get_attribute_annotation(attribute).output_data
+                except DuplicateAnnotationError:
+                    llm_val = None
+                    logger.warning(
+                        f"LLM produced multiple annotations for a single"
+                        f" attribute with doc: {doc_id}"
+                    )
                 y_pred.append(llm_val)
 
             applicable_metrics = get_metrics_for_attribute_type(
@@ -196,10 +208,32 @@ class GoldStandardLLMEvaluator:
             )
             writer.writeheader()
             for doc in self.gold_standard_annotated_documents:
-                llm_annotation = self.llm_annotated_documents.get_by_id(
-                    doc.document.safe_identity.document_id
-                )
+                try:
+                    llm_annotated_doc = self.llm_annotated_documents.get_by_id(
+                        doc.document.safe_identity.document_id
+                    )
+                except MissingDocumentError:
+                    llm_annotated_doc = None
                 for attribute in self.attributes:
+                    if llm_annotated_doc is None:
+                        llm_extraction = None
+                        llm_reasoning: str | None = (
+                            "LLM did not produce an output for this document."
+                            " Check the logs carefully to find out why"
+                        )
+                    else:
+                        try:
+                            llm_annotation = llm_annotated_doc.get_attribute_annotation(
+                                attribute
+                            )
+                            llm_extraction = llm_annotation.output_data
+                            llm_reasoning = llm_annotation.reasoning
+                        except DuplicateAnnotationError:
+                            llm_extraction = None
+                            llm_reasoning = (
+                                "The LLM produced multiple annotations"
+                                "for this single attribute"
+                            )
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
@@ -209,12 +243,8 @@ class GoldStandardLLMEvaluator:
                             "human_extraction": doc.get_attribute_annotation(
                                 attribute
                             ).output_data,
-                            "llm_extraction": llm_annotation.get_attribute_annotation(
-                                attribute
-                            ).output_data,
-                            "llm_reasoning": llm_annotation.get_attribute_annotation(
-                                attribute
-                            ).reasoning,
+                            "llm_extraction": llm_extraction,
+                            "llm_reasoning": llm_reasoning,
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )

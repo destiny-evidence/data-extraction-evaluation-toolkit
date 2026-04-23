@@ -1,6 +1,26 @@
 """Custom exceptions."""
 
 
+class MissingDocumentError(Exception):
+    """
+    Raise when looking up a document by id fails.
+
+    Args:
+        Exception (_type_):
+
+    """
+
+
+class DuplicateAnnotationError(Exception):
+    """
+    Raise when multiple annotations for a single attribute are present.
+
+    Args:
+        Exception (_type_):
+
+    """
+
+
 class InvalidInputFileTypeError(Exception):
     """
     Raise when user supplies a not permitted input file type.

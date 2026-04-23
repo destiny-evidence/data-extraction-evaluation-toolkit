@@ -66,8 +66,7 @@ class AttributeType(StrEnum):
                 return {}
             case _:
                 unsupported = (
-                    "No default for missing annotation when attribute type is "
-                    f"{self!s}"
+                    f"No default for missing annotation when attribute type is {self!s}"
                 )
                 raise ValueError(unsupported)
 
@@ -274,13 +273,14 @@ class GoldStandardAnnotation(BaseModel):
             output_data_type = target_att.output_data_type
 
         target_type: type = output_data_type.to_python_type()
+        value = data["output_data"]
 
-        if not isinstance(data["output_data"], target_type):
+        if value is not None and not isinstance(value, target_type):
             bad_type = (
                 f"field {data['output_data']} is of "
                 f" type {type(data['output_data'])}; should be {target_type}."
             )
-            raise ValueError(bad_type)  # noqa: TRY004 raising ValueError because of pydantic
+            raise ValueError(bad_type)
         return data
 
 
@@ -341,7 +341,7 @@ class LLMAnnotationResponse(BaseModel):
         ...,
         description="The LLM's annotation.",
         json_schema_extra=cast(
-            JsonDict,
+            "JsonDict",
             {
                 "anyOf": [
                     attribute_type.to_json_type() for attribute_type in AttributeType

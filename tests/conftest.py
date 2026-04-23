@@ -89,7 +89,21 @@ def sample_eppi_data() -> dict:
                         "AdditionalText": "Dolor si amet...",
                         "ArmId": 3,
                         "ArmTitle": "Lorem ipsum",
-                    }
+                    },
+                    {
+                        "AttributeId": 6080466,
+                        "AdditionalText": "1",
+                        "ItemAttributeFullTextDetails": [],
+                        "ArmId": 0,
+                        "ArmTitle": "",
+                    },
+                    {
+                        "AttributeId": 123,
+                        "AdditionalText": "1",
+                        "ItemAttributeFullTextDetails": [],
+                        "ArmId": 0,
+                        "ArmTitle": "",
+                    },
                 ],
             }
         ],
