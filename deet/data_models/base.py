@@ -303,7 +303,13 @@ ANNOTATION_COERCION_STRATEGIES: dict[AttributeType, Callable] = {
 
 
 class GoldStandardAnnotation(BaseModel):
-    """A single gold standard annotation for an attribute."""
+    """
+    A single gold standard annotation for an attribute.
+
+    `raw_data` stores the data as it comes from source,
+    `output_data` is computed and coerces raw_data into the correct type.
+    This can change if the `AttributeType` of the `attribute` changes.
+    """
 
     attribute: Attribute
     raw_data: Any = Field(
