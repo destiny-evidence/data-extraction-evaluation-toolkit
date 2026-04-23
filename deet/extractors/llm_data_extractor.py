@@ -773,7 +773,7 @@ class LLMDataExtractor:
             # Convert to full EppiGoldStandardAnnotation
             annotation = GoldStandardAnnotation(
                 attribute=attribute,
-                output_data=llm_annotation.output_data,
+                raw_data=llm_annotation.output_data,
                 annotation_type=AnnotationType.LLM,
                 additional_text=additional_text,
                 reasoning=reasoning,
