@@ -88,6 +88,7 @@ The documentation website is available at [https://destiny-evidence.github.io/de
 ## Acknowledgements
 
 We acknowledge with thanks funding from the following funders and projects:
+
 - **Wellcome Trust**
 - **Education Endowment Foundation**
 - **Economic and Social Research Council (ESRC)**
