@@ -7,7 +7,7 @@
 `deet` is a python framework to build reproducible and well-evaluated data extraction pipelines using LLMs.
 
 It is designed for use in an evidence synthesis context, where the documents from which data is extracted are scientific papers.
-In this context, <term:data extraction>, is conceived in a broad sense, including:
+In this context, [data extraction](concepts/data-extraction.md), is conceived in a broad sense, including:
 
 1. the categorisation of documents as relevant or not relevant according to pre-defined inclusion/exclusion criteria (**screening**);
 2. the categorisation of documents according to a predefined taxonomy of classes (**coding**);

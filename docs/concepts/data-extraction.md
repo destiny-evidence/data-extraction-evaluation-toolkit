@@ -1,6 +1,6 @@
 # Data Extraction
 
-The following section sets out the core components of data extraction
+The following section sets out the core components of how data extraction
 is conceptualised in `deet`
 
 ## Documents
@@ -126,7 +126,7 @@ attribute_relevance = Attribute(
 
 annotation = GoldStandardAnnotation(
     attribute = attribute_relevance
-    output_data = True
+    raw_data = True
     annotation_type: AnnotationType.HUMAN
 )
 ```
