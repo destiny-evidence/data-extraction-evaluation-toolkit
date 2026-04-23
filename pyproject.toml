@@ -11,6 +11,7 @@ dev = [
     "pytest-mock>=3.14.1",
     "pytest>=8.4.1",
     "ruff>=0.12.11",
+    "setuptools-scm>=10.0.5",
 ]
 docs = [
     "griffe-pydantic>=1.3.1",
@@ -147,6 +148,8 @@ pep8-naming.classmethod-decorators = ["classmethod"]
 package-data = {"deet.prompts" = ["*.txt"]}
 package-dir = {"" = "."}
 packages = {find = {exclude = ["test_env*", "tests*"]}}
+
+[tool.setuptools_scm]
 
 [tool.tomlsort]
 all = true
