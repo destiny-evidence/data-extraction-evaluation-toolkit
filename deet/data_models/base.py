@@ -338,7 +338,7 @@ class GoldStandardAnnotation(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def output_data(self) -> SUPPORTED_TYPES:
+    def output_data(self) -> SUPPORTED_TYPES | None:
         """Coerce raw data to correct type based on attribute."""
         strategy = ANNOTATION_COERCION_STRATEGIES.get(self.attribute.output_data_type)
 
