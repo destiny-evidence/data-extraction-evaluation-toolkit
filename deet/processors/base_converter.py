@@ -17,7 +17,7 @@ from deet.data_models.documents import (
 )
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 
-DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed_eppi")
+DEFAULT_BASE_OUTPUT_DIR = Path("tmp_parsed")
 DEFAULT_ATTRIBUTES_FILENAME = "attributes.json"
 DEFAULT_DOCUMENTS_FILENAME = "documents.json"
 DEFAULT_ANNOTATED_DOCUMENTS_FILENAME = "annotated_documents.json"
