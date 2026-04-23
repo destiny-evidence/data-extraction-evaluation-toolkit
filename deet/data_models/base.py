@@ -267,7 +267,7 @@ def coerce_annotation_to_bool(val: SUPPORTED_TYPES) -> bool:
 
 
 def coerce_annotation_to_int(val: SUPPORTED_TYPES) -> int | None:
-    """Coerce an annotation to a bool."""
+    """Coerce an annotation to a int."""
     if isinstance(val, int):
         return val
     if isinstance(val, str | float | bool):
@@ -276,21 +276,21 @@ def coerce_annotation_to_int(val: SUPPORTED_TYPES) -> int | None:
         except ValueError:
             logger.warning("Could not convert {val} to int")
 
-        logger.warning("Could not convert {val} to int")
+    logger.warning(f"Unsupported type for int conversion: {type(val).__name__}")
     return None
 
 
 def coerce_annotation_to_float(val: SUPPORTED_TYPES) -> float | None:
-    """Coerce an annotation to a bool."""
+    """Coerce an annotation to a float."""
     if isinstance(val, float):
         return val
     if isinstance(val, str | bool | int):
         try:
             return float(val)
         except ValueError:
-            logger.warning("Could not convert {val} to float")
+            logger.warning(f"Could not convert {val} to float")
 
-        logger.warning("Could not convert {val} to float")
+    logger.warning(f"Unsupported type for float conversion: {type(val).__name__}")
     return None
 
 
