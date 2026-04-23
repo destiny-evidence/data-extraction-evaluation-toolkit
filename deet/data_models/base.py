@@ -67,8 +67,7 @@ class AttributeType(StrEnum):
                 return {}
             case _:
                 unsupported = (
-                    "No default for missing annotation when attribute type is "
-                    f"{self!s}"
+                    f"No default for missing annotation when attribute type is {self!s}"
                 )
                 raise ValueError(unsupported)
 
@@ -368,7 +367,7 @@ class LLMAnnotationResponse(BaseModel):
         ...,
         description="The LLM's annotation.",
         json_schema_extra=cast(
-            JsonDict,
+            "JsonDict",
             {
                 "anyOf": [
                     attribute_type.to_json_type() for attribute_type in AttributeType
