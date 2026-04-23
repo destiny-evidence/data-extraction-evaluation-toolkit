@@ -4,3 +4,5 @@ MD013: false #  line-length
 ignore:
   - "tests/test_files/**/*"
 MD046: false # code block style (need both styles if tabs are to work)
+MD024:
+  siblings_only: true
