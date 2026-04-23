@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Evaluation of data extracted by LLMs
 - Documentation
 - Parsing of annotation data in CSV format
+- Dynamic versioning
 
 ### Changed
 
