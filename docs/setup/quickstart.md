@@ -34,7 +34,7 @@ This is where we will store configuration options and the results of your data e
 
     ??? note "Non-interactive project creation"
         If you wish to create a project without the interactive wizard, you can enter
-        project data as command line arguments. Run `deet project init --help` for 
+        project data as command line arguments. Run `deet project init --help` for
         more details. If you do this, you will need to create a `.env` file yourself
         to store API credentials (see [settings](../reference/api.md#deet.settings))
 
@@ -151,7 +151,7 @@ Now that you've defined your prompts, you are ready to extract data from your do
     If you wish to skip the interactive wizard, simply pass a path to a configuration file
     to the `--config-path` argument.
 
-    Running `deet experiments extract` will create a folder in your project's 
+    Running `deet experiments extract` will create a folder in your project's
     `data-extraction-experiments` directory, run the data extraction pipeline,
     and save the results of that experiment to the newly created folder.
 
