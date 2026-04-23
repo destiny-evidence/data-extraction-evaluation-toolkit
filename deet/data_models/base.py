@@ -294,7 +294,9 @@ def coerce_annotation_to_float(val: SUPPORTED_TYPES) -> float | None:
     return None
 
 
-ANNOTATION_COERCION_STRATEGIES: dict[AttributeType, Callable] = {
+ANNOTATION_COERCION_STRATEGIES: dict[
+    AttributeType, Callable[[SUPPORTED_TYPES], SUPPORTED_TYPES | None]
+] = {
     AttributeType.STRING: coerce_annotation_to_str,
     AttributeType.BOOL: coerce_annotation_to_bool,
     AttributeType.INTEGER: coerce_annotation_to_int,

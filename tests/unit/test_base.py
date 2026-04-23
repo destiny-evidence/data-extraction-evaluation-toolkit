@@ -797,7 +797,7 @@ def test_gold_standard_annotation_bool_is_booled() -> None:
 
 
 def test_gold_standard_annotation_string_preserved_on_type_change() -> None:
-    """Test that wrong type for bool attribute raises ValueError."""
+    """Test that changing attribute type preserves the string value of an annotation."""
     attr = Attribute(
         prompt="Is this valid?",
         output_data_type=AttributeType.BOOL,
