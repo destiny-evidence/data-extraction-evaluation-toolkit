@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
+requires = ["setuptools>=80.0.0", "setuptools_scm>=8.1", "wheel>=0.45.0"]
 
 [dependency-groups]
 dev = [
@@ -50,10 +50,10 @@ dependencies = [
     "typer>=0.21.2",
 ]
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
+dynamic = ["version"]
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11"
-version = "0.2.0"
 
 [project.scripts]
 deet = "deet.scripts.cli:main"
@@ -154,3 +154,6 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
+
+["tool.setuptools_scm"]
+version_file = "deet/_version.py"
