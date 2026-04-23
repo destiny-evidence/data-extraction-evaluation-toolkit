@@ -37,7 +37,7 @@ def _sample_annotation() -> GoldStandardAnnotation:
     """Build a minimal GoldStandardAnnotation."""
     return GoldStandardAnnotation(
         attribute=_sample_attribute(),
-        output_data=True,
+        raw_data=True,
         annotation_type=AnnotationType.LLM,
     )
 

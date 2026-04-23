@@ -84,6 +84,17 @@ def sample_eppi_data() -> dict:
                     {
                         "AttributeId": 5730447,
                         "AdditionalText": "Dolor si amet...",
+                        "ItemAttributeFullTextDetails": [
+                            {
+                                "ItemDocumentId": 423106,
+                                "TextFrom": 0,
+                                "TextTo": 0,
+                                "Text": 'Page 1:\n[¬s]"Dolor si amet...[¬e]"',
+                                "IsFromPDF": True,
+                                "DocTitle": "Smith (2014).pdf",
+                                "ItemArm": "",
+                            }
+                        ],
                         "ArmId": 3,
                         "ArmTitle": "Lorem ipsum",
                     },

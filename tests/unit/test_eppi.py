@@ -309,7 +309,7 @@ def test_eppi_gold_standard_annotation_with_llm() -> None:
 
     annotation = EppiGoldStandardAnnotation(
         attribute=attr,
-        output_data="Test response",
+        raw_data="Test response",
         annotation_type=AnnotationType.LLM,
     )
     assert annotation.annotation_type == AnnotationType.LLM
@@ -372,14 +372,10 @@ def test_import_prompts_csv_updates_output_data_type(
     sample_eppi_data: dict, tmp_path: Path
 ) -> None:
     """Test that populate_custom_prompts from CSV updates output_data_type."""
-    data_no_codes = {**sample_eppi_data}
-    for ref in data_no_codes.get("References", []):
-        ref["Codes"] = []
-
     converter = EppiAnnotationConverter()
     with patch(
         "pathlib.Path.open",
-        mock_open(read_data=json.dumps(data_no_codes)),
+        mock_open(read_data=json.dumps(sample_eppi_data)),
     ):
         result = converter.process_annotation_file(tmp_path / "fake.json")
 
@@ -400,6 +396,18 @@ def test_import_prompts_csv_updates_output_data_type(
 
     result.populate_custom_prompts(
         method=CustomPromptPopulationMethod.FILE, filepath=csv_path
+    )
+
+    assert all(
+        isinstance(ann.output_data, AttributeType.STRING.to_python_type())
+        for ann in result.annotations
+        if ann.attribute.attribute_id == first_attr.attribute_id
+    )
+
+    assert all(
+        ann.output_data != ""
+        for ann in result.annotations
+        if ann.attribute.attribute_id == first_attr.attribute_id
     )
 
     assert first_attr.output_data_type == AttributeType.STRING
