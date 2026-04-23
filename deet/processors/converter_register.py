@@ -9,7 +9,6 @@ from deet.processors.base_converter import AnnotationConverter
 from deet.processors.csv_annotation_converter import CSVAnnotationConverter
 from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
-
 SUPPORTED_EXTENSIONS: set[str] = {".csv", ".json"}
 
 
