@@ -84,3 +84,11 @@ will install _only_ the documentation dependencies, but may uninstall other opti
 Then, from the root of the repository, run `mkdocs serve --strict` from the root of the repository and open the link that is printed to the terminal. The documentation website is currently automatically built and deployed to GitHub Pages on pushes to the `main` branch, and uses the `gh-pages` branch to serve the docs.
 
 The documentation website is available at [https://destiny-evidence.github.io/deet](https://destiny-evidence.github.io/deet).
+
+## Acknowledgements
+
+We acknowledge with thanks funding from the following funders and projects:
+
+- **Wellcome Trust**
+- **Education Endowment Foundation**
+- **Economic and Social Research Council (ESRC)**

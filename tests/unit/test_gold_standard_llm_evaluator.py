@@ -1,4 +1,5 @@
 import csv
+from copy import deepcopy
 from unittest.mock import patch
 
 import pytest
@@ -71,6 +72,74 @@ def test_evaluator_evaluates_with_nonfloat_metric(processed_data):
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
         assert metric.value == 1
+
+
+@pytest.fixture
+def processed_data_missing_doc(processed_data):
+    """Create ProcessedEppiAnnotationData with test attributes."""
+    processed_data_missing_doc = deepcopy(processed_data)
+    processed_data_missing_doc.annotated_documents = processed_data.annotated_documents[
+        :-1
+    ]
+    return processed_data_missing_doc
+
+
+# When a doc is missing from llm_preds, metrics should be None
+# and we should warn rather than fail
+def test_evaluator_fails_gracefully_missing_doc(
+    processed_data, processed_data_missing_doc, tmp_path
+):
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_data.annotated_documents,
+        llm_annotated_documents=processed_data_missing_doc.annotated_documents,
+        attributes=[processed_data.attributes[0]],
+        extraction_run_id="",
+    )
+    evaluator.evaluate_llm_annotations()
+    for m in evaluator.calculated_metrics:
+        if m.metric_name != "n_labels":
+            assert m.value is None
+
+    logger.remove(logger_id)
+    assert any("LLM annotated doc not found" in m for m in messages)
+
+    evaluator.export_llm_comparison(tmp_path / "llm_human_comparison.csv")
+
+
+@pytest.fixture
+def processed_data_duplicated_annotations(processed_data):
+    """Create ProcessedEppiAnnotationData with test attributes."""
+    processed_data_duplicated_annotations = deepcopy(processed_data)
+    for doc in processed_data_duplicated_annotations.annotated_documents:
+        doc.annotations = doc.annotations + doc.annotations
+    return processed_data_duplicated_annotations
+
+
+# When an llm returns multiple values for the same attribute, metrics should be None
+# and we should warn rather than fail
+def test_evaluator_fails_gracefully_duplicated_annotations(
+    processed_data, processed_data_duplicated_annotations, tmp_path
+):
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_data.annotated_documents,
+        llm_annotated_documents=processed_data_duplicated_annotations.annotated_documents,
+        attributes=[processed_data.attributes[0]],
+        extraction_run_id="",
+    )
+    evaluator.evaluate_llm_annotations()
+    for m in evaluator.calculated_metrics:
+        if m.metric_name != "n_labels":
+            assert m.value is None
+
+    logger.remove(logger_id)
+    warn_string = "LLM produced multiple annotations for a single attribute"
+    assert any(warn_string in m for m in messages)
+
+    evaluator.export_llm_comparison(tmp_path / "llm_human_comparison.csv")
 
 
 @pytest.fixture

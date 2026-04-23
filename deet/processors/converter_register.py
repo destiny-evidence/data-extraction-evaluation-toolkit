@@ -4,10 +4,10 @@ and a map to their converters.
 """
 
 from enum import StrEnum, auto
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from deet.processors.base_converter import AnnotationConverter
+from deet.processors.base_converter import AnnotationConverter
+from deet.processors.csv_annotation_converter import CSVAnnotationConverter
+from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
 
 
 SUPPORTED_EXTENSIONS: set[str] = {".csv", ".json"}
@@ -17,14 +17,15 @@ class SupportedImportFormat(StrEnum):
     """Supported formats to import gold standard annotation data from."""
 
     EPPI_JSON = auto()
+    GENERIC_CSV = auto()
 
-    def get_annotation_converter(
-        self,
-    ) -> "AnnotationConverter":
+    def get_annotation_converter(self) -> AnnotationConverter:
         """Return an instance of the parser for the given data type."""
-        from deet.processors.eppi_annotation_converter import EppiAnnotationConverter
+        return CONVERTER_REGISTRY[self]()
 
-        mapping = {
-            SupportedImportFormat.EPPI_JSON: EppiAnnotationConverter(),
-        }
-        return mapping[self]
+
+# Registry mapping
+CONVERTER_REGISTRY = {
+    SupportedImportFormat.EPPI_JSON: EppiAnnotationConverter,
+    SupportedImportFormat.GENERIC_CSV: CSVAnnotationConverter,
+}

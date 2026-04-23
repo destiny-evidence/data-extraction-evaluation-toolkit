@@ -24,7 +24,9 @@ from deet.data_models.base import (
 )
 from deet.exceptions import (
     BadDocumentIdError,
+    DuplicateAnnotationError,
     MissingCitationElementError,
+    MissingDocumentError,
     NoAbstractError,
 )
 from deet.processors.parser import ParsedOutput
@@ -531,7 +533,7 @@ class GoldStandardAnnotatedDocument(
                         f"attribute: {attribute.attribute_label}. We don't know how to"
                         "interpret which is the canonical version."
                     )
-                    raise ValueError(multiple_matches)
+                    raise DuplicateAnnotationError(multiple_matches)
                 result = annotation
 
         if result is None:
@@ -586,4 +588,4 @@ class GoldStandardAnnotatedDocumentList(
         except KeyError as err:
             not_found = f"Document with ID {document_id} not found in annotated"
             " doc list"
-            raise ValueError(not_found) from err
+            raise MissingDocumentError(not_found) from err
