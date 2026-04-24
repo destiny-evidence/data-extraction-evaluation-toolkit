@@ -224,3 +224,6 @@ default_extraction_config.yaml
 pdfs/*
 data-extraction-experiments/*
 *.csv
+
+# Dynamic version
+deet/_version.py

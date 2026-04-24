@@ -18,6 +18,7 @@
 
 Before requesting review, I confirm that:
 
+- [ ] I have updated the `CHANGELOG.md` under the `[Unreleased]` section.
 - [ ] All existing and new tests pass locally and in CI
 - [ ] Core functionality still works locally (e.g. all pipeline scripts)
 - [ ] Code passes `ruff` linting

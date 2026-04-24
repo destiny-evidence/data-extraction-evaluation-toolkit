@@ -2,6 +2,7 @@
 """A CLI app to run deet pipelines."""
 
 import warnings
+from importlib import metadata
 from pathlib import Path
 from typing import Annotated
 
@@ -399,9 +400,29 @@ def test_llm_config(
     echo_and_log(response)
 
 
+def version_callback(value: bool = False) -> None:  # noqa: FBT002, FBT001
+    """Echo the currently installed version."""
+    if value:
+        try:
+            current_version = metadata.version("data-extraction-evaluation-toolkit")
+            typer.echo(f"deet version: {current_version}")
+        except metadata.PackageNotFoundError:
+            typer.echo("deet version: unknown (not installed)")
+        raise typer.Exit
+
+
 @app.callback()
 def global_options(
-    *, verbose: bool = typer.Option(default=False, help="Display verbose logs.")
+    *,
+    verbose: bool = typer.Option(default=False, help="Display verbose logs."),
+    _version: bool = typer.Option(
+        None,
+        "--version",
+        "-V",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
 ) -> None:
     """Set global options for all deet commands."""
     log_level = "DEBUG" if verbose else "INFO"
