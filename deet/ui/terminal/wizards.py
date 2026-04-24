@@ -26,7 +26,9 @@ class WidgetCreator(ABC):
         ...
 
     @abstractmethod
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str | None:
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo
+    ) -> str | None | bool:
         """Execute the InquirerPy widget and return the validated result."""
         ...
 
@@ -67,8 +69,16 @@ class NumberHandler(WidgetCreator):
         annotation = field_info.annotation
         return annotation is float or annotation is int or int in get_args(annotation)
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
-        """Execute an inquirer.number prompt, adjusted to whether float or not."""
+    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str | None:
+        """
+        Execute an inquirer.number prompt, adjusted to whether float or not.
+
+        If it's optional, use a text prompt.
+        """
+        if type(None) in get_args(field_info.annotation):
+            answer = inquirer.text(**widget_args).execute()
+            return str(answer) if answer else None
+
         if field_info.annotation is float:
             widget_args["float_allowed"] = True
         return inquirer.number(**widget_args).execute()
@@ -88,6 +98,22 @@ class SecretHandler(WidgetCreator):
             widget_args["default"] = UNCHANGED_SECRET
         answer: str = inquirer.secret(**widget_args).execute()
         return None if answer == UNCHANGED_SECRET else answer
+
+
+class BoolHandler(WidgetCreator):
+    """WidgetCreator to handle boolean fields."""
+
+    def can_handle(self, field_info: FieldInfo) -> bool:
+        """Check if field is a boolean."""
+        return field_info.annotation is bool or bool in get_args(field_info.annotation)
+
+    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> bool:
+        """Use a inquirer confirm to return boolean."""
+        widget_args.pop("validate", None)
+        widget_args.pop("filter", None)
+        widget_args.pop("invalid_message", None)
+
+        return inquirer.confirm(**widget_args).execute()
 
 
 class DefaultHandler(WidgetCreator):
@@ -111,6 +137,7 @@ STRATEGIES: Final[list[WidgetCreator]] = [
     PathHandler(),
     NumberHandler(),
     SecretHandler(),
+    BoolHandler(),
     DefaultHandler(),
 ]
 
@@ -122,10 +149,13 @@ def get_ui_metadata(field_info: FieldInfo) -> UI | None:
 
 def inquire_pydantic_field(
     model_class: type[BaseModel], field_name: str, field_info: FieldInfo, ui: UI
-) -> str | None:
+) -> str | bool | None:
     """Prompt user to provide data for pydantic field."""
 
     def pydantic_validate(answer: str) -> bool | str:
+        is_optional = type(None) in get_args(field_info.annotation)
+        if is_optional and answer.strip() == "":
+            return True
         try:
             model_class.__pydantic_validator__.validate_assignment(
                 model_class.model_construct(), field_name, answer
