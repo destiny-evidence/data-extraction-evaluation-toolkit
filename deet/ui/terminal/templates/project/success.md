@@ -22,7 +22,7 @@ deet project link
 data extraction experiment using your data. Run
 
 ```sh
-deet run extract
+deet experiments evaluate
 ```
 
 If you prefer to skip the wizard, edit the config file `{{project.config_path}}`
