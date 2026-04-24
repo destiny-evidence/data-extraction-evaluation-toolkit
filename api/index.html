@@ -31273,8 +31273,7 @@ through path information.</p>
 <span class="normal">390</span>
 <span class="normal">391</span>
 <span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EppiAnnotationConverter</span><span class="p">(</span><span class="n">AnnotationConverter</span><span class="p">):</span>
+<span class="normal">393</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EppiAnnotationConverter</span><span class="p">(</span><span class="n">AnnotationConverter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to convert raw EPPI-Reviewer JSON annotations</span>
 <span class="sd">    into structured Pydantic models.</span>
@@ -31613,9 +31612,8 @@ through path information.</p>
                     <span class="n">attribute_id_to_label</span><span class="p">,</span>
                 <span class="p">)</span>
 
-                <span class="c1"># Use model_construct to bypass validation and preserve all fields</span>
-                <span class="n">annotated_doc</span> <span class="o">=</span> <span class="n">EppiGoldStandardAnnotatedDocument</span><span class="o">.</span><span class="n">model_construct</span><span class="p">(</span>
-                    <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">document</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="s2">&quot;annotations&quot;</span><span class="p">:</span> <span class="n">annotations</span><span class="p">}</span>
+                <span class="n">annotated_doc</span> <span class="o">=</span> <span class="n">EppiGoldStandardAnnotatedDocument</span><span class="p">(</span>
+                    <span class="n">document</span><span class="o">=</span><span class="n">document</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span>
                 <span class="p">)</span>
 
                 <span class="n">annotated_documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">annotated_doc</span><span class="p">)</span>
@@ -32571,8 +32569,7 @@ annotation dicts from EPPI JSON</p>
 <span class="normal">390</span>
 <span class="normal">391</span>
 <span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_annotation_file</span><span class="p">(</span>
+<span class="normal">393</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_annotation_file</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">set_attribute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">AttributeType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -32639,9 +32636,8 @@ annotation dicts from EPPI JSON</p>
                 <span class="n">attribute_id_to_label</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="c1"># Use model_construct to bypass validation and preserve all fields</span>
-            <span class="n">annotated_doc</span> <span class="o">=</span> <span class="n">EppiGoldStandardAnnotatedDocument</span><span class="o">.</span><span class="n">model_construct</span><span class="p">(</span>
-                <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">document</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="s2">&quot;annotations&quot;</span><span class="p">:</span> <span class="n">annotations</span><span class="p">}</span>
+            <span class="n">annotated_doc</span> <span class="o">=</span> <span class="n">EppiGoldStandardAnnotatedDocument</span><span class="p">(</span>
+                <span class="n">document</span><span class="o">=</span><span class="n">document</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span>
             <span class="p">)</span>
 
             <span class="n">annotated_documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">annotated_doc</span><span class="p">)</span>
