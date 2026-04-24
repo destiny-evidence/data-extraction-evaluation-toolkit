@@ -10,8 +10,14 @@ from loguru import logger
 from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
-from deet.data_models.project import ExperimentArtefacts
-from deet.extractors.llm_data_extractor import DataExtractionConfig
+from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
+from deet.data_models.project import DeetProject, ExperimentArtefacts
+from deet.extractors.llm_data_extractor import (
+    DataExtractionConfig,
+    ExtractionRunOutput,
+    LLMDataExtractor,
+)
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.ui import fail_with_message, notify
 from deet.ui.terminal import console, render_template
@@ -137,3 +143,65 @@ def prepare_documents(
         fail_with_message(message)
 
     return None
+
+
+def run_extraction_pipeline(
+    typer_context: typer.Context,
+    config_path: Path | None = None,
+    prompt_population: CustomPromptPopulationMethod
+    | None = CustomPromptPopulationMethod.FILE,
+    run_name: str = "",
+) -> tuple[ExtractionRunOutput, ProcessedAnnotationData, ExperimentArtefacts]:
+    """Run the standard data extraction pipeline from the CLI."""
+    import yaml
+
+    from deet.extractors.cli_helpers import (
+        init_extraction_run,
+        load_config_from_typer_context,
+        prepare_documents,
+    )
+
+    deet_project: DeetProject = typer_context.obj.project
+    processed_annotation_data = deet_project.process_data()
+
+    config = load_config_from_typer_context(typer_context, config_path)
+
+    experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
+
+    if prompt_population is not None:
+        processed_annotation_data.populate_custom_prompts(
+            method=prompt_population, filepath=deet_project.prompt_csv_path
+        )
+        if not processed_annotation_data.attributes:
+            fail_with_message(
+                "No attributes selected. Perhaps you forgot to edit your prompt file"
+            )
+
+    data_extractor = LLMDataExtractor(config=config)
+
+    documents = prepare_documents(
+        processed_annotation_data.documents,
+        config,
+        linked_document_path=deet_project.linked_documents_path,
+        pdf_dir=deet_project.pdf_dir,
+        link_map_path=deet_project.link_map_path,
+    )
+
+    run_output = data_extractor.extract_from_documents(
+        attributes=processed_annotation_data.attributes,
+        documents=documents,
+        context_type=data_extractor.config.default_context_type,
+        output_file=experiment_artefacts.llm_annotations,
+        show_progress=True,
+    )
+
+    processed_annotation_data.export_attributes_csv_file(
+        experiment_artefacts.prompts_snapshot
+    )
+
+    experiment_artefacts.config_snapshot.write_text(
+        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False),
+        encoding="utf-8",
+    )
+
+    return run_output, processed_annotation_data, experiment_artefacts
