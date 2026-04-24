@@ -116,14 +116,26 @@ class DataExtractionConfig(BaseModel):
         description="Sampling temperature for the LLM.",
         ge=0.0,
     )
-    max_tokens: int | None = Field(
+    max_tokens: Annotated[
+        int | None,
+        UI(
+            help=(
+                "The maximum number of tokens. " "Leave blank for the provider default."
+            )
+        ),
+    ] = Field(
         default=None,
         description=(
-            "Maximum number of tokens to generate (None means provider default)."
+            "Maximum number of tokens to generate (Leave blank for provider default)."
         ),
     )
 
-    max_context_tokens: int | None = Field(
+    max_context_tokens: Annotated[
+        int | None,
+        UI(
+            help=("Maximum input context length " "(Leave blank for provider default).")
+        ),
+    ] = Field(
         default=None,
         description=(
             "Maximum input context length in tokens (system + attributes + "
@@ -140,7 +152,16 @@ class DataExtractionConfig(BaseModel):
         default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
     )
 
-    truncate_on_overflow: bool = Field(
+    truncate_on_overflow: Annotated[
+        bool,
+        UI(
+            help=(
+                "Select true to truncate documents longer than max_context_tokens. "
+                "This will ensure extraction runs without crashing, but may mean"
+                " some parts of the document are not seen by the LLM."
+            )
+        ),
+    ] = Field(
         default=False,
         description=(
             "When True, automatically truncate context that exceeds "
