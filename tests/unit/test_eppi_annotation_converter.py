@@ -65,6 +65,7 @@ def test_process_annotation_file_with_duplicated_annotations(
 
     unique_ids = {ann.attribute.attribute_id for ann in doc.annotations}
     assert len(doc.annotations) == len(unique_ids)
+    assert all(";;; " in annotation.raw_data for annotation in doc.annotations)
 
 
 def test_empty_boolean_annotation_is_true(sample_eppi_data: dict) -> None:
