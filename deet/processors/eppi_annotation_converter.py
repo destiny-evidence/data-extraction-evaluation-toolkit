@@ -7,7 +7,7 @@ from typing import Any
 from loguru import logger
 from pydantic import TypeAdapter
 
-from deet.data_models.base import AnnotationType, AttributeType
+from deet.data_models.base import SUPPORTED_TYPES, AnnotationType, AttributeType
 from deet.data_models.eppi import (
     EppiAttribute,
     EppiDocument,
@@ -270,6 +270,21 @@ class EppiAnnotationConverter(AnnotationConverter):
             item_attribute_full_text_details=item_attribute_details,
         )
 
+    def _merge_raw_values(
+        self, existing: SUPPORTED_TYPES, new: SUPPORTED_TYPES
+    ) -> SUPPORTED_TYPES:
+        """Merge the raw_data of duplicated annotations."""
+        if existing is None:
+            return new
+        if new is None:
+            return existing
+        if isinstance(existing, list) and isinstance(new, list):
+            return existing + new
+        if isinstance(existing, dict) and isinstance(new, dict):
+            return {**existing, **new}
+
+        return f"{existing};;; {new}"
+
     def convert_to_eppi_annotations(
         self,
         annotations_data: list[dict[str, Any]],
@@ -301,6 +316,29 @@ class EppiAnnotationConverter(AnnotationConverter):
                 logger.warning(f"Skipping annotation due to error: {e}")
                 continue
         return results
+
+    def dedup_annotations(
+        self, annotations: list[EppiGoldStandardAnnotation]
+    ) -> list[EppiGoldStandardAnnotation]:
+        """Merge annotations with the same attribute id."""
+        merged: dict[int, EppiGoldStandardAnnotation] = {}
+
+        for ann in annotations:
+            attr_id = ann.attribute.attribute_id
+
+            if attr_id not in merged:
+                merged[attr_id] = ann
+                continue
+
+            target = merged[attr_id]
+
+            target.raw_data = self._merge_raw_values(target.raw_data, ann.raw_data)
+
+            if ann.additional_text:
+                existing_text = target.additional_text or ""
+                target.additional_text = f"{existing_text};;; {ann.additional_text}"
+
+        return list(merged.values())
 
     def process_annotation_file(
         self,
@@ -368,6 +406,8 @@ class EppiAnnotationConverter(AnnotationConverter):
                     attributes_lookup,
                     attribute_id_to_label,
                 )
+
+                annotations = self.dedup_annotations(annotations)
 
                 annotated_doc = EppiGoldStandardAnnotatedDocument(
                     document=document, annotations=annotations
