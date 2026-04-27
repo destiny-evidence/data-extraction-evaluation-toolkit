@@ -75,7 +75,7 @@ def _parse_eppi_json_container(
 
     py_type = output_data_type.to_python_type()
     if isinstance(parsed, py_type):
-        return cast(EppiRawDataValue, parsed)
+        return cast("EppiRawDataValue", parsed)
 
     return output_data_type.missing_annotation_default()
 
