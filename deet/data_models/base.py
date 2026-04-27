@@ -301,7 +301,18 @@ def coerce_annotation_to_list(val: SUPPORTED_TYPES) -> list:
     if isinstance(val, list):
         return val
     if isinstance(val, str):
-        return [item.strip() for item in val.split(";;;")]
+        list_of_strings = [item.strip() for item in val.split(";;;")]
+        try:
+            return [int(item) for item in list_of_strings]
+        except (ValueError, TypeError):
+            logger.debug("Could not convert items to int.")
+
+        try:
+            return [float(item) for item in list_of_strings]
+        except (ValueError, TypeError):
+            logger.debug("Could not convert items to float")
+
+        return list_of_strings
     return [val]
 
 
