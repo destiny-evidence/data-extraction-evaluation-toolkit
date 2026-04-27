@@ -1,8 +1,9 @@
 """Convert annotation JSON files to Pydantic models."""
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from loguru import logger
 from pydantic import TypeAdapter
@@ -29,12 +30,69 @@ from deet.processors.base_converter import (
     Outfiles,
 )
 
+EppiRawDataValue = bool | str | int | float | list[Any] | dict[str, Any]
+EppiAdditionalTextParser = Callable[[str, AttributeType], EppiRawDataValue]
 
-def eppi_output_data_from_eppi_fields(  # noqa: PLR0911, PLR0912
+
+def _parse_eppi_integer(
+    additional_text: str,
+    output_data_type: AttributeType,
+) -> EppiRawDataValue:
+    """Parse EPPI ``AdditionalText`` as an integer, or return the missing default."""
+    if not additional_text:
+        return output_data_type.missing_annotation_default()
+    try:
+        return int(float(additional_text))
+    except ValueError:
+        return output_data_type.missing_annotation_default()
+
+
+def _parse_eppi_float(
+    additional_text: str,
+    output_data_type: AttributeType,
+) -> EppiRawDataValue:
+    """Parse EPPI ``AdditionalText`` as a float, or return the missing default."""
+    if not additional_text:
+        return output_data_type.missing_annotation_default()
+    try:
+        return float(additional_text.replace(",", ""))
+    except ValueError:
+        return output_data_type.missing_annotation_default()
+
+
+def _parse_eppi_json_container(
+    additional_text: str,
+    output_data_type: AttributeType,
+) -> EppiRawDataValue:
+    """Parse EPPI ``AdditionalText`` as the expected JSON list or dict."""
+    if not additional_text:
+        return output_data_type.missing_annotation_default()
+
+    try:
+        parsed: Any = json.loads(additional_text)
+    except (json.JSONDecodeError, TypeError):
+        return output_data_type.missing_annotation_default()
+
+    py_type = output_data_type.to_python_type()
+    if isinstance(parsed, py_type):
+        return cast(EppiRawDataValue, parsed)
+
+    return output_data_type.missing_annotation_default()
+
+
+EPPI_ADDITIONAL_TEXT_PARSERS: dict[AttributeType, EppiAdditionalTextParser] = {
+    AttributeType.INTEGER: _parse_eppi_integer,
+    AttributeType.FLOAT: _parse_eppi_float,
+    AttributeType.LIST: _parse_eppi_json_container,
+    AttributeType.DICT: _parse_eppi_json_container,
+}
+
+
+def eppi_output_data_from_eppi_fields(
     output_data_type: AttributeType,
     *,
     additional_text: str,
-) -> bool | str | int | float | list[Any] | dict[str, Any]:
+) -> EppiRawDataValue:
     """
     Map EPPI ``Codes`` row evidence onto typed ``raw_data`` for coerced ``output_data``.
 
@@ -57,42 +115,18 @@ def eppi_output_data_from_eppi_fields(  # noqa: PLR0911, PLR0912
     """
     additional = (additional_text or "").strip()
 
-    match output_data_type:
-        case AttributeType.BOOL:
-            return True
-        case AttributeType.STRING:
-            return additional
-        case AttributeType.INTEGER:
-            if not additional:
-                return AttributeType.INTEGER.missing_annotation_default()
-            try:
-                return int(float(additional))
-            except ValueError:
-                return AttributeType.INTEGER.missing_annotation_default()
-        case AttributeType.FLOAT:
-            if not additional:
-                return AttributeType.FLOAT.missing_annotation_default()
-            try:
-                return float(additional.replace(",", ""))
-            except ValueError:
-                return AttributeType.FLOAT.missing_annotation_default()
-        case AttributeType.LIST | AttributeType.DICT:
-            if not additional:
-                return output_data_type.missing_annotation_default()
-            try:
-                parsed: Any = json.loads(additional)
-            except (json.JSONDecodeError, TypeError):
-                return output_data_type.missing_annotation_default()
-            if output_data_type == AttributeType.LIST and isinstance(parsed, list):
-                return parsed
-            if output_data_type == AttributeType.DICT and isinstance(parsed, dict):
-                return parsed
-            return output_data_type.missing_annotation_default()
-        case _:
-            unsupported = (
-                f"Unsupported AttributeType for EPPI mapping: {output_data_type}"
-            )
-            raise ValueError(unsupported)
+    if output_data_type == AttributeType.BOOL:
+        return True
+    if output_data_type == AttributeType.STRING:
+        return additional
+
+    try:
+        parser = EPPI_ADDITIONAL_TEXT_PARSERS[output_data_type]
+    except KeyError as err:
+        unsupported = f"Unsupported AttributeType for EPPI mapping: {output_data_type}"
+        raise ValueError(unsupported) from err
+
+    return parser(additional, output_data_type)
 
 
 class EppiAnnotationConverter(AnnotationConverter):
