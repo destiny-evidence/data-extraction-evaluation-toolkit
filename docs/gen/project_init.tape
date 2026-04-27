@@ -8,7 +8,7 @@ Set Height 1000
 Hide
     Type "cd examples/quickstart"
     Enter
-    Type "rm -rf project.toml"
+    Type "rm -rf project.yaml"
     Enter
     Type "export PROMPT='~/deet $ '"
     Enter
@@ -34,13 +34,7 @@ Sleep 500ms
 
 # Path to raw data
 Backspace 15
-Type "../"
-Sleep 350ms
-Type "da"
-Sleep 350ms
-Tab
-Sleep 350ms
-Type "/eppijson/eppi"
+Type "re"
 Sleep 350ms
 Tab
 Sleep 350ms
@@ -57,7 +51,7 @@ Sleep 1500ms
 
 # Path to pdfs
 Backspace 15
-Type "../data/pdfs"
+Type "pdfs"
 Sleep 500ms
 Enter
 Sleep 1500ms
