@@ -30,6 +30,71 @@ from deet.processors.base_converter import (
 )
 
 
+def eppi_output_data_from_eppi_fields(  # noqa: PLR0911, PLR0912
+    output_data_type: AttributeType,
+    *,
+    additional_text: str,
+) -> bool | str | int | float | list[Any] | dict[str, Any]:
+    """
+    Map EPPI ``Codes`` row evidence onto typed ``raw_data`` for coerced ``output_data``.
+
+    A row in ``References[].Codes`` means the reviewer applied that code (e.g. ticked
+    the checkbox). For boolean attributes, that application is ``True`` even when
+    ``AdditionalText`` is empty.
+
+    For every non-boolean type, only the info-box ``AdditionalText`` is used.
+    ``ItemAttributeFullTextDetails`` is not used for the stored value (it may still be
+    attached to the model for other uses).
+
+    Args:
+        output_data_type: Target attribute type (from codeset or prompt CSV).
+        additional_text: EPPI ``AdditionalText`` / info-box value.
+
+    Returns:
+        Value to store in ``GoldStandardAnnotation.raw_data`` (then coerced via
+        ``output_data``).
+
+    """
+    additional = (additional_text or "").strip()
+
+    match output_data_type:
+        case AttributeType.BOOL:
+            return True
+        case AttributeType.STRING:
+            return additional
+        case AttributeType.INTEGER:
+            if not additional:
+                return AttributeType.INTEGER.missing_annotation_default()
+            try:
+                return int(float(additional))
+            except ValueError:
+                return AttributeType.INTEGER.missing_annotation_default()
+        case AttributeType.FLOAT:
+            if not additional:
+                return AttributeType.FLOAT.missing_annotation_default()
+            try:
+                return float(additional.replace(",", ""))
+            except ValueError:
+                return AttributeType.FLOAT.missing_annotation_default()
+        case AttributeType.LIST | AttributeType.DICT:
+            if not additional:
+                return output_data_type.missing_annotation_default()
+            try:
+                parsed: Any = json.loads(additional)
+            except (json.JSONDecodeError, TypeError):
+                return output_data_type.missing_annotation_default()
+            if output_data_type == AttributeType.LIST and isinstance(parsed, list):
+                return parsed
+            if output_data_type == AttributeType.DICT and isinstance(parsed, dict):
+                return parsed
+            return output_data_type.missing_annotation_default()
+        case _:
+            unsupported = (
+                f"Unsupported AttributeType for EPPI mapping: {output_data_type}"
+            )
+            raise ValueError(unsupported)
+
+
 class EppiAnnotationConverter(AnnotationConverter):
     """
     A class to convert raw EPPI-Reviewer JSON annotations
@@ -222,22 +287,15 @@ class EppiAnnotationConverter(AnnotationConverter):
         Note:
             If attribute is not found in lookup, creates a basic attribute using
             the attribute_id_to_label mapping. All annotations from JSON are
-            marked as HUMAN type. Output data is converted to boolean (EPPI's
-            output data type).
+            marked as HUMAN type. ``raw_data`` follows
+            :func:`eppi_output_data_from_eppi_fields` (booleans from code presence;
+            other types from ``AdditionalText`` only).
 
         """
         text_details = annotation.get("ItemAttributeFullTextDetails", [])
-        extracted_texts, item_attribute_details = self._process_text_details(
+        _extracted_texts, item_attribute_details = self._process_text_details(
             text_details
         )
-
-        output_data: str | bool = " | ".join(extracted_texts) if extracted_texts else ""
-
-        # Coerce empty string to False for BOOL attributes (backward compatibility
-        # when ItemAttributeFullTextDetails is absent)
-        # NOTE @sagaruprety this (modified to coerce all bools to bool) is OK
-        # for eppi as we're only expecting bool/str, but we need to implement
-        # elsewhere a functionality that auto-maps output_data to the correct data type.
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -259,13 +317,20 @@ class EppiAnnotationConverter(AnnotationConverter):
         if attribute_id_to_label is not None and attribute_id in attribute_id_to_label:
             attribute.attribute_label = attribute_id_to_label[attribute_id]
 
+        additional_text = str(annotation.get("AdditionalText", "") or "")
+        typed_raw_data: bool | str | int | float | list[Any] | dict[str, Any] = (
+            eppi_output_data_from_eppi_fields(
+                attribute.output_data_type, additional_text=additional_text
+            )
+        )
+
         return EppiGoldStandardAnnotation(
             attribute=attribute,
             additional_text=annotation.get("AdditionalText", ""),
             arm_id=annotation.get("ArmId"),
             arm_title=annotation.get("ArmTitle", ""),
             arm_description=annotation.get("ArmDescription", ""),
-            raw_data=output_data,
+            raw_data=typed_raw_data,
             annotation_type=AnnotationType.HUMAN,
             item_attribute_full_text_details=item_attribute_details,
         )
