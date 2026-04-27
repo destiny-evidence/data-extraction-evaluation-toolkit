@@ -11,6 +11,7 @@ from typing import Any
 
 import sklearn.metrics  # type:ignore[import-untyped]
 from loguru import logger
+from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
@@ -27,6 +28,52 @@ from deet.data_models.evaluation import (
     get_metrics_for_attribute_type,
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
+
+
+def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> float:
+    """
+    Return a 0-100 score for how much of ``verbatim`` appears in ``context``.
+
+    Uses :func:`rapidfuzz.fuzz.partial_ratio` (substring-style overlap).
+
+    Args:
+        verbatim: Human or model snippet (e.g. ``additional_text``).
+        context: Document text used for comparison.
+
+    Returns:
+        Float in ``[0.0, 100.0]``, or ``0.0`` if either input is empty.
+
+    """
+    v = (verbatim or "").strip()
+    c = (context or "").strip()
+    if not v or not c:
+        return 0.0
+    return float(fuzz.partial_ratio(v, c))
+
+
+def _document_context_for_grounding(
+    doc_gs: object,
+    doc_llm: object | None,
+) -> str | None:
+    """
+    Prefer the gold document's context; fall back to the LLM document's if missing.
+
+    Args:
+        doc_gs: Gold standard annotated document (has ``.document``).
+        doc_llm: Matching LLM document, or ``None``.
+
+    Returns:
+        Context string, or ``None`` if neither side provides one.
+
+    """
+    c = getattr(getattr(doc_gs, "document", None), "context", None)
+    if c:
+        return str(c)
+    if doc_llm is not None:
+        c2 = getattr(getattr(doc_llm, "document", None), "context", None)
+        if c2:
+            return str(c2)
+    return None
 
 
 class GoldStandardLLMEvaluator:
@@ -203,6 +250,10 @@ class GoldStandardLLMEvaluator:
                     "human_extraction",
                     "llm_extraction",
                     "llm_reasoning",
+                    "human_verbatim_text",
+                    "llm_verbatim_text",
+                    "human_verbatim_fuzzy_match_pct",
+                    "llm_verbatim_fuzzy_match_pct",
                     "extraction_run_id",
                 ],
             )
@@ -214,10 +265,21 @@ class GoldStandardLLMEvaluator:
                     )
                 except MissingDocumentError:
                     llm_annotated_doc = None
+
+                context = _document_context_for_grounding(doc, llm_annotated_doc)
+
                 for attribute in self.attributes:
+                    human_ann = doc.get_attribute_annotation(attribute)
+                    human_verbatim: str | None = human_ann.additional_text
+                    human_fuzzy = _verbatim_fuzzy_match_pct(human_verbatim, context)
+
+                    llm_extraction: Any = None
+                    llm_reasoning: str | None = None
+                    llm_verbatim: str | None = None
+                    llm_fuzzy = 0.0
+
                     if llm_annotated_doc is None:
-                        llm_extraction = None
-                        llm_reasoning: str | None = (
+                        llm_reasoning = (
                             "LLM did not produce an output for this document."
                             " Check the logs carefully to find out why"
                         )
@@ -228,23 +290,27 @@ class GoldStandardLLMEvaluator:
                             )
                             llm_extraction = llm_annotation.output_data
                             llm_reasoning = llm_annotation.reasoning
+                            llm_verbatim = llm_annotation.additional_text
+                            llm_fuzzy = _verbatim_fuzzy_match_pct(llm_verbatim, context)
                         except DuplicateAnnotationError:
-                            llm_extraction = None
                             llm_reasoning = (
                                 "The LLM produced multiple annotations"
                                 "for this single attribute"
                             )
+
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
-                            "human_extraction": doc.get_attribute_annotation(
-                                attribute
-                            ).output_data,
+                            "human_extraction": human_ann.output_data,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
+                            "human_verbatim_text": human_verbatim,
+                            "llm_verbatim_text": llm_verbatim,
+                            "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
+                            "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )
