@@ -16,8 +16,9 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import AttributeTypeVar
+from deet.data_models.base import Attribute, AttributeTypeVar, GoldStandardAnnotation
 from deet.data_models.documents import (
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
     GoldStandardAnnotatedDocumentTypeVar,
 )
@@ -56,7 +57,6 @@ def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> floa
     if not v or not c:
         return 0.0
     if len(v) < _VERBATIM_FUZZ_SHORT_LEN and v.isdecimal():
-        # Avoid partial_ratio's tendency to over-score tiny strings in long text.
         if re.search(
             r"(?<![0-9])" + re.escape(v) + r"(?![0-9])",
             c,
@@ -66,6 +66,32 @@ def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> floa
     if len(v) < _VERBATIM_FUZZ_SHORT_LEN:
         return 100.0 if v in c else float(fuzz.partial_ratio(v, c))
     return float(fuzz.partial_ratio(v, c))
+
+
+def _find_gold_annotation_for_attribute(
+    annotated: GoldStandardAnnotatedDocument,
+    attribute: Attribute,
+) -> GoldStandardAnnotation | None:
+    """Return the real gold annotation for ``attribute``, or None if not present."""
+    for ann in annotated.annotations:
+        if ann.attribute.attribute_id == attribute.attribute_id:
+            return ann
+    return None
+
+
+def _eppi_full_text_details_colon_separated(annotation: object) -> str:
+    """
+    Colon-join all non-empty ``Text`` values from ``item_attribute_full_text_details``.
+
+    Non-EPPI annotations (no list on the model) yield an empty string.
+    """
+    details = getattr(annotation, "item_attribute_full_text_details", None) or []
+    parts: list[str] = []
+    for d in details:
+        text = getattr(d, "text", None)
+        if text is not None and str(text).strip():
+            parts.append(str(text).strip())
+    return ": ".join(parts)
 
 
 class GoldStandardLLMEvaluator:
@@ -139,7 +165,7 @@ class GoldStandardLLMEvaluator:
             for document in self.gold_standard_annotated_documents:
                 doc_id = document.document.safe_identity.document_id
                 logger.debug(
-                    f"Extracting gold standard and LLM prediction for" f" doc {doc_id}"
+                    f"Extracting gold standard and LLM prediction for doc {doc_id}"
                 )
                 gs_val = document.get_attribute_annotation(attribute).output_data
                 y_true.append(gs_val)
@@ -230,7 +256,10 @@ class GoldStandardLLMEvaluator:
         self,
         filepath: Path,
     ) -> None:
-        """Export a csv with side-by-side comparisons of gs and LLM decisions."""
+        """
+        Export a comparison CSV: EPPI presence, additional text, full-text fragments,
+        coerced extractions, LLM verbatim, fuzzy human/LLM grounding, and run id.
+        """
         with filepath.open("w", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f,
@@ -239,10 +268,12 @@ class GoldStandardLLMEvaluator:
                     "document_name",
                     "attribute_id",
                     "attribute_label",
+                    "attribute_presence",
+                    "human_additional_text",
+                    "item_attribute_full_text_details",
                     "human_extraction",
                     "llm_extraction",
                     "llm_reasoning",
-                    "human_verbatim_text",
                     "llm_verbatim_text",
                     "human_verbatim_fuzzy_match_pct",
                     "llm_verbatim_fuzzy_match_pct",
@@ -266,8 +297,19 @@ class GoldStandardLLMEvaluator:
 
                 for attribute in self.attributes:
                     human_ann = doc.get_attribute_annotation(attribute)
-                    human_verbatim: str | None = human_ann.additional_text
-                    human_fuzzy = _verbatim_fuzzy_match_pct(human_verbatim, context)
+                    gold_real = _find_gold_annotation_for_attribute(doc, attribute)
+                    if gold_real is not None:
+                        human_additional_text: str = gold_real.additional_text or ""
+                        item_attr_full: str = _eppi_full_text_details_colon_separated(
+                            gold_real
+                        )
+                    else:
+                        human_additional_text = ""
+                        item_attr_full = ""
+                    present = gold_real is not None
+                    human_fuzzy = _verbatim_fuzzy_match_pct(
+                        human_additional_text, context
+                    )
 
                     llm_extraction: Any = None
                     llm_reasoning: str | None = None
@@ -300,10 +342,12 @@ class GoldStandardLLMEvaluator:
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
+                            "attribute_presence": str(present),
+                            "human_additional_text": human_additional_text,
+                            "item_attribute_full_text_details": item_attr_full,
                             "human_extraction": human_ann.output_data,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
-                            "human_verbatim_text": human_verbatim,
                             "llm_verbatim_text": llm_verbatim,
                             "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
                             "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",

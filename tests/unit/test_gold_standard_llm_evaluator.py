@@ -167,9 +167,31 @@ def test_evaluator_writes_comparison(evaluator_evaluated, tmp_path):
     comparison_csv_path = tmp_path / "llm_human_comparison.csv"
     evaluator_evaluated.export_llm_comparison(comparison_csv_path)
     reader = csv.DictReader(comparison_csv_path.open())
+    fieldnames = reader.fieldnames or []
+    expected_header = [
+        "document_id",
+        "document_name",
+        "attribute_id",
+        "attribute_label",
+        "attribute_presence",
+        "human_additional_text",
+        "item_attribute_full_text_details",
+        "human_extraction",
+        "llm_extraction",
+        "llm_reasoning",
+        "llm_verbatim_text",
+        "human_verbatim_fuzzy_match_pct",
+        "llm_verbatim_fuzzy_match_pct",
+        "extraction_run_id",
+    ]
+    assert list(fieldnames) == expected_header
     rows = list(reader)
+    assert len(rows) > 0
     for r in rows:
+        assert r["attribute_presence"] in ("True", "False")
         assert r["human_extraction"] == r["llm_extraction"]
+        assert "human_verbatim_fuzzy_match_pct" in r
+        assert "llm_verbatim_fuzzy_match_pct" in r
 
 
 def test_evaluator_displays_metrics(evaluator_evaluated):
