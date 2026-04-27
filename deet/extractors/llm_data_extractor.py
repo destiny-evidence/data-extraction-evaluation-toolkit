@@ -4,9 +4,10 @@ import json
 from collections.abc import Sequence
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import litellm
+import yaml
 from loguru import logger
 from pydantic import (
     BaseModel,
@@ -33,13 +34,14 @@ from deet.data_models.extraction import (
     ExtractionRunMetadata,
     ExtractionRunOutput,
 )
+from deet.data_models.ui_schema import UI
 from deet.exceptions import LitellmModelNotMappedError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
     LLMProvider,
     get_settings,
 )
-from deet.utils.cli_utils import optional_progress
+from deet.ui.terminal.render import optional_progress
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,
@@ -100,23 +102,67 @@ class DataExtractionConfig(BaseModel):
     model_config = ConfigDict()
 
     # LLM
-    model: str = settings.llm_model
-    provider: LLMProvider = settings.llm_provider
-    temperature: float = settings.llm_temperature
-    max_tokens: int | None = settings.llm_max_tokens
-
-    # Context
-    default_context_type: ContextType = Field(
-        default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
+    provider: Annotated[
+        LLMProvider, UI(help="Choose from a list of supported LLM providers.")
+    ] = Field(default=LLMProvider.AZURE, description="LLM Provider")
+    model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
+        Field(
+            default="gpt-4o-mini",
+            description="LLM model identifier used for completions.",
+        )
     )
-    max_context_tokens: int | None = Field(
-        default_factory=lambda: settings.llm_max_context_tokens,
+    temperature: float = Field(
+        default=0.1,
+        description="Sampling temperature for the LLM.",
+        ge=0.0,
+    )
+    max_tokens: Annotated[
+        int | None,
+        UI(
+            help=(
+                "The maximum number of tokens in the LLM response. "
+                "Leave blank for the provider default."
+            )
+        ),
+    ] = Field(
+        default=None,
         description=(
-            "Maximum context length in tokens (total payload: system + attributes + "
-            "context). None = infer from model. Override to manage costs."
+            "Maximum number of tokens to generate (Leave blank for provider default)."
         ),
     )
-    truncate_on_overflow: bool = Field(
+
+    max_context_tokens: Annotated[
+        int | None,
+        UI(
+            help=("Maximum input context length " "(Leave blank for provider default).")
+        ),
+    ] = Field(
+        default=None,
+        description=(
+            "Maximum input context length in tokens (system + attributes + "
+            "document). None = infer from model (litellm registry), else "
+            f"{DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK} via "
+            "DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK. Override to manage costs."
+        ),
+    )
+
+    # Context
+    default_context_type: Annotated[
+        ContextType, UI(help="Where to extract data from.")
+    ] = Field(
+        default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
+    )
+
+    truncate_on_overflow: Annotated[
+        bool,
+        UI(
+            help=(
+                "Select true to truncate documents longer than max_context_tokens. "
+                "This will ensure extraction runs without crashing, but may mean"
+                " some parts of the document are not seen by the LLM."
+            )
+        ),
+    ] = Field(
         default=False,
         description=(
             "When True, automatically truncate context that exceeds "
@@ -153,6 +199,15 @@ class DataExtractionConfig(BaseModel):
             # Use shared fallback when model max tokens cannot be inferred.
             self.max_context_tokens = DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK
         return self
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> "DataExtractionConfig":
+        """Load config object from a yaml file."""
+        if not path.exists():
+            not_found = f"Config file not found at: {path}"
+            raise FileNotFoundError(not_found)
+
+        return cls.model_validate(yaml.safe_load(path.read_text()))
 
 
 class LLMDataExtractor:
@@ -740,7 +795,7 @@ class LLMDataExtractor:
             # Convert to full EppiGoldStandardAnnotation
             annotation = GoldStandardAnnotation(
                 attribute=attribute,
-                output_data=llm_annotation.output_data,
+                raw_data=llm_annotation.output_data,
                 annotation_type=AnnotationType.LLM,
                 additional_text=additional_text,
                 reasoning=reasoning,

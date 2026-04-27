@@ -1,12 +1,13 @@
 """Core data models regarding annotations."""
 
 import csv
+from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal, Never, TypeVar, cast
 
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 from pydantic.config import JsonDict, JsonValue
 from tabulate import tabulate
 
@@ -103,6 +104,7 @@ class AttributeType(StrEnum):
 
 
 DEFAULT_ATTRIBUTE_TYPE = AttributeType.BOOL
+SUPPORTED_TYPES = str | int | float | bool | list | dict
 
 
 class Attribute(BaseModel):
@@ -246,11 +248,78 @@ class Attribute(BaseModel):
 AttributeTypeVar = TypeVar("AttributeTypeVar", bound=Attribute)
 
 
+def coerce_annotation_to_str(val: SUPPORTED_TYPES) -> str:
+    """Coerce an annotation to a string."""
+    return str(val) if val else ""
+
+
+def coerce_annotation_to_bool(val: SUPPORTED_TYPES) -> bool:
+    """Coerce an annotation to a bool."""
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str) and val.lower() in ("false", "0"):
+        return False
+
+    if isinstance(val, int | float):
+        return bool(val)
+
+    return True
+
+
+def coerce_annotation_to_int(val: SUPPORTED_TYPES) -> int | None:
+    """Coerce an annotation to a int."""
+    if isinstance(val, int):
+        return val
+    if isinstance(val, str | float | bool):
+        try:
+            return int(val)
+        except ValueError:
+            logger.warning("Could not convert {val} to int")
+
+    logger.warning(f"Unsupported type for int conversion: {type(val).__name__}")
+    return None
+
+
+def coerce_annotation_to_float(val: SUPPORTED_TYPES) -> float | None:
+    """Coerce an annotation to a float."""
+    if isinstance(val, float):
+        return val
+    if isinstance(val, str | bool | int):
+        try:
+            return float(val)
+        except ValueError:
+            logger.warning(f"Could not convert {val} to float")
+
+    logger.warning(f"Unsupported type for float conversion: {type(val).__name__}")
+    return None
+
+
+ANNOTATION_COERCION_STRATEGIES: dict[
+    AttributeType, Callable[[SUPPORTED_TYPES], SUPPORTED_TYPES | None]
+] = {
+    AttributeType.STRING: coerce_annotation_to_str,
+    AttributeType.BOOL: coerce_annotation_to_bool,
+    AttributeType.INTEGER: coerce_annotation_to_int,
+    AttributeType.FLOAT: coerce_annotation_to_float,
+}
+
+
 class GoldStandardAnnotation(BaseModel):
-    """A single gold standard annotation for an attribute."""
+    """
+    A single gold standard annotation for an attribute.
+
+    `raw_data` stores the data as it comes from source,
+    `output_data` is computed and coerces raw_data into the correct type.
+    This can change if the `AttributeType` of the `attribute` changes.
+    """
 
     attribute: Attribute
-    output_data: Any
+    raw_data: Any = Field(
+        description=(
+            "The output data exactly as it was first seen"
+            " without any coercion to the correct type"
+        )
+    )
     annotation_type: AnnotationType
     additional_text: str | None = Field(
         description="Notes provided by the annotator - usually the citation "
@@ -263,25 +332,22 @@ class GoldStandardAnnotation(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def ensure_correct_type(cls, data: dict) -> dict:
-        """Ensure output_data is of the type required by annotation_type."""
-        target_att: Attribute = data["attribute"]
-
-        if isinstance(target_att, dict):
-            output_data_type = AttributeType(target_att["output_data_type"])
-        else:
-            output_data_type = target_att.output_data_type
-
-        target_type: type = output_data_type.to_python_type()
-        value = data["output_data"]
-
-        if value is not None and not isinstance(value, target_type):
-            bad_type = (
-                f"field {data['output_data']} is of "
-                f" type {type(data['output_data'])}; should be {target_type}."
-            )
-            raise ValueError(bad_type)
+    def handle_output_data_input(cls, data: SUPPORTED_TYPES) -> SUPPORTED_TYPES:
+        """Catch instantations with output_data and send this to raw_data."""
+        if isinstance(data, dict) and "output_data" in data and "raw_data" not in data:
+            data["raw_data"] = data.pop("output_data")
         return data
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def output_data(self) -> SUPPORTED_TYPES | None:
+        """Coerce raw data to correct type based on attribute."""
+        strategy = ANNOTATION_COERCION_STRATEGIES.get(self.attribute.output_data_type)
+
+        if strategy:
+            return strategy(self.raw_data)
+
+        return self.raw_data
 
 
 GoldStandardAnnotationTypeVar = TypeVar(

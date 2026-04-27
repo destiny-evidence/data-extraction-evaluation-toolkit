@@ -238,9 +238,6 @@ class EppiAnnotationConverter(AnnotationConverter):
         # NOTE @sagaruprety this (modified to coerce all bools to bool) is OK
         # for eppi as we're only expecting bool/str, but we need to implement
         # elsewhere a functionality that auto-maps output_data to the correct data type.
-        attr = attributes_lookup.get(annotation.get("AttributeId", 0))
-        if attr is not None and attr.output_data_type == AttributeType.BOOL:
-            output_data = True
 
         # Look up the attribute from the attributes list
         if (attribute_id := annotation.get("AttributeId")) is None:
@@ -268,7 +265,7 @@ class EppiAnnotationConverter(AnnotationConverter):
             arm_id=annotation.get("ArmId"),
             arm_title=annotation.get("ArmTitle", ""),
             arm_description=annotation.get("ArmDescription", ""),
-            output_data=output_data,
+            raw_data=output_data,
             annotation_type=AnnotationType.HUMAN,
             item_attribute_full_text_details=item_attribute_details,
         )
@@ -372,9 +369,8 @@ class EppiAnnotationConverter(AnnotationConverter):
                     attribute_id_to_label,
                 )
 
-                # Use model_construct to bypass validation and preserve all fields
-                annotated_doc = EppiGoldStandardAnnotatedDocument.model_construct(
-                    **{**document.__dict__, "annotations": annotations}
+                annotated_doc = EppiGoldStandardAnnotatedDocument(
+                    document=document, annotations=annotations
                 )
 
                 annotated_documents.append(annotated_doc)

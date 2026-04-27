@@ -8,7 +8,7 @@ import yaml  # type:ignore[import-untyped]
 from deet.data_models.documents import ContextType, Document
 from deet.extractors.cli_helpers import (
     init_extraction_run,
-    load_or_init_config,
+    load_config_from_typer_context,
     prepare_documents,
 )
 from deet.extractors.llm_data_extractor import DataExtractionConfig
@@ -54,32 +54,63 @@ def mock_documents():
 
 def test_load_or_init_config_file_exists(config_path, config):
     """Test loading config from existing file."""
-    loaded_config = load_or_init_config(config_path)
+    mock_typer_context = MagicMock()
+    loaded_config = load_config_from_typer_context(mock_typer_context, config_path)
 
     assert isinstance(loaded_config, DataExtractionConfig)
     assert loaded_config.model_dump() == config.model_dump()
 
 
+def test_load_or_init_config_file_exists_invalid_yaml(tmp_path):
+    """Test loading config from existing file."""
+    mock_typer_context = MagicMock()
+    config_path = tmp_path / "bad_yaml.yaml"
+    config_path.write_text("model_name: gpt-4\n  invalid_indent: true")
+    with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
+        load_config_from_typer_context(mock_typer_context, config_path)
+
+    assert "YAML Syntax Error" in mock_fail.call_args[0][0]
+
+
+def test_load_or_init_config_file_exists_invalid_config(tmp_path):
+    """Test loading config from existing file."""
+    mock_typer_context = MagicMock()
+    config_path = tmp_path / "bad_yaml.yaml"
+    config_path.write_text("provider: unsupported_provider")
+    with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
+        load_config_from_typer_context(mock_typer_context, config_path)
+
+    assert "Config validation error" in mock_fail.call_args[0][0]
+
+
 def test_load_or_init_config_file_doesnt_exist(tmp_path):
     """Test initializing default config when file doesn't exist."""
     non_existent_path = tmp_path / "non_existent_config.yaml"
+    mock_typer_context = MagicMock()
 
-    with patch("deet.extractors.cli_helpers.echo_and_log") as mock_echo:
-        loaded_config = load_or_init_config(non_existent_path)
+    with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
+        load_config_from_typer_context(mock_typer_context, non_existent_path)
+
+    assert "file not found" in mock_fail.call_args[0][0]
+
+
+def test_load_or_init_config_file_doesnt_exist_reverts_project(config_path, config):
+    """Test initializing default config when file doesn't exist."""
+    mock_project = MagicMock()
+    mock_project.config_path = config_path
+    mock_typer_context = MagicMock()
+    mock_typer_context.obj.project = mock_project
+
+    with (
+        patch("deet.extractors.cli_helpers.run_model_wizard") as mock_wizard,
+        patch("deet.extractors.cli_helpers.continue_after_key"),
+        patch("deet.extractors.cli_helpers.console.clear"),
+    ):
+        mock_wizard.return_value = config
+        loaded_config = load_config_from_typer_context(mock_typer_context, None)
 
     assert isinstance(loaded_config, DataExtractionConfig)
-    assert loaded_config.model_dump() == DataExtractionConfig().model_dump()
-    mock_echo.assert_called_once()
-    assert "does not exist" in mock_echo.call_args[0][0]
-
-
-def test_load_or_init_config_file_invalid(tmp_path):
-    """When our config yaml file is invalid."""
-    invalid_config_path = tmp_path / "invalid_config.yaml"
-    invalid_config_path.write_text("invalid: yaml: content: [")
-
-    with pytest.raises(yaml.YAMLError):
-        load_or_init_config(invalid_config_path)
+    assert loaded_config.model_dump() == config.model_dump()
 
 
 def test_init_extraction_run(tmp_path):
@@ -89,21 +120,21 @@ def test_init_extraction_run(tmp_path):
     run_name = "test_run"
 
     with patch("deet.extractors.cli_helpers.logger") as mock_logger:
-        extraction_run_id, experiment_out_dir = init_extraction_run(out_dir, run_name)
+        experiment_artefacts = init_extraction_run(out_dir, run_name)
 
     # run ID format contains timestamp and run name
-    assert run_name in extraction_run_id
-    assert "_" in extraction_run_id  # timestamp separator
+    assert run_name in experiment_artefacts.run_id
+    assert "_" in experiment_artefacts.run_id  # timestamp separator
 
     # check experiment directory was created
-    assert experiment_out_dir.exists()
-    assert experiment_out_dir.is_dir()
-    assert experiment_out_dir.parent == out_dir
+    assert experiment_artefacts.base_dir.exists()
+    assert experiment_artefacts.base_dir.is_dir()
+    assert experiment_artefacts.base_dir.parent == out_dir
 
     # check logger.add was called with log file path
     mock_logger.add.assert_called_once()
     log_path = mock_logger.add.call_args[0][0]
-    assert log_path == experiment_out_dir / "deet.log"
+    assert log_path == experiment_artefacts.base_dir / "deet.log"
 
 
 def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_path):
@@ -184,7 +215,7 @@ def test_prepare_documents_failed_to_link(config, tmp_path, mock_documents):
     pdf_dir.mkdir()
 
     with (
-        patch("deet.extractors.cli_helpers.echo_and_log"),
+        patch("deet.extractors.cli_helpers.notify"),
         patch(
             "deet.extractors.cli_helpers.DocumentReferenceLinker"
         ) as mock_linker_class,
@@ -208,7 +239,40 @@ def test_prepare_documents_failed_to_link(config, tmp_path, mock_documents):
         assert any(
             msg in mock_fail.call_args[0][0]
             for msg in (
+                "No link map supplied",
                 "no linked documents could be found",
                 "Linked document path does not exist",
             )
         )
+
+
+def test_prepare_documents_no_pdf(config, tmp_path, mock_documents):
+    """Test failure when no linked documents could be found or created."""
+    config.default_context_type = ContextType.FULL_DOCUMENT
+    linked_doc_path = tmp_path / "linked_documents"
+    # Don't create the directory
+    pdf_dir = None
+
+    with (
+        patch("deet.extractors.cli_helpers.notify"),
+        patch(
+            "deet.extractors.cli_helpers.DocumentReferenceLinker"
+        ) as mock_linker_class,
+        patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail,
+    ):
+        mock_linker = mock_linker_class.return_value
+        # Return empty list - no documents could be linked
+        mock_linker.link_many_references_parsed_documents.return_value = []
+        mock_fail.side_effect = SystemExit(1)
+
+        with pytest.raises(SystemExit):
+            prepare_documents(
+                documents=mock_documents,
+                config=config,
+                linked_document_path=linked_doc_path,
+                pdf_dir=pdf_dir,
+                link_map_path=None,
+            )
+
+        mock_fail.assert_called_once()
+        assert "no pdf dir supplied" in mock_fail.call_args[0][0]
