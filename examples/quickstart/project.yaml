@@ -1,6 +1,6 @@
 project:
-  created_at: '2026-04-13T15:05:37.332477Z'
+  created_at: '2026-04-27T12:57:18.157449Z'
   gold_standard_data_format: eppi_json
-  gold_standard_data_path: /home/maxca/software/DESTINY/data-extraction-evaluation-toolkit/examples/data/eppijson/eppi_references.json
-  name: a new project
-  pdf_dir: /home/maxca/software/DESTINY/data-extraction-evaluation-toolkit/examples/data/pdfs
+  gold_standard_data_path: /home/maxca/software/DESTINY/data-extraction-evaluation-toolkit/examples/quickstart/reports.json
+  name: asdf
+  pdf_dir: /home/maxca/software/DESTINY/data-extraction-evaluation-toolkit/examples/quickstart
