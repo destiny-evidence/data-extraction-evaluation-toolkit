@@ -68,31 +68,6 @@ def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> floa
     return float(fuzz.partial_ratio(v, c))
 
 
-def _document_context_for_grounding(
-    doc_gs: object,
-    doc_llm: object | None,
-) -> str | None:
-    """
-    Prefer the gold document's context; fall back to the LLM document's if missing.
-
-    Args:
-        doc_gs: Gold standard annotated document (has ``.document``).
-        doc_llm: Matching LLM document, or ``None``.
-
-    Returns:
-        Context string, or ``None`` if neither side provides one.
-
-    """
-    c = getattr(getattr(doc_gs, "document", None), "context", None)
-    if c:
-        return str(c)
-    if doc_llm is not None:
-        c2 = getattr(getattr(doc_llm, "document", None), "context", None)
-        if c2:
-            return str(c2)
-    return None
-
-
 class GoldStandardLLMEvaluator:
     """
     A class to manage the evaluation of LLM-extracted data against
@@ -283,7 +258,11 @@ class GoldStandardLLMEvaluator:
                 except MissingDocumentError:
                     llm_annotated_doc = None
 
-                context = _document_context_for_grounding(doc, llm_annotated_doc)
+                context: str | None = (
+                    None
+                    if llm_annotated_doc is None
+                    else (str(t) if (t := llm_annotated_doc.document.context) else None)
+                )
 
                 for attribute in self.attributes:
                     human_ann = doc.get_attribute_annotation(attribute)
