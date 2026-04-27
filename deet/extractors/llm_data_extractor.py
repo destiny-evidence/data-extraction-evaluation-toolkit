@@ -120,7 +120,8 @@ class DataExtractionConfig(BaseModel):
         int | None,
         UI(
             help=(
-                "The maximum number of tokens. " "Leave blank for the provider default."
+                "The maximum number of tokens in the LLM response. "
+                "Leave blank for the provider default."
             )
         ),
     ] = Field(
