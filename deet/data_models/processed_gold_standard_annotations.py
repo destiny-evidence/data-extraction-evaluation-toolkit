@@ -359,3 +359,37 @@ class ProcessedEppiAnnotationData(
     """
 
     raw_data: EppiRawData | None = None
+
+    def populate_custom_prompts(
+        self,
+        method: CustomPromptPopulationMethod,
+        filepath: Path | None = None,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> None:
+        """
+        Populate custom prompts, then recompute each annotation's ``raw_data``.
+
+        An EPPI ``Report.json`` (or similar) only carries EPPI-Reviewer field names;
+        it does not set each attribute's ``output_data_type`` in DEET. Ingested
+        attributes default to ``bool`` from the codeset. The custom prompt
+        definition file (e.g. a CSV with ``output_data_type`` such as
+        ``string`` or ``bool``) is the source of those types, not the JSON. After
+        the base method updates prompts and types, we re-apply
+        ``eppi_output_data_from_eppi_fields`` so ``raw_data`` matches
+        ``AdditionalText`` and the updated type (e.g. ``"32"`` for a string count,
+        not boolean ``True`` from initial ingest only).
+        """
+        super().populate_custom_prompts(method, filepath=filepath, **kwargs)
+        self._recompute_eppi_raw_data_from_additional_text()
+
+    def _recompute_eppi_raw_data_from_additional_text(self) -> None:
+        """Re-derive each gold ``raw_data`` from types and ``AdditionalText``."""
+        from deet.processors.eppi_annotation_converter import (
+            eppi_output_data_from_eppi_fields,
+        )
+
+        for ann in self.annotations:
+            ann.raw_data = eppi_output_data_from_eppi_fields(
+                ann.attribute.output_data_type,
+                additional_text=ann.additional_text or "",
+            )

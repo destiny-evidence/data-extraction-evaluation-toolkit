@@ -4,6 +4,7 @@ data extracted by hand.
 """
 
 import csv
+import re
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
@@ -29,12 +30,18 @@ from deet.data_models.evaluation import (
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
 
+# Use stricter heuristics (substring / digit boundary) for very short verbatims.
+_VERBATIM_FUZZ_SHORT_LEN = 4
+
 
 def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> float:
     """
     Return a 0-100 score for how much of ``verbatim`` appears in ``context``.
 
-    Uses :func:`rapidfuzz.fuzz.partial_ratio` (substring-style overlap).
+    For typical-length snippets, uses :func:`rapidfuzz.fuzz.partial_ratio` (best
+    local alignment in the long context). For very short **all-numeric** snippets
+    (e.g. counts like ``"32"``), uses a stricter number-boundary check so a small
+    number is not conflated with a digit inside a larger run (e.g. ``"321"``).
 
     Args:
         verbatim: Human or model snippet (e.g. ``additional_text``).
@@ -48,6 +55,16 @@ def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> floa
     c = (context or "").strip()
     if not v or not c:
         return 0.0
+    if len(v) < _VERBATIM_FUZZ_SHORT_LEN and v.isdecimal():
+        # Avoid partial_ratio's tendency to over-score tiny strings in long text.
+        if re.search(
+            r"(?<![0-9])" + re.escape(v) + r"(?![0-9])",
+            c,
+        ):
+            return 100.0
+        return 0.0
+    if len(v) < _VERBATIM_FUZZ_SHORT_LEN:
+        return 100.0 if v in c else float(fuzz.partial_ratio(v, c))
     return float(fuzz.partial_ratio(v, c))
 
 
