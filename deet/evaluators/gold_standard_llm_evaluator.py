@@ -16,9 +16,8 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import Attribute, AttributeTypeVar, GoldStandardAnnotation
+from deet.data_models.base import AttributeTypeVar
 from deet.data_models.documents import (
-    GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
     GoldStandardAnnotatedDocumentTypeVar,
 )
@@ -66,17 +65,6 @@ def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> floa
     if len(v) < _VERBATIM_FUZZ_SHORT_LEN:
         return 100.0 if v in c else float(fuzz.partial_ratio(v, c))
     return float(fuzz.partial_ratio(v, c))
-
-
-def _find_gold_annotation_for_attribute(
-    annotated: GoldStandardAnnotatedDocument,
-    attribute: Attribute,
-) -> GoldStandardAnnotation | None:
-    """Return the real gold annotation for ``attribute``, or None if not present."""
-    for ann in annotated.annotations:
-        if ann.attribute.attribute_id == attribute.attribute_id:
-            return ann
-    return None
 
 
 def _eppi_full_text_details_colon_separated(annotation: object) -> str:
@@ -257,8 +245,22 @@ class GoldStandardLLMEvaluator:
         filepath: Path,
     ) -> None:
         """
-        Export a comparison CSV: EPPI presence, additional text, full-text fragments,
-        coerced extractions, LLM verbatim, fuzzy human/LLM grounding, and run id.
+        Export a comparison CSV for gold vs LLM per document and attribute.
+
+        Columns include identifiers, EPPI-oriented fields, extractions, LLM verbatim,
+        fuzzy grounding scores (against the LLM annotated document's ``context``),
+        and run id.
+
+        Column semantics:
+
+        - ``attribute_presence``: Whether the gold annotation is present.
+        - ``human_additional_text`` / ``item_attribute_full_text_details``: Taken from
+          the eppi json file when present; empty when absent.
+        - ``human_extraction``: Actual ground truth to be extracted.
+        - ``human_verbatim_fuzzy_match_pct``: Grounding of ``human_additional_text``
+          against the LLM annotated document's ``context``.
+        - ``llm_verbatim_text`` / ``llm_verbatim_fuzzy_match_pct``: LLM
+          ``additional_text`` and its grounding against the same ``context``.
         """
         with filepath.open("w", encoding="utf-8") as f:
             writer = csv.DictWriter(
@@ -297,7 +299,14 @@ class GoldStandardLLMEvaluator:
 
                 for attribute in self.attributes:
                     human_ann = doc.get_attribute_annotation(attribute)
-                    gold_real = _find_gold_annotation_for_attribute(doc, attribute)
+                    gold_real = next(
+                        (
+                            ann
+                            for ann in doc.annotations
+                            if ann.attribute.attribute_id == attribute.attribute_id
+                        ),
+                        None,
+                    )
                     if gold_real is not None:
                         human_additional_text: str = gold_real.additional_text or ""
                         item_attr_full: str = _eppi_full_text_details_colon_separated(

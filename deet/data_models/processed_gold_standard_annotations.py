@@ -28,6 +28,9 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiRawData,
 )
+from deet.processors.eppi_additional_text_mapping import (
+    eppi_output_data_from_eppi_fields,
+)
 
 
 class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
@@ -384,10 +387,6 @@ class ProcessedEppiAnnotationData(
 
     def _recompute_eppi_raw_data_from_additional_text(self) -> None:
         """Re-derive each gold ``raw_data`` from types and ``AdditionalText``."""
-        from deet.processors.eppi_annotation_converter import (
-            eppi_output_data_from_eppi_fields,
-        )
-
         for ann in self.annotations:
             ann.raw_data = eppi_output_data_from_eppi_fields(
                 ann.attribute.output_data_type,
