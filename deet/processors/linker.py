@@ -543,7 +543,11 @@ class DocumentReferenceLinker:
             if file.suffix not in [".md", ".pdf"]:
                 logger.warning(f"file {file} is not pdf/md. next!")
                 continue
-            id_guess = int(file.name.split(".")[0])
+            try:
+                id_guess = int(file.name.split(".")[0])
+            except ValueError:
+                logger.debug(f"{file.name} isn't convertible to int. next!")
+                continue
             unlinked_doc = self._references_by_id.get(id_guess)
             if unlinked_doc is None:
                 logger.debug(f"no reference document found for id {id_guess}. next!")
