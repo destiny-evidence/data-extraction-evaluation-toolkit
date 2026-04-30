@@ -30,46 +30,77 @@ from deet.data_models.evaluation import (
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
 
-# Use stricter heuristics (substring / digit boundary) for very short verbatims.
-_VERBATIM_FUZZ_SHORT_LEN = 4
+# Default for ``short_snippet_max_len``: snippets shorter than this (in characters)
+# use stricter matching—digit-boundary checks for all-numeric snippets, else
+# substring or partial fuzzy—so tiny phrases are not scored like full sentences.
+_DEFAULT_SHORT_SNIPPET_MAX_LEN = 4
 
 
-def _verbatim_fuzzy_match_pct(verbatim: str | None, context: str | None) -> float:
+def _verbatim_fuzzy_match_pct(
+    snippet_text: str | None,
+    document_context: str | None,
+    *,
+    short_snippet_max_len: int = _DEFAULT_SHORT_SNIPPET_MAX_LEN,
+) -> float:
     """
-    Return a 0-100 score for how much of ``verbatim`` appears in ``context``.
+    Score how well a short verbatim snippet is grounded in document text.
 
-    For typical-length snippets, uses :func:`rapidfuzz.fuzz.partial_ratio` (best
-    local alignment in the long context). For very short **all-numeric** snippets
-    (e.g. counts like ``"32"``), uses a stricter number-boundary check so a small
-    number is not conflated with a digit inside a larger run (e.g. ``"321"``).
+    Compares **snippet_text** (needle, e.g. EPPI or LLM ``additional_text``) against
+    **document_context** (haystack, usually the LLM annotated document's ``context``).
+    Returns a 0-100 similarity-style score.
+
+    For snippets at least ``short_snippet_max_len`` characters long, uses
+    :func:`rapidfuzz.fuzz.partial_ratio` (best local alignment in the long context).
+    For shorter **all-numeric** snippets (e.g. counts like ``"32"``), uses a stricter
+    number-boundary regex so a small number is not conflated with digits inside a
+    larger run (e.g. ``"321"``). For other short snippets, prefers substring match,
+    else partial ratio.
 
     Args:
-        verbatim: Human or model snippet (e.g. ``additional_text``).
-        context: Document text used for comparison.
+        snippet_text: Verbatim snippet to locate (e.g. human or model
+            ``additional_text``).
+        document_context: Full document text to search within.
+        short_snippet_max_len: Character length below which the snippet is treated as
+            "short" for the stricter heuristics described above.
 
     Returns:
         Float in ``[0.0, 100.0]``, or ``0.0`` if either input is empty.
 
     """
-    v = (verbatim or "").strip()
-    c = (context or "").strip()
-    if not v or not c:
+    normalized_snippet = (snippet_text or "").strip()
+    normalized_context = (document_context or "").strip()
+    if not normalized_snippet or not normalized_context:
         return 0.0
-    if len(v) < _VERBATIM_FUZZ_SHORT_LEN and v.isdecimal():
+    # Short all-numeric snippet: require a standalone number, not a substring of digits.
+    if (
+        len(normalized_snippet) < short_snippet_max_len
+        and normalized_snippet.isdecimal()
+    ):
         if re.search(
-            r"(?<![0-9])" + re.escape(v) + r"(?![0-9])",
-            c,
+            r"(?<![0-9])" + re.escape(normalized_snippet) + r"(?![0-9])",
+            normalized_context,
         ):
             return 100.0
         return 0.0
-    if len(v) < _VERBATIM_FUZZ_SHORT_LEN:
-        return 100.0 if v in c else float(fuzz.partial_ratio(v, c))
-    return float(fuzz.partial_ratio(v, c))
+    # Other short snippets: exact substring is full credit; else partial fuzzy match.
+    if len(normalized_snippet) < short_snippet_max_len:
+        return (
+            100.0
+            if normalized_snippet in normalized_context
+            else float(
+                fuzz.partial_ratio(normalized_snippet, normalized_context),
+            )
+        )
+    return float(fuzz.partial_ratio(normalized_snippet, normalized_context))
 
 
 def _eppi_full_text_details_colon_separated(annotation: object) -> str:
     """
-    Colon-join all non-empty ``Text`` values from ``item_attribute_full_text_details``.
+    Join all non-empty ``Text`` values from ``item_attribute_full_text_details``.
+
+    EPPI may attach several fragments; for CSV export we concatenate them into one
+    cell using ``": "`` as a readable separator (not an EPPI-native format—avoids
+    commas inside the cell and keeps the column single-valued).
 
     Non-EPPI annotations (no list on the model) yield an empty string.
     """
@@ -261,6 +292,13 @@ class GoldStandardLLMEvaluator:
           against the LLM annotated document's ``context``.
         - ``llm_verbatim_text`` / ``llm_verbatim_fuzzy_match_pct``: LLM
           ``additional_text`` and its grounding against the same ``context``.
+
+        Example row (illustrative types): ``attribute_presence`` is the string
+        ``"True"`` or ``"False"``; ``human_verbatim_fuzzy_match_pct`` and
+        ``llm_verbatim_fuzzy_match_pct`` are decimal strings (e.g. ``"100.00"``,
+        ``"87.50"``); ``human_extraction`` / ``llm_extraction`` serialize according to
+        the attribute's coerced value (e.g. bool, int, or str) as written by
+        :class:`csv.DictWriter`.
         """
         with filepath.open("w", encoding="utf-8") as f:
             writer = csv.DictWriter(

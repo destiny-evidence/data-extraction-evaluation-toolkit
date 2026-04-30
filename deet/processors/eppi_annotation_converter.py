@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypeAlias, cast
 
 from loguru import logger
 from pydantic import TypeAdapter
@@ -19,6 +19,7 @@ from deet.data_models.eppi import (
 from deet.data_models.processed_gold_standard_annotations import (
     ProcessedEppiAnnotationData,
 )
+from deet.exceptions import UnsupportedEppiAttributeTypeError
 from deet.processors.base_converter import (
     DEFAULT_ANNOTATED_DOCUMENTS_FILENAME,
     DEFAULT_ATTRIBUTE_MAPPING_FILENAME,
@@ -29,20 +30,104 @@ from deet.processors.base_converter import (
     Outfiles,
 )
 
-EppiRawDataValue = bool | str | int | float | list[Any] | dict[str, Any]
+# JSON-serializable values allowed in ``GoldStandardAnnotation.raw_data`` before
+# coercion to ``output_data``. This mapper does not return ``None``; empty or
+# invalid input uses :meth:`AttributeType.missing_annotation_default` per type.
+# ``TypeAlias`` (not PEP 695 ``type``): pre-commit's mypy 1.14 hook misparses ``type``.
+EppiRawDataValue: TypeAlias = bool | str | int | float | list[Any] | dict[str, Any]  # noqa: UP040
 
 
-def eppi_output_data_from_eppi_fields(  # noqa: PLR0911
+def _parse_eppi_integer(additional: str, output_data_type: AttributeType) -> int:
+    """
+    Parse stripped EPPI ``AdditionalText`` into an integer ``raw_data`` value.
+
+    Args:
+        additional: Stripped ``AdditionalText``.
+        output_data_type: Must be :attr:`AttributeType.INTEGER` (used for defaults).
+
+    Returns:
+        Parsed integer or :meth:`AttributeType.missing_annotation_default` on empty
+        or invalid input.
+
+    """
+    if not additional:
+        return cast("int", output_data_type.missing_annotation_default())
+    try:
+        return int(float(additional))
+    except ValueError:
+        return cast("int", output_data_type.missing_annotation_default())
+
+
+def _parse_eppi_float(additional: str, output_data_type: AttributeType) -> float:
+    """
+    Parse stripped EPPI ``AdditionalText`` into a float ``raw_data`` value.
+
+    Args:
+        additional: Stripped ``AdditionalText``.
+        output_data_type: Must be :attr:`AttributeType.FLOAT` (used for defaults).
+
+    Returns:
+        Parsed float or :meth:`AttributeType.missing_annotation_default` on empty or
+        invalid input.
+
+    """
+    if not additional:
+        return cast("float", output_data_type.missing_annotation_default())
+    try:
+        return float(additional.replace(",", ""))
+    except ValueError:
+        return cast("float", output_data_type.missing_annotation_default())
+
+
+def _parse_eppi_list_or_dict(
+    additional: str,
+    output_data_type: AttributeType,
+) -> EppiRawDataValue:
+    """
+    Parse stripped EPPI ``AdditionalText`` JSON into list or dict ``raw_data``.
+
+    Args:
+        additional: Stripped ``AdditionalText`` (JSON string).
+        output_data_type: :attr:`AttributeType.LIST` or :attr:`AttributeType.DICT`.
+
+    Returns:
+        Parsed collection or :meth:`AttributeType.missing_annotation_default` if empty,
+        invalid JSON, or wrong Python type.
+
+    """
+    if not additional:
+        return output_data_type.missing_annotation_default()
+    try:
+        parsed: Any = json.loads(additional)
+    except (json.JSONDecodeError, TypeError):
+        return output_data_type.missing_annotation_default()
+    py_type = output_data_type.to_python_type()
+    if isinstance(parsed, py_type):
+        return cast("EppiRawDataValue", parsed)
+    return output_data_type.missing_annotation_default()
+
+
+def eppi_output_data_from_eppi_fields(
     output_data_type: AttributeType,
     *,
     additional_text: str,
 ) -> EppiRawDataValue:
     """
-    Map EPPI ``Codes`` row evidence onto typed ``raw_data`` for coerced ``output_data``.
+    Map EPPI evidence onto typed ``raw_data`` for coerced ``output_data``.
 
-    A row in ``References[].Codes`` means the reviewer applied that code (e.g. ticked
-    the checkbox). For boolean attributes, that application is ``True`` even when
-    ``AdditionalText`` is empty.
+    **Glossary**
+
+    - **Codes:** Rows under ``References[].Codes`` in EPPI export JSON. Each row
+      means the reviewer applied that code for the reference (e.g. ticked a box).
+    - **raw_data:** The value stored on ``GoldStandardAnnotation`` before / during
+      coercion to the Python type implied by the attribute.
+    - **output_data:** The coerced, typed value used in evaluation (derived from
+      ``raw_data``). For EPPI ingest, booleans reflect **code presence**; other types
+      come from the ``AdditionalText`` field.
+
+    A Code row exists means the attribute was applied. For boolean attributes that is
+    ``True`` even when ``AdditionalText`` is empty (the checkbox alone carries the
+    positive annotation).
 
     For every non-boolean type, only the info-box ``AdditionalText`` is used.
     ``ItemAttributeFullTextDetails`` is not used for the stored value (it may still be
@@ -54,7 +139,8 @@ def eppi_output_data_from_eppi_fields(  # noqa: PLR0911
 
     Returns:
         Value to store in ``GoldStandardAnnotation.raw_data`` (then coerced via
-        ``output_data``).
+        ``output_data``). Never ``None``; see module-level note on
+        ``EppiRawDataValue``.
 
     """
     additional = (additional_text or "").strip()
@@ -63,37 +149,14 @@ def eppi_output_data_from_eppi_fields(  # noqa: PLR0911
         return True
     if output_data_type == AttributeType.STRING:
         return additional
-
     if output_data_type == AttributeType.INTEGER:
-        if not additional:
-            return output_data_type.missing_annotation_default()
-        try:
-            return int(float(additional))
-        except ValueError:
-            return output_data_type.missing_annotation_default()
-
+        return _parse_eppi_integer(additional, output_data_type)
     if output_data_type == AttributeType.FLOAT:
-        if not additional:
-            return output_data_type.missing_annotation_default()
-        try:
-            return float(additional.replace(",", ""))
-        except ValueError:
-            return output_data_type.missing_annotation_default()
-
+        return _parse_eppi_float(additional, output_data_type)
     if output_data_type in (AttributeType.LIST, AttributeType.DICT):
-        if not additional:
-            return output_data_type.missing_annotation_default()
-        try:
-            parsed: Any = json.loads(additional)
-        except (json.JSONDecodeError, TypeError):
-            return output_data_type.missing_annotation_default()
-        py_type = output_data_type.to_python_type()
-        if isinstance(parsed, py_type):
-            return cast("EppiRawDataValue", parsed)
-        return output_data_type.missing_annotation_default()
+        return _parse_eppi_list_or_dict(additional, output_data_type)
 
-    unsupported = f"Unsupported AttributeType for EPPI mapping: {output_data_type}"
-    raise ValueError(unsupported)
+    raise UnsupportedEppiAttributeTypeError(output_data_type)
 
 
 class EppiAnnotationConverter(AnnotationConverter):

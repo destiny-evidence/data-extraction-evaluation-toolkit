@@ -127,12 +127,8 @@ class ScriptExecutor(BaseExecutor):
         python_which = shutil.which("python")
         r_which = shutil.which("R")
 
-        self.python_path = (
-            python_path
-            if python_path
-            else (Path(python_which) if python_which else None)
-        )
-        self.r_path = r_path if r_path else (Path(r_which) if r_which else None)
+        self.python_path = python_path or (Path(python_which) if python_which else None)
+        self.r_path = r_path or (Path(r_which) if r_which else None)
         self.bash_path = bash_path
 
         logger.debug(f"python path: {self.python_path}")

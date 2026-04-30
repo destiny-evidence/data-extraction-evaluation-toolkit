@@ -106,7 +106,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         """
         Process a single csv row and update the matching attribute.
 
-        Returns:
+        Returns
             bool: True if row was processed successfully, False otherwise
 
         """
@@ -432,6 +432,9 @@ class ProcessedEppiAnnotationData(
 
     def _recompute_eppi_raw_data_from_additional_text(self) -> None:
         """Re-derive each gold ``raw_data`` from types and ``AdditionalText``."""
+        # Import inside the method: ``eppi_annotation_converter`` already imports
+        # ``ProcessedEppiAnnotationData`` from this module, so a top-level import
+        # would risk a circular import.
         from deet.processors.eppi_annotation_converter import (
             eppi_output_data_from_eppi_fields,
         )
