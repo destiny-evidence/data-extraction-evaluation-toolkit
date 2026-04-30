@@ -70,9 +70,6 @@ omit = [
 ]
 source = ["deet"]
 
-[tool.mypy]
-python_version = "3.12"
-
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "pypandoc.*"
