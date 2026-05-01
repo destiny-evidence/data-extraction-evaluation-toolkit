@@ -392,6 +392,116 @@ def test_populate_id_uses_different_method_seemingly_identical_records():
     assert doc_identity1.document_id_source != doc_identity2.document_id_source
 
 
+@pytest.mark.parametrize(
+    ("external_id_input", "expected_external_id"),
+    [
+        (12345678, 12345678),  # Integer ID
+        ("ABC123", "ABC123"),  # String ID
+        (None, None),  # None ID
+        ("99999999", "99999999"),  # String representation of number
+    ],
+)
+def test_document_identity_internal_and_external_ids_various_types(
+    external_id_input, expected_external_id
+):
+    """
+    Test that internal_id and external_id fields
+    work correctly with various input types.
+
+    This test verifies that both internal_id
+    and external_id are properly set
+    and maintained when initialising DocumentIdentity
+    objects with different types of external_id values.
+    """
+    # Test basic initialization with different external_id types
+    doc_identity = DocumentIdentity(
+        document_id=12345678,
+        external_id=external_id_input,
+        doi="10.1000/test",
+        first_author="Smith",
+        year="2024",
+    )
+
+    assert doc_identity.document_id == 12345678
+    assert doc_identity.internal_id == 12345678
+    assert doc_identity.external_id == expected_external_id
+
+
+def test_document_identity_eppi_id_constraints():
+    """
+    Test that EPPi ID constraints are properly handled and external_id is preserved.
+
+    This test verifies that valid EPPi IDs are accepted and both internal_id and
+    external_id are correctly set, while invalid EPPi IDs properly fall back to
+    other ID generation methods.
+    """
+    # Valid EPPi ID (within digit constraints)
+    valid_eppi_id = 12345678  # 8 digits, within range
+    doc_identity = DocumentIdentity(
+        document_id=valid_eppi_id,
+        external_id="EPP12345678",
+        doi=None,
+        first_author=None,
+        year=None,
+    )
+
+    # Should be accepted and set both internal and external IDs
+    result = doc_identity._eppi_item_id()
+    assert result == valid_eppi_id
+    assert doc_identity.document_id == valid_eppi_id
+    assert doc_identity.internal_id == valid_eppi_id
+    assert doc_identity.external_id == "EPP12345678"
+
+    # Invalid EPPi ID (too few digits)
+    invalid_eppi_id = MIN_DOCUMENT_ID - 1  # Too short
+    doc_identity2 = DocumentIdentity(
+        document_id=invalid_eppi_id,
+        external_id="INVALID123",
+        doi="10.1000/test",
+        first_author="Smith",
+        year="2024",
+    )
+
+    # Should fall back to other methods, but external_id should still be preserved
+    doc_identity2.populate_id()
+
+    assert doc_identity2.document_id is not None
+    assert doc_identity2.internal_id is not None
+    assert doc_identity2.external_id == "INVALID123"
+    assert (
+        MIN_DOCUMENT_ID_DIGITS
+        <= len(str(doc_identity2.document_id))
+        <= MAX_DOCUMENT_ID_DIGITS
+    )
+
+
+def test_document_identity_integration_with_document():
+    """Test that Document class properly initializes both internal and external IDs."""
+    from destiny_sdk.references import ReferenceFileInput
+
+    citation = ReferenceFileInput(
+        doi="10.1000/test",
+        authors="Smith, John",
+        year="2024",
+    )
+
+    doc = Document(
+        name="Test Document",
+        citation=citation,
+        document_id=99999999,  # This should become external_id
+    )
+
+    # Initialize document identity
+    doc.init_document_identity()
+
+    # Verify the relationship
+    assert doc.document_id == doc.document_identity.document_id
+    assert doc.document_identity.internal_id == doc.document_identity.document_id
+    assert (
+        doc.document_identity.external_id == 99999999
+    )  # Should be preserved from document_id
+
+
 # document tests
 def test_document_creation():
     """Test creating a document."""
@@ -531,7 +641,7 @@ def test_document_is_linked_valid() -> None:
 def test_document_is_final_requires_context():
     """Test that is_final=True requires context."""
     citation = ReferenceFileInput()
-    with pytest.raises(ValueError, match="context.*is empty"):
+    with pytest.raises(ValueError, match=r"context.*is empty"):
         Document(
             name="Test Document",
             citation=citation,

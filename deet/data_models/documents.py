@@ -69,11 +69,17 @@ class DocumentIdentity(BaseModel):
 
     document_id: int | None = None
     document_id_source: DocumentIDSource | None = None
+    external_id: str | int | None = None
 
     # parsed citation info
     doi: str | None
     first_author: str | None
     year: str | None
+
+    @property
+    def internal_id(self) -> int | None:
+        """Return the internal ID (alias for document_id for backward compatibility)."""
+        return self.document_id
 
     def populate_id(
         self,
@@ -200,6 +206,9 @@ class DocumentIdentity(BaseModel):
         ):
             digit_count = len(str(abs(self.document_id)))
             if MIN_DOCUMENT_ID_DIGITS <= digit_count <= MAX_DOCUMENT_ID_DIGITS:
+                # Set external_id to the original document_id for EPPi item IDs
+                if self.external_id is None:
+                    self.external_id = self.document_id
                 return self.document_id
         bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
         raise BadDocumentIdError(bad_doc_id)
@@ -356,6 +365,7 @@ class Document(BaseModel):
         labs_ref = LabsReference(reference=self.citation)  # convert for easy access
         self.document_identity = DocumentIdentity(
             document_id=self.document_id,
+            external_id=self.document_id,
             doi=labs_ref.doi,
             first_author=labs_ref.first_author,
             year=str(labs_ref.publication_year),
