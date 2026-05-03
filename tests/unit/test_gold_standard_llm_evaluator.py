@@ -166,6 +166,8 @@ def test_evaluator_writes_metrics(evaluator_evaluated, tmp_path):
 def test_evaluator_writes_comparison(evaluator_evaluated, tmp_path):
     comparison_csv_path = tmp_path / "llm_human_comparison.csv"
     evaluator_evaluated.export_llm_comparison(comparison_csv_path)
+    raw_text = comparison_csv_path.read_text(encoding="utf-8")
+    assert "\r\r\n" not in raw_text
     reader = csv.DictReader(comparison_csv_path.open())
     fieldnames = reader.fieldnames or []
     expected_header = [

@@ -300,7 +300,7 @@ class GoldStandardLLMEvaluator:
         the attribute's coerced value (e.g. bool, int, or str) as written by
         :class:`csv.DictWriter`.
         """
-        with filepath.open("w", encoding="utf-8") as f:
+        with filepath.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f,
                 fieldnames=[
