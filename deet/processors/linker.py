@@ -349,11 +349,19 @@ class DocumentReferenceLinker:
         self.documents_references = references
 
         # lookup dics for O(1) id & author_year based lookup
-        self._references_by_id: dict[int, Document] = {
-            doc.document_identity.document_id: doc  # type:ignore[union-attr]
-            for doc in tmp_refs
-            if doc.document_identity.document_id is not None  # type:ignore[union-attr]
-        }
+        self._references_by_id: dict[int, Document] = {}
+        for doc in tmp_refs:
+            try:
+                document_identity = doc.safe_identity
+            except RuntimeError:
+                logger.warning(
+                    "Skipping document while building id lookup because "
+                    "document_identity could not be initialised."
+                )
+                continue
+
+            if document_identity.document_id is not None:
+                self._references_by_id[document_identity.document_id] = doc
         logger.debug(self._references_by_id.keys())
         try:
             self._references_by_author_year_longest: dict[str, Document] = {
