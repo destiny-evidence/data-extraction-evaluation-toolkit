@@ -26,6 +26,7 @@ class LinkingStrategy(StrEnum):
     FILENAME_AUTHOR_YEAR_LONGEST = auto()
     FILENAME_AUTHOR_YEAR_LAST = auto()
     FILENAME_ID = auto()
+    FILENAME_EXTERNAL_ID = auto()
     # to add: some sort of interactive selection thing in CLI
     # or, later on, in UI.
 
@@ -332,6 +333,7 @@ class DocumentReferenceLinker:
     LINKING_STRATEGY_HIERARCHY = [
         LinkingStrategy.MAPPING_FILE,
         LinkingStrategy.FILENAME_ID,
+        LinkingStrategy.FILENAME_EXTERNAL_ID,
     ]
 
     def __init__(
@@ -356,13 +358,24 @@ class DocumentReferenceLinker:
         self.documents_references = references
 
         # lookup dicts for O(1) id & author_year based lookup
+        logger.debug("populating _references_by_id lookup...")
         self._references_by_id: dict[int, Document] = {
             doc.document_identity.document_id: doc  # type:ignore[union-attr]
             for doc in tmp_refs
             if doc.document_identity.document_id is not None  # type:ignore[union-attr]
         }
         logger.debug(self._references_by_id.keys())
+
+        logger.debug("populating _references_by_external_id lookup...")
+        self._references_by_external_id: dict[int | str, Document] = {
+            doc.document_identity.external_id: doc  # type:ignore[union-attr]
+            for doc in tmp_refs
+            if doc.document_identity.external_id is not None  # type:ignore[union-attr]
+        }
+        logger.debug(self._references_by_external_id.keys())
+
         try:
+            logger.debug("populating _references_by_author_year lookup (longest)...")
             self._references_by_author_year_longest: dict[str, Document] = {
                 doc.author_year_from_document_identity(
                     substring_strategy="longest"
@@ -374,6 +387,7 @@ class DocumentReferenceLinker:
             self._references_by_author_year_longest = {}
 
         try:
+            logger.debug("populating _references_by_author_year lookup (last)...")
             self._references_by_author_year_last: dict[str, Document] = {
                 doc.author_year_from_document_identity(substring_strategy="last"): doc
                 for doc in tmp_refs
@@ -422,6 +436,7 @@ class DocumentReferenceLinker:
                 self._get_linkages_filename_author_year, "last"
             ),
             LinkingStrategy.FILENAME_ID: self._get_linkages_filename_id,
+            LinkingStrategy.FILENAME_EXTERNAL_ID: self._get_linkages_filename_external_id,  # noqa:E501
         }
 
         return linking_strategy_map[linking_strategy]
@@ -561,6 +576,51 @@ class DocumentReferenceLinker:
                 unlinked_document=unlinked_doc,
             )
 
+    def _get_linkages_filename_external_id(self) -> Generator[LinkedInterimPayload]:
+        """
+        Yield linkages between files and reference-documents based on
+        assumption that files are named `external_id.pdf`, e.g `ABC123.pdf`.
+
+        This strategy looks up documents using their external_id field instead of
+        the internal document_id field.
+
+        Yields:
+            Generator[LinkedInterimPayload]:
+
+        """
+        if not self.document_base_dir or not self.document_base_dir.is_dir():
+            bad_base_dir = "self.document_base_dir needs to be a valid directory."
+            raise ValueError(bad_base_dir)
+
+        for file in self.document_base_dir.iterdir():
+            if file.suffix not in [".md", ".pdf"]:
+                logger.warning(f"file {file} is not pdf/md. next!")
+                continue
+            try:
+                # Extract ID from filename (everything before the extension)
+                id_guess = file.name.split(".")[0]
+            except ValueError:
+                logger.debug(f"{file.name} isn't convertible to int. next!")
+                continue
+
+            # Try to find document by external ID
+            unlinked_doc = self._references_by_external_id.get(id_guess)
+            if unlinked_doc is None:
+                logger.debug(
+                    f"no reference document found for external id {id_guess}. next!"
+                )
+                continue
+
+            if unlinked_doc.document_identity is None:
+                unlinked_doc.init_document_identity()
+
+            yield LinkedInterimPayload(
+                document_id=unlinked_doc.document_identity.document_id,  # type:ignore[union-attr, arg-type]
+                file_path=file,
+                format=cast("Literal['md', 'pdf']", file.suffix[1:]),
+                unlinked_document=unlinked_doc,
+            )
+
     def guess_file_paths(
         self,
         strategies: list[LinkingStrategy] | None = None,
@@ -579,6 +639,7 @@ class DocumentReferenceLinker:
         """
         default_strategies = [
             LinkingStrategy.FILENAME_ID,
+            LinkingStrategy.FILENAME_EXTERNAL_ID,
             LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST,
             LinkingStrategy.FILENAME_AUTHOR_YEAR_LAST,
         ]

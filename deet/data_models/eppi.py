@@ -191,7 +191,9 @@ class EppiDocument(Document):
     """
 
     name: str = Field(default="", validation_alias=AliasChoices("Title", "name"))
-    document_id: int = Field(validation_alias=AliasChoices("ItemId", "document_id"))
+    document_id: int | str = Field(
+        validation_alias=AliasChoices("ItemId", "document_id")
+    )
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)  # type: ignore[typeddict-unknown-key]
 

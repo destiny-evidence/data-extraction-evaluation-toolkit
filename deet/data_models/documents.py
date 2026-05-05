@@ -69,6 +69,7 @@ class DocumentIdentity(BaseModel):
 
     document_id: int | None = None
     document_id_source: DocumentIDSource | None = None
+    # external_id: str | int | None = None
     external_id: str | int | None = None
 
     # parsed citation info
@@ -200,17 +201,17 @@ class DocumentIdentity(BaseModel):
         # Either way, it must be a positive integer with a number of digits
         # between MIN_DOCUMENT_ID_DIGITS and MAX_DOCUMENT_ID_DIGITS (inclusive).
         if (
-            self.document_id is not None
-            and isinstance(self.document_id, int)
-            and self.document_id > 0
+            self.external_id is not None
+            and isinstance(self.external_id, int)
+            and self.external_id > 0
         ):
-            digit_count = len(str(abs(self.document_id)))
+            digit_count = len(str(abs(self.external_id)))
             if MIN_DOCUMENT_ID_DIGITS <= digit_count <= MAX_DOCUMENT_ID_DIGITS:
                 # Set external_id to the original document_id for EPPi item IDs
-                if self.external_id is None:
-                    self.external_id = self.document_id
+                if self.document_id is None:
+                    self.document_id = self.external_id
                 return self.document_id
-        bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
+        bad_doc_id = f"id {self.external_id} is not a valid eppi item_id."
         raise BadDocumentIdError(bad_doc_id)
 
     def _citation_id_hasher(self, target_fields: list[str]) -> int:
@@ -272,7 +273,7 @@ class Document(BaseModel):
     citation: ReferenceFileInput
     context: str | None = None  # new defaults, empty
     context_type: ContextType | None = ContextType.EMPTY
-    document_id: int | None = None
+    document_id: int | str | None = None  # add support for str ids, e.g. uuid
     document_identity: DocumentIdentity | None = None
 
     parsed_document: ParsedOutput | None = None
@@ -364,7 +365,7 @@ class Document(BaseModel):
         """Initialise document_identity field using available metadata."""
         labs_ref = LabsReference(reference=self.citation)  # convert for easy access
         self.document_identity = DocumentIdentity(
-            document_id=self.document_id,
+            document_id=None,
             external_id=self.document_id,
             doi=labs_ref.doi,
             first_author=labs_ref.first_author,

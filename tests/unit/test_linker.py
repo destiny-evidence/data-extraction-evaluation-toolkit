@@ -1,6 +1,7 @@
 """Tests for stuff in the processors/linker.py module."""
 
 import json
+import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -1496,3 +1497,119 @@ def test_guess_file_paths_partial_match(tmp_path):
 
     assert 12345678 in result
     assert 87654321 not in result
+
+
+def test_linker_get_linkages_filename_external_id():
+    """Test _get_linkages_filename_external_id links documents by external ID."""
+    # Create test documents with external IDs
+    doc1 = Document(
+        name="Test Doc 1",
+        citation=ReferenceFileInput(doi="10.1000/test1"),
+        document_id=12345678,  # This becomes internal_id
+    )
+
+    # Manually set external_id
+    doc1.document_identity = DocumentIdentity(
+        document_id=12345678,
+        external_id="EXT12345678",  # This is the external ID we'll match against
+        doi="10.1000/test1",
+        first_author="Smith",
+        year="2024",
+    )
+
+    doc2 = Document(
+        name="Test Doc 2",
+        citation=ReferenceFileInput(doi="10.1000/test2"),
+        document_id=87654321,  # This becomes internal_id
+    )
+
+    # Manually set external_id
+    doc2.document_identity = DocumentIdentity(
+        document_id=87654321,
+        external_id="EXT87654321",  # This is the external ID we'll match against
+        doi="10.1000/test2",
+        first_author="Jones",
+        year="2024",
+    )
+
+    # Create a mock file system with files named after external IDs
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+
+        # Create files with external IDs in their names
+        pdf_file1 = tmp_path / "EXT12345678.pdf"
+        pdf_file1.write_text("test content 1")
+
+        pdf_file2 = tmp_path / "EXT87654321.pdf"
+        pdf_file2.write_text("test content 2")
+
+        # Create a file that doesn't match any external ID
+        pdf_file3 = tmp_path / "NONMATCHING.pdf"
+        pdf_file3.write_text("test content 3")
+
+        # Mock the linker to use this directory
+        linker = DocumentReferenceLinker(
+            references=[doc1, doc2],
+            document_base_dir=tmp_path,
+        )
+
+        # Test the new external ID linking functionality
+        linkages = list(linker._get_linkages_filename_external_id())
+
+        # Should find 2 linkages (one for each external ID)
+        assert len(linkages) == 2
+
+        # Check that we got the right files
+        file_paths = {str(linkage.file_path) for linkage in linkages}
+        assert str(pdf_file1) in file_paths
+        assert str(pdf_file2) in file_paths
+
+        # Verify that the third file wasn't matched (doesn't have matching external ID)
+        assert str(pdf_file3) not in file_paths
+
+        # Verify that document IDs are correctly returned
+        doc_ids = {linkage.document_id for linkage in linkages}
+        assert 12345678 in doc_ids  # First document's internal ID
+        assert 87654321 in doc_ids  # Second document's internal ID
+
+
+def test_linker_get_linkages_filename_external_id_no_match():
+    """
+    Test _get_linkages_filename_external_id handles files
+    with no matching external IDs.
+    """
+    # Create test documents with external IDs
+    doc1 = Document(
+        name="Test Doc 1",
+        citation=ReferenceFileInput(doi="10.1000/test1"),
+        document_id=12345678,
+    )
+
+    # Manually set external_id
+    doc1.document_identity = DocumentIdentity(
+        document_id=12345678,
+        external_id="EXT12345678",
+        doi="10.1000/test1",
+        first_author="Smith",
+        year="2024",
+    )
+
+    # Create a mock file system with files that don't match external IDs
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+
+        # Create files with non-matching names
+        pdf_file = tmp_path / "DIFFERENT_ID.pdf"
+        pdf_file.write_text("test content")
+
+        # Mock the linker to use this directory
+        linker = DocumentReferenceLinker(
+            references=[doc1],
+            document_base_dir=tmp_path,
+        )
+
+        # Test the new external ID linking functionality
+        linkages = list(linker._get_linkages_filename_external_id())
+
+        # Should find 0 linkages (no matches)
+        assert len(linkages) == 0

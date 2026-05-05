@@ -68,7 +68,7 @@ def test_document_identity_creation_minimal():
 def test_document_identity_eppi_item_id_valid():
     """Test _eppi_item_id with a valid ID within the allowed digit range."""
     doc_identity = DocumentIdentity(
-        document_id=12345678,
+        external_id=12345678,
         doi=None,
         first_author=None,
         year=None,
@@ -80,7 +80,7 @@ def test_document_identity_eppi_item_id_valid():
 def test_document_identity_eppi_item_id_valid_min_digits():
     """Test _eppi_item_id accepts an ID with the minimum allowed number of digits."""
     doc_identity = DocumentIdentity(
-        document_id=MIN_DOCUMENT_ID,
+        external_id=MIN_DOCUMENT_ID,
         doi=None,
         first_author=None,
         year=None,
@@ -92,7 +92,7 @@ def test_document_identity_eppi_item_id_valid_min_digits():
 def test_document_identity_eppi_item_id_valid_max_digits():
     """Test _eppi_item_id accepts an ID with the maximum allowed number of digits."""
     doc_identity = DocumentIdentity(
-        document_id=MAX_DOCUMENT_ID,
+        external_id=MAX_DOCUMENT_ID,
         doi=None,
         first_author=None,
         year=None,
@@ -214,7 +214,7 @@ def test_document_identity_random_int_id_is_random():
 def test_document_identity_create_id_factory_eppi():
     """Test _create_id_factory returns correct method for eppi item_id present."""
     doc_identity = DocumentIdentity(
-        document_id=12345678,
+        external_id=12345678,
         doi="10.1000/test",
         first_author="Smith",
         year="2024",
@@ -263,7 +263,7 @@ def test_document_identity_create_id_factory_randint():
 def test_document_identity_populate_id_with_eppi():
     """Test populate_id uses EPPI_ITEM_ID when valid."""
     doc_identity = DocumentIdentity(
-        document_id=12345678,
+        external_id=12345678,
         doi="10.1000/test",
         first_author="Smith",
         year="2024",
@@ -435,10 +435,7 @@ def test_document_identity_eppi_id_constraints():
     external_id are correctly set, while invalid EPPi IDs properly fall back to
     other ID generation methods.
     """
-    # Valid EPPi ID (within digit constraints)
-    valid_eppi_id = 12345678  # 8 digits, within range
     doc_identity = DocumentIdentity(
-        document_id=valid_eppi_id,
         external_id="EPP12345678",
         doi=None,
         first_author=None,
@@ -446,11 +443,8 @@ def test_document_identity_eppi_id_constraints():
     )
 
     # Should be accepted and set both internal and external IDs
-    result = doc_identity._eppi_item_id()
-    assert result == valid_eppi_id
-    assert doc_identity.document_id == valid_eppi_id
-    assert doc_identity.internal_id == valid_eppi_id
-    assert doc_identity.external_id == "EPP12345678"
+    with pytest.raises(BadDocumentIdError):
+        doc_identity._eppi_item_id()
 
     # Invalid EPPi ID (too few digits)
     invalid_eppi_id = MIN_DOCUMENT_ID - 1  # Too short

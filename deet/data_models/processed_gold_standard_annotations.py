@@ -328,19 +328,30 @@ class ProcessedAnnotationData(
         path_type: Literal["full", "relative", "file"] = "file",
     ) -> None:
         """Export a csv mapper to link document IDs and filenames."""
+        existing_ids: set[int] = set()
+        for d in self.documents:
+            if d.document_identity is None or d.document_identity.document_id is None:
+                d.init_document_identity(existing_ids=existing_ids)
+            if d.document_identity and d.document_identity.document_id is not None:
+                existing_ids.add(d.document_identity.document_id)
+
         pre_fill: dict[int, Path] = {}
         if document_base_dir is not None:
             linker = DocumentReferenceLinker(
                 references=self.documents,
                 document_base_dir=document_base_dir,
             )
+            # Use all available strategies including FILENAME_EXTERNAL_ID
+            # for better coverage
             pre_fill = linker.guess_file_paths()
             logger.info(
                 f"pre-filled {len(pre_fill)} file paths from {document_base_dir}"
             )
 
         with file_path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
+            writer = csv.DictWriter(
+                f, fieldnames=["document_id", "external_id", "name", "file_path"]
+            )
             writer.writeheader()
             for d in self.documents:
                 if (
@@ -349,20 +360,21 @@ class ProcessedAnnotationData(
                 ):
                     d.init_document_identity()
                 doc_id = d.document_identity.document_id  # type: ignore[union-attr]
+                external_id = d.document_identity.external_id  # type: ignore[union-attr]
                 if doc_id is None:
                     no_doc_identity_err = (
                         f"document_identity was not set for document {d}"
                     )
                     raise ValueError(no_doc_identity_err)
 
-                file_path = pre_fill.get(doc_id)  # type:ignore[assignment]
-                if isinstance(file_path, Path):
+                file_path_result = pre_fill.get(doc_id)  # type:ignore[assignment]
+                if isinstance(file_path_result, Path):
                     if path_type == "full":
-                        file_path = file_path.absolute()
+                        file_path_result = file_path_result.absolute()
                     elif path_type == "relative":
                         pass
                     elif path_type == "file":
-                        file_path = Path(file_path.name)
+                        file_path_result = Path(file_path_result.name)
                     else:
                         bad_filepath_formatting_err = (
                             f"path_type {path_type} is "
@@ -371,7 +383,12 @@ class ProcessedAnnotationData(
                         raise NotImplementedError(bad_filepath_formatting_err)
 
                 writer.writerow(
-                    {"document_id": doc_id, "name": d.name, "file_path": file_path}
+                    {
+                        "document_id": doc_id,
+                        "external_id": external_id,
+                        "name": d.name,
+                        "file_path": file_path_result,
+                    }
                 )
 
 
