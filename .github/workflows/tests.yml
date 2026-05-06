@@ -34,7 +34,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.8.11"
+          version: "0.11.10"
 
       - name: Restore uv cache
         uses: actions/cache@v4
