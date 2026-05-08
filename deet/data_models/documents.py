@@ -65,7 +65,20 @@ class DocumentIDSource(StrEnum):
 
 
 class DocumentIdentity(BaseModel):
-    """A unified identity for a document, deriveable from multiple sources."""
+    """
+    A unified identity for a document, deriveable from multiple sources.
+
+    `document_id`:
+        always int, the canonical internal id assigned by deet.
+        in current implementation, mirrors eppi item ids.
+    `internal_id`:
+        a symlink to `document_id`.
+    `external_id`:
+        ID inherited verbatim from source citation/gold standard
+        data. this can be string or int, no validation is performed on
+        it.
+
+    """
 
     document_id: int | None = None
     document_id_source: DocumentIDSource | None = None
