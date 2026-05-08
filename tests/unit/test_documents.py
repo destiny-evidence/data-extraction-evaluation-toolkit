@@ -442,7 +442,6 @@ def test_document_identity_eppi_id_constraints():
         year=None,
     )
 
-    # Should be accepted and set both internal and external IDs
     with pytest.raises(BadDocumentIdError):
         doc_identity._eppi_item_id()
 
