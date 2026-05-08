@@ -100,7 +100,7 @@ class GoldStandardLLMEvaluator:
             for document in self.gold_standard_annotated_documents:
                 doc_id = document.document.safe_identity.document_id
                 logger.debug(
-                    f"Extracting gold standard and LLM prediction for" f" doc {doc_id}"
+                    f"Extracting gold standard and LLM prediction for doc {doc_id}"
                 )
                 gs_val = document.get_attribute_annotation(attribute).output_data
                 y_true.append(gs_val)
