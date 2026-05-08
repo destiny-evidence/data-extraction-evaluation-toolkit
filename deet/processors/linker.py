@@ -367,8 +367,8 @@ class DocumentReferenceLinker:
         logger.debug(self._references_by_id.keys())
 
         logger.debug("populating _references_by_external_id lookup...")
-        self._references_by_external_id: dict[int | str, Document] = {
-            doc.document_identity.external_id: doc  # type:ignore[union-attr]
+        self._references_by_external_id: dict[str, Document] = {
+            str(doc.document_identity.external_id): doc  # type:ignore[union-attr]
             for doc in tmp_refs
             if doc.document_identity.external_id is not None  # type:ignore[union-attr]
         }
@@ -596,12 +596,8 @@ class DocumentReferenceLinker:
             if file.suffix not in [".md", ".pdf"]:
                 logger.warning(f"file {file} is not pdf/md. next!")
                 continue
-            try:
-                # Extract ID from filename (everything before the extension)
-                id_guess = file.name.split(".")[0]
-            except ValueError:
-                logger.debug(f"{file.name} isn't convertible to int. next!")
-                continue
+            # ID from filename
+            id_guess = str(file.stem)
 
             # Try to find document by external ID
             unlinked_doc = self._references_by_external_id.get(id_guess)
