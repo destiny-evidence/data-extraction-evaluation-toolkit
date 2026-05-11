@@ -1306,3 +1306,193 @@ def test_linker_link_many_with_images_and_metadata(tmp_path):
         return_images=True,
         return_metadata=True,
     )
+
+
+# guess_file_paths
+def test_guess_file_paths_by_id(tmp_path):
+    """Test guess_file_paths matches files named by document ID."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    pdf_file = docs_dir / "12345678.pdf"
+    pdf_file.write_text("fake pdf")
+
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert 12345678 in result
+    assert result[12345678] == pdf_file
+
+
+def test_guess_file_paths_by_author_year(tmp_path):
+    """Test guess_file_paths matches files named by author_year."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    pdf_file = docs_dir / "smith_2024.pdf"
+    pdf_file.write_text("fake pdf")
+
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            first_author="J Smith",
+            year="2024",
+            doi=None,
+        ),
+    )
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert 12345678 in result
+    assert result[12345678] == pdf_file
+
+
+def test_guess_file_paths_no_match(tmp_path):
+    """Test guess_file_paths returns empty dict when no files match."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "99999999.pdf").write_text("fake pdf")
+
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert result == {}
+
+
+def test_guess_file_paths_no_base_dir():
+    """Test guess_file_paths returns empty dict when no document_base_dir is set."""
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc])
+    result = linker.guess_file_paths()
+
+    assert result == {}
+
+
+def test_guess_file_paths_first_match_wins(tmp_path):
+    """Test guess_file_paths uses first-match-wins across strategies."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    # both FILENAME_ID and FILENAME_AUTHOR_YEAR would match this document;
+    # FILENAME_ID runs first, so its path should win.
+    id_pdf = docs_dir / "12345678.pdf"
+    id_pdf.write_text("id match")
+    author_pdf = docs_dir / "smith_2024.pdf"
+    author_pdf.write_text("author match")
+
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            first_author="J Smith",
+            year="2024",
+            doi=None,
+        ),
+    )
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert result[12345678] == id_pdf
+
+
+def test_guess_file_paths_custom_strategies(tmp_path):
+    """Test guess_file_paths respects a custom strategy list."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("id match")
+    author_pdf = docs_dir / "smith_2024.pdf"
+    author_pdf.write_text("author match")
+
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            first_author="J Smith",
+            year="2024",
+            doi=None,
+        ),
+    )
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    # only author-year strategy, so the id-named file should NOT be matched
+    result = linker.guess_file_paths(
+        strategies=[LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST]
+    )
+
+    assert result[12345678] == author_pdf
+
+
+def test_guess_file_paths_excludes_mapping_file_strategy(tmp_path):
+    """Test guess_file_paths silently drops MAPPING_FILE if passed in strategies."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("fake pdf")
+
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    # passing MAPPING_FILE explicitly should not crash; it gets filtered out
+    result = linker.guess_file_paths(
+        strategies=[LinkingStrategy.MAPPING_FILE, LinkingStrategy.FILENAME_ID]
+    )
+
+    assert 12345678 in result
+
+
+def test_guess_file_paths_multiple_documents(tmp_path):
+    """Test guess_file_paths matches multiple documents."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("doc 1")
+    (docs_dir / "87654321.pdf").write_text("doc 2")
+
+    doc1 = Document(name="Doc 1", citation=ReferenceFileInput(), document_id=12345678)
+    doc1.init_document_identity()
+    doc2 = Document(name="Doc 2", citation=ReferenceFileInput(), document_id=87654321)
+    doc2.init_document_identity()
+
+    linker = DocumentReferenceLinker(
+        references=[doc1, doc2], document_base_dir=docs_dir
+    )
+    result = linker.guess_file_paths()
+
+    assert set(result.keys()) == {12345678, 87654321}
+
+
+def test_guess_file_paths_partial_match(tmp_path):
+    """Test guess_file_paths returns only matched documents."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("doc 1")
+    # no file for doc2
+
+    doc1 = Document(name="Doc 1", citation=ReferenceFileInput(), document_id=12345678)
+    doc1.init_document_identity()
+    doc2 = Document(name="Doc 2", citation=ReferenceFileInput(), document_id=87654321)
+    doc2.init_document_identity()
+
+    linker = DocumentReferenceLinker(
+        references=[doc1, doc2], document_base_dir=docs_dir
+    )
+    result = linker.guess_file_paths()
+
+    assert 12345678 in result
+    assert 87654321 not in result

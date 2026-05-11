@@ -112,6 +112,14 @@ def init_linkage_mapping_file(
     gs_data_path: GS_DATA_PATH,
     gs_data_format: GS_DATA_FORMAT = DEFAULT_IMPORT_FORMAT,
     link_map_path: LINK_MAP_PATH = DEFAULT_LINK_MAP,
+    pdf_dir: Annotated[
+        Path | None,
+        typer.Option(
+            help="Optional directory of pdfs/mds. If provided, deet will attempt "
+            "to pre-fill the file_path column using available linking strategies "
+            "(filename ID match, then author-year match)."
+        ),
+    ] = None,
 ) -> None:
     """Create a mapping to link documents and their full texts."""
     if link_map_path.exists():
@@ -128,7 +136,10 @@ def init_linkage_mapping_file(
 
     converter = gs_data_format.get_annotation_converter()
     processed_annotation_data = converter.process_annotation_file(gs_data_path)
-    processed_annotation_data.export_linkage_mapper_csv(link_map_path)
+    processed_annotation_data.export_linkage_mapper_csv(
+        link_map_path,
+        document_base_dir=pdf_dir,
+    )
 
 
 @app.command()

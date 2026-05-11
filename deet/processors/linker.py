@@ -346,9 +346,16 @@ class DocumentReferenceLinker:
         # deep copies to ensure lookup tables don't modify validators
         # on our existing reference docuemnts.
         tmp_refs = [doc.model_copy(deep=True) for doc in references]
+        # initialise identity only where missing, to ensure heuristic strategies work.
+        for doc in tmp_refs:
+            if (
+                doc.document_identity is None
+                or doc.document_identity.document_id is None
+            ):
+                doc.init_document_identity(return_id=False)
         self.documents_references = references
 
-        # lookup dics for O(1) id & author_year based lookup
+        # lookup dicts for O(1) id & author_year based lookup
         self._references_by_id: dict[int, Document] = {
             doc.document_identity.document_id: doc  # type:ignore[union-attr]
             for doc in tmp_refs
@@ -536,7 +543,11 @@ class DocumentReferenceLinker:
             if file.suffix not in [".md", ".pdf"]:
                 logger.warning(f"file {file} is not pdf/md. next!")
                 continue
-            id_guess = int(file.name.split(".")[0])
+            try:
+                id_guess = int(file.name.split(".")[0])
+            except ValueError:
+                logger.debug(f"{file.name} isn't convertible to int. next!")
+                continue
             unlinked_doc = self._references_by_id.get(id_guess)
             if unlinked_doc is None:
                 logger.debug(f"no reference document found for id {id_guess}. next!")
@@ -549,6 +560,48 @@ class DocumentReferenceLinker:
                 format=cast("Literal['md', 'pdf']", file.suffix[1:]),
                 unlinked_document=unlinked_doc,
             )
+
+    def guess_file_paths(
+        self,
+        strategies: list[LinkingStrategy] | None = None,
+    ) -> dict[int, Path]:
+        """
+        Attempt to pre-fill doc-file mappings
+        using LinkingStrategies.
+
+        Returns:
+            a dict of {document_id: matched_file_path}
+            for documents where a match was found.
+            Unmatched documents are absent from the result.
+
+            NOTE: MAPPING_FILE strategy is excluded, obviously.
+
+        """
+        default_strategies = [
+            LinkingStrategy.FILENAME_ID,
+            LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST,
+            LinkingStrategy.FILENAME_AUTHOR_YEAR_LAST,
+        ]
+        strategies = [
+            s
+            for s in (strategies or default_strategies)
+            if s != LinkingStrategy.MAPPING_FILE
+        ]
+        logger.debug(f"strategies for guessing file paths: {', '.join(strategies)}")
+
+        result: dict[int, Path] = {}
+
+        for strategy in strategies:
+            try:
+                factory = self._create_linking_factory(strategy)
+                for payload in factory():
+                    if payload.document_id not in result:  # first-match wins
+                        result[payload.document_id] = payload.file_path
+            except (TypeError, ValueError) as e:
+                logger.warning(f"pre-fill strategy {strategy} failed: {e}")
+                continue
+
+        return result
 
     @staticmethod
     def _parse_pdf(
