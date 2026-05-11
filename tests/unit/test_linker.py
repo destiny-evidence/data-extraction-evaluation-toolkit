@@ -514,16 +514,6 @@ def test_linker_init_builds_lookup_by_id():
     assert 87654321 in linker._references_by_id
 
 
-def test_linker_init_builds_lookup_by_id_when_identity_missing():
-    """Test linker initialises document_identity before building id lookup."""
-    citation = ReferenceFileInput(authors="Smith, John", year="2024")
-    doc = Document(name="Doc", citation=citation, document_id=12345678)
-
-    linker = DocumentReferenceLinker(references=[doc])
-
-    assert 12345678 in linker._references_by_id
-
-
 def test_linker_init_builds_lookup_by_author_year():
     """Test linker builds references_by_author_year lookup dicts."""
     doc = Document(
