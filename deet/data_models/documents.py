@@ -548,7 +548,7 @@ class GoldStandardAnnotatedDocument(
                 raise ValueError(not_found) from err
             return GoldStandardAnnotation(
                 attribute=attribute,
-                output_data=output_data,
+                raw_data=output_data,
                 annotation_type=AnnotationType.HUMAN,
             )
 

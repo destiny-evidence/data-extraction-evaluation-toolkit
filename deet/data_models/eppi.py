@@ -227,6 +227,14 @@ class EppiDocument(Document):
     )
     doi: str | None = Field(default=None, validation_alias=AliasChoices("DOI", "doi"))
 
+    @field_validator("year", mode="before")
+    @classmethod
+    def empty_year_string_to_none(cls, value: str) -> str | None:
+        """Parse an empty string year to None or return as is."""
+        if value == "":
+            return None
+        return value
+
     @field_validator("date_created", mode="before")
     @classmethod
     def parse_date_string(cls, value: str) -> datetime | None:
