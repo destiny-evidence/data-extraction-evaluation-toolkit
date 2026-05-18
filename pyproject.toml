@@ -150,7 +150,6 @@ package-dir = {"" = "."}
 packages = {find = {exclude = ["test_env*", "tests*"]}}
 
 [tool.setuptools_scm]
-version_file = "deet/_version.py"
 version_scheme = "post-release"
 
 [tool.tomlsort]
