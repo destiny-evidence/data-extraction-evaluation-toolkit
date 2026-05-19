@@ -124,17 +124,13 @@ def predict(
             "to help you identify this run later"
         ),
     ] = "",
-    *,
-    ignore_references: Annotated[
-        bool,
-        typer.Option(
-            default=False,
-            help=(
-                "Ignore references in gold standard data and just"
-                "extract from whatever is in your pdf_dir"
-            ),
+    ignore_references: bool = typer.Option(  # noqa: FBT001
+        default=False,
+        help=(
+            "Ignore references in gold standard data and just"
+            "extract from whatever is in your pdf_dir"
         ),
-    ],
+    ),
 ) -> None:
     """
     Extract data from documents without evaluating.
@@ -143,12 +139,23 @@ def predict(
     documents in your dataset. When used with ignore_references = True,
     documents are created directly from the files contained in pdf_dir.
     """
+    from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
-    run_extraction_pipeline(
-        typer_context=typer_context,
-        config_path=config_path,
-        prompt_population=prompt_population,
-        run_name=run_name,
-        ignore_references=ignore_references,
+    (run_output, processed_annotation_data, experiment_artefacts) = (
+        run_extraction_pipeline(
+            typer_context=typer_context,
+            config_path=config_path,
+            prompt_population=prompt_population,
+            run_name=run_name,
+            ignore_references=ignore_references,
+        )
     )
+
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=[],
+        llm_annotated_documents=run_output.annotated_documents,
+        attributes=processed_annotation_data.attributes,
+        extraction_run_id=experiment_artefacts.run_id,
+    )
+    evaluator.export_llm_csv(experiment_artefacts.llm_annotation_csv)
