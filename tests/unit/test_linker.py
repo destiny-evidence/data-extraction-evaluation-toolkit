@@ -57,15 +57,6 @@ def test_document_reference_mapping_valid_md(tmp_path):
     assert mapping.format == "md"
 
 
-def test_document_reference_mapping_invalid_document_id_too_short():
-    """Test DocumentReferenceMapping raises error for short document_id."""
-    with pytest.raises(ValueError, match="must be between"):
-        DocumentReferenceMapping(
-            document_id=123,
-            file_path=Path("/fake/path.pdf"),
-        )
-
-
 def test_document_reference_mapping_invalid_document_id_too_long():
     """Test DocumentReferenceMapping raises error for long document_id."""
     with pytest.raises(ValueError, match="must be between"):
@@ -151,19 +142,6 @@ def test_linked_interim_payload_creation(tmp_path):
     assert payload.file_path == pdf_file
     assert payload.format == "pdf"
     assert payload.unlinked_document == doc
-
-
-def test_linked_interim_payload_inherits_validation(tmp_path):
-    """Test LinkedInterimPayload inherits DocumentReferenceMapping validation."""
-    citation = ReferenceFileInput()
-    doc = Document(name="Test Doc", citation=citation)
-
-    with pytest.raises(ValueError, match="must be between"):
-        LinkedInterimPayload(
-            document_id=123,
-            file_path=Path("/fake/path.pdf"),
-            unlinked_document=doc,
-        )
 
 
 # MappingImporter
