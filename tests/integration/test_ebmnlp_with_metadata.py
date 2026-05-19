@@ -3,12 +3,15 @@ from pathlib import Path
 
 import pytest
 
-from deet.scripts.cli import init_linkage_mapping_file, init_prompt_csv, \
-    link_documents_fulltexts
+from deet.scripts.cli import (
+    init_linkage_mapping_file,
+    init_prompt_csv,
+    link_documents_fulltexts,
+)
+
 
 @pytest.mark.parametrize(
-    "dataset_base_path",
-    [Path(__file__).parent / "datasets/ebmnlp_with_metadata"]
+    "dataset_base_path", [Path(__file__).parent / "datasets/ebmnlp_with_metadata"]
 )
 @pytest.mark.xfail
 def test_can_run_toolkit(tmp_path, dataset_base_path):
@@ -71,17 +74,3 @@ def test_can_run_toolkit(tmp_path, dataset_base_path):
     shutil.copy(dataset_base_path / "prompt_definitions.csv", prompt_csv_path)
 
     # Alice is now ready to extract
-
-
-
-
-
-
-
-
-
-
-
-
-
-
