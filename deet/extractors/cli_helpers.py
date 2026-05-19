@@ -148,18 +148,13 @@ def prepare_documents(
 def run_extraction_pipeline(
     typer_context: typer.Context,
     config_path: Path | None = None,
-    prompt_population: CustomPromptPopulationMethod
-    | None = CustomPromptPopulationMethod.FILE,
+    prompt_population: (
+        CustomPromptPopulationMethod | None
+    ) = CustomPromptPopulationMethod.FILE,
     run_name: str = "",
 ) -> tuple[ExtractionRunOutput, ProcessedAnnotationData, ExperimentArtefacts]:
     """Run the standard data extraction pipeline from the CLI."""
     import yaml
-
-    from deet.extractors.cli_helpers import (
-        init_extraction_run,
-        load_config_from_typer_context,
-        prepare_documents,
-    )
 
     deet_project: DeetProject = typer_context.obj.project
     processed_annotation_data = deet_project.process_data()
