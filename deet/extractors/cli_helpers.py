@@ -18,6 +18,7 @@ from deet.extractors.llm_data_extractor import (
     ExtractionRunOutput,
     LLMDataExtractor,
 )
+from deet.processors.directory_processor import create_documents_from_directory
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.ui import fail_with_message, notify
 from deet.ui.terminal import console, render_template
@@ -152,6 +153,8 @@ def run_extraction_pipeline(
         CustomPromptPopulationMethod | None
     ) = CustomPromptPopulationMethod.FILE,
     run_name: str = "",
+    *,
+    ignore_references: bool = False,
 ) -> tuple[ExtractionRunOutput, ProcessedAnnotationData, ExperimentArtefacts]:
     """Run the standard data extraction pipeline from the CLI."""
     import yaml
@@ -174,13 +177,21 @@ def run_extraction_pipeline(
 
     data_extractor = LLMDataExtractor(config=config)
 
-    documents = prepare_documents(
-        processed_annotation_data.documents,
-        config,
-        linked_document_path=deet_project.linked_documents_path,
-        pdf_dir=deet_project.pdf_dir,
-        link_map_path=deet_project.link_map_path,
-    )
+    if ignore_references:
+        if deet_project.pdf_dir is None:
+            fail_with_message(
+                "This project doesn't specify a pdf directory. "
+                "Either edit the yaml file to create one or re-initialise the project."
+            )
+        documents = create_documents_from_directory(deet_project.pdf_dir)
+    else:
+        documents = prepare_documents(
+            processed_annotation_data.documents,
+            config,
+            linked_document_path=deet_project.linked_documents_path,
+            pdf_dir=deet_project.pdf_dir,
+            link_map_path=deet_project.link_map_path,
+        )
 
     run_output = data_extractor.extract_from_documents(
         attributes=processed_annotation_data.attributes,
