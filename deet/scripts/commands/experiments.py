@@ -133,11 +133,9 @@ def predict(
     """
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
-    run_output, processed_annotation_data, experiment_artefacts = (
-        run_extraction_pipeline(
-            typer_context=typer_context,
-            config_path=config_path,
-            prompt_population=prompt_population,
-            run_name=run_name,
-        )
+    run_extraction_pipeline(
+        typer_context=typer_context,
+        config_path=config_path,
+        prompt_population=prompt_population,
+        run_name=run_name,
     )
