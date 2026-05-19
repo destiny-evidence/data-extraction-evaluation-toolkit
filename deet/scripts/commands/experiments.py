@@ -124,12 +124,24 @@ def predict(
             "to help you identify this run later"
         ),
     ] = "",
+    *,
+    ignore_references: Annotated[
+        bool,
+        typer.Option(
+            default=False,
+            help=(
+                "Ignore references in gold standard data and just"
+                "extract from whatever is in your pdf_dir"
+            ),
+        ),
+    ],
 ) -> None:
     """
     Extract data from documents without evaluating.
 
     Load gold standard annotation data, and use an LLM to extract data from the
-    documents in your dataset.
+    documents in your dataset. When used with ignore_references = True,
+    documents are created directly from the files contained in pdf_dir.
     """
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
@@ -138,4 +150,5 @@ def predict(
         config_path=config_path,
         prompt_population=prompt_population,
         run_name=run_name,
+        ignore_references=ignore_references,
     )
