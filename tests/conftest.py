@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -116,3 +117,12 @@ def sample_eppi_data() -> dict:
             }
         ],
     }
+
+
+@pytest.fixture
+def sample_eppi_data_duplicated_annotations(sample_eppi_data):
+    duplicated = deepcopy(sample_eppi_data)
+    for ref in duplicated["References"]:
+        ref["Codes"] += ref["Codes"]
+
+    return duplicated

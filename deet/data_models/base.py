@@ -294,6 +294,28 @@ def coerce_annotation_to_float(val: SUPPORTED_TYPES) -> float | None:
     return None
 
 
+def coerce_annotation_to_list(val: SUPPORTED_TYPES) -> list:
+    """Coerce an annotation to list."""
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
+    if isinstance(val, str):
+        list_of_strings = [item.strip() for item in val.split(";;;")]
+        try:
+            return [int(item) for item in list_of_strings]
+        except (ValueError, TypeError):
+            logger.debug("Could not convert items to int.")
+
+        try:
+            return [float(item) for item in list_of_strings]
+        except (ValueError, TypeError):
+            logger.debug("Could not convert items to float")
+
+        return list_of_strings
+    return [val]
+
+
 ANNOTATION_COERCION_STRATEGIES: dict[
     AttributeType, Callable[[SUPPORTED_TYPES], SUPPORTED_TYPES | None]
 ] = {
@@ -301,6 +323,7 @@ ANNOTATION_COERCION_STRATEGIES: dict[
     AttributeType.BOOL: coerce_annotation_to_bool,
     AttributeType.INTEGER: coerce_annotation_to_int,
     AttributeType.FLOAT: coerce_annotation_to_float,
+    AttributeType.LIST: coerce_annotation_to_list,
 }
 
 
