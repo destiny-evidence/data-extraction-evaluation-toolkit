@@ -115,19 +115,24 @@ table_dictionary = {
 Annotations describe the value (either according to the gold standard, or as predicted by an LLM) of an attribute for a document. Thus
 
 ```python
-from deet.data_models.base import GoldStandardAnnotation, AnnotationType
+from deet.data_models.base import (
+    AnnotationType,
+    Attribute,
+    AttributeType,
+    GoldStandardAnnotation,
+)
 
 attribute_relevance = Attribute(
     attribute_id=123,
     attribute_label="relevant",
     prompt="Does the article discuss the effects of climate change on human health?",
-    output_data_type=AttributeType.BOOL
+    output_data_type=AttributeType.BOOL,
 )
 
 annotation = GoldStandardAnnotation(
-    attribute = attribute_relevance
-    raw_data = True
-    annotation_type: AnnotationType.HUMAN
+    attribute=attribute_relevance,
+    raw_data=True,
+    annotation_type=AnnotationType.HUMAN,
 )
 ```
 
