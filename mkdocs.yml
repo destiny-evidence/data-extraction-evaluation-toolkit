@@ -63,7 +63,8 @@ markdown_extensions:
   - def_list
   - md_in_html
   - pymdownx.details
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: ["."]
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.superfences:
