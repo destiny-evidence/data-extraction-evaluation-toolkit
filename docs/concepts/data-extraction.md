@@ -86,7 +86,7 @@ Float attributes describe any type of numeric data extraction elements, such as 
 
 ### integer
 
-Integer attributes describe the subset of numeric data extraction elements that can be represented by whole numbers, and whole numbers only, for example, the nunber of participants in a trial, or the year in which a trial was carried out.
+Integer attributes describe the subset of numeric data extraction elements that can be represented by whole numbers, and whole numbers only, for example, the number of participants in a trial, or the year in which a trial was carried out.
 
 ### list
 
