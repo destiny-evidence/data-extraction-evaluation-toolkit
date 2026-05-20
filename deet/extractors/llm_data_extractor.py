@@ -23,6 +23,8 @@ from deet.data_models.base import (
     GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
+    StudyArm,
+    StudyArmsDefinitionSchema,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -268,10 +270,62 @@ class LLMDataExtractor:
                 self.custom_system_prompt_file.read_text()
             )
 
-    def extract_from_document(
+    def extract_arms_from_document(self, payload: str) -> Sequence[StudyArm]:
+        """Extract arms from a document."""
+        logger.info("Extracting study arms")
+
+        arm_prompt = (
+            f"Analyse the following document and identify all distinct study arms.\n"
+            f"Context:\n{payload}"
+        )
+
+        arm_system_prompt = (
+            "You are an expert systematic review data extraction assistant."
+            "Your task is to identify and catalogue the distinct study "
+            "arms in the text."
+            "Provide a short snake_case 'arm_id' for each, a clear title, "
+            "and a brief description."
+        )
+
+        messages = [
+            {"role": "system", "content": arm_system_prompt},
+            {"role": "user", "content": arm_prompt},
+        ]
+
+        self._enforce_context_limit(messages, arm_prompt, arm_system_prompt)
+
+        response = litellm.completion(
+            model=self.model,
+            api_key=self.llm_api_key,
+            api_base=self.api_base,
+            messages=messages,
+            temperature=self.config.temperature,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "study_arms_definition_response",
+                    "schema": StudyArmsDefinitionSchema.model_json_schema(),
+                },
+            },
+        )
+
+        response_content = response.choices[0].message.content
+
+        try:
+            validated_arms = StudyArmsDefinitionSchema.model_validate_json(
+                response_content
+            )
+        except ValidationError as e:
+            logger.warning(f"LLM did not return valid arms: {e}")
+            return []
+        logger.info(f"Arm extraction successful. Found {len(validated_arms.arms)} arms")
+        return validated_arms.arms
+
+    def extract_from_document(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
         filter_attribute_ids: list[int] | None = None,
+        study_arms: Sequence[StudyArm] = [],
         *,
         payload: str | None = None,
         md_path: Path | None = None,
@@ -333,13 +387,15 @@ class LLMDataExtractor:
 
         context = self._prepare_context(payload=payload, context_type=context_type)
         prompt = self._generate_user_message_json(
-            payload=context, attributes=selected_attributes
+            payload=context, attributes=selected_attributes, study_arms=study_arms
         )
         llm_response, messages, output_tokens, input_tokens = self._call_llm(
             prompt=prompt
         )
         annotations = self._parse_llm_response(
-            response_content=llm_response, attributes=selected_attributes
+            response_content=llm_response,
+            attributes=selected_attributes,
+            study_arms=study_arms,
         )
 
         return DocumentExtractionResult(
@@ -403,11 +459,16 @@ class LLMDataExtractor:
                     document.context = document.safe_parsed_document.text
 
                 try:
+                    study_arms = self.extract_arms_from_document(
+                        payload=document.context
+                    )
+
                     result = self.extract_from_document(
                         attributes=attributes,
                         filter_attribute_ids=filter_attribute_ids,
                         payload=document.context,
                         context_type=context_type,
+                        study_arms=study_arms,
                     )
 
                     llm_annotated_docs.append(
@@ -534,9 +595,7 @@ class LLMDataExtractor:
         return context
 
     def _generate_user_message_json(
-        self,
-        payload: str,
-        attributes: list[Attribute],
+        self, payload: str, attributes: list[Attribute], study_arms: Sequence[StudyArm]
     ) -> str:
         """
         Generate structured JSON input for the LLM user message.
@@ -566,8 +625,11 @@ class LLMDataExtractor:
             llm_input_attr = LLMInputSchema(**attr_dict)
             attributes_payload.append(llm_input_attr.model_dump())
 
+        arms_payload = [arm.model_dump() for arm in study_arms]
+
         unserialised_prompt = {
             "context": payload,
+            "study_arms": arms_payload,
             "attributes": attributes_payload,
         }
 
@@ -625,12 +687,18 @@ class LLMDataExtractor:
             prompt_data = json.loads(prompt)
             context = prompt_data.get("context", "")
             attributes_payload = prompt_data.get("attributes", [])
-            attributes_part = json.dumps(
-                {"context": "", "attributes": attributes_payload},
+            arms_payload = prompt_data.get("study_arms", [])
+
+            overhead_part = json.dumps(
+                {
+                    "context": "",
+                    "attributes": attributes_payload,
+                    "study_arms": arms_payload,
+                },
                 ensure_ascii=False,
             )
             system_tokens = count_tokens(self.model, str(system_prompt))
-            attributes_tokens = count_tokens(self.model, attributes_part)
+            attributes_tokens = count_tokens(self.model, overhead_part)
             # Buffer for token-count discrepancies or extra tokens from
             # serialization/whitespace that LLM APIs may add.
             buffer = 50
@@ -735,6 +803,7 @@ class LLMDataExtractor:
         self,
         response_content: str,
         attributes: list[Attribute],
+        study_arms: Sequence[StudyArm],
     ) -> list[GoldStandardAnnotation]:
         """
         Parse and validate LLM response against GoldStandardAnnotation structure.
@@ -742,6 +811,7 @@ class LLMDataExtractor:
         Args:
             response_content: Raw JSON string response from LLM
             attributes: List of attributes to match against
+            study_arms: List of study arms to match against
 
         Returns:
             List of GoldStandardAnnotation objects
@@ -784,6 +854,23 @@ class LLMDataExtractor:
                 )
                 continue
 
+            matched_arm = None
+            if llm_annotation.arm_id is not None:
+                matched_arm = next(
+                    (
+                        study_arm
+                        for study_arm in study_arms
+                        if study_arm.arm_id == llm_annotation.arm_id
+                    ),
+                    None,
+                )
+                if not matched_arm:
+                    logger.warning(
+                        f"LLM returned arm_id '{llm_annotation.arm_id}' for attribute "
+                        f"{attribute.attribute_id}, but it doesn't match any"
+                        f"of the extracted arms. Defaulting arm_context to None."
+                    )
+
             additional_text = (
                 llm_annotation.additional_text
                 if self.config.include_additional_text
@@ -795,6 +882,7 @@ class LLMDataExtractor:
             # Convert to full EppiGoldStandardAnnotation
             annotation = GoldStandardAnnotation(
                 attribute=attribute,
+                arm_context=matched_arm,
                 raw_data=llm_annotation.output_data,
                 annotation_type=AnnotationType.LLM,
                 additional_text=additional_text,

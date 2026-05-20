@@ -327,6 +327,29 @@ ANNOTATION_COERCION_STRATEGIES: dict[
 }
 
 
+class StudyArm(BaseModel):
+    """
+    An arm of a study.
+
+    A study can have multiple arms, with each containing its
+    own set of attributes (e.g. effect size).
+    """
+
+    arm_id: str = Field(
+        ..., description="A unique identifier for this arm within the document"
+    )
+    arm_title: str = Field(..., description="The name of the arm")
+    arm_description: str = Field(..., description="Detailed description of the arm")
+
+
+class StudyArmsDefinitionSchema(BaseModel):
+    """LLM extraction schema for study arms."""
+
+    arms: list[StudyArm] = Field(
+        ..., description="List of all distinct intervention arms found in the text."
+    )
+
+
 class GoldStandardAnnotation(BaseModel):
     """
     A single gold standard annotation for an attribute.
@@ -344,6 +367,14 @@ class GoldStandardAnnotation(BaseModel):
         )
     )
     annotation_type: AnnotationType
+
+    arm_context: StudyArm | None = Field(
+        default=None,
+        description=(
+            "The specific study arm this annotation belongs to."
+            " If None, then it is a study-wide attribute."
+        ),
+    )
     additional_text: str | None = Field(
         description="Notes provided by the annotator - usually the citation "
         " from the paper containing the context window where the attribute is found",
@@ -436,6 +467,14 @@ class LLMAnnotationResponse(BaseModel):
                     attribute_type.to_json_type() for attribute_type in AttributeType
                 ]
             },
+        ),
+    )
+    arm_id: str | None = Field(
+        default=None,
+        description=(
+            "The unique arm_id this annotation applies to. "
+            "Must match of the IDs defined in study_ arms."
+            "Use null for global attributes."
         ),
     )
     additional_text: str | None = Field(

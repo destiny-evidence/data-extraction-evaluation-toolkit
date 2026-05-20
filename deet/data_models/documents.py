@@ -21,6 +21,7 @@ from deet.data_models.base import (
     Attribute,
     GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
+    StudyArm,
 )
 from deet.exceptions import (
     BadDocumentIdError,
@@ -521,20 +522,27 @@ class GoldStandardAnnotatedDocument(
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
 
-    def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
+    def get_attribute_annotation(
+        self, attribute: Attribute, arm_id: str | None
+    ) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
         output_data: Any
         for annotation in self.annotations:
             if annotation.attribute.attribute_id == attribute.attribute_id:
-                if result is not None:
-                    multiple_matches = (
-                        "More than one annotation found for "
-                        f"attribute: {attribute.attribute_label}. We don't know how to"
-                        "interpret which is the canonical version."
-                    )
-                    raise DuplicateAnnotationError(multiple_matches)
-                result = annotation
+                annotation_arm_id = (
+                    annotation.arm_context.arm_id if annotation.arm_context else None
+                )
+                if annotation_arm_id == arm_id:
+                    if result is not None:
+                        multiple_matches = (
+                            "More than one annotation found for "
+                            f"attribute: {attribute.attribute_label}. "
+                            "We don't know how to"
+                            "interpret which is the canonical version."
+                        )
+                        raise DuplicateAnnotationError(multiple_matches)
+                    result = annotation
 
         if result is None:
             try:
@@ -556,6 +564,19 @@ class GoldStandardAnnotatedDocument(
             )
 
         return result
+
+    def get_unique_arms(self) -> list[StudyArm | None]:
+        """Extract unique study arms found in annotations for this document."""
+        if not self.annotations:
+            return [None]
+
+        unique_arms_map: dict[str, StudyArm | None] = {
+            ann.arm_context.arm_id
+            if ann.arm_context is not None
+            else "__GLOBAL__": ann.arm_context
+            for ann in self.annotations
+        }
+        return list(unique_arms_map.values())
 
 
 GoldStandardAnnotatedDocumentTypeVar = TypeVar(
