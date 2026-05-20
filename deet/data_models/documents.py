@@ -539,16 +539,19 @@ class GoldStandardAnnotatedDocument(
         if result is None:
             try:
                 output_data = attribute.output_data_type.missing_annotation_default()
-            except ValueError as err:
-                not_found = (
-                    "Attribute not found in annotations."
-                    " Don't know how to interpret this when attribute is of type "
-                    f"{attribute.output_data_type}"
+                reasoning = (
+                    "No annotation with this attribute found: reverting to default"
                 )
-                raise ValueError(not_found) from err
+            except ValueError:
+                output_data = ""
+                reasoning = (
+                    "No annotation with this attribute found: "
+                    "No default for this attribute type"
+                )
             return GoldStandardAnnotation(
                 attribute=attribute,
                 raw_data=output_data,
+                reasoning=reasoning,
                 annotation_type=AnnotationType.HUMAN,
             )
 
