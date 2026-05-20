@@ -14,7 +14,7 @@ deet project --help
 for help configuring the project, or
 
 ```sh
-deet run --help
+deet experiments --help
 ```
 
 to learn how to extract data from the documents in your project

@@ -317,9 +317,7 @@ def test_extract_happy_path(tmp_path):
     with (
         patch("deet.data_models.project.DeetProject.load") as mock_loader,
         patch("deet.extractors.cli_helpers.run_model_wizard") as mock_wizard,
-        patch(
-            "deet.extractors.llm_data_extractor.LLMDataExtractor"
-        ) as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
         patch("deet.extractors.cli_helpers.continue_after_key"),
         patch("deet.extractors.cli_helpers.console.clear"),
         patch("deet.extractors.cli_helpers.prepare_documents") as mock_prepare,
@@ -340,7 +338,7 @@ def test_extract_happy_path(tmp_path):
 
         mock_evaluator = mock_evaluator_cls.return_value
 
-        result = runner.invoke(app, ["experiments", "extract"], obj=state)
+        result = runner.invoke(app, ["experiments", "evaluate"], obj=state)
 
     assert result.exit_code == 0
     mock_extractor.extract_from_documents.assert_called_once()

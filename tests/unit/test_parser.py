@@ -85,35 +85,6 @@ def mock_pypandoc(monkeypatch):
 
 
 @pytest.fixture
-def mock_check_language(monkeypatch):
-    """Stub the language checker."""
-    monkeypatch.setattr(
-        "deet.processors.parser.check_language",
-        lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
-    )
-
-
-@pytest.fixture
-def mock_pdfminerparser_parse(monkeypatch):
-    """Stub PdfminerParser.parse to avoid actual PDF parsing."""
-
-    def _stub_parse(
-        cls,
-        input_,
-        *,
-        return_metadata: bool = False,
-        return_images: bool = False,
-        **kwargs,
-    ) -> ParsedOutput:
-        return ParsedOutput(text="dummy pdfminer text", parser_library="pdfminer")
-
-    monkeypatch.setattr(
-        "deet.processors.parser.PdfminerParser.parse",
-        classmethod(_stub_parse),
-    )
-
-
-@pytest.fixture
 def tmp_txt_file(tmp_path):
     """Create a temporary text file that can be used as a dummy input."""
     p = tmp_path / "sample.txt"
