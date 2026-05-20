@@ -15,6 +15,7 @@ theme:
   name: "material"
   features:
     - content.action.edit
+    - content.tooltips
   palette:
     - media: "(prefers-color-scheme)"
       toggle:
@@ -35,16 +36,34 @@ theme:
 
 nav:
   - Overview: index.md
-  - Installation: installation.md
-  - CLI: cli.md
-  - API reference: api.md
+  - Getting Started:
+    - setup/installation.md
+    - setup/quickstart.md
+  - Core concepts:
+    - concepts/data-extraction.md
+    - concepts/evaluation.md
+    - concepts/gold-standard.md
+    - concepts/project.md
+    - concepts/experiment.md
+    - concepts/prompting-strategies.md
+  - CLI User Guide:
+    - cli/cli.md
+  - Python Guide:
+    - python/introduction.md
+  - Technical Reference:
+    - API reference: reference/api.md
+  - Glossary: glossary.md
   - License: LICENSE.md
   - Contributing: CONTRIBUTING.md
 
 markdown_extensions:
   - pymdownx.tasklist
+  - tables
   - admonition
+  - def_list
+  - md_in_html
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.superfences:
@@ -55,6 +74,11 @@ markdown_extensions:
 
 plugins:
   - search
+  - table-reader
+  - ezglossary:
+      list_definitions: true
+      list_references: true
+      tooltip: full
   - mermaid2
   - mkdocstrings:
       default_handler: python
