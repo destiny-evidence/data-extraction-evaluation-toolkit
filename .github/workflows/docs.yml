@@ -23,13 +23,6 @@ jobs:
         with:
           fetch-depth: 0 
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
-        with:
-          python-version: "3.x"
-          cache: "pip"
-          cache-dependency-path: "pyproject.toml"
-
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
         with:
@@ -48,11 +41,13 @@ jobs:
         run: uv sync --locked --group docs
 
       - name: Build documentation
+        if: github.event_name == 'pull_request' || github.ref_name == 'main'
         run: uv run mkdocs build
 
       - name: Deploy versioned docs with mike
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
         run: |
+          git fetch origin gh-pages:gh-pages || true
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -64,24 +59,22 @@ jobs:
           fi
 
       - name: Push gh-pages branch
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
         run: git push origin gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Switch to gh-pages for artifact upload
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
         run: git checkout gh-pages
 
       - name: Upload Pages artifact
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: .
 
   deploy:
     needs: docs
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
     runs-on: ubuntu-latest
     permissions:
       pages: write
