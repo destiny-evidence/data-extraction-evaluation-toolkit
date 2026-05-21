@@ -58,7 +58,8 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
+          
+          git fetch origin gh-pages --depth=1
           if [ "${{ github.ref_type }}" = "tag" ]; then
             uv run mike deploy --push --update-aliases ${{ github.ref_name }} latest
             uv run mike set-default --push latest
