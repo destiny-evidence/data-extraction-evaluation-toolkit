@@ -523,7 +523,7 @@ class GoldStandardAnnotatedDocument(
     annotations: list[GoldStandardAnnotationTypeVar]
 
     def get_attribute_annotation(
-        self, attribute: Attribute, arm_id: str | None
+        self, attribute: Attribute, arm_id: str | None = None
     ) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
