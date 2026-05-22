@@ -120,6 +120,13 @@ class Attribute(BaseModel):
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
+    is_arm_specific: bool = Field(
+        default=False, description="If true, an arm should be specified for annotations"
+    )
+    is_outcome_specific: bool = Field(
+        default=False,
+        description="If true, an outcome should be specified for annotations",
+    )
 
     def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
         """

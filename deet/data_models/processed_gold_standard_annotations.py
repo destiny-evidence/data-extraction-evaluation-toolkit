@@ -141,6 +141,10 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
             matching_attribute.populate_prompt_from_dict(row, overwrite=overwrite)
             csv_attr_type = AttributeType(row.get("output_data_type"))  # type:ignore[arg-type]
             matching_attribute.output_data_type = csv_attr_type
+            matching_attribute.is_arm_specific = row.get("is_arm_specific", False)
+            matching_attribute.is_outcome_specific = row.get(
+                "is_outcome_specific", False
+            )
 
         except ValueError as e:
             logger.error(
