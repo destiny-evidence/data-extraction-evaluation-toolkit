@@ -371,8 +371,8 @@ class StudyOutcome(BaseModel):
 class StudyArmsDefinitionSchema(BaseModel):
     """LLM extraction schema for study arms."""
 
-    arms: list[StudyArm] = Field(
-        default=[],
+    arms: tuple[StudyArm, ...] = Field(
+        default=(),
         description="List of all distinct intervention arms found in the text.",
     )
 
@@ -380,8 +380,8 @@ class StudyArmsDefinitionSchema(BaseModel):
 class StudyOutcomesDefinitionSchema(BaseModel):
     """LLM extraction schema for study outcomes."""
 
-    outcomes: list[StudyOutcome] = Field(
-        default=[], description="List of all distinct outcomes found in the text."
+    outcomes: tuple[StudyOutcome, ...] = Field(
+        default=(), description="List of all distinct outcomes found in the text."
     )
 
 

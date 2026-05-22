@@ -153,14 +153,17 @@ class GoldStandardLLMEvaluator:
         llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
     ) -> list[StudyArm | None]:
         """Collect unique arms across LLM and human annotated documents."""
-        gold_arms = gold_doc.get_unique_arms()
-        llm_arms = llm_doc.get_unique_arms() if llm_doc else [None]
+        gold_arms = gold_doc.study_arms
+        llm_arms = llm_doc.study_arms if llm_doc else ()
 
         # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
         distinct_arms_map: dict[str, StudyArm | None] = {}
         for arm in gold_arms + llm_arms:
             key = arm.arm_id if arm is not None else "__GLOBAL__"
             distinct_arms_map[key] = arm
+
+        if not distinct_arms_map:
+            return [None]
 
         return list(distinct_arms_map.values())
 
@@ -170,14 +173,17 @@ class GoldStandardLLMEvaluator:
         llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
     ) -> list[StudyOutcome | None]:
         """Collect unique arms across LLM and human annotated documents."""
-        gold_outcomes = gold_doc.get_unique_outcomes()
-        llm_outcomes = llm_doc.get_unique_outcomes() if llm_doc else [None]
+        gold_outcomes = gold_doc.study_outcomes
+        llm_outcomes = llm_doc.study_outcomes if llm_doc else ()
 
         # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
         distinct_outcomes_map: dict[str, StudyOutcome | None] = {}
         for outcome in gold_outcomes + llm_outcomes:
             key = outcome.outcome_id if outcome is not None else "__GLOBAL__"
             distinct_outcomes_map[key] = outcome
+
+        if not distinct_outcomes_map:
+            return [None]
 
         return list(distinct_outcomes_map.values())
 

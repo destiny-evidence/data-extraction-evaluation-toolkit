@@ -522,6 +522,8 @@ class GoldStandardAnnotatedDocument(
 
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
+    study_arms: tuple[StudyArm, ...] = ()
+    study_outcomes: tuple[StudyOutcome, ...] = ()
 
     def get_attribute_annotation(
         self,
@@ -573,32 +575,6 @@ class GoldStandardAnnotatedDocument(
             )
 
         return result
-
-    def get_unique_arms(self) -> list[StudyArm | None]:
-        """Extract unique study arms found in annotations for this document."""
-        if not self.annotations:
-            return [None]
-
-        unique_arms_map: dict[str, StudyArm | None] = {
-            ann.arm_context.arm_id
-            if ann.arm_context is not None
-            else "__GLOBAL__": ann.arm_context
-            for ann in self.annotations
-        }
-        return list(unique_arms_map.values())
-
-    def get_unique_outcomes(self) -> list[StudyOutcome | None]:
-        """Extract unique study arms found in annotations for this document."""
-        if not self.annotations:
-            return [None]
-
-        unique_outcomes_map: dict[str, StudyOutcome | None] = {
-            ann.outcome_context.outcome_id
-            if ann.outcome_context is not None
-            else "__GLOBAL__": ann.outcome_context
-            for ann in self.annotations
-        }
-        return list(unique_outcomes_map.values())
 
 
 GoldStandardAnnotatedDocumentTypeVar = TypeVar(

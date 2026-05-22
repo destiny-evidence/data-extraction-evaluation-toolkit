@@ -315,7 +315,7 @@ class LLMDataExtractor:
             logger.warning(f"LLM did not return valid {entity_name}: {e}")
             return cast(T, schema_model())
 
-    def extract_arms_from_document(self, payload: str) -> Sequence[StudyArm]:
+    def extract_arms_from_document(self, payload: str) -> tuple[StudyArm, ...]:
         """Extract outcomes from a document."""
         system_prompt = (
             "You are an expert systematic review data extraction assistant."
@@ -338,7 +338,7 @@ class LLMDataExtractor:
         logger.info("Arm extraction successful." f" Found {len(result.arms)} arms")
         return result.arms
 
-    def extract_outcomes_from_document(self, payload: str) -> Sequence[StudyOutcome]:
+    def extract_outcomes_from_document(self, payload: str) -> tuple[StudyOutcome, ...]:
         """Extract outcomes from a document."""
         system_prompt = (
             "You are an expert systematic review data extraction assistant."
@@ -368,8 +368,8 @@ class LLMDataExtractor:
         self,
         attributes: list[Attribute],
         filter_attribute_ids: list[int] | None = None,
-        study_arms: Sequence[StudyArm] = [],
-        study_outcomes: Sequence[StudyOutcome] = [],
+        study_arms: tuple[StudyArm, ...] = (),
+        study_outcomes: tuple[StudyOutcome, ...] = (),
         *,
         payload: str | None = None,
         md_path: Path | None = None,
@@ -525,7 +525,10 @@ class LLMDataExtractor:
 
                     llm_annotated_docs.append(
                         GoldStandardAnnotatedDocument(
-                            document=document, annotations=result.annotations
+                            document=document,
+                            annotations=result.annotations,
+                            study_arms=tuple(study_arms),
+                            study_outcomes=tuple(study_outcomes),
                         )
                     )
                     doc_id_str = str(document.safe_identity.document_id)
@@ -650,8 +653,8 @@ class LLMDataExtractor:
         self,
         payload: str,
         attributes: list[Attribute],
-        study_arms: Sequence[StudyArm],
-        study_outcomes: Sequence[StudyOutcome],
+        study_arms: tuple[StudyArm, ...],
+        study_outcomes: tuple[StudyOutcome, ...],
     ) -> str:
         """
         Generate structured JSON input for the LLM user message.
@@ -863,8 +866,8 @@ class LLMDataExtractor:
         self,
         response_content: str,
         attributes: list[Attribute],
-        study_arms: Sequence[StudyArm],
-        study_outcomes: Sequence[StudyOutcome],
+        study_arms: tuple[StudyArm, ...],
+        study_outcomes: tuple[StudyOutcome, ...],
     ) -> list[GoldStandardAnnotation]:
         """
         Parse and validate LLM response against GoldStandardAnnotation structure.
