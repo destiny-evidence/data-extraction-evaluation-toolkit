@@ -327,12 +327,13 @@ ANNOTATION_COERCION_STRATEGIES: dict[
 }
 
 
+# TODO: Add arm characteristics (as enums?) that
+# are held by all arms (e.g. intervention/control)
 class StudyArm(BaseModel):
     """
     An arm of a study.
 
-    A study can have multiple arms, with each containing its
-    own set of attributes (e.g. effect size).
+    A study can have multiple arms, each describing an experimental group.
     """
 
     arm_id: str = Field(
@@ -342,11 +343,38 @@ class StudyArm(BaseModel):
     arm_description: str = Field(..., description="Detailed description of the arm")
 
 
+# TODO: Add outcome characteristics that are
+# held by all outcomes (e.g. primary/secondary)
+class StudyOutcome(BaseModel):
+    """
+    An outcome of a study.
+
+    A study can have multiple outcomes, each of which can be measured across study arms.
+    """
+
+    outcome_id: str = Field(
+        ..., description="A unique identifier for this arm within the document"
+    )
+    outcome_title: str = Field(..., description="The name of the outcome")
+    outcome_description: str = Field(
+        ..., description="Detailed description of the outcome"
+    )
+
+
 class StudyArmsDefinitionSchema(BaseModel):
     """LLM extraction schema for study arms."""
 
     arms: list[StudyArm] = Field(
-        ..., description="List of all distinct intervention arms found in the text."
+        default=[],
+        description="List of all distinct intervention arms found in the text.",
+    )
+
+
+class StudyOutcomesDefinitionSchema(BaseModel):
+    """LLM extraction schema for study outcomes."""
+
+    outcomes: list[StudyOutcome] = Field(
+        default=[], description="List of all distinct outcomes found in the text."
     )
 
 
@@ -372,7 +400,14 @@ class GoldStandardAnnotation(BaseModel):
         default=None,
         description=(
             "The specific study arm this annotation belongs to."
-            " If None, then it is a study-wide attribute."
+            " If None, then it is a study/outcome-wide annotation."
+        ),
+    )
+    outcome_context: StudyOutcome | None = Field(
+        default=None,
+        description=(
+            "The specific outcome this annotation belongs to."
+            " If None, then it is a study/arm-wide annotation"
         ),
     )
     additional_text: str | None = Field(
@@ -473,8 +508,16 @@ class LLMAnnotationResponse(BaseModel):
         default=None,
         description=(
             "The unique arm_id this annotation applies to. "
-            "Must match of the IDs defined in study_ arms."
-            "Use null for global attributes."
+            "Must match of the IDs defined in study_arms."
+            "Use null if not specific to an arm."
+        ),
+    )
+    outcome_id: str | None = Field(
+        default=None,
+        description=(
+            "The unique outcome_id this annotation applies to. "
+            "Must match of the IDs defined in study_outcomes."
+            "Use null if not specific to an outcome."
         ),
     )
     additional_text: str | None = Field(

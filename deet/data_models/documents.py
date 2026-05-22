@@ -22,6 +22,7 @@ from deet.data_models.base import (
     GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
     StudyArm,
+    StudyOutcome,
 )
 from deet.exceptions import (
     BadDocumentIdError,
@@ -523,7 +524,10 @@ class GoldStandardAnnotatedDocument(
     annotations: list[GoldStandardAnnotationTypeVar]
 
     def get_attribute_annotation(
-        self, attribute: Attribute, arm_id: str | None = None
+        self,
+        attribute: Attribute,
+        arm_id: str | None = None,
+        outcome_id: str | None = None,
     ) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
@@ -533,7 +537,12 @@ class GoldStandardAnnotatedDocument(
                 annotation_arm_id = (
                     annotation.arm_context.arm_id if annotation.arm_context else None
                 )
-                if annotation_arm_id == arm_id:
+                annotation_outcome_id = (
+                    annotation.outcome_context.outcome_id
+                    if annotation.outcome_context
+                    else None
+                )
+                if annotation_arm_id == arm_id and annotation_outcome_id == outcome_id:
                     if result is not None:
                         multiple_matches = (
                             "More than one annotation found for "
@@ -577,6 +586,19 @@ class GoldStandardAnnotatedDocument(
             for ann in self.annotations
         }
         return list(unique_arms_map.values())
+
+    def get_unique_outcomes(self) -> list[StudyOutcome | None]:
+        """Extract unique study arms found in annotations for this document."""
+        if not self.annotations:
+            return [None]
+
+        unique_outcomes_map: dict[str, StudyOutcome | None] = {
+            ann.outcome_context.outcome_id
+            if ann.outcome_context is not None
+            else "__GLOBAL__": ann.outcome_context
+            for ann in self.annotations
+        }
+        return list(unique_outcomes_map.values())
 
 
 GoldStandardAnnotatedDocumentTypeVar = TypeVar(

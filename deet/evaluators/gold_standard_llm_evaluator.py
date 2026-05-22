@@ -4,6 +4,7 @@ data extracted by hand.
 """
 
 import csv
+import itertools
 import re
 from collections.abc import Sequence
 from itertools import groupby
@@ -16,7 +17,7 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import AttributeTypeVar, StudyArm
+from deet.data_models.base import AttributeTypeVar, StudyArm, StudyOutcome
 from deet.data_models.documents import (
     GoldStandardAnnotatedDocumentList,
     GoldStandardAnnotatedDocumentTypeVar,
@@ -151,20 +152,34 @@ class GoldStandardLLMEvaluator:
         gold_doc: GoldStandardAnnotatedDocumentTypeVar,
         llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
     ) -> list[StudyArm | None]:
-        """
-        Collect unique arms across LLM and human annotated documents.
-
-        # TODO: fuzzily match arms, humans and LLMs won't use the same IDs!
-        """
+        """Collect unique arms across LLM and human annotated documents."""
         gold_arms = gold_doc.get_unique_arms()
         llm_arms = llm_doc.get_unique_arms() if llm_doc else [None]
 
+        # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
         distinct_arms_map: dict[str, StudyArm | None] = {}
         for arm in gold_arms + llm_arms:
             key = arm.arm_id if arm is not None else "__GLOBAL__"
             distinct_arms_map[key] = arm
 
         return list(distinct_arms_map.values())
+
+    def _get_distinct_outcomes(
+        self,
+        gold_doc: GoldStandardAnnotatedDocumentTypeVar,
+        llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
+    ) -> list[StudyOutcome | None]:
+        """Collect unique arms across LLM and human annotated documents."""
+        gold_outcomes = gold_doc.get_unique_outcomes()
+        llm_outcomes = llm_doc.get_unique_outcomes() if llm_doc else [None]
+
+        # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
+        distinct_outcomes_map: dict[str, StudyOutcome | None] = {}
+        for outcome in gold_outcomes + llm_outcomes:
+            key = outcome.outcome_id if outcome is not None else "__GLOBAL__"
+            distinct_outcomes_map[key] = outcome
+
+        return list(distinct_outcomes_map.values())
 
     def add_custom_metrics(self, custom_metrics: list[str]) -> None:
         """Add custom metrics. These must be valid metrics from sklearn.metrics."""
@@ -215,30 +230,36 @@ class GoldStandardLLMEvaluator:
                 )
 
                 distinct_arms = self._get_distinct_arms(document, llm_doc)
+                distinct_outcomes = self._get_distinct_outcomes(document, llm_doc)
 
                 for arm in distinct_arms:
-                    arm_id = arm.arm_id if arm else None
-                    gs_ann = document.get_attribute_annotation(attribute, arm_id)
-                    gs_val = gs_ann.output_data if gs_ann else None
-                    y_true.append(gs_val)
+                    for outcome in distinct_outcomes:
+                        arm_id = arm.arm_id if arm else None
+                        outcome_id = outcome.outcome_id if outcome else None
 
-                    if llm_doc is None:
-                        y_pred.append(None)
-                    else:
-                        try:
-                            llm_ann = llm_doc.get_attribute_annotation(
-                                attribute, arm_id=arm_id
-                            )
-                            llm_val = llm_ann.output_data if llm_ann else None
-                        except DuplicateAnnotationError:
-                            llm_val = None
-                            logger.warning(
-                                f"LLM produced multiple annotations for attribute "
-                                f"{attribute.attribute_id} for arm "
-                                f"'{getattr(arm, 'arm_id', '__GLOBAL__')}' "
-                                f"in doc: {doc_id}"
-                            )
-                        y_pred.append(llm_val)
+                        gs_ann = document.get_attribute_annotation(
+                            attribute=attribute, arm_id=arm_id, outcome_id=outcome_id
+                        )
+                        gs_val = gs_ann.output_data if gs_ann else None
+                        y_true.append(gs_val)
+
+                        if llm_doc is None:
+                            y_pred.append(None)
+                        else:
+                            try:
+                                llm_ann = llm_doc.get_attribute_annotation(
+                                    attribute, arm_id=arm_id
+                                )
+                                llm_val = llm_ann.output_data if llm_ann else None
+                            except DuplicateAnnotationError:
+                                llm_val = None
+                                logger.warning(
+                                    f"LLM produced multiple annotations for attribute "
+                                    f"{attribute.attribute_id} for arm "
+                                    f"'{getattr(arm, 'arm_id', '__GLOBAL__')}' "
+                                    f"in doc: {doc_id}"
+                                )
+                            y_pred.append(llm_val)
 
             applicable_metrics = get_metrics_for_attribute_type(
                 attribute.output_data_type
@@ -343,6 +364,8 @@ class GoldStandardLLMEvaluator:
                     "document_name",
                     "arm_id",
                     "arm_title",
+                    "outcome_id",
+                    "outcome_title",
                     "attribute_id",
                     "attribute_label",
                     "attribute_presence",
@@ -367,79 +390,85 @@ class GoldStandardLLMEvaluator:
                     logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
 
                 distinct_arms = self._get_distinct_arms(doc, llm_annotated_doc)
+                distinct_outcomes = self._get_distinct_outcomes(doc, llm_annotated_doc)
+
                 context: str | None = (
                     None
                     if llm_annotated_doc is None
                     else (str(t) if (t := llm_annotated_doc.document.context) else None)
                 )
 
-                for attribute in self.attributes:
-                    for arm in distinct_arms:
-                        arm_id = arm.arm_id if arm else None
-                        gold_real = doc.get_attribute_annotation(attribute, arm_id)
+                for attribute, arm, outcome in itertools.product(
+                    self.attributes, distinct_arms, distinct_outcomes
+                ):
+                    arm_id = arm.arm_id if arm else None
+                    outcome_id = outcome.outcome_id if outcome else None
+                    gold_real = doc.get_attribute_annotation(
+                        attribute=attribute,
+                        arm_id=arm_id,
+                        outcome_id=outcome_id,
+                    )
 
-                        if gold_real is not None:
-                            human_additional_text: str = gold_real.additional_text or ""
-                            item_attr_full: str = (
-                                _eppi_full_text_details_colon_separated(gold_real)
-                            )
-                        else:
-                            human_additional_text = ""
-                            item_attr_full = ""
-                        present = gold_real is not None
-                        human_fuzzy = _verbatim_fuzzy_match_pct(
-                            human_additional_text, context
+                    if gold_real is not None:
+                        human_additional_text: str = gold_real.additional_text or ""
+                        item_attr_full: str = _eppi_full_text_details_colon_separated(
+                            gold_real
                         )
+                    else:
+                        human_additional_text = ""
+                        item_attr_full = ""
+                    present = gold_real is not None
+                    human_fuzzy = _verbatim_fuzzy_match_pct(
+                        human_additional_text, context
+                    )
 
-                        llm_extraction: Any = None
-                        llm_reasoning: str | None = None
-                        llm_verbatim: str | None = None
-                        llm_fuzzy = 0.0
+                    llm_extraction: Any = None
+                    llm_reasoning: str | None = None
+                    llm_verbatim: str | None = None
+                    llm_fuzzy = 0.0
 
-                        if llm_annotated_doc is None:
+                    if llm_annotated_doc is None:
+                        llm_reasoning = (
+                            "LLM did not produce an output for this document."
+                            " Check the logs carefully to find out why"
+                        )
+                    else:
+                        try:
+                            llm_annotation = llm_annotated_doc.get_attribute_annotation(
+                                attribute, arm_id
+                            )
+                            llm_extraction = llm_annotation.output_data
+                            llm_reasoning = llm_annotation.reasoning
+                            llm_verbatim = llm_annotation.additional_text
+                            llm_fuzzy = _verbatim_fuzzy_match_pct(llm_verbatim, context)
+                        except DuplicateAnnotationError:
                             llm_reasoning = (
-                                "LLM did not produce an output for this document."
-                                " Check the logs carefully to find out why"
+                                "The LLM produced multiple annotations"
+                                "for this single attribute"
                             )
-                        else:
-                            try:
-                                llm_annotation = (
-                                    llm_annotated_doc.get_attribute_annotation(
-                                        attribute, arm_id
-                                    )
-                                )
-                                llm_extraction = llm_annotation.output_data
-                                llm_reasoning = llm_annotation.reasoning
-                                llm_verbatim = llm_annotation.additional_text
-                                llm_fuzzy = _verbatim_fuzzy_match_pct(
-                                    llm_verbatim, context
-                                )
-                            except DuplicateAnnotationError:
-                                llm_reasoning = (
-                                    "The LLM produced multiple annotations"
-                                    "for this single attribute"
-                                )
 
-                        writer.writerow(
-                            {
-                                "document_id": doc.document.safe_identity.document_id,
-                                "document_name": doc.document.name,
-                                "arm_id": arm.arm_id if arm else "study-wide",
-                                "arm_title": arm.arm_title if arm else "study-wide",
-                                "attribute_id": attribute.attribute_id,
-                                "attribute_label": attribute.attribute_label,
-                                "attribute_presence": str(present),
-                                "human_additional_text": human_additional_text,
-                                "item_attribute_full_text_details": item_attr_full,
-                                "human_extraction": gold_real.output_data,
-                                "llm_extraction": llm_extraction,
-                                "llm_reasoning": llm_reasoning,
-                                "llm_verbatim_text": llm_verbatim,
-                                "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
-                                "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
-                                "extraction_run_id": self.extraction_run_id,
-                            }
-                        )
+                    writer.writerow(
+                        {
+                            "document_id": doc.document.safe_identity.document_id,
+                            "document_name": doc.document.name,
+                            "arm_id": arm.arm_id if arm else "",
+                            "arm_title": arm.arm_title if arm else "",
+                            "outcome_id": outcome.outcome_id if outcome else "",
+                            "outcome_title": outcome.outcome_title if outcome else "",
+                            "attribute_id": attribute.attribute_id,
+                            "attribute_label": attribute.attribute_label,
+                            "attribute_presence": str(present),
+                            "human_additional_text": human_additional_text,
+                            "item_attribute_full_text_details": item_attr_full,
+                            "human_extraction": gold_real.output_data,
+                            "llm_extraction": llm_extraction,
+                            "llm_reasoning": llm_reasoning,
+                            "llm_verbatim_text": llm_verbatim,
+                            "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
+                            "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
+                            "extraction_run_id": self.extraction_run_id,
+                        }
+                    )
 
     def export_llm_csv(self, filepath: Path) -> None:
         """Write the LLM output to csv."""
@@ -488,6 +517,5 @@ class GoldStandardLLMEvaluator:
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
                             "llm_verbatim_text": llm_verbatim,
-                            "extraction_run_id": self.extraction_run_id,
                         }
                     )
