@@ -4,32 +4,56 @@ import datetime
 from collections.abc import Sequence
 from pathlib import Path
 
-import yaml  # type:ignore[import-untyped]
+import typer
+import yaml
 from loguru import logger
+from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
+from deet.data_models.project import ExperimentArtefacts
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
-from deet.utils.cli_utils import echo_and_log, fail_with_message
+from deet.ui import fail_with_message, notify
+from deet.ui.terminal import console, render_template
+from deet.ui.terminal.components import info_panel
+from deet.ui.terminal.wizards import continue_after_key, run_model_wizard
 
 
-def load_or_init_config(config_path: Path) -> DataExtractionConfig:
-    """Load config, or initialise default config."""
-    if config_path.exists():
-        config = DataExtractionConfig(**yaml.safe_load(config_path.read_text()))
-    else:
-        echo_and_log(
-            f"Config file: {config_path} does not exist."
-            " Initialising config with default settings."
+def load_config_from_typer_context(
+    typer_context: typer.Context, config_path: Path | None
+) -> DataExtractionConfig:
+    """Load config from project context or path, or fail informatively."""
+    if config_path is None:
+        if not typer_context.obj.project:
+            no_config = (
+                "This command is being run outside of a deet project, "
+                "and no config file has been provided. Either run this "
+                "from a project directory, or provide a config file."
+            )
+            fail_with_message(no_config)
+        console.clear()
+        console.print(
+            info_panel(
+                render_template("extraction/config_init"),
+                "Data extraction config wizard",
+            )
         )
-        config = DataExtractionConfig()
-    return config
+        continue_after_key()
+        return run_model_wizard(DataExtractionConfig)
+    try:
+        return DataExtractionConfig.from_yaml(config_path)
+    except FileNotFoundError:
+        fail_with_message(f"Config file not found: {config_path}")
+    except yaml.YAMLError as e:
+        fail_with_message(f"YAML Syntax Error in {config_path}:\n{e}")
+    except ValidationError as e:
+        fail_with_message(f"Config validation error in {config_path}:\n{e}")
 
 
 def init_extraction_run(
     out_dir: Path,
     run_name: str,
-) -> tuple[str, Path]:
+) -> ExperimentArtefacts:
     """Set up ID, folder and logging for data extraction run."""
     extraction_run_id = (
         datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
@@ -41,14 +65,14 @@ def init_extraction_run(
 
     logger.add(experiment_out_dir / "deet.log", level="DEBUG")
 
-    return extraction_run_id, experiment_out_dir
+    return ExperimentArtefacts(base_dir=experiment_out_dir, run_id=extraction_run_id)
 
 
 def prepare_documents(
     documents: Sequence[Document],
     config: DataExtractionConfig,
     linked_document_path: Path,
-    pdf_dir: Path,
+    pdf_dir: Path | None,
     link_map_path: Path | None,
 ) -> Sequence[Document]:
     """
@@ -63,8 +87,28 @@ def prepare_documents(
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
         return documents
     if config.default_context_type == ContextType.FULL_DOCUMENT:
-        if link_map_path is not None:
-            echo_and_log(f"Linking documents using link map: {link_map_path}")
+        if linked_document_path.exists():
+            notify(f"Loading linked documents from {linked_document_path}")
+            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
+            if documents:
+                return documents
+
+            notify(f"Couldn't find linked documents in {linked_document_path}")
+        if pdf_dir is None:
+            no_linked_docs_no_pdf = (
+                "Full text extraction specified but"
+                " linked document path does not contain documents,"
+                " and no pdf dir supplied"
+            )
+            fail_with_message(no_linked_docs_no_pdf)
+
+        if link_map_path is None:
+            fail_with_message(
+                "No link map supplied"
+                f" and no linked documents in {linked_document_path}"
+            )
+        else:
+            notify(f"Linking documents using link map: {link_map_path}")
             linker = DocumentReferenceLinker(
                 references=documents,
                 document_base_dir=pdf_dir,
@@ -87,23 +131,7 @@ def prepare_documents(
                 fail_with_message(no_links)
 
             return documents
-        if linked_document_path.exists():
-            echo_and_log(f"Loading linked documents from {linked_document_path}")
-            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
-            if documents:
-                return documents
-            fail_with_message(
-                "Linked document path does not contain any linked documents."
-                " Please use a link map"
-                " to create linked documents "
-                "(`deet init-linkage-mapping-file`)"
-            )
-        else:
-            fail_with_message(
-                "Linked document path does not exist. Please use a link map"
-                " to create linked documents "
-                "(`deet init-linkage-mapping-file`)"
-            )
+
     else:
         message = f"context type {config.default_context_type} not supported"
         fail_with_message(message)

@@ -103,6 +103,7 @@ class AttributeMetric(BaseModel):
             "attribute_label": self.attribute.attribute_label,
             "value": self.value,
             "extraction_run_id": self.extraction_run_id,
+            "metric_name": self.metric_name,
         }
 
     def save_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:

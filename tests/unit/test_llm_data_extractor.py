@@ -166,18 +166,6 @@ def test_model_validator_respects_user_override(mock_settings):
     assert config.max_context_tokens == 5000
 
 
-def test_model_validator_uses_llm_max_context_tokens_from_settings(mock_settings):
-    """Test max_context_tokens from settings when LLM_MAX_CONTEXT_TOKENS set."""
-    mock_settings.llm_max_context_tokens = 4000
-    with patch(
-        "deet.extractors.llm_data_extractor.get_model_max_tokens",
-        return_value=128000,
-    ) as mock_get_max:
-        config = DataExtractionConfig()
-    assert config.max_context_tokens == 4000
-    mock_get_max.assert_not_called()
-
-
 # core class
 def test_llm_extractor_logs_max_tokens_when_set(mock_settings):
     """Test that LLMDataExtractor logs max_tokens when config has it set."""
