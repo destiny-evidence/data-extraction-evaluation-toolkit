@@ -8,11 +8,13 @@ import pytest
 from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.base import (
+    SUPPORTED_TYPES,
     AnnotationType,
     Attribute,
     AttributeType,
     GoldStandardAnnotation,
     LLMInputSchema,
+    coerce_annotation_to_list,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -817,6 +819,53 @@ def test_gold_standard_annotation_string_preserved_on_type_change() -> None:
 
     assert isinstance(annotation.output_data, str)
     assert annotation.output_data == string_value
+
+
+@pytest.mark.parametrize(
+    ("raw_input", "expected_output"),
+    [
+        (["A", "B"], ["A", "B"]),
+        ([], []),
+        ("A;;; B", ["A", "B"]),
+        ("A;;; B ;;; C", ["A", "B", "C"]),
+        ("1;;; 2.5", [1.0, 2.5]),
+        ("1;;; 3", [1, 3]),
+        ("A", ["A"]),
+        (42, [42]),
+        (4.2, [4.2]),
+        (True, [True]),
+        (None, []),
+        (["A", ["B", "C"]], ["A", ["B", "C"]]),
+    ],
+)
+def test_list_coercion(
+    raw_input: SUPPORTED_TYPES, expected_output: list[SUPPORTED_TYPES]
+):
+    result = coerce_annotation_to_list(raw_input)
+
+    assert result == expected_output
+
+
+def test_gold_standard_annotation_conversion_to_list() -> None:
+    """Test that changing attribute type preserves the string value of an annotation."""
+    attr = Attribute(
+        prompt="Is this valid?",
+        output_data_type=AttributeType.BOOL,
+        attribute_id=1234,
+        attribute_label="Test Bool Attribute",
+    )
+
+    annotation = GoldStandardAnnotation(
+        attribute=attr,
+        raw_data="A;;; B",
+        annotation_type=AnnotationType.HUMAN,
+    )
+    assert isinstance(annotation.output_data, bool)
+
+    attr.output_data_type = AttributeType.LIST
+
+    assert isinstance(annotation.output_data, list)
+    assert annotation.output_data == ["A", "B"]
 
 
 def test_gold_standard_annotated_document_creation() -> None:
