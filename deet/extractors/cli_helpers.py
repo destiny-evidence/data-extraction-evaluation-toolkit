@@ -96,9 +96,13 @@ def prepare_documents(
     if config.default_context_type == ContextType.FULL_DOCUMENT:
         if linked_document_path.exists():
             notify(f"Loading linked documents from {linked_document_path}")
-            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
-            if documents:
-                return documents
+            linked_documents = []
+            for document in documents:
+                document_id = document.safe_identity.document_id
+                document_path = linked_document_path / f"{document_id}.json"
+                linked_documents.append(Document.load(document_path))
+            if linked_documents:
+                return linked_documents
 
             notify(f"Couldn't find linked documents in {linked_document_path}")
         if pdf_dir is None:
@@ -174,6 +178,17 @@ def run_extraction_pipeline(
             fail_with_message(
                 "No attributes selected. Perhaps you forgot to edit your prompt file"
             )
+
+    project_evaluation_splits = deet_project.load_splits()
+    processed_annotation_data.filter_documents_by_ids(
+        project_evaluation_splits.active_ids
+    )
+    if not processed_annotation_data.documents:
+        no_documents = (
+            "No documents in evaluation stage"
+            f" {project_evaluation_splits.current_stage}"
+        )
+        fail_with_message(no_documents)
 
     data_extractor = LLMDataExtractor(config=config)
 

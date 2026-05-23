@@ -2,12 +2,15 @@
 """CLI sub-commands for running data extraction experiments (and evaluating them)."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.scripts.typer_context import project_required
+
+if TYPE_CHECKING:
+    from deet.data_models.project import DeetProject
 
 app = typer.Typer(
     help=(
@@ -159,3 +162,37 @@ def predict(
         extraction_run_id=experiment_artefacts.run_id,
     )
     evaluator.export_llm_csv(experiment_artefacts.llm_annotation_csv)
+
+
+@app.command()
+@project_required
+def add_dev(
+    typer_context: typer.Context,
+    size: Annotated[
+        int,
+        typer.Option(
+            "--size",
+            "-s",
+            help="Number of random unassigned documents to sample and add.",
+        ),
+    ],
+) -> None:
+    """Add unassigned documents to the development pool."""
+    from deet.ui import notify
+
+    deet_project: DeetProject = typer_context.obj.project
+    processed_data = deet_project.process_data()
+    project_doc_ids = [
+        doc.safe_identity.document_id for doc in processed_data.documents
+    ]
+
+    splits = deet_project.load_splits()
+    n_added = splits.add_to_development(project_doc_ids, size)
+    notify(
+        f"Added {n_added} documents to development set."
+        f" This now contains {len(splits.development_ids)} documents."
+        f" {len(splits.get_unassigned_ids(project_doc_ids))}"
+        " are still unassigned."
+    )
+
+    splits.dump_to_json(deet_project.evaluation_splits_path)

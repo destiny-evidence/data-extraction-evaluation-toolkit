@@ -1,7 +1,7 @@
 """Data models for procesed annotation data."""
 
 import csv
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from pathlib import Path
 from typing import Any, Generic
 
@@ -341,6 +341,21 @@ class ProcessedAnnotationData(
                         "file_path": None,
                     }
                 )
+
+    def filter_documents_by_ids(self, target_ids: Collection[int]) -> None:
+        """Filter documents and annotated documents in-place to match target IDs."""
+        initial_doc_count = len(self.documents)
+        target_set = set(target_ids)
+        self.documents = [
+            doc for doc in self.documents if doc.safe_identity.document_id in target_set
+        ]
+        self.annotated_documents = [
+            adoc
+            for adoc in self.annotated_documents
+            if adoc.document.safe_identity.document_id in target_set
+        ]
+        doc_count = len(self.documents)
+        logger.info(f"Filtered from {initial_doc_count}" f" to {doc_count}")
 
 
 class ProcessedEppiAnnotationData(

@@ -14,10 +14,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
 if TYPE_CHECKING:
+    from deet.data_models.evaluation_splits import EvaluationSplits
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
-    from deet.data_models.validation_splits import EvaluationSplits
 
 
 import yaml

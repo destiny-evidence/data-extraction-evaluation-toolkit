@@ -1,5 +1,7 @@
 """Data models for to split documents into development, validation, and test sets."""
 
+import random
+from collections.abc import Collection
 from enum import StrEnum, auto
 from pathlib import Path
 
@@ -38,3 +40,38 @@ class EvaluationSplits(BaseModel):
         if not file_path.exists():
             return cls()
         return cls.model_validate_json(file_path.read_text(encoding="utf-8"))
+
+    @property
+    def active_ids(self) -> list[int]:
+        """Return the list of document IDs for the current evaluation stage."""
+        stage_mapping = {
+            EvaluationStage.DEVELOPMENT: self.development_ids,
+            EvaluationStage.VALIDATION: self.validation_ids,
+            EvaluationStage.TEST: self.test_ids,
+        }
+        return stage_mapping[self.current_stage]
+
+    def get_unassigned_ids(self, project_doc_ids: Collection[int]) -> list[int]:
+        """Filter a collection of document IDs to those which have not been assigned."""
+        assigned = (
+            set(self.development_ids) | set(self.validation_ids) | set(self.test_ids)
+        )
+        return [doc_id for doc_id in project_doc_ids if doc_id not in assigned]
+
+    def add_to_development(self, project_doc_ids: Collection[int], size: int) -> int:
+        """Sample from project_doc_ids and add to development."""
+        self.current_stage = EvaluationStage.DEVELOPMENT
+        unassigned = self.get_unassigned_ids(project_doc_ids)
+
+        if size <= 0:
+            too_small = "Sample size must be greater than 0."
+            raise ValueError(too_small)
+        if len(unassigned) < size:
+            incompatible_size = (
+                f"Requested {size} docs, but only {len(unassigned)} are unassigned"
+            )
+            raise ValueError(incompatible_size)
+        target_ids = random.sample(unassigned, size)
+
+        self.development_ids.extend(target_ids)
+        return len(target_ids)
