@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
+    from deet.data_models.validation_splits import EvaluationSplits
 
 
 import yaml
@@ -136,6 +137,11 @@ class DeetProject(BaseModel):
         """Return path to config file."""
         return self.root / "default_extraction_config.yaml"
 
+    @property
+    def evaluation_splits_path(self) -> Path:
+        """Return path to file recording evaluation split state."""
+        return self.root / "evaluation_splits.json"
+
     # Configuration and validation
     model_config = ConfigDict(
         json_encoders={Path: str},
@@ -215,6 +221,12 @@ class DeetProject(BaseModel):
         """Process the project's gold standard data."""
         converter = self.gold_standard_data_format.get_annotation_converter()
         return converter.process_annotation_file(self.gold_standard_data_path)
+
+    def load_splits(self) -> EvaluationSplits:
+        """Load split state."""
+        from deet.data_models.evaluation_splits import EvaluationSplits
+
+        return EvaluationSplits.load(self.evaluation_splits_path)
 
 
 @dataclass(frozen=True)
