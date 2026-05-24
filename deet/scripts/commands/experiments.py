@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 
 from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.exceptions import SplitsValidationError
 from deet.scripts.typer_context import project_required
 
 if TYPE_CHECKING:
@@ -178,7 +179,7 @@ def add_dev(
     ],
 ) -> None:
     """Add unassigned documents to the development pool."""
-    from deet.ui import notify
+    from deet.ui import fail_with_message, notify
 
     deet_project: DeetProject = typer_context.obj.project
     processed_data = deet_project.process_data()
@@ -187,7 +188,10 @@ def add_dev(
     ]
 
     splits = deet_project.load_splits()
-    n_added = splits.add_to_development(project_doc_ids, size)
+    try:
+        n_added = splits.add_to_development(project_doc_ids, size)
+    except SplitsValidationError as e:
+        fail_with_message(str(e))
     notify(
         f"Added {n_added} documents to development set."
         f" This now contains {len(splits.development_ids)} documents."

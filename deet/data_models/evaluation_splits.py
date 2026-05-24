@@ -7,6 +7,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from deet.exceptions import SplitsValidationError
+
 
 class EvaluationStage(StrEnum):
     """
@@ -65,12 +67,13 @@ class EvaluationSplits(BaseModel):
 
         if size <= 0:
             too_small = "Sample size must be greater than 0."
-            raise ValueError(too_small)
+            raise SplitsValidationError(too_small)
         if len(unassigned) < size:
             incompatible_size = (
-                f"Requested {size} docs, but only {len(unassigned)} are unassigned"
+                f"Tried to assign {size} docs to the development set"
+                f" but only {len(unassigned)} are unassigned"
             )
-            raise ValueError(incompatible_size)
+            raise SplitsValidationError(incompatible_size)
         target_ids = random.sample(unassigned, size)
 
         self.development_ids.extend(target_ids)
