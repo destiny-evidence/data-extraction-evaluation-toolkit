@@ -257,6 +257,11 @@ class ExperimentArtefacts:
         return self.base_dir / "config.yaml"
 
     @property
+    def evaluation_splits_snapshot(self) -> Path:
+        """Return location of json capturing how docs were split for evaluation."""
+        return self.base_dir / "evaluation_splits_path.json"
+
+    @property
     def llm_annotations(self) -> Path:
         """Return location of json containing llm extractions."""
         return self.base_dir / "llm_annotations.json"

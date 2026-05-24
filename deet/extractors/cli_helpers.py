@@ -180,6 +180,9 @@ def run_extraction_pipeline(
             )
 
     project_evaluation_splits = deet_project.load_splits()
+    project_evaluation_splits.dump_to_json(
+        experiment_artefacts.evaluation_splits_snapshot
+    )
     processed_annotation_data.filter_documents_by_ids(
         project_evaluation_splits.active_ids
     )
