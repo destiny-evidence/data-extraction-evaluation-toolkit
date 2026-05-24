@@ -1,12 +1,10 @@
 """Helper functions to run extraction via the CLI."""
 
-import datetime
 from collections.abc import Sequence
 from pathlib import Path
 
 import typer
 import yaml
-from loguru import logger
 from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
@@ -55,24 +53,6 @@ def load_config_from_typer_context(
         fail_with_message(f"YAML Syntax Error in {config_path}:\n{e}")
     except ValidationError as e:
         fail_with_message(f"Config validation error in {config_path}:\n{e}")
-
-
-def init_extraction_run(
-    out_dir: Path,
-    run_name: str,
-) -> ExperimentArtefacts:
-    """Set up ID, folder and logging for data extraction run."""
-    extraction_run_id = (
-        datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
-        + f"_{run_name}"
-    )
-
-    experiment_out_dir = out_dir / extraction_run_id
-    experiment_out_dir.mkdir(parents=True)
-
-    logger.add(experiment_out_dir / "deet.log", level="DEBUG")
-
-    return ExperimentArtefacts(base_dir=experiment_out_dir, run_id=extraction_run_id)
 
 
 def prepare_documents(
@@ -168,7 +148,9 @@ def run_extraction_pipeline(
 
     config = load_config_from_typer_context(typer_context, config_path)
 
-    experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
+    experiment_artefacts = ExperimentArtefacts.create(
+        deet_project.experiments_dir, run_name=run_name
+    )
 
     if prompt_population is not None:
         processed_annotation_data.populate_custom_prompts(

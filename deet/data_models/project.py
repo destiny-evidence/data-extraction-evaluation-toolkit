@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
+from loguru import logger
+
 if TYPE_CHECKING:
     from deet.data_models.evaluation_splits import EvaluationSplits
     from deet.data_models.processed_gold_standard_annotations import (
@@ -234,7 +236,25 @@ class ExperimentArtefacts:
     """Defines the structure of a data extraction experiment directory."""
 
     base_dir: Path
-    run_id: str
+
+    @classmethod
+    def create(cls, experiments_dir: Path, run_name: str) -> ExperimentArtefacts:
+        """Initialise and create a new experiments directory."""
+        extraction_run_id = (
+            datetime.now(tz=UTC).strftime("%Y-%m-%d_%H-%M-%S") + f"_{run_name}"
+        )
+
+        experiment_out_dir = experiments_dir / extraction_run_id
+        experiment_out_dir.mkdir(parents=True)
+
+        logger.add(experiment_out_dir / "deet.log", level="DEBUG")
+
+        return cls(base_dir=experiment_out_dir)
+
+    @property
+    def run_id(self) -> str:
+        """Return identifier (based on the directory where the experiment lives)."""
+        return self.base_dir.name
 
     @property
     def metrics(self) -> Path:
