@@ -224,6 +224,11 @@ class DeetProject(BaseModel):
         converter = self.gold_standard_data_format.get_annotation_converter()
         return converter.process_annotation_file(self.gold_standard_data_path)
 
+    def get_all_doc_ids(self) -> list[int]:
+        """Process the full dataset and return all document IDs."""
+        processed_data = self.process_data()
+        return processed_data.all_doc_ids
+
     def load_splits(self) -> EvaluationSplits:
         """Load split state."""
         from deet.data_models.evaluation_splits import EvaluationSplits
@@ -250,6 +255,11 @@ class ExperimentArtefacts:
         logger.add(experiment_out_dir / "deet.log", level="DEBUG")
 
         return cls(base_dir=experiment_out_dir)
+
+    @property
+    def is_complete(self) -> bool:
+        """Verify the experiment directory contains a completed and evaluated run."""
+        return self.config_snapshot.exists() and self.metrics.exists()
 
     @property
     def run_id(self) -> str:

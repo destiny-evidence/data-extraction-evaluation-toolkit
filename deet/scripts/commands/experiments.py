@@ -179,19 +179,22 @@ def add_dev(
     ],
 ) -> None:
     """Add unassigned documents to the development pool."""
+    from deet.data_models.evaluation_splits import EvaluationStage
     from deet.ui import fail_with_message, notify
 
     deet_project: DeetProject = typer_context.obj.project
-    processed_data = deet_project.process_data()
-    project_doc_ids = [
-        doc.safe_identity.document_id for doc in processed_data.documents
-    ]
+    project_doc_ids = deet_project.get_all_doc_ids()
 
     splits = deet_project.load_splits()
     try:
-        n_added = splits.add_to_development(project_doc_ids, size)
+        n_added = splits.add_to_stage(
+            EvaluationStage.DEVELOPMENT, project_doc_ids, size
+        )
+        splits.dump_to_json(deet_project.evaluation_splits_path)
+
     except SplitsValidationError as e:
         fail_with_message(str(e))
+
     notify(
         f"Added {n_added} documents to development set."
         f" This now contains {len(splits.development_ids)} documents."
@@ -199,4 +202,77 @@ def add_dev(
         " are still unassigned."
     )
 
-    splits.dump_to_json(deet_project.evaluation_splits_path)
+
+@app.command()
+@project_required
+def validate_run(
+    typer_context: typer.Context,
+    size: Annotated[
+        int,
+        typer.Option(
+            "--size",
+            "-s",
+            help="Number of random unassigned documents to sample and add.",
+        ),
+    ],
+) -> None:
+    """Select a past experiment config and evaluate against a fresh validation set."""
+    from InquirerPy import inquirer
+
+    from deet.data_models.evaluation_splits import EvaluationStage
+    from deet.data_models.project import ExperimentArtefacts
+    from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+    from deet.extractors.cli_helpers import run_extraction_pipeline
+    from deet.ui import fail_with_message, notify
+
+    deet_project: DeetProject = typer_context.obj.project
+
+    all_experiments = [
+        ExperimentArtefacts(base_dir=path)
+        for path in deet_project.experiments_dir.iterdir()
+        if path.is_dir()
+    ]
+    completed_experiments = [exp for exp in all_experiments if exp.is_complete]
+    completed_experiments.sort(key=lambda e: e.run_id, reverse=True)
+
+    choices = [{"name": exp.run_id, "value": exp} for exp in completed_experiments]
+
+    selected_experiment: ExperimentArtefacts = inquirer.select(
+        message="Select the experiment configuration to validate:", choices=choices
+    ).execute()
+
+    project_doc_ids = deet_project.get_all_doc_ids()
+
+    splits = deet_project.load_splits()
+    try:
+        n_added = splits.add_to_stage(EvaluationStage.VALIDATION, project_doc_ids, size)
+        splits.current_stage = EvaluationStage.VALIDATION
+        splits.dump_to_json(deet_project.evaluation_splits_path)
+    except SplitsValidationError as e:
+        fail_with_message(str(e))
+
+    notify(
+        f"Added {n_added} documents to validation set"
+        f" ({len(splits.get_unassigned_ids(project_doc_ids))}"
+        " are still unassigned)."
+        f"\nEvaluating experiment: {selected_experiment.run_id} using these documents"
+    )
+
+    run_output, processed_annotation_data, experiment_artefacts = (
+        run_extraction_pipeline(
+            typer_context=typer_context,
+            config_path=selected_experiment.config_snapshot,
+            run_name="VALIDATION",
+        )
+    )
+
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
+        llm_annotated_documents=run_output.annotated_documents,
+        attributes=processed_annotation_data.attributes,
+        extraction_run_id=experiment_artefacts.run_id,
+    )
+    evaluator.evaluate_llm_annotations()
+    evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
+    evaluator.export_llm_comparison(experiment_artefacts.comparison)
+    evaluator.display_metrics()

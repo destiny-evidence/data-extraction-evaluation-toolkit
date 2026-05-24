@@ -290,6 +290,15 @@ class ProcessedAnnotationData(
         """Total number of documents with annotations."""
         return len(self.annotated_documents)
 
+    @property
+    def all_doc_ids(self) -> list[int]:
+        """Return a list of document IDs present in the dataset."""
+        return [
+            doc.safe_identity.document_id
+            for doc in self.documents
+            if doc.safe_identity.document_id is not None
+        ]
+
     def get_attributes_by_attribute_type(
         self, attribute_type: AttributeType
     ) -> list[AttributeTypeVar]:

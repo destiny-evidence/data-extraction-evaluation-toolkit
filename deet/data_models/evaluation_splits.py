@@ -36,6 +36,15 @@ class EvaluationSplits(BaseModel):
         """Write splits to file."""
         file_path.write_text(self.model_dump_json(indent=2), encoding="utf-8")
 
+    def _get_list_for_stage(self, stage: EvaluationStage) -> list[int]:
+        """Return the list of document IDs for a stage."""
+        stage_mapping = {
+            EvaluationStage.DEVELOPMENT: self.development_ids,
+            EvaluationStage.VALIDATION: self.validation_ids,
+            EvaluationStage.TEST: self.test_ids,
+        }
+        return stage_mapping[stage]
+
     @classmethod
     def load(cls, file_path: Path) -> "EvaluationSplits":
         """Load splits from file."""
@@ -46,12 +55,7 @@ class EvaluationSplits(BaseModel):
     @property
     def active_ids(self) -> list[int]:
         """Return the list of document IDs for the current evaluation stage."""
-        stage_mapping = {
-            EvaluationStage.DEVELOPMENT: self.development_ids,
-            EvaluationStage.VALIDATION: self.validation_ids,
-            EvaluationStage.TEST: self.test_ids,
-        }
-        return stage_mapping[self.current_stage]
+        return self._get_list_for_stage(self.current_stage)
 
     def get_unassigned_ids(self, project_doc_ids: Collection[int]) -> list[int]:
         """Filter a collection of document IDs to those which have not been assigned."""
@@ -60,10 +64,13 @@ class EvaluationSplits(BaseModel):
         )
         return [doc_id for doc_id in project_doc_ids if doc_id not in assigned]
 
-    def add_to_development(self, project_doc_ids: Collection[int], size: int) -> int:
-        """Sample from project_doc_ids and add to development."""
-        self.current_stage = EvaluationStage.DEVELOPMENT
+    def add_to_stage(
+        self, stage: EvaluationStage, project_doc_ids: Collection[int], size: int
+    ) -> int:
+        """Sample from project_doc_ids and add to stage."""
         unassigned = self.get_unassigned_ids(project_doc_ids)
+
+        target_list = self._get_list_for_stage(stage)
 
         if size <= 0:
             too_small = "Sample size must be greater than 0."
@@ -76,5 +83,5 @@ class EvaluationSplits(BaseModel):
             raise SplitsValidationError(incompatible_size)
         target_ids = random.sample(unassigned, size)
 
-        self.development_ids.extend(target_ids)
+        target_list.extend(target_ids)
         return len(target_ids)
