@@ -85,3 +85,23 @@ class EvaluationSplits(BaseModel):
 
         target_list.extend(target_ids)
         return len(target_ids)
+
+    def finalise_test(self, project_doc_ids: Collection[int]) -> None:
+        """Add all remaining docs to test."""
+        unassigned = self.get_unassigned_ids(project_doc_ids)
+
+        if len(unassigned) == 0:
+            none_remaining = (
+                "No unassigned documents left for testing."
+                " Add more documents to the project to continue."
+            )
+            raise SplitsValidationError(none_remaining)
+
+        self.test_ids = unassigned
+        self.current_stage = EvaluationStage.TEST
+
+    def reject_validation(self) -> None:
+        """Merge validation IDs into development and continue developing."""
+        self.development_ids.extend(self.validation_ids)
+        self.validation_ids = []
+        self.current_stage = EvaluationStage.DEVELOPMENT

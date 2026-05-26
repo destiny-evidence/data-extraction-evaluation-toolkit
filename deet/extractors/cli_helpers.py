@@ -11,6 +11,7 @@ from deet.data_models.documents import ContextType, Document
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
+from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
 from deet.extractors.llm_data_extractor import (
     DataExtractionConfig,
     ExtractionRunOutput,
@@ -211,3 +212,21 @@ def run_extraction_pipeline(
     )
 
     return run_output, processed_annotation_data, experiment_artefacts
+
+
+def evaluate_extraction_pipeline(
+    processed_annotation_data: ProcessedAnnotationData,
+    run_output: ExtractionRunOutput,
+    experiment_artefacts: ExperimentArtefacts,
+) -> None:
+    """Evaluate results of an extraction pipeline."""
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
+        llm_annotated_documents=run_output.annotated_documents,
+        attributes=processed_annotation_data.attributes,
+        extraction_run_id=experiment_artefacts.run_id,
+    )
+    evaluator.evaluate_llm_annotations()
+    evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
+    evaluator.export_llm_comparison(experiment_artefacts.comparison)
+    evaluator.display_metrics()

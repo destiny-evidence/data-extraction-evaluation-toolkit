@@ -221,8 +221,10 @@ def validate_run(
 
     from deet.data_models.evaluation_splits import EvaluationStage
     from deet.data_models.project import ExperimentArtefacts
-    from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
-    from deet.extractors.cli_helpers import run_extraction_pipeline
+    from deet.extractors.cli_helpers import (
+        evaluate_extraction_pipeline,
+        run_extraction_pipeline,
+    )
     from deet.ui import fail_with_message, notify
 
     deet_project: DeetProject = typer_context.obj.project
@@ -265,14 +267,53 @@ def validate_run(
             run_name="VALIDATION",
         )
     )
-
-    evaluator = GoldStandardLLMEvaluator(
-        gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
-        llm_annotated_documents=run_output.annotated_documents,
-        attributes=processed_annotation_data.attributes,
-        extraction_run_id=experiment_artefacts.run_id,
+    evaluate_extraction_pipeline(
+        processed_annotation_data=processed_annotation_data,
+        run_output=run_output,
+        experiment_artefacts=experiment_artefacts,
     )
-    evaluator.evaluate_llm_annotations()
-    evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
-    evaluator.export_llm_comparison(experiment_artefacts.comparison)
-    evaluator.display_metrics()
+
+    decision = inquirer.select(
+        message="Based on these metrics, how would you like to proceed?",
+        choices=[
+            {
+                "name": (
+                    "Accept: lock this configuration, and "
+                    " do a final test on all remaining documents."
+                ),
+                "value": "accept",
+            },
+            {
+                "name": (
+                    "Reject: add validation documents to "
+                    " development set and continue iterating."
+                ),
+                "value": "reject",
+            },
+        ],
+    ).execute()
+
+    if decision == "accept":
+        try:
+            splits.finalise_test(project_doc_ids)
+        except SplitsValidationError as e:
+            fail_with_message(str(e))
+
+        splits.dump_to_json(deet_project.evaluation_splits_path)
+
+        run_output, processed_annotation_data, experiment_artefacts = (
+            run_extraction_pipeline(
+                typer_context=typer_context,
+                config_path=selected_experiment.config_snapshot,
+                run_name="FINAL_TEST",
+            )
+        )
+        evaluate_extraction_pipeline(
+            processed_annotation_data=processed_annotation_data,
+            run_output=run_output,
+            experiment_artefacts=experiment_artefacts,
+        )
+
+    elif decision == "reject":
+        splits.reject_validation()
+        splits.dump_to_json(deet_project.evaluation_splits_path)
