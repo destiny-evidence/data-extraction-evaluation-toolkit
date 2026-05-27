@@ -32,6 +32,7 @@ authors = [
 dependencies = [
     "destiny-sdk[labs]>=0.9.1",
     "diskcache>=5.6.3",
+    "dspy>=3.2.1",
     "inquirerpy>=0.3.4",
     "jinja2>=3.1.6",
     "litellm>=1.77.4",
