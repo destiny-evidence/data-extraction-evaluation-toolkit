@@ -11,6 +11,7 @@ dev = [
     "pytest-mock>=3.14.1",
     "pytest>=8.4.1",
     "ruff>=0.12.11",
+    "python-semantic-release>=9,<10",
 ]
 docs = [
     "griffe-pydantic>=1.3.1",
@@ -156,3 +157,16 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "v{version}"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.branches.develop]
+match = "develop"
+prerelease = true
+prerelease_token = "dev"

@@ -1,0 +1,65 @@
+name: version preview
+
+on:
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.base_ref }}
+
+      - name: configure git identity
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: install dependencies
+        run: uv sync
+
+      - name: compute version preview
+        id: preview
+        run: |
+          CURRENT=$(grep -Po '(?<=version = ")[^"]*' pyproject.toml)
+          NEXT=$(uv run semantic-release --noop version --print 2>/dev/null | tail -1)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "next=${NEXT:-no release}" >> $GITHUB_OUTPUT
+
+      - name: post version preview comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const current = '${{ steps.preview.outputs.current }}';
+            const next = '${{ steps.preview.outputs.next }}';
+            const body = `**version preview**\n\n| | |\n|---|---|\n| current | \`${current}\` |\n| next | \`${next}\` |`;
+            const comments = await github.rest.issues.listComments({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+            });
+            const existing = comments.data.find(c => c.body.includes('version preview'));
+            if (existing) {
+                await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: existing.id,
+                    body,
+                });
+            } else {
+                await github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body,
+                });
+            }

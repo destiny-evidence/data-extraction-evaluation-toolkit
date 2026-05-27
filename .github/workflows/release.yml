@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    branches: [main, development]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: configure git identity
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: install dependencies
+        run: uv sync
+
+      - name: run semantic-release
+        run: uv run semantic-release version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
