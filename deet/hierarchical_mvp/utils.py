@@ -10,7 +10,7 @@ from deet.logger import logger
 from .models import Intervention, Study
 
 
-def configure_lm(model: str, max_tokens: int) -> None:
+def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
     """Initialise DSPy with the Azure OpenAI LM."""
     api_key = os.environ.get("AZURE_API_KEY")
     api_base = os.environ.get("AZURE_API_BASE")
@@ -28,6 +28,7 @@ def configure_lm(model: str, max_tokens: int) -> None:
         api_key=api_key,
         api_base=api_base,
         max_tokens=max_tokens,
+        cache=cache,
     )
     dspy.configure(lm=lm)
 

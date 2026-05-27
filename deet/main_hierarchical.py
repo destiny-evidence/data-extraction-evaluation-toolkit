@@ -23,6 +23,16 @@ from deet.logger import logger
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONSOLE_SINK_ID: int | None = None
+DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
+EXAMPLE_CONFIG_JSON = """{
+    \"study_type\": \"RCT\",
+    \"max_tokens\": 30000,
+    \"dspy_cache\": false,
+    \"input_paths\": [
+        \"misc/hierarchical_mvp/input/mira_rct/main.md\"
+    ],
+    \"output_parent_dir\": \"misc/hierarchical_mvp/output/mira_rct\"
+}"""
 
 
 # ---------------------------------------------------------------------------
@@ -37,7 +47,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "config_path",
-        help="Path to JSON config with study_type, input_paths, output_parent_dir, and max_tokens.",
+        nargs="?",
+        default=DEFAULT_CONFIG_FILENAME,
+        help="Path to JSON config with study_type, input_paths, output_parent_dir, max_tokens, and dspy_cache.",
     )
     return parser.parse_args()
 
@@ -59,7 +71,13 @@ def load_config(config_path: Path) -> dict[str, Any]:
     """Load and validate hierarchical extraction configuration from JSON."""
     config = json.loads(config_path.read_text(encoding="utf-8"))
 
-    required_keys = {"study_type", "input_paths", "output_parent_dir", "max_tokens"}
+    required_keys = {
+        "study_type",
+        "input_paths",
+        "output_parent_dir",
+        "max_tokens",
+        "dspy_cache",
+    }
     missing = required_keys.difference(config)
     if missing:
         missing_sorted = ", ".join(sorted(missing))
@@ -86,6 +104,9 @@ def load_config(config_path: Path) -> dict[str, Any]:
 
     if config["max_tokens"] <= 0:
         raise ValueError("Config key 'max_tokens' must be greater than 0.")
+
+    if not isinstance(config["dspy_cache"], bool):
+        raise TypeError("Config key 'dspy_cache' must be a boolean.")
 
     return config
 
@@ -147,8 +168,30 @@ def main() -> None:
     setup_console_logging()
     args = parse_args()
 
-    config_path = resolve_path(args.config_path)  # load config
-    config = load_config(config_path)
+    config_arg_path = Path(args.config_path)
+    if config_arg_path.is_absolute():
+        config_path = config_arg_path
+    else:
+        config_path = Path.cwd() / config_arg_path
+
+    try:
+        config = load_config(config_path)
+    except FileNotFoundError as exc:
+        logger.error(f"Config file not found: {config_path}")
+        logger.info(
+            "Place a config file at this location or provide a path explicitly, "
+            "for example: python deet/main_hierarchical.py <path-to-config.json>"
+        )
+        logger.info(f"Default expected filename in current directory: {DEFAULT_CONFIG_FILENAME}")
+        logger.info("Example config content:")
+        logger.info(EXAMPLE_CONFIG_JSON)
+        raise SystemExit(1) from exc
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        logger.error(f"Could not load config from {config_path}: {exc}")
+        logger.info("Example config content:")
+        logger.info(EXAMPLE_CONFIG_JSON)
+        raise SystemExit(1) from exc
+
     input_paths, output_parent_dir = validate_create_paths(
         config
     )  # I want to validate in and output paths and create output folder if needed BEFORE the extraction, to avoid running the LLM and then losing data due to unnecessary path/permission issues.
@@ -157,7 +200,7 @@ def main() -> None:
     model = os.environ.get("LLM_MODEL")
     if not model:
         raise OSError("LLM_MODEL is not set. Add your Azure deployment name to .env.")
-    configure_lm(model, config["max_tokens"])
+    configure_lm(model, config["max_tokens"], cache=config["dspy_cache"])
 
     context = read_concatenade_mds(input_paths)  # get text from the md inputs
     study = extract(context=context, study_type=config["study_type"])  # do extraction
