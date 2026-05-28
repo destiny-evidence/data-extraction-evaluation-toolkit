@@ -30,7 +30,7 @@ class Intervention(BaseModel):
     group_name: str = Field(
         description="Identify and extract the name of the intervention group or groups from this study. This could be in the form of abbreviations. For example, 'mindfulness-based group', 'ASS high dose'. "
     )
-    intervention_type: InterventionType = Field()
+    intervention_type: InterventionType = Field(description="Assign the best fitting intervention type defined in the classification scheme.")
     description: str = Field(
         description="Describe this intervention arm. If only some participants received the treatment in this arm, note that. Note the frequency, duration, and amount or dose of the intervention. Be as precise as possible: if duration, frequency or dose are mentioned, they need to be in the answer. If there are multiple components to the intervention (e.g. physical activity plus diet), state all of them."
     )

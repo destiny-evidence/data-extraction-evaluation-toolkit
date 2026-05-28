@@ -22,6 +22,7 @@ Example hierarchical_config.json:
 }
 ~~~
 
+You just need to edit the in/output paths and increase max_tokens if needed.
 Run from the repository root:
 
 ~~~sh
@@ -37,11 +38,11 @@ Output summary:
 	- outcomes_YYYYMMDD_HHMMSS.csv
 - The JSON and CSV outputs contain study characteristics, intervention arms, and extracted outcomes.
 
-## Customisable hierarchcal RCT extraction (dynamic)
+## Customisable hierarchical RCT extraction (dynamic)
 
-DEET also provides a dynamic hierarchical RCT workflow where the extraction schema is built from a prompt CSV at runtime.
+This section describes an experimental dynamic hierarchical RCT workflow where the extraction schema is built from a prompt CSV at runtime. This has not been 100% tested and is a more rough draft, but it does work to edit/add extracted variables within Study, Intervention, and Outcome classes.
 
-Step 1: create the prompt CSV from the current RCT model schema.
+Step 1: create the prompt CSV from the current RCT model schema. This is a useful first step because it gives the user something to edit and play with. Note: '--study-type RCT' is an optional parameter, right now everything defaults to RCT anyway, but the parameter will be useful once DTA/other types are implemented. 
 
 ~~~sh
 python -m deet.custom_hierarchical write_hierarchical_prompts_csv --study-type RCT
@@ -52,7 +53,7 @@ This generates a CSV with columns class, attribute, prompt, and datatype. You ca
 Step 2: run dynamic extraction using both the config file and the prompt CSV.
 
 ~~~sh
-python -m deet.custom_hierarchical custom_extract misc/hierarchical_mvp/configs/hierarchical_prompts.csv misc/input/hierarchical_config.json
+python -m deet.custom_hierarchical custom_extract hierarchical_prompts.csv hierarchical_config.json
 ~~~
 
 How it works:

@@ -56,6 +56,12 @@ def export_csv(
     timestamp: str,
 ) -> None:
     """
+        NOTE: This function probably needs to become part of the RCT pipeline
+        and be called as such from the instance itself, and further downstream
+        study types need to have their own export function so that we can properly use
+        the input parameter and the switch statement to create Study and handle
+        it well regardless of the actual study type.
+        
         Write three timestamped CSV files into predictions/<study_name>/:
             - study_<timestamp>.csv
             - interventions_<timestamp>.csv
