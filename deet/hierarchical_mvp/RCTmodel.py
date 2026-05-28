@@ -21,7 +21,7 @@ class OutcomeTimePoint(BaseModel):
 
 
 class InterventionType(BaseModel):
-    value: str = Field(
+    type_of_intervention: str = Field(
         description="The type of this study arm in the context of this study. Choose one of: 'Intervention', 'Control'"
     )
 
@@ -92,7 +92,7 @@ class Intervention(BaseModel):
             "economic_information": self.economic_information,
             "resource_requirements": self.resource_requirements,
             "compliance": self.compliance,
-            "intervention_type": self.intervention_type.value,
+            "intervention_type": self.intervention_type.type_of_intervention,
         }
 
 

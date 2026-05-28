@@ -7,7 +7,7 @@ from pathlib import Path
 import dspy
 from deet.logger import logger
 
-from .models import Intervention, Study
+from .RCTmodel import Intervention, Study
 
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:

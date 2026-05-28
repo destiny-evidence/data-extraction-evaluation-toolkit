@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 from datetime import datetime
 import json
@@ -13,17 +14,11 @@ import dspy
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
-from deet.hierarchical_mvp import models as hierarchical_models
+from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.utils import configure_lm, load_study_context
 from deet.logger import logger
 
-OUTPUT_CSV_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "misc"
-    / "hierarchical_mvp"
-    / "configs"
-    / "hierarchical_prompts.csv"
-)
+DEFAULT_PROMPT_CSV_FILENAME = "hierarchical_prompts.csv"
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
 TARGET_DYNAMIC_CLASSES = {
     "Continuous_Outcome",
@@ -64,12 +59,28 @@ def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
     return rows
 
 
-def write_hierarchical_prompts_csv() -> Path:
+def write_hierarchical_prompts_csv(
+    study_type: str = "RCT",
+    csv_outpath: str | Path | None = None,
+) -> Path:
     """Write hierarchical prompt metadata to a CSV at a fixed location."""
-    rows = build_hierarchical_prompt_rows()
+    match study_type:
+        case "RCT":
+            rows = build_hierarchical_prompt_rows()
+        case _:
+            raise ValueError(
+                f"Unsupported study_type '{study_type}'. Supported: RCT"
+            )
 
-    OUTPUT_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with OUTPUT_CSV_PATH.open("w", newline="", encoding="utf-8") as csvfile:
+    if csv_outpath is None:
+        output_csv_path = Path.cwd() / DEFAULT_PROMPT_CSV_FILENAME
+    else:
+        output_csv_path = Path(csv_outpath)
+        if not output_csv_path.is_absolute():
+            output_csv_path = Path.cwd() / output_csv_path
+
+    output_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv_path.open("w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(
             csvfile,
             fieldnames=["class", "attribute", "prompt", "datatype"],
@@ -77,8 +88,8 @@ def write_hierarchical_prompts_csv() -> Path:
         writer.writeheader()
         writer.writerows(rows)
 
-    logger.info(f"Hierarchical prompts CSV saved to {OUTPUT_CSV_PATH}")
-    return OUTPUT_CSV_PATH
+    logger.info(f"Hierarchical prompts CSV saved to {output_csv_path}")
+    return output_csv_path
 
 
 def _resolve_dtype(datatype: str) -> Any:
@@ -378,7 +389,10 @@ def _serialize_value(value: Any) -> Any:
     if isinstance(value, BaseModel):
         if hasattr(value, "value"):
             return getattr(value, "value")
-        return value.model_dump()
+        value_dump = value.model_dump()
+        if len(value_dump) == 1:
+            return _serialize_value(next(iter(value_dump.values())))
+        return value_dump
     if isinstance(value, (list, tuple)):
         return [_serialize_value(item) for item in value]
     if isinstance(value, dict):
@@ -529,5 +543,75 @@ def run_dynamic_extraction_from_csv_schema(
     return json_path
 
 
+def parse_custom_hierarchical_args() -> argparse.Namespace:
+    """Parse CLI arguments for custom hierarchical utility commands."""
+    parser = argparse.ArgumentParser(
+        description="Custom hierarchical prompt generation and extraction tools.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    write_parser = subparsers.add_parser(
+        "write_hierarchical_prompts_csv",
+        help="Write hierarchical prompts CSV for dynamic extraction.",
+    )
+    write_parser.add_argument(
+        "--study-type",
+        default="RCT",
+        help="Study type used for prompt CSV generation. Currently supports: RCT.",
+    )
+    write_parser.add_argument(
+        "--csv-outpath",
+        default=None,
+        help=(
+            "Optional output path for prompt CSV. Defaults to "
+            "<current working directory>/hierarchical_prompts.csv."
+        ),
+    )
+
+    extract_parser = subparsers.add_parser(
+        "custom_extract",
+        help=(
+            "Run dynamic extraction from a CSV schema and JSON config. "
+            "Mimics main_hierarchical config input with one additional CSV argument."
+        ),
+    )
+    extract_parser.add_argument(
+        "csv_path",
+        help="Path to CSV schema used to build runtime dynamic models.",
+    )
+    extract_parser.add_argument(
+        "config_path",
+        nargs="?",
+        default=DEFAULT_CONFIG_FILENAME,
+        help=(
+            "Path to JSON config with study_type, input_paths, output_parent_dir, "
+            "max_tokens, and dspy_cache. Defaults to hierarchical_config.json."
+        ),
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the standalone custom hierarchical CLI."""
+    args = parse_custom_hierarchical_args()
+
+    match args.command:
+        case "write_hierarchical_prompts_csv":
+            output_path = write_hierarchical_prompts_csv(
+                study_type=args.study_type,
+                csv_outpath=args.csv_outpath,
+            )
+            print(output_path)
+        case "custom_extract":
+            output_path = run_dynamic_extraction_from_csv_schema(
+                csv_path=args.csv_path,
+                config_path=args.config_path,
+            )
+            print(output_path)
+        case _:
+            raise ValueError(f"Unsupported command '{args.command}'.")
+
+
 if __name__ == "__main__":
-    write_hierarchical_prompts_csv()
+    main()

@@ -12,8 +12,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from deet.hierarchical_mvp.extraction import RCTExtractionPipeline
-from deet.hierarchical_mvp.models import Study
+from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
+from deet.hierarchical_mvp.RCTmodel import Study
 from deet.hierarchical_mvp.utils import configure_lm, export_csv, load_study_context
 from deet.logger import logger
 
