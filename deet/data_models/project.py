@@ -289,7 +289,7 @@ class ExperimentArtefacts:
     @property
     def evaluation_splits_snapshot(self) -> Path:
         """Return location of json capturing how docs were split for evaluation."""
-        return self.base_dir / "evaluation_splits_path.json"
+        return self.base_dir / "evaluation_splits.json"
 
     @property
     def llm_annotations(self) -> Path:
