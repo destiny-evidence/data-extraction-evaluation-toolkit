@@ -86,7 +86,11 @@ def export_csv(
             f, fieldnames=Study.outcome_csv_fieldnames(), extrasaction="ignore"
         )
         writer.writeheader()
-        for outcome in study.dichotomous_outcomes + study.continuous_outcomes:
+        for outcome in (
+            study.dichotomous_outcomes
+            + study.continuous_outcomes
+            + study.other_outcomes
+        ):
             writer.writerow(outcome.to_csv_row())
 
     logger.info(f"CSV files saved to {csv_dir}/")

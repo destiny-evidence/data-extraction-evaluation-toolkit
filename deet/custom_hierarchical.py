@@ -1,4 +1,4 @@
-"""Generate a hierarchical prompt CSV from Pydantic models."""
+"""Generate a hierarchical prompt CSV and run runtime-dynamic DSPy extraction."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ import os
 from pathlib import Path
 from typing import Any
 
+import dspy
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, Field, create_model
 
-from deet.hierarchical_mvp.extraction import RCTExtractionPipeline
-from deet.hierarchical_mvp.utils import configure_lm, load_study_context
 from deet.hierarchical_mvp import models as hierarchical_models
+from deet.hierarchical_mvp.utils import configure_lm, load_study_context
 from deet.logger import logger
 
 OUTPUT_CSV_PATH = (
@@ -25,6 +25,14 @@ OUTPUT_CSV_PATH = (
     / "hierarchical_prompts.csv"
 )
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
+TARGET_DYNAMIC_CLASSES = {
+    "Continuous_Outcome",
+    "Dichotomous_Outcome",
+    "Intervention",
+    "Other_Outcome",
+    "Study",
+    "Study_Characteristics",
+}
 
 
 def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
@@ -47,10 +55,9 @@ def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
             rows.append(
                 {
                     "class": cls.__name__,
-                    "datatype": datatype,
                     "attribute": field_name,
                     "prompt": description,
-                    
+                    "datatype": datatype,
                 }
             )
 
@@ -76,6 +83,15 @@ def write_hierarchical_prompts_csv() -> Path:
 
 def _resolve_dtype(datatype: str) -> Any:
     normalized = datatype.strip().lower()
+
+    # The prompt CSV can represent nested Pydantic model types using either
+    # bare names (OutcomeTypes), prefixed names (models.OutcomeTypes), or
+    # stringified annotations (<class '...OutcomeTypes'>). Normalize all forms.
+    if "outcometypes" in normalized:
+        return hierarchical_models.OutcomeTypes
+    if "outcometimepoint" in normalized:
+        return hierarchical_models.OutcomeTimePoint
+
     mapping: dict[str, Any] = {
         "str": str,
         "int": int,
@@ -121,6 +137,9 @@ def _build_dynamic_models_from_schema(
     dynamic_models: dict[str, type[BaseModel]] = {}
 
     for class_name, fields in schema.items():
+        if class_name not in TARGET_DYNAMIC_CLASSES:
+            continue
+
         definitions: dict[str, tuple[Any, Field]] = {}
         for field_def in fields:
             dtype = _resolve_dtype(field_def["datatype"])
@@ -137,6 +156,202 @@ def _build_dynamic_models_from_schema(
         )
 
     return dynamic_models
+
+
+def _ensure_runtime_models(
+    schema: dict[str, list[dict[str, str]]],
+    dynamic_models: dict[str, type[BaseModel]],
+) -> dict[str, type[BaseModel]]:
+    runtime_models: dict[str, type[BaseModel]] = {}
+
+    for class_name in TARGET_DYNAMIC_CLASSES:
+        model_cls = dynamic_models.get(class_name)
+        if model_cls is not None:
+            runtime_models[class_name] = model_cls
+            continue
+
+        fallback = getattr(hierarchical_models, class_name, None)
+        if isinstance(fallback, type) and issubclass(fallback, BaseModel):
+            runtime_models[class_name] = fallback
+        else:
+            raise ValueError(
+                f"Class '{class_name}' is required by the pipeline but is missing."
+            )
+
+    if "Study" in schema:
+        runtime_models["Study"] = create_model(
+            "DynamicStudy",
+            __base__=BaseModel,
+            study_characteristics=(
+                runtime_models["Study_Characteristics"],
+                Field(description="Study-level metadata."),
+            ),
+            interventions=(
+                list[runtime_models["Intervention"]],
+                Field(description="Intervention groups in the trial."),
+            ),
+            dichotomous_outcomes=(
+                list[runtime_models["Dichotomous_Outcome"]],
+                Field(default_factory=list, description="Dichotomous outcomes."),
+            ),
+            continuous_outcomes=(
+                list[runtime_models["Continuous_Outcome"]],
+                Field(default_factory=list, description="Continuous outcomes."),
+            ),
+            other_outcomes=(
+                list[runtime_models["Other_Outcome"]],
+                Field(default_factory=list, description="Other outcomes."),
+            ),
+        )
+
+    return runtime_models
+
+
+def _build_dynamic_signature(
+    name: str,
+    annotations: dict[str, Any],
+    fields: dict[str, Any],
+    docstring: str,
+) -> type[dspy.Signature]:
+    namespace: dict[str, Any] = {"__annotations__": annotations, "__doc__": docstring}
+    namespace.update(fields)
+    return type(name, (dspy.Signature,), namespace)
+
+
+def _build_dynamic_rct_pipeline(
+    runtime_models: dict[str, type[BaseModel]],
+) -> type[dspy.Module]:
+    extract_study_info_sig = _build_dynamic_signature(
+        "DynamicExtractStudyInfo",
+        {
+            "context": str,
+            "study_characteristics": runtime_models["Study_Characteristics"],
+            "interventions": list[runtime_models["Intervention"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
+            "study_characteristics": dspy.OutputField(
+                desc="Study-level metadata and characteristics."
+            ),
+            "interventions": dspy.OutputField(desc="All intervention groups in trial."),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given plain text (converted from PDFs to markdown) from one or more documents\n"
+            "that all describe the SAME randomized controlled trial, extract all study-level\n"
+            "metadata and characteristics, and identify every distinct intervention group (arm).\n\n"
+            "Report only information that is explicitly stated in the context."
+        ),
+    )
+
+    extract_dichotomous_sig = _build_dynamic_signature(
+        "DynamicExtractDichotomousOutcomes",
+        {
+            "context": str,
+            "interventions": list[runtime_models["Intervention"]],
+            "dichotomous_outcomes": list[runtime_models["Dichotomous_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
+            "interventions": dspy.InputField(desc="Interventions identified in step 1."),
+            "dichotomous_outcomes": dspy.OutputField(
+                desc="All dichotomous outcomes reported in the study."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same RCT context and the already-identified intervention groups,\n"
+            "extract ALL dichotomous (binary event) outcome data reported in the text.\n\n"
+            "For EVERY dichotomous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
+            "If a value is not reported, use the string \"NR\"."
+        ),
+    )
+
+    extract_continuous_sig = _build_dynamic_signature(
+        "DynamicExtractContinuousOutcomes",
+        {
+            "context": str,
+            "interventions": list[runtime_models["Intervention"]],
+            "continuous_outcomes": list[runtime_models["Continuous_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
+            "interventions": dspy.InputField(desc="Interventions identified in step 1."),
+            "continuous_outcomes": dspy.OutputField(
+                desc="All continuous outcomes reported in the study."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same RCT context and the already-identified intervention groups,\n"
+            "extract ALL continuous outcome data (mean ± SD) reported in the text.\n\n"
+            "For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
+            "If a value is not reported, use the string \"NR\"."
+        ),
+    )
+
+    extract_other_sig = _build_dynamic_signature(
+        "DynamicExtractOtherOutcomes",
+        {
+            "context": str,
+            "interventions": list[runtime_models["Intervention"]],
+            "flexible_outcomes": list[runtime_models["Other_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
+            "interventions": dspy.InputField(desc="Interventions identified in step 1."),
+            "flexible_outcomes": dspy.OutputField(
+                desc="All non-dichotomous, non-continuous outcomes."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same RCT context and the already-identified intervention groups,\n"
+            "extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text.\n\n"
+            "For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report values exactly as they appear in the source — do not calculate or impute.\n"
+            "If a value is not reported, use the string \"NR\"."
+        ),
+    )
+
+    study_model = runtime_models["Study"]
+
+    class DynamicRCTExtractionPipeline(dspy.Module):
+        """Dynamic runtime variant of RCT extraction pipeline."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.extract_study_info = dspy.Predict(extract_study_info_sig)
+            self.extract_dichotomous = dspy.Predict(extract_dichotomous_sig)
+            self.extract_continuous = dspy.Predict(extract_continuous_sig)
+            self.extract_other = dspy.Predict(extract_other_sig)
+
+        def forward(self, context: str) -> BaseModel:
+            study_pred = self.extract_study_info(context=context)
+            dichot_pred = self.extract_dichotomous(
+                context=context,
+                interventions=study_pred.interventions,
+            )
+            cont_pred = self.extract_continuous(
+                context=context,
+                interventions=study_pred.interventions,
+            )
+            other_pred = self.extract_other(
+                context=context,
+                interventions=study_pred.interventions,
+            )
+
+            return study_model(
+                study_characteristics=study_pred.study_characteristics,
+                interventions=study_pred.interventions,
+                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+                continuous_outcomes=cont_pred.continuous_outcomes,
+                other_outcomes=other_pred.flexible_outcomes,
+            )
+
+    return DynamicRCTExtractionPipeline
 
 
 def _load_runtime_config(config_path: Path) -> dict[str, Any]:
@@ -171,21 +386,15 @@ def _serialize_value(value: Any) -> Any:
     return value
 
 
-def _project_instance_to_model(
+def _project_instance_to_schema(
     instance: Any,
     class_schema: list[dict[str, str]],
-    dynamic_model: type[BaseModel],
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {}
     for field_def in class_schema:
         attr = field_def["attribute"]
         payload[attr] = _serialize_value(getattr(instance, attr, ""))
-
-    try:
-        return dynamic_model(**payload).model_dump()
-    except ValidationError:
-        # If typed validation is too strict for extracted values, retain payload as-is.
-        return payload
+    return payload
 
 
 def _write_dict_rows_to_csv(
@@ -212,7 +421,7 @@ def run_dynamic_extraction_from_csv_schema(
     csv_path: str | Path,
     config_path: str | Path | None = None,
 ) -> Path:
-    """Run extraction and project outputs dynamically based on a prompt CSV schema."""
+    """Run extraction with runtime dynamic DSPy models/signatures from CSV schema."""
     schema_path = Path(csv_path)
     if not schema_path.is_absolute():
         schema_path = Path.cwd() / schema_path
@@ -244,15 +453,17 @@ def run_dynamic_extraction_from_csv_schema(
     configure_lm(model, int(config["max_tokens"]), cache=bool(config["dspy_cache"]))
 
     context = load_study_context(input_paths)
-    study = RCTExtractionPipeline()(context=context)
 
     schema = _load_prompt_schema(schema_path)
     dynamic_models = _build_dynamic_models_from_schema(schema)
+    runtime_models = _ensure_runtime_models(schema, dynamic_models)
+    dynamic_pipeline_cls = _build_dynamic_rct_pipeline(runtime_models)
+    study = dynamic_pipeline_cls()(context=context)
 
     study_name = Path(input_paths[0]).stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = output_parent_dir / study_name
-    run_dir.mkdir(parents=True, exist_ok=True)
+    csv_dir = output_parent_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
 
     sc_schema = schema.get("Study_Characteristics", [])
     iv_schema = schema.get("Intervention", [])
@@ -260,42 +471,20 @@ def run_dynamic_extraction_from_csv_schema(
     co_schema = schema.get("Continuous_Outcome", [])
     oo_schema = schema.get("Other_Outcome", [])
 
-    study_row = _project_instance_to_model(
-        study.study_characteristics,
-        sc_schema,
-        dynamic_models.get("Study_Characteristics", BaseModel),
-    )
+    study_row = _project_instance_to_schema(study.study_characteristics, sc_schema)
     intervention_rows = [
-        _project_instance_to_model(
-            item,
-            iv_schema,
-            dynamic_models.get("Intervention", BaseModel),
-        )
-        for item in study.interventions
+        _project_instance_to_schema(item, iv_schema) for item in study.interventions
     ]
     dichot_rows = [
-        _project_instance_to_model(
-            item,
-            do_schema,
-            dynamic_models.get("Dichotomous_Outcome", BaseModel),
-        )
+        _project_instance_to_schema(item, do_schema)
         for item in study.dichotomous_outcomes
     ]
     cont_rows = [
-        _project_instance_to_model(
-            item,
-            co_schema,
-            dynamic_models.get("Continuous_Outcome", BaseModel),
-        )
+        _project_instance_to_schema(item, co_schema)
         for item in study.continuous_outcomes
     ]
     other_rows = [
-        _project_instance_to_model(
-            item,
-            oo_schema,
-            dynamic_models.get("Other_Outcome", BaseModel),
-        )
-        for item in study.other_outcomes
+        _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
     ]
 
     dynamic_payload = {
@@ -306,18 +495,18 @@ def run_dynamic_extraction_from_csv_schema(
         "other_outcomes": other_rows,
     }
 
-    json_path = run_dir / f"{study_name}_{timestamp}.json"
+    json_path = output_parent_dir / f"{study_name}_{timestamp}.json"
     json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
 
     if sc_schema:
         _write_dict_rows_to_csv(
-            run_dir / f"study_{timestamp}.csv",
+            csv_dir / f"study_{timestamp}.csv",
             [item["attribute"] for item in sc_schema],
             [study_row],
         )
     if iv_schema:
         _write_dict_rows_to_csv(
-            run_dir / f"interventions_{timestamp}.csv",
+            csv_dir / f"interventions_{timestamp}.csv",
             [item["attribute"] for item in iv_schema],
             intervention_rows,
         )
@@ -331,12 +520,12 @@ def run_dynamic_extraction_from_csv_schema(
     combined_outcomes = dichot_rows + cont_rows + other_rows
     if outcome_fieldnames:
         _write_dict_rows_to_csv(
-            run_dir / f"outcomes_{timestamp}.csv",
+            csv_dir / f"outcomes_{timestamp}.csv",
             outcome_fieldnames,
             combined_outcomes,
         )
 
-    logger.info(f"Dynamic hierarchical extraction complete. Outputs saved to {run_dir}")
+    logger.info(f"Dynamic hierarchical extraction complete. Outputs saved to {output_parent_dir}")
     return json_path
 
 
