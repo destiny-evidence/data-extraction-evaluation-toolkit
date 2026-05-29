@@ -116,8 +116,8 @@ def test_initialise_project_via_wizard(
             # She enters the path to her pdfs
             virtual_keyboard.send_text(f"{dataset_base_path / 'pdfs'}\r")
             virtual_keyboard.send_text("\r")
-            virtual_keyboard.send_text(f"{settings.azure_api_key}\r")
-            virtual_keyboard.send_text(f"{settings.azure_api_key}\r")
+            virtual_keyboard.send_text("\r")
+            virtual_keyboard.send_text("\r")
 
             # If things haven't finished at the end of the time limit,
             # Alice exits the wizard.
