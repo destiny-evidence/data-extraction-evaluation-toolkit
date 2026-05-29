@@ -1,0 +1,165 @@
+{
+  "CodeSets": [
+    {
+      "SetName": "Major climate category",
+      "SetDescription": "",
+      "SetId": 1,
+      "ReviewSetId": 0,
+      "SetType": {
+        "SetTypeDescription": "The Standard codeset type is used for regular coding such as keywording or data-extraction. This codeset type can contain multiple levels of child codes but cannot contain the special code types 'Include' and 'Exclude'.",
+        "SetTypeName": "Standard",
+        "SetTypeId": 3
+      },
+      "Attributes": {
+        "AttributesList": [
+          {
+            "AttributeId": 1,
+            "AttributeName": "Relevant (major category)",
+            "AttributeDescription": "Is this document relevant to climate change and health. It must have a link to climate either through impacts, mitigation, or adaptation, and discuss health outcomes",
+            "AttributeType": "Selectable (show checkbox)",
+            "AttributeSetId": 1000,
+            "AttributeSetDescription": "",
+            "ExtURL": "",
+            "ExtType": "",
+            "OriginalAttributeID": 0
+          },
+
+            {
+                "AttributeId": 3,
+                "AttributeName": "Mitigation",
+                "AttributeDescription": "",
+                "AttributeType": "Selectable (show checkbox)",
+                "AttributeSetId": 1001,
+                "AttributeSetDescription": "",
+                "ExtURL": "",
+                "ExtType": "",
+                "OriginalAttributeID": 0
+            },
+            {
+                "AttributeId": 4,
+                "AttributeName": "Adaptation",
+                "AttributeDescription": "",
+                "AttributeType": "Selectable (show checkbox)",
+                "AttributeSetId": 1001,
+                "AttributeSetDescription": "",
+                "ExtURL": "",
+                "ExtType": "",
+                "OriginalAttributeID": 0
+            },
+            {
+                "AttributeId": 5,
+                "AttributeName": "Impacts",
+                "AttributeDescription": "",
+                "AttributeType": "Selectable (show checkbox)",
+                "AttributeSetId": 1001,
+                "AttributeSetDescription": "",
+                "ExtURL": "",
+                "ExtType": "",
+                "OriginalAttributeID": 0
+            }
+
+
+        ]
+      }
+    }
+  ],
+  "References": [
+    {
+      "Codes": [],
+      "ItemId": 12345678,
+      "Outcomes": [],
+      "Title": "Incidence of malaria-related fever and morbidity due to Plasmodium falciparum among HIV1-infected pregnant women: a prospective cohort study in South Benin",
+      "ParentTitle": "Malaria Journal",
+      "ShortTitle": "",
+      "DateCreated": "27/05/2025",
+      "CreatedBy": "",
+      "DateEdited": "27/05/2025",
+      "EditedBy": "",
+      "Year": "2014",
+      "Month": "",
+      "StandardNumber": "",
+      "City": "",
+      "Country": "",
+      "Publisher": "BioMed Central",
+      "Institution": "",
+      "Volume": "",
+      "Pages": "",
+      "Edition": "",
+      "Issue": "",
+      "Availability": "",
+      "URL": "",
+      "OldItemId": "",
+      "Abstract": "Malaria and HIV are two major causes of morbidity and mortality among pregnant women in sub-Saharan Africa. ...",
+      "Comments": "nacsos: 01d5fee1-de38-4ad0-ae23-d059c129d23c\nopenalex: W2041510293\nweb of science: None",
+      "TypeName": "Journal, Article",
+      "Authors": "...",
+      "ParentAuthors": "",
+      "DOI": "10.1186/1475-2875-13-255",
+      "Keywords": "",
+      "ItemStatus": "E",
+      "ItemStatusTooltip": "Excluded in review",
+      "QuickCitation": ""
+    },
+    {
+      "Codes": [
+        {
+          "AttributeId": 1,
+          "AdditionalText": "",
+          "ArmId": 0,
+          "ArmTitle": "",
+          "ItemAttributeFullTextDetails": [
+            {
+              "DocTitle": "A correlation study between weather and atmosphere with COVID-19 pandemic in Islamabad, Pakistan",
+              "Text": "Placeholder text for annotation"
+            }
+          ]
+        },
+        {
+          "AttributeId": 5,
+          "AdditionalText": "",
+          "ArmId": 0,
+          "ArmTitle": "",
+          "ItemAttributeFullTextDetails": [
+            {
+              "DocTitle": "A correlation study between weather and atmosphere with COVID-19 pandemic in Islamabad, Pakistan",
+              "Text": "Placeholder text for annotation"
+            }
+          ]
+        }
+      ],
+      "ItemId": 12345679,
+      "Outcomes": [],
+      "Title": "A correlation study between weather and atmosphere with COVID-19 pandemic in Islamabad, Pakistan",
+      "ParentTitle": "Spatial Information Research",
+      "ShortTitle": "",
+      "DateCreated": "27/05/2025",
+      "CreatedBy": "",
+      "DateEdited": "27/05/2025",
+      "EditedBy": "",
+      "Year": "2020",
+      "Month": "",
+      "StandardNumber": "",
+      "City": "",
+      "Country": "",
+      "Publisher": "Springer Science+Business Media",
+      "Institution": "",
+      "Volume": "",
+      "Pages": "",
+      "Edition": "",
+      "Issue": "",
+      "Availability": "",
+      "URL": "",
+      "OldItemId": "",
+      "Abstract": "The present research aims to investigate the association amid weather and the most recent pandemic of COVID-19 in Islamabad, the capital of Pakistan. ...",
+      "Comments": "nacsos: c21feca0-2c33-4832-8d64-765dbc3b2d32\nopenalex: W3093277664\nweb of science: None",
+      "TypeName": "Journal, Article",
+      "Authors": "...",
+      "ParentAuthors": "",
+      "DOI": "10.1007/s41324-020-00366-2",
+      "Keywords": "",
+      "ItemStatus": "E",
+      "ItemStatusTooltip": "Excluded in review",
+      "QuickCitation": ""
+    }
+  ]
+}
