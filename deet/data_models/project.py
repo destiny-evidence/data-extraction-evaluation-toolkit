@@ -144,21 +144,20 @@ class DeetProject(BaseModel):
 
     @field_validator("gold_standard_data_path", mode="after")
     @classmethod
-    def _abs_and_check_suffix(cls, value: Path) -> Path:
-        """Return absolute path, and check if extension is supported."""
-        abs_path = value.resolve()
-        if abs_path.suffix not in SUPPORTED_EXTENSIONS:
+    def check_suffix(cls, value: Path) -> Path:
+        """Check if extension is supported."""
+        if value.suffix not in SUPPORTED_EXTENSIONS:
             unsupported_ext = f"Unsupported extension, allowed: {SUPPORTED_EXTENSIONS}"
             raise ValueError(unsupported_ext)
-        return abs_path
+        return value
 
     @field_validator("pdf_dir", mode="after")
     @classmethod
     def _process_pdf_dir(cls, value: Path) -> Path | None:
-        """Parse empty string to None (not cwd), otherwise resolve path."""
+        """Parse empty string to None (not cwd), otherwise return path."""
         if value == "" or value is None:
             return None
-        return value.resolve()
+        return value
 
     def setup(self) -> None:
         """

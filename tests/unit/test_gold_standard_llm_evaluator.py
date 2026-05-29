@@ -18,6 +18,7 @@ def test_evaluator_evaluates(processed_data):
         attributes=[processed_data.attributes[0]],
         extraction_run_id="test_run",
     )
+    evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
         assert metric.value == 1
 
