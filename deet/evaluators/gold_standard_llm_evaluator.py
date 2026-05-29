@@ -4,6 +4,7 @@ data extracted by hand.
 """
 
 import csv
+import re
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
@@ -11,6 +12,7 @@ from typing import Any
 
 import sklearn.metrics  # type:ignore[import-untyped]
 from loguru import logger
+from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
@@ -27,6 +29,88 @@ from deet.data_models.evaluation import (
     get_metrics_for_attribute_type,
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
+
+# Default for ``short_snippet_max_len``: snippets shorter than this (in characters)
+# use stricter matching—digit-boundary checks for all-numeric snippets, else
+# substring or partial fuzzy—so tiny phrases are not scored like full sentences.
+_DEFAULT_SHORT_SNIPPET_MAX_LEN = 4
+
+
+def _verbatim_fuzzy_match_pct(
+    snippet_text: str | None,
+    document_context: str | None,
+    *,
+    short_snippet_max_len: int = _DEFAULT_SHORT_SNIPPET_MAX_LEN,
+) -> float:
+    """
+    Score how well a short verbatim snippet is grounded in document text.
+
+    Compares **snippet_text** (needle, e.g. EPPI or LLM ``additional_text``) against
+    **document_context** (haystack, usually the LLM annotated document's ``context``).
+    Returns a 0-100 similarity-style score.
+
+    For snippets at least ``short_snippet_max_len`` characters long, uses
+    :func:`rapidfuzz.fuzz.partial_ratio` (best local alignment in the long context).
+    For shorter **all-numeric** snippets (e.g. counts like ``"32"``), uses a stricter
+    number-boundary regex so a small number is not conflated with digits inside a
+    larger run (e.g. ``"321"``). For other short snippets, prefers substring match,
+    else partial ratio.
+
+    Args:
+        snippet_text: Verbatim snippet to locate (e.g. human or model
+            ``additional_text``).
+        document_context: Full document text to search within.
+        short_snippet_max_len: Character length below which the snippet is treated as
+            "short" for the stricter heuristics described above.
+
+    Returns:
+        Float in ``[0.0, 100.0]``, or ``0.0`` if either input is empty.
+
+    """
+    normalized_snippet = (snippet_text or "").strip()
+    normalized_context = (document_context or "").strip()
+    if not normalized_snippet or not normalized_context:
+        return 0.0
+    # Short all-numeric snippet: require a standalone number, not a substring of digits.
+    if (
+        len(normalized_snippet) < short_snippet_max_len
+        and normalized_snippet.isdecimal()
+    ):
+        if re.search(
+            r"(?<![0-9])" + re.escape(normalized_snippet) + r"(?![0-9])",
+            normalized_context,
+        ):
+            return 100.0
+        return 0.0
+    # Other short snippets: exact substring is full credit; else partial fuzzy match.
+    if len(normalized_snippet) < short_snippet_max_len:
+        return (
+            100.0
+            if normalized_snippet in normalized_context
+            else float(
+                fuzz.partial_ratio(normalized_snippet, normalized_context),
+            )
+        )
+    return float(fuzz.partial_ratio(normalized_snippet, normalized_context))
+
+
+def _eppi_full_text_details_colon_separated(annotation: object) -> str:
+    """
+    Join all non-empty ``Text`` values from ``item_attribute_full_text_details``.
+
+    EPPI may attach several fragments; for CSV export we concatenate them into one
+    cell using ``": "`` as a readable separator (not an EPPI-native format—avoids
+    commas inside the cell and keeps the column single-valued).
+
+    Non-EPPI annotations (no list on the model) yield an empty string.
+    """
+    details = getattr(annotation, "item_attribute_full_text_details", None) or []
+    parts: list[str] = []
+    for d in details:
+        text = getattr(d, "text", None)
+        if text is not None and str(text).strip():
+            parts.append(str(text).strip())
+    return ": ".join(parts)
 
 
 class GoldStandardLLMEvaluator:
@@ -100,7 +184,7 @@ class GoldStandardLLMEvaluator:
             for document in self.gold_standard_annotated_documents:
                 doc_id = document.document.safe_identity.document_id
                 logger.debug(
-                    f"Extracting gold standard and LLM prediction for" f" doc {doc_id}"
+                    f"Extracting gold standard and LLM prediction for doc {doc_id}"
                 )
                 gs_val = document.get_attribute_annotation(attribute).output_data
                 y_true.append(gs_val)
@@ -191,8 +275,32 @@ class GoldStandardLLMEvaluator:
         self,
         filepath: Path,
     ) -> None:
-        """Export a csv with side-by-side comparisons of gs and LLM decisions."""
-        with filepath.open("w", encoding="utf-8") as f:
+        """
+        Export a comparison CSV for gold vs LLM per document and attribute.
+
+        Columns include identifiers, EPPI-oriented fields, extractions, LLM verbatim,
+        fuzzy grounding scores (against the LLM annotated document's ``context``),
+        and run id.
+
+        Column semantics:
+
+        - ``attribute_presence``: Whether the gold annotation is present.
+        - ``human_additional_text`` / ``item_attribute_full_text_details``: Taken from
+          the eppi json file when present; empty when absent.
+        - ``human_extraction``: Actual ground truth to be extracted.
+        - ``human_verbatim_fuzzy_match_pct``: Grounding of ``human_additional_text``
+          against the LLM annotated document's ``context``.
+        - ``llm_verbatim_text`` / ``llm_verbatim_fuzzy_match_pct``: LLM
+          ``additional_text`` and its grounding against the same ``context``.
+
+        Example row (illustrative types): ``attribute_presence`` is the string
+        ``"True"`` or ``"False"``; ``human_verbatim_fuzzy_match_pct`` and
+        ``llm_verbatim_fuzzy_match_pct`` are decimal strings (e.g. ``"100.00"``,
+        ``"87.50"``); ``human_extraction`` / ``llm_extraction`` serialize according to
+        the attribute's coerced value (e.g. bool, int, or str) as written by
+        :class:`csv.DictWriter`.
+        """
+        with filepath.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f,
                 fieldnames=[
@@ -200,9 +308,15 @@ class GoldStandardLLMEvaluator:
                     "document_name",
                     "attribute_id",
                     "attribute_label",
+                    "attribute_presence",
+                    "human_additional_text",
+                    "item_attribute_full_text_details",
                     "human_extraction",
                     "llm_extraction",
                     "llm_reasoning",
+                    "llm_verbatim_text",
+                    "human_verbatim_fuzzy_match_pct",
+                    "llm_verbatim_fuzzy_match_pct",
                     "extraction_run_id",
                 ],
             )
@@ -214,10 +328,43 @@ class GoldStandardLLMEvaluator:
                     )
                 except MissingDocumentError:
                     llm_annotated_doc = None
+
+                context: str | None = (
+                    None
+                    if llm_annotated_doc is None
+                    else (str(t) if (t := llm_annotated_doc.document.context) else None)
+                )
+
                 for attribute in self.attributes:
+                    human_ann = doc.get_attribute_annotation(attribute)
+                    gold_real = next(
+                        (
+                            ann
+                            for ann in doc.annotations
+                            if ann.attribute.attribute_id == attribute.attribute_id
+                        ),
+                        None,
+                    )
+                    if gold_real is not None:
+                        human_additional_text: str = gold_real.additional_text or ""
+                        item_attr_full: str = _eppi_full_text_details_colon_separated(
+                            gold_real
+                        )
+                    else:
+                        human_additional_text = ""
+                        item_attr_full = ""
+                    present = gold_real is not None
+                    human_fuzzy = _verbatim_fuzzy_match_pct(
+                        human_additional_text, context
+                    )
+
+                    llm_extraction: Any = None
+                    llm_reasoning: str | None = None
+                    llm_verbatim: str | None = None
+                    llm_fuzzy = 0.0
+
                     if llm_annotated_doc is None:
-                        llm_extraction = None
-                        llm_reasoning: str | None = (
+                        llm_reasoning = (
                             "LLM did not produce an output for this document."
                             " Check the logs carefully to find out why"
                         )
@@ -228,23 +375,29 @@ class GoldStandardLLMEvaluator:
                             )
                             llm_extraction = llm_annotation.output_data
                             llm_reasoning = llm_annotation.reasoning
+                            llm_verbatim = llm_annotation.additional_text
+                            llm_fuzzy = _verbatim_fuzzy_match_pct(llm_verbatim, context)
                         except DuplicateAnnotationError:
-                            llm_extraction = None
                             llm_reasoning = (
                                 "The LLM produced multiple annotations"
                                 "for this single attribute"
                             )
+
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
-                            "human_extraction": doc.get_attribute_annotation(
-                                attribute
-                            ).output_data,
+                            "attribute_presence": str(present),
+                            "human_additional_text": human_additional_text,
+                            "item_attribute_full_text_details": item_attr_full,
+                            "human_extraction": human_ann.output_data,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
+                            "llm_verbatim_text": llm_verbatim,
+                            "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
+                            "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )

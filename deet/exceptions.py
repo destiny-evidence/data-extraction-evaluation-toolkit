@@ -1,5 +1,7 @@
 """Custom exceptions."""
 
+from deet.data_models.base import AttributeType
+
 
 class MissingDocumentError(Exception):
     """
@@ -126,6 +128,34 @@ class NoAbstractError(Exception):
         Exception (_type_): _description_
 
     """
+
+
+class UnsupportedEppiAttributeTypeError(ValueError):
+    """
+    Raised when EPPI ``AdditionalText`` / Codes mapping cannot handle an attribute type.
+
+    Subclasses :class:`ValueError` so existing ``except ValueError`` call sites remain
+    valid while allowing targeted handling via ``UnsupportedEppiAttributeTypeError``.
+
+    Args:
+        output_data_type: The :class:`~deet.data_models.base.AttributeType` that has
+            no mapping in the EPPI ``raw_data`` pipeline (see
+            ``deet.processors.eppi_annotation_converter.eppi_output_data_from_eppi_fields``).
+
+    """
+
+    def __init__(
+        self,
+        output_data_type: AttributeType,
+        *,
+        message: str | None = None,
+    ) -> None:
+        """Store ``output_data_type`` and build a default message when omitted."""
+        self.output_data_type = output_data_type
+        text = message or (
+            f"Unsupported AttributeType for EPPI mapping: {output_data_type!s}"
+        )
+        super().__init__(text)
 
 
 class LitellmModelNotMappedError(Exception):

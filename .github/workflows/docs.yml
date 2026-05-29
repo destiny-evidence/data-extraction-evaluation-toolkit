@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - main
+      - development
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
+      - development
 
 permissions:
   contents: write
@@ -16,22 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          python-version: "3.x"
-          cache: "pip"
-          cache-dependency-path: "pyproject.toml"
+          fetch-depth: 0 # required for mike to access tags and commit history
 
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.11.10"
+          version: "0.11.11"
 
       - name: Restore uv cache
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: /tmp/.uv-cache
           key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
@@ -43,18 +42,48 @@ jobs:
         run: uv sync --locked --group docs
 
       - name: Build documentation
+        if: github.event_name == 'pull_request' || github.ref_name == 'main'
         run: uv run mkdocs build
 
-      # Automatically deploy documentation to a GitHub Pages website on pushing to main.
-      # Requires configuring the repository to deploy GitHub pages from a branch
-      # gh-pages (https://tinyurl.com/gh-pages-from-branch), which will be created the
-      # first time this workflow step is run.
-      - name: Publish documentation on GitHub pages
-        if: success() && github.event_name != 'pull_request'
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4
+      - name: Deploy versioned docs with mike
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            uv run mike deploy --update-aliases ${{ github.ref_name }} stable
+            uv run mike set-default --push stable
+          elif [ "${{ github.ref_name }}" = "development" ]; then
+            uv run mike deploy --update-aliases development
+          fi
+
+      - name: Push gh-pages branch
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
+        run: git push origin gh-pages
+
+      - name: Switch to gh-pages for artifact upload
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
+        run: git checkout gh-pages
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          github_token: ${{  secrets.GITHUB_TOKEN }}
-          publish_dir: site
-          publish_branch: gh-pages
-          user_name: "github-actions[bot]"
-          user_email: "github-actions[bot]@users.noreply.github.com"
+          path: .
+
+  deploy:
+    needs: docs
+    if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'development')
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
