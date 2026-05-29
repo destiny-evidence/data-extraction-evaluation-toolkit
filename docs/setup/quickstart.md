@@ -142,7 +142,7 @@ Now that you've defined your prompts, you are ready to extract data from your do
     In the CLI, you can do this by running
 
     ```sh
-    deet experiments extract
+    deet experiments evaluate
     ```
 
     This will take you through an interactive wizard where you can select configuration
@@ -151,7 +151,7 @@ Now that you've defined your prompts, you are ready to extract data from your do
     If you wish to skip the interactive wizard, simply pass a path to a configuration file
     to the `--config-path` argument.
 
-    Running `deet experiments extract` will create a folder in your project's
+    Running `deet experiments evaluate` will create a folder in your project's
     `data-extraction-experiments` directory, run the data extraction pipeline,
     and save the results of that experiment to the newly created folder.
 
