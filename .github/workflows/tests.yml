@@ -26,15 +26,15 @@ jobs:
       UV_CACHE_DIR: /tmp/.uv-cache  # Configure a constant location for the uv cache
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.8.11"
+          version: "0.11.11"
 
       - name: Restore uv cache
         uses: actions/cache@v4
@@ -90,7 +90,7 @@ jobs:
           cat code-coverage-results.md >> data-extraction-evaluation-toolkit-results.md
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3.0.4
         if: github.event_name == 'pull_request'
         with:
           header: "data-extraction-evaluation-toolkit Coverage"
