@@ -1,6 +1,5 @@
 import os
 import shutil
-import signal
 import time
 from pathlib import Path
 from threading import Thread
@@ -13,6 +12,7 @@ from typer.testing import CliRunner
 
 from deet.data_models.documents import Document
 from deet.data_models.project import DeetProject
+from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
 from deet.settings import get_settings
 
@@ -40,6 +40,34 @@ def tmp_project_workspace(tmp_path_factory):
 
 
 @pytest.fixture
+def initialised_project_workspace(tmp_project_workspace, dataset_base_path):
+    """Set up an initialised project, on which other tests depend."""
+    previous_cwd = Path.cwd()
+
+    project_name = dataset_base_path.name
+    project_dir = tmp_project_workspace / project_name
+
+    if project_dir.exists():
+        shutil.rmtree(project_dir)
+    project_dir.mkdir(parents=True)
+    os.chdir(project_dir)
+
+    # Programmatically mock a completed wizard setup matching the dataset
+    project = DeetProject(
+        name=project_name,
+        gold_standard_data_path=dataset_base_path / "reports.json",
+        gold_standard_data_format=SupportedImportFormat.EPPI_JSON,
+        pdf_dir=dataset_base_path / "pdfs",
+    )
+    project.setup()
+
+    try:
+        yield project_dir
+    finally:
+        os.chdir(previous_cwd)
+
+
+@pytest.fixture
 def virtual_keyboard():
     with (
         create_pipe_input() as pipe_input,
@@ -62,59 +90,73 @@ def test_initialise_project_via_wizard(
 
     # She checks if it exists, and removes it if it does, then creates it afresh
     # and changed into it
+    original_cwd = Path.cwd()
     if project_dir.exists():
         shutil.rmtree(project_dir)
     project_dir.mkdir(parents=True)
     os.chdir(project_dir)
 
+    time_limit = 5
+    did_time_out = False
+
     def user_journey():
         """Replicate the keyboard strokes Alice will make when using the CLI."""
-        # Alice sees an informative splash screen informing her on how to use the wizard
-        # She presses enter to continue
-        virtual_keyboard.send_text("\n")
-        # Alice enters the name of her project name,
-        virtual_keyboard.send_text(f"{project_name}\n")
-        # The path to her dataset
-        virtual_keyboard.send_text(f"{dataset_base_path / 'reports.json'}\n")
-        # She selects the default dataset type option (eppijson)
-        time.sleep(0.1)
-        virtual_keyboard.send_text("\r")
-        # She enters the path to her pdfs
-        virtual_keyboard.send_text(f"{dataset_base_path / 'pdfs'}\n")
-        virtual_keyboard.send_text("\n")
-        virtual_keyboard.send_text(f"{settings.azure_api_key}\r")
-        virtual_keyboard.send_text(f"{settings.azure_api_key}\r")
+        nonlocal did_time_out
+        try:
+            # Alice sees an informative splash screen informing her on how to
+            # use the wizard. She presses enter to continue
+            virtual_keyboard.send_text("\r")
+            # Alice enters the name of her project name,
+            virtual_keyboard.send_text(f"{project_name}\r")
+            # The path to her dataset
+            virtual_keyboard.send_text(f"{dataset_base_path / 'reports.json'}\r")
+            # She selects the default dataset type option (eppijson)
+            time.sleep(0.1)
+            virtual_keyboard.send_text("\r")
+            # She enters the path to her pdfs
+            virtual_keyboard.send_text(f"{dataset_base_path / 'pdfs'}\r")
+            virtual_keyboard.send_text("\r")
+            virtual_keyboard.send_text(f"{settings.azure_api_key}\r")
+            virtual_keyboard.send_text(f"{settings.azure_api_key}\r")
+
+            # If things haven't finished at the end of the time limit,
+            # Alice exits the wizard.
+            time.sleep(time_limit)
+            did_time_out = True
+            virtual_keyboard.send_text("\x03")
+        except OSError:
+            # Safely caught when the main thread finishes successfully
+            # and tears down the keyboard pipes early.
+            pass
 
     typer_thread = Thread(target=user_journey, daemon=True)
     typer_thread.start()
 
-    time_limit = 5
+    try:
+        # Run natively on the main thread so CliRunner can attach to streams properly
+        result = runner.invoke(app, ["project", "init"])
 
-    def timeout_handler(signum, frame):
-        out_of_time = f"The CLI wizard timed out after {time_limit} seconds!"
-        raise TimeoutError(out_of_time)
+        if did_time_out:
+            out_of_time = f"The CLI wizard timed out after {time_limit} seconds!"
+            raise TimeoutError(out_of_time)
 
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(time_limit)
+        assert result.exit_code == 0
+        deet_project = DeetProject.load()
+        assert deet_project.name == project_name
 
-    result = runner.invoke(app, ["project", "init"])
-    signal.alarm(0)
+        processed_data = deet_project.process_data()
+        assert len(processed_data.documents) > 0
+        assert len(processed_data.attributes) > 0
+        assert len(processed_data.annotated_documents) > 0
 
-    assert result.exit_code == 0
-    deet_project = DeetProject.load()
-    assert deet_project.name == project_name
-
-    processed_data = deet_project.process_data()
-    assert len(processed_data.documents) > 0
-    assert len(processed_data.attributes) > 0
-    assert len(processed_data.annotated_documents) > 0
+    finally:
+        # Fixed: Pass your tracked path variable back to recover process state
+        os.chdir(original_cwd)
 
 
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_linking_with_map(
-    runner,
-    dataset_base_path,
-    tmp_project_workspace,
+    runner, dataset_base_path, tmp_project_workspace, initialised_project_workspace
 ):
     """Test whether Alice can link documents."""
     # Alice makes sure she is in the project directory she created on project init
