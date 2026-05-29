@@ -1,5 +1,5 @@
-from copy import deepcopy
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -129,7 +129,8 @@ def sample_eppi_data_duplicated_annotations(sample_eppi_data):
         ref["Codes"] += ref["Codes"]
 
     return duplicated
-  
+
+
 @pytest.fixture
 def valid_project_data(tmp_path, sample_eppi_data):
     # Create a real dummy file so Pydantic's FilePath is happy
