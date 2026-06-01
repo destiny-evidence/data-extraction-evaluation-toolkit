@@ -173,6 +173,7 @@ def test_evaluator_writes_comparison(evaluator_evaluated, tmp_path):
     fieldnames = reader.fieldnames or []
     expected_header = [
         "document_id",
+        "external_id",
         "document_name",
         "attribute_id",
         "attribute_label",
