@@ -499,8 +499,7 @@ class EppiAnnotationConverter(AnnotationConverter):
                 )
 
                 annotated_doc = EppiGoldStandardAnnotatedDocument(
-                    document=document,
-                    annotations=annotations,
+                    document=document, annotations=annotations
                 )
 
                 annotated_documents.append(annotated_doc)
