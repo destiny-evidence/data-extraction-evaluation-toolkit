@@ -36679,7 +36679,8 @@ through path information.</p>
 <span class="normal">559</span>
 <span class="normal">560</span>
 <span class="normal">561</span>
-<span class="normal">562</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EppiAnnotationConverter</span><span class="p">(</span><span class="n">AnnotationConverter</span><span class="p">):</span>
+<span class="normal">562</span>
+<span class="normal">563</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EppiAnnotationConverter</span><span class="p">(</span><span class="n">AnnotationConverter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to convert raw EPPI-Reviewer JSON annotations</span>
 <span class="sd">    into structured Pydantic models.</span>
@@ -37043,6 +37044,7 @@ through path information.</p>
             <span class="c1"># Create or retrieve document using ItemId as unique identifier</span>
             <span class="k">if</span> <span class="n">item_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">documents_by_item_id</span><span class="p">:</span>
                 <span class="n">document</span> <span class="o">=</span> <span class="n">EppiDocument</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span>
+                <span class="n">document</span><span class="o">.</span><span class="n">init_document_identity</span><span class="p">()</span>
                 <span class="n">documents_by_item_id</span><span class="p">[</span><span class="n">item_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">document</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">document</span> <span class="o">=</span> <span class="n">documents_by_item_id</span><span class="p">[</span><span class="n">item_id</span><span class="p">]</span>
@@ -38082,7 +38084,8 @@ annotation dicts from EPPI JSON</p>
 <span class="normal">559</span>
 <span class="normal">560</span>
 <span class="normal">561</span>
-<span class="normal">562</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_annotation_file</span><span class="p">(</span>
+<span class="normal">562</span>
+<span class="normal">563</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_annotation_file</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">set_attribute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">AttributeType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -38136,6 +38139,7 @@ annotation dicts from EPPI JSON</p>
         <span class="c1"># Create or retrieve document using ItemId as unique identifier</span>
         <span class="k">if</span> <span class="n">item_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">documents_by_item_id</span><span class="p">:</span>
             <span class="n">document</span> <span class="o">=</span> <span class="n">EppiDocument</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span>
+            <span class="n">document</span><span class="o">.</span><span class="n">init_document_identity</span><span class="p">()</span>
             <span class="n">documents_by_item_id</span><span class="p">[</span><span class="n">item_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">document</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">document</span> <span class="o">=</span> <span class="n">documents_by_item_id</span><span class="p">[</span><span class="n">item_id</span><span class="p">]</span>
