@@ -149,11 +149,11 @@ class GoldStandardLLMEvaluator:
 
     def _get_distinct_arms(
         self,
-        gold_doc: GoldStandardAnnotatedDocumentTypeVar,
+        gold_doc: GoldStandardAnnotatedDocumentTypeVar | None,
         llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
     ) -> list[StudyArm | None]:
         """Collect unique arms across LLM and human annotated documents."""
-        gold_arms = gold_doc.study_arms
+        gold_arms = gold_doc.study_arms if gold_doc else ()
         llm_arms = llm_doc.study_arms if llm_doc else ()
 
         # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
@@ -169,11 +169,11 @@ class GoldStandardLLMEvaluator:
 
     def _get_distinct_outcomes(
         self,
-        gold_doc: GoldStandardAnnotatedDocumentTypeVar,
+        gold_doc: GoldStandardAnnotatedDocumentTypeVar | None,
         llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
     ) -> list[StudyOutcome | None]:
         """Collect unique arms across LLM and human annotated documents."""
-        gold_outcomes = gold_doc.study_outcomes
+        gold_outcomes = gold_doc.study_outcomes if gold_doc else ()
         llm_outcomes = llm_doc.study_outcomes if llm_doc else ()
 
         # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
@@ -496,10 +496,17 @@ class GoldStandardLLMEvaluator:
             for (
                 llm_annotated_doc
             ) in self.llm_annotated_documents.gold_standard_annotations:
-                for attribute in self.attributes:
+                distinct_arms = self._get_distinct_arms(None, llm_annotated_doc)
+                distinct_outcomes = self._get_distinct_outcomes(None, llm_annotated_doc)
+
+                for attribute, arm, outcome in itertools.product(
+                    self.attributes, distinct_arms, distinct_outcomes
+                ):
+                    arm_id = arm.arm_id if arm else None
+                    outcome_id = outcome.outcome_id if outcome else None
                     try:
                         llm_annotation = llm_annotated_doc.get_attribute_annotation(
-                            attribute
+                            attribute=attribute, arm_id=arm_id, outcome_id=outcome_id
                         )
                         llm_extraction = llm_annotation.output_data
                         llm_reasoning = llm_annotation.reasoning
@@ -518,6 +525,10 @@ class GoldStandardLLMEvaluator:
                         {
                             "document_id": document.safe_identity.document_id,
                             "document_name": document.name,
+                            "arm_id": arm.arm_id if arm else "",
+                            "arm_title": arm.arm_title if arm else "",
+                            "outcome_id": outcome.outcome_id if outcome else "",
+                            "outcome_title": outcome.outcome_title if outcome else "",
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
                             "llm_extraction": llm_extraction,
