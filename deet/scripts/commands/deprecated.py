@@ -72,7 +72,7 @@ def extract_data_legacy() -> None:
         Syntax("deet project init", "bash"),
         " \nand follow the instructions to set up your project.",
         "\nOnce your project has been set up, you can extract data with\n",
-        Syntax("deet experiments extract", "bash"),
+        Syntax("deet experiments evaluate", "bash"),
     )
 
     console.print(deprecation_panel(body))

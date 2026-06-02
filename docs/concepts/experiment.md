@@ -11,7 +11,7 @@ task to the LLM. We use the term <term: experiment configuration> to the combina
 
 ## Experiment artefacts
 
-Each time we run an experiment (using `deet experiments extract`), we store the
+Each time we run an experiment (using `deet experiments evaluate`), we store the
 results of the experiment, as well as all of the configuration options required
 to reproduce it, as experiment artefacts. These are defined in
 [`deet.data_models.project.ExperimentArtefacts`](../reference/api.md#deet.data_models.project.ExperimentArtefacts),
