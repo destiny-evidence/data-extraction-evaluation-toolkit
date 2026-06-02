@@ -4,7 +4,7 @@ site_author: "DESTinY Consortium"
 copyright: "Copyright © 2025 DESTinY Consortium"
 repo_url: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
 repo_name: "destiny-evidence/data-extraction-evaluation-toolkit"
-edit_uri: edit/main/docs/
+edit_uri: edit/development/docs/
 
 validation:
   omitted_files: warn

@@ -401,3 +401,54 @@ class GoldStandardLLMEvaluator:
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )
+
+    def export_llm_csv(self, filepath: Path) -> None:
+        """Write the LLM output to csv."""
+        with filepath.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "document_id",
+                    "document_name",
+                    "attribute_id",
+                    "attribute_label",
+                    "llm_extraction",
+                    "llm_reasoning",
+                    "llm_verbatim_text",
+                    "extraction_run_id",
+                ],
+            )
+            writer.writeheader()
+            for (
+                llm_annotated_doc
+            ) in self.llm_annotated_documents.gold_standard_annotations:
+                for attribute in self.attributes:
+                    try:
+                        llm_annotation = llm_annotated_doc.get_attribute_annotation(
+                            attribute
+                        )
+                        llm_extraction = llm_annotation.output_data
+                        llm_reasoning = llm_annotation.reasoning
+                        llm_verbatim = llm_annotation.additional_text
+                    except DuplicateAnnotationError:
+                        llm_extraction = None
+                        llm_reasoning = (
+                            "The LLM produced multiple annotations"
+                            "for this single attribute"
+                        )
+                        llm_verbatim = None
+
+                    document = llm_annotated_doc.document
+
+                    writer.writerow(
+                        {
+                            "document_id": document.safe_identity.document_id,
+                            "document_name": document.name,
+                            "attribute_id": attribute.attribute_id,
+                            "attribute_label": attribute.attribute_label,
+                            "llm_extraction": llm_extraction,
+                            "llm_reasoning": llm_reasoning,
+                            "llm_verbatim_text": llm_verbatim,
+                            "extraction_run_id": self.extraction_run_id,
+                        }
+                    )
