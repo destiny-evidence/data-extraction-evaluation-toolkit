@@ -327,7 +327,11 @@ class ProcessedAnnotationData(
         document_base_dir: Path | None = None,
         path_type: Literal["full", "relative", "file"] = "file",
     ) -> None:
-        """Export a csv mapper to link document IDs and filenames."""
+        """
+        Export a csv mapper to link document IDs and filenames.
+
+        If document_base_dir is not None, then attempt to pre-populate this.
+        """
         existing_ids: set[int] = set()
         for d in self.documents:
             if d.document_identity is None or d.document_identity.document_id is None:
