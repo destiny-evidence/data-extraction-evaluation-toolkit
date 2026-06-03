@@ -411,6 +411,7 @@ class GoldStandardLLMEvaluator:
                 f,
                 fieldnames=[
                     "document_id",
+                    "external_id",
                     "document_name",
                     "attribute_id",
                     "attribute_label",
@@ -445,6 +446,7 @@ class GoldStandardLLMEvaluator:
                     writer.writerow(
                         {
                             "document_id": document.safe_identity.document_id,
+                            "external_id": document.safe_identity.external_id,
                             "document_name": document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,

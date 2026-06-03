@@ -58,6 +58,7 @@ class DocumentIDSource(StrEnum):
     """
 
     EPPI_ITEM_ID = auto()
+    EXTERNAL_ID = auto()
     DOI_AUTHOR_YEAR = auto()
     DOI_ID = auto()
     AUTHOR_YEAR_ID = auto()
@@ -199,6 +200,7 @@ class DocumentIdentity(BaseModel):
             DocumentIDSource.DOI_ID: self._doi_id,
             DocumentIDSource.AUTHOR_YEAR_ID: self._author_year_id,
             DocumentIDSource.DOI_AUTHOR_YEAR: self._doi_author_year_id,
+            DocumentIDSource.EXTERNAL_ID: self._external_id,
             DocumentIDSource.RANDINT: self._random_int_id,
         }
 
@@ -227,6 +229,17 @@ class DocumentIdentity(BaseModel):
                     self.document_id = self.external_id
                 return self.document_id
         bad_doc_id = f"id {self.external_id} is not a valid eppi item_id."
+        raise BadDocumentIdError(bad_doc_id)
+
+    def _external_id(self) -> int:
+        """Create an id by hashing the external ID."""
+        if self.external_id is not None:
+            payload = [str(self.external_id)]
+            return hash_n_strings_to_document_id(payload)
+
+        bad_doc_id = (
+            "Cannot generate ID from EXTERNAL_ID " "source because external_id is None."
+        )
         raise BadDocumentIdError(bad_doc_id)
 
     def _citation_id_hasher(self, target_fields: list[str]) -> int:
