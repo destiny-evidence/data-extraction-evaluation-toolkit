@@ -1277,11 +1277,14 @@ examples show how commands can be run using the underlying library</p>
 </ul>
 </div>
 <h3 id="linking-documents-to-pdfs">Linking documents to pdfs</h3>
-<p>If you want to extract data from the full texts of your documents, you will need to edit the file <code>link_map.csv</code> created in your project directory by setting up deet, to point each document to the file that contains its pdf.</p>
+<p>If you want to extract data from the full texts of your documents, you will need to edit the file <code>link_map.csv</code> created in your project directory by setting up deet, to point each document to the file that contains its pdf.
+On initialising a project, this is pre-filled with plausible mappings, but you should check that these are correct
+and add any missing paths yourself.</p>
 <table>
 <thead>
 <tr>
 <th style="text-align: right;">document_id</th>
+<th style="text-align: right;">external_id</th>
 <th style="text-align: left;">name</th>
 <th style="text-align: right;">file_path</th>
 </tr>
@@ -1289,17 +1292,19 @@ examples show how commands can be run using the underlying library</p>
 <tbody>
 <tr>
 <td style="text-align: right;">12345678</td>
+<td style="text-align: right;">12345678</td>
 <td style="text-align: left;">Incidence of malaria-related fever and morbidity due to Plasmodium falciparum among HIV1-infected pregnant women: a prospective cohort study in South Benin</td>
 <td style="text-align: right;">nan</td>
 </tr>
 <tr>
+<td style="text-align: right;">12345679</td>
 <td style="text-align: right;">12345679</td>
 <td style="text-align: left;">A correlation study between weather and atmosphere with COVID-19 pandemic in Islamabad, Pakistan</td>
 <td style="text-align: right;">nan</td>
 </tr>
 </tbody>
 </table>
-<p>After you have edited this file, you can link the documents</p>
+<p>Once you are happy with this file, you can link the documents</p>
 <div class="grid cards">
 <ul>
 <li>
