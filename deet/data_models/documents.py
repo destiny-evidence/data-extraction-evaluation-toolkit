@@ -237,7 +237,7 @@ class DocumentIdentity(BaseModel):
     def _external_id(self) -> int:
         """Create an id by hashing the external ID."""
         if self.external_id is not None:
-            payload = [str(self.external_id)]
+            payload = [str(self.external_id).strip()]
             return hash_n_strings_to_document_id(payload)
 
         bad_doc_id = (
