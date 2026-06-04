@@ -137,7 +137,7 @@ def regenerate_link_map(typer_context: typer.Context) -> None:
     processed_annotation_data = deet_project.process_data()
 
     processed_annotation_data.export_linkage_mapper_csv(
-        file_path=deet_project.link_map_path
+        file_path=deet_project.link_map_path, document_base_dir=deet_project.pdf_dir
     )
 
 

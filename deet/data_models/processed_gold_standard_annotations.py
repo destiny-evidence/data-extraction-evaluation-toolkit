@@ -3,7 +3,7 @@
 import csv
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Generic
+from typing import Any, Generic, Literal
 
 from loguru import logger
 from pydantic import BaseModel
@@ -28,6 +28,7 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiRawData,
 )
+from deet.processors.linker import DocumentReferenceLinker
 
 
 class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
@@ -320,10 +321,41 @@ class ProcessedAnnotationData(
                 return attr
         return None
 
-    def export_linkage_mapper_csv(self, file_path: Path) -> None:
-        """Export a csv mapper to link document IDs and filenames."""
+    def export_linkage_mapper_csv(
+        self,
+        file_path: Path,
+        document_base_dir: Path | None = None,
+        path_type: Literal["full", "relative", "file"] = "file",
+    ) -> None:
+        """
+        Export a csv mapper to link document IDs and filenames.
+
+        If document_base_dir is not None, then attempt to pre-populate this.
+        """
+        existing_ids: set[int] = set()
+        for d in self.documents:
+            if d.document_identity is None or d.document_identity.document_id is None:
+                d.init_document_identity(existing_ids=existing_ids)
+            if d.document_identity and d.document_identity.document_id is not None:
+                existing_ids.add(d.document_identity.document_id)
+
+        pre_fill: dict[int, Path] = {}
+        if document_base_dir is not None:
+            linker = DocumentReferenceLinker(
+                references=self.documents,
+                document_base_dir=document_base_dir,
+            )
+            # Use all available strategies including FILENAME_EXTERNAL_ID
+            # for better coverage
+            pre_fill = linker.guess_file_paths()
+            logger.info(
+                f"pre-filled {len(pre_fill)} file paths from {document_base_dir}"
+            )
+
         with file_path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["document_id", "name", "file_path"])
+            writer = csv.DictWriter(
+                f, fieldnames=["document_id", "external_id", "name", "file_path"]
+            )
             writer.writeheader()
             for d in self.documents:
                 if (
@@ -331,14 +363,35 @@ class ProcessedAnnotationData(
                     or d.document_identity.document_id is None
                 ):
                     d.init_document_identity()
-                if d.document_identity is None:
-                    no_doc_id_err = f"document_identity was not set for document {d}"
-                    raise ValueError(no_doc_id_err)
+                doc_id = d.document_identity.document_id  # type: ignore[union-attr]
+                external_id = d.document_identity.external_id  # type: ignore[union-attr]
+                if doc_id is None:
+                    no_doc_identity_err = (
+                        f"document_identity was not set for document {d}"
+                    )
+                    raise ValueError(no_doc_identity_err)
+
+                file_path_result = pre_fill.get(doc_id)  # type:ignore[assignment]
+                if isinstance(file_path_result, Path):
+                    if path_type == "full":
+                        file_path_result = file_path_result.absolute()
+                    elif path_type == "relative":
+                        pass
+                    elif path_type == "file":
+                        file_path_result = Path(file_path_result.name)
+                    else:
+                        bad_filepath_formatting_err = (
+                            f"path_type {path_type} is "
+                            "not permitted. use `full`, `relative`, `file`."
+                        )
+                        raise NotImplementedError(bad_filepath_formatting_err)
+
                 writer.writerow(
                     {
-                        "document_id": d.document_identity.document_id,
+                        "document_id": doc_id,
+                        "external_id": external_id,
                         "name": d.name,
-                        "file_path": None,
+                        "file_path": file_path_result,
                     }
                 )
 

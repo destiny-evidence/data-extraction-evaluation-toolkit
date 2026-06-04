@@ -172,7 +172,9 @@ class DeetProject(BaseModel):
         processed_data.export_attributes_csv_file(filepath=self.prompt_csv_path)
         notify("Initialised prompt definition file.", level=LogLevel.SUCCESS)
 
-        processed_data.export_linkage_mapper_csv(file_path=self.link_map_path)
+        processed_data.export_linkage_mapper_csv(
+            file_path=self.link_map_path, document_base_dir=self.pdf_dir
+        )
         notify("Initialised reference-pdf link mapping file.", level=LogLevel.SUCCESS)
 
         self.export_config_template()
