@@ -51,10 +51,13 @@ class ContextType(StrEnum):
 
 class DocumentIDSource(StrEnum):
     """
-    Sources for a given document_id. Can be e.g. eppi_item_id.
+    Sources for a given document_id.
 
-    To be extended if e.g. we start working with
-    non-eppi gold standard references.
+    Priority is given first to EPPI IDs, or IDs that confirm to the EPPI ID format.
+
+    When these do not exist we try strategies that hash information from the document,
+    starting from the external id, and then
+    attempting with other bibliographic information.
     """
 
     EPPI_ITEM_ID = auto()
