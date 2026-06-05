@@ -23,6 +23,10 @@ from deet.data_models.base import (
     GoldStandardAnnotation,
     LLMInputSchema,
     LLMResponseSchema,
+    StudyArm,
+    StudyArmsDefinitionSchema,
+    StudyOutcome,
+    StudyOutcomesDefinitionSchema,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -268,10 +272,104 @@ class LLMDataExtractor:
                 self.custom_system_prompt_file.read_text()
             )
 
-    def extract_from_document(
+    def _extract_entities_from_document[
+        T: StudyArmsDefinitionSchema | StudyOutcomesDefinitionSchema
+    ](
+        self,
+        payload: str,
+        entity_name: str,
+        system_prompt: str,
+        user_instruction: str,
+        schema_model: type[T],
+    ) -> T:
+        """Extract arms or outcomes from a document."""
+        user_prompt = f"{user_instruction}\nContext:\n{payload}"
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        self._enforce_context_limit(messages, user_prompt, system_prompt)
+
+        response = litellm.completion(
+            model=self.model,
+            api_key=self.llm_api_key,
+            api_base=self.api_base,
+            messages=messages,
+            temperature=self.config.temperature,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "study_arms_definition_response",
+                    "schema": schema_model.model_json_schema(),
+                },
+            },
+        )
+
+        response_content = response.choices[0].message.content
+
+        try:
+            return cast(T, schema_model.model_validate_json(response_content))
+        except ValidationError as e:
+            logger.warning(f"LLM did not return valid {entity_name}: {e}")
+            return cast(T, schema_model())
+
+    def extract_arms_from_document(self, payload: str) -> tuple[StudyArm, ...]:
+        """Extract outcomes from a document."""
+        system_prompt = (
+            "You are an expert systematic review data extraction assistant."
+            " Your task is to identify and catalogue the distinct"
+            " study arms in the text."
+            " Provide a short snake_case 'arm_id' for each,"
+            " a clear title, and a brief description"
+        )
+        user_instruction = (
+            "Analyse the following document and" " identify all distinct study arms."
+        )
+
+        result = self._extract_entities_from_document(
+            payload=payload,
+            entity_name="outcomes",
+            system_prompt=system_prompt,
+            user_instruction=user_instruction,
+            schema_model=StudyArmsDefinitionSchema,
+        )
+        logger.info("Arm extraction successful." f" Found {len(result.arms)} arms")
+        return result.arms
+
+    def extract_outcomes_from_document(self, payload: str) -> tuple[StudyOutcome, ...]:
+        """Extract outcomes from a document."""
+        system_prompt = (
+            "You are an expert systematic review data extraction assistant."
+            " Your task is to identify and catalogue the distinct"
+            " study outcomes in the text."
+            " Provide a short snake_case 'outcome_id' for each,"
+            " a clear title, and a brief description"
+        )
+        user_instruction = (
+            "Analyse the following document and"
+            " identify all distinct study outcomes."
+        )
+
+        result = self._extract_entities_from_document(
+            payload=payload,
+            entity_name="outcomes",
+            system_prompt=system_prompt,
+            user_instruction=user_instruction,
+            schema_model=StudyOutcomesDefinitionSchema,
+        )
+        logger.info(
+            "Outcome extraction successful." f" Found {len(result.outcomes)} outcomes"
+        )
+        return result.outcomes
+
+    def extract_from_document(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
         filter_attribute_ids: list[int] | None = None,
+        study_arms: tuple[StudyArm, ...] = (),
+        study_outcomes: tuple[StudyOutcome, ...] = (),
         *,
         payload: str | None = None,
         md_path: Path | None = None,
@@ -333,13 +431,19 @@ class LLMDataExtractor:
 
         context = self._prepare_context(payload=payload, context_type=context_type)
         prompt = self._generate_user_message_json(
-            payload=context, attributes=selected_attributes
+            payload=context,
+            attributes=selected_attributes,
+            study_arms=study_arms,
+            study_outcomes=study_outcomes,
         )
         llm_response, messages, output_tokens, input_tokens = self._call_llm(
             prompt=prompt
         )
         annotations = self._parse_llm_response(
-            response_content=llm_response, attributes=selected_attributes
+            response_content=llm_response,
+            attributes=selected_attributes,
+            study_arms=study_arms,
+            study_outcomes=study_outcomes,
         )
 
         return DocumentExtractionResult(
@@ -403,16 +507,28 @@ class LLMDataExtractor:
                     document.context = document.safe_parsed_document.text
 
                 try:
+                    study_arms = self.extract_arms_from_document(
+                        payload=document.context
+                    )
+                    study_outcomes = self.extract_outcomes_from_document(
+                        payload=document.context
+                    )
+
                     result = self.extract_from_document(
                         attributes=attributes,
                         filter_attribute_ids=filter_attribute_ids,
                         payload=document.context,
                         context_type=context_type,
+                        study_arms=study_arms,
+                        study_outcomes=study_outcomes,
                     )
 
                     llm_annotated_docs.append(
                         GoldStandardAnnotatedDocument(
-                            document=document, annotations=result.annotations
+                            document=document,
+                            annotations=result.annotations,
+                            study_arms=tuple(study_arms),
+                            study_outcomes=tuple(study_outcomes),
                         )
                     )
                     doc_id_str = str(document.safe_identity.document_id)
@@ -537,6 +653,8 @@ class LLMDataExtractor:
         self,
         payload: str,
         attributes: list[Attribute],
+        study_arms: tuple[StudyArm, ...],
+        study_outcomes: tuple[StudyOutcome, ...],
     ) -> str:
         """
         Generate structured JSON input for the LLM user message.
@@ -566,8 +684,13 @@ class LLMDataExtractor:
             llm_input_attr = LLMInputSchema(**attr_dict)
             attributes_payload.append(llm_input_attr.model_dump())
 
+        arms_payload = [arm.model_dump() for arm in study_arms]
+        outcomes_payload = [outcome.model_dump() for outcome in study_outcomes]
+
         unserialised_prompt = {
             "context": payload,
+            "study_arms": arms_payload,
+            "study_outcomes": outcomes_payload,
             "attributes": attributes_payload,
         }
 
@@ -625,12 +748,20 @@ class LLMDataExtractor:
             prompt_data = json.loads(prompt)
             context = prompt_data.get("context", "")
             attributes_payload = prompt_data.get("attributes", [])
-            attributes_part = json.dumps(
-                {"context": "", "attributes": attributes_payload},
+            arms_payload = prompt_data.get("study_arms", [])
+            outcomes_payload = prompt_data.get("study_arms", [])
+
+            overhead_part = json.dumps(
+                {
+                    "context": "",
+                    "attributes": attributes_payload,
+                    "study_arms": arms_payload,
+                    "study_outcomes": outcomes_payload,
+                },
                 ensure_ascii=False,
             )
             system_tokens = count_tokens(self.model, str(system_prompt))
-            attributes_tokens = count_tokens(self.model, attributes_part)
+            attributes_tokens = count_tokens(self.model, overhead_part)
             # Buffer for token-count discrepancies or extra tokens from
             # serialization/whitespace that LLM APIs may add.
             buffer = 50
@@ -735,6 +866,8 @@ class LLMDataExtractor:
         self,
         response_content: str,
         attributes: list[Attribute],
+        study_arms: tuple[StudyArm, ...],
+        study_outcomes: tuple[StudyOutcome, ...],
     ) -> list[GoldStandardAnnotation]:
         """
         Parse and validate LLM response against GoldStandardAnnotation structure.
@@ -742,6 +875,7 @@ class LLMDataExtractor:
         Args:
             response_content: Raw JSON string response from LLM
             attributes: List of attributes to match against
+            study_arms: List of study arms to match against
 
         Returns:
             List of GoldStandardAnnotation objects
@@ -784,6 +918,42 @@ class LLMDataExtractor:
                 )
                 continue
 
+            matched_arm = None
+            if llm_annotation.arm_id is not None:
+                matched_arm = next(
+                    (
+                        study_arm
+                        for study_arm in study_arms
+                        if study_arm.arm_id == llm_annotation.arm_id
+                    ),
+                    None,
+                )
+                if not matched_arm:
+                    logger.warning(
+                        f"LLM returned arm_id '{llm_annotation.arm_id}' for attribute "
+                        f"{attribute.attribute_id}, but it doesn't match any"
+                        f"of the extracted arms. Defaulting arm_context to None."
+                    )
+
+            matched_outcome = None
+            if llm_annotation.outcome_id is not None:
+                matched_outcome = next(
+                    (
+                        study_outcome
+                        for study_outcome in study_outcomes
+                        if study_outcome.outcome_id == llm_annotation.outcome_id
+                    ),
+                    None,
+                )
+                if not matched_arm:
+                    logger.warning(
+                        f"LLM returned outcome_id '{llm_annotation.arm_id}'"
+                        " for attribute"
+                        f"{attribute.attribute_id}, but it doesn't match any"
+                        f"of the extracted outcomes."
+                        " Defaulting outcome_context to None."
+                    )
+
             additional_text = (
                 llm_annotation.additional_text
                 if self.config.include_additional_text
@@ -795,6 +965,8 @@ class LLMDataExtractor:
             # Convert to full EppiGoldStandardAnnotation
             annotation = GoldStandardAnnotation(
                 attribute=attribute,
+                arm_context=matched_arm,
+                outcome_context=matched_outcome,
                 raw_data=llm_annotation.output_data,
                 annotation_type=AnnotationType.LLM,
                 additional_text=additional_text,

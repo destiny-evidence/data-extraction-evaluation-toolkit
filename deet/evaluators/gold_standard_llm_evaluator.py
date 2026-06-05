@@ -4,6 +4,7 @@ data extracted by hand.
 """
 
 import csv
+import itertools
 import re
 from collections.abc import Sequence
 from itertools import groupby
@@ -16,7 +17,7 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import AttributeTypeVar
+from deet.data_models.base import AttributeTypeVar, StudyArm, StudyOutcome
 from deet.data_models.documents import (
     GoldStandardAnnotatedDocumentList,
     GoldStandardAnnotatedDocumentTypeVar,
@@ -146,6 +147,46 @@ class GoldStandardLLMEvaluator:
         if custom_metrics is not None:
             self.add_custom_metrics(custom_metrics)
 
+    def _get_distinct_arms(
+        self,
+        gold_doc: GoldStandardAnnotatedDocumentTypeVar | None,
+        llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
+    ) -> list[StudyArm | None]:
+        """Collect unique arms across LLM and human annotated documents."""
+        gold_arms = gold_doc.study_arms if gold_doc else ()
+        llm_arms = llm_doc.study_arms if llm_doc else ()
+
+        # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
+        distinct_arms_map: dict[str, StudyArm | None] = {}
+        for arm in gold_arms + llm_arms:
+            key = arm.arm_id if arm is not None else "__GLOBAL__"
+            distinct_arms_map[key] = arm
+
+        if not distinct_arms_map:
+            return [None]
+
+        return list(distinct_arms_map.values())
+
+    def _get_distinct_outcomes(
+        self,
+        gold_doc: GoldStandardAnnotatedDocumentTypeVar | None,
+        llm_doc: GoldStandardAnnotatedDocumentTypeVar | None,
+    ) -> list[StudyOutcome | None]:
+        """Collect unique arms across LLM and human annotated documents."""
+        gold_outcomes = gold_doc.study_outcomes if gold_doc else ()
+        llm_outcomes = llm_doc.study_outcomes if llm_doc else ()
+
+        # TODO: fuzzily match outcomes, humans and LLMs won't use the same IDs!
+        distinct_outcomes_map: dict[str, StudyOutcome | None] = {}
+        for outcome in gold_outcomes + llm_outcomes:
+            key = outcome.outcome_id if outcome is not None else "__GLOBAL__"
+            distinct_outcomes_map[key] = outcome
+
+        if not distinct_outcomes_map:
+            return [None]
+
+        return list(distinct_outcomes_map.values())
+
     def add_custom_metrics(self, custom_metrics: list[str]) -> None:
         """Add custom metrics. These must be valid metrics from sklearn.metrics."""
         for custom_metric_name in custom_metrics:
@@ -183,27 +224,48 @@ class GoldStandardLLMEvaluator:
             y_pred: list[Any] = []
             for document in self.gold_standard_annotated_documents:
                 doc_id = document.document.safe_identity.document_id
-                logger.debug(
-                    f"Extracting gold standard and LLM prediction for doc {doc_id}"
-                )
-                gs_val = document.get_attribute_annotation(attribute).output_data
-                y_true.append(gs_val)
 
                 try:
                     llm_doc = self.llm_annotated_documents.get_by_id(doc_id)
                 except MissingDocumentError:
-                    y_pred.append(None)
+                    llm_doc = None
                     logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
-                    continue
-                try:
-                    llm_val = llm_doc.get_attribute_annotation(attribute).output_data
-                except DuplicateAnnotationError:
-                    llm_val = None
-                    logger.warning(
-                        f"LLM produced multiple annotations for a single"
-                        f" attribute with doc: {doc_id}"
-                    )
-                y_pred.append(llm_val)
+
+                logger.debug(
+                    f"Extracting gold standard and LLM prediction for doc {doc_id}"
+                )
+
+                distinct_arms = self._get_distinct_arms(document, llm_doc)
+                distinct_outcomes = self._get_distinct_outcomes(document, llm_doc)
+
+                for arm in distinct_arms:
+                    for outcome in distinct_outcomes:
+                        arm_id = arm.arm_id if arm else None
+                        outcome_id = outcome.outcome_id if outcome else None
+
+                        gs_ann = document.get_attribute_annotation(
+                            attribute=attribute, arm_id=arm_id, outcome_id=outcome_id
+                        )
+                        gs_val = gs_ann.output_data if gs_ann else None
+                        y_true.append(gs_val)
+
+                        if llm_doc is None:
+                            y_pred.append(None)
+                        else:
+                            try:
+                                llm_ann = llm_doc.get_attribute_annotation(
+                                    attribute, arm_id=arm_id
+                                )
+                                llm_val = llm_ann.output_data if llm_ann else None
+                            except DuplicateAnnotationError:
+                                llm_val = None
+                                logger.warning(
+                                    f"LLM produced multiple annotations for attribute "
+                                    f"{attribute.attribute_id} for arm "
+                                    f"'{getattr(arm, 'arm_id', '__GLOBAL__')}' "
+                                    f"in doc: {doc_id}"
+                                )
+                            y_pred.append(llm_val)
 
             applicable_metrics = get_metrics_for_attribute_type(
                 attribute.output_data_type
@@ -307,6 +369,10 @@ class GoldStandardLLMEvaluator:
                     "document_id",
                     "external_id",
                     "document_name",
+                    "arm_id",
+                    "arm_title",
+                    "outcome_id",
+                    "outcome_title",
                     "attribute_id",
                     "attribute_label",
                     "attribute_presence",
@@ -323,12 +389,15 @@ class GoldStandardLLMEvaluator:
             )
             writer.writeheader()
             for doc in self.gold_standard_annotated_documents:
+                doc_id = doc.document.safe_identity.document_id
                 try:
-                    llm_annotated_doc = self.llm_annotated_documents.get_by_id(
-                        doc.document.safe_identity.document_id
-                    )
+                    llm_annotated_doc = self.llm_annotated_documents.get_by_id(doc_id)
                 except MissingDocumentError:
                     llm_annotated_doc = None
+                    logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
+
+                distinct_arms = self._get_distinct_arms(doc, llm_annotated_doc)
+                distinct_outcomes = self._get_distinct_outcomes(doc, llm_annotated_doc)
 
                 context: str | None = (
                     None
@@ -336,16 +405,17 @@ class GoldStandardLLMEvaluator:
                     else (str(t) if (t := llm_annotated_doc.document.context) else None)
                 )
 
-                for attribute in self.attributes:
-                    human_ann = doc.get_attribute_annotation(attribute)
-                    gold_real = next(
-                        (
-                            ann
-                            for ann in doc.annotations
-                            if ann.attribute.attribute_id == attribute.attribute_id
-                        ),
-                        None,
+                for attribute, arm, outcome in itertools.product(
+                    self.attributes, distinct_arms, distinct_outcomes
+                ):
+                    arm_id = arm.arm_id if arm else None
+                    outcome_id = outcome.outcome_id if outcome else None
+                    gold_real = doc.get_attribute_annotation(
+                        attribute=attribute,
+                        arm_id=arm_id,
+                        outcome_id=outcome_id,
                     )
+
                     if gold_real is not None:
                         human_additional_text: str = gold_real.additional_text or ""
                         item_attr_full: str = _eppi_full_text_details_colon_separated(
@@ -372,7 +442,7 @@ class GoldStandardLLMEvaluator:
                     else:
                         try:
                             llm_annotation = llm_annotated_doc.get_attribute_annotation(
-                                attribute
+                                attribute, arm_id
                             )
                             llm_extraction = llm_annotation.output_data
                             llm_reasoning = llm_annotation.reasoning
@@ -389,12 +459,16 @@ class GoldStandardLLMEvaluator:
                             "document_id": doc.document.safe_identity.document_id,
                             "external_id": doc.document.safe_identity.external_id,
                             "document_name": doc.document.name,
+                            "arm_id": arm.arm_id if arm else "",
+                            "arm_title": arm.arm_title if arm else "",
+                            "outcome_id": outcome.outcome_id if outcome else "",
+                            "outcome_title": outcome.outcome_title if outcome else "",
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
                             "attribute_presence": str(present),
                             "human_additional_text": human_additional_text,
                             "item_attribute_full_text_details": item_attr_full,
-                            "human_extraction": human_ann.output_data,
+                            "human_extraction": gold_real.output_data,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
                             "llm_verbatim_text": llm_verbatim,
@@ -425,10 +499,17 @@ class GoldStandardLLMEvaluator:
             for (
                 llm_annotated_doc
             ) in self.llm_annotated_documents.gold_standard_annotations:
-                for attribute in self.attributes:
+                distinct_arms = self._get_distinct_arms(None, llm_annotated_doc)
+                distinct_outcomes = self._get_distinct_outcomes(None, llm_annotated_doc)
+
+                for attribute, arm, outcome in itertools.product(
+                    self.attributes, distinct_arms, distinct_outcomes
+                ):
+                    arm_id = arm.arm_id if arm else None
+                    outcome_id = outcome.outcome_id if outcome else None
                     try:
                         llm_annotation = llm_annotated_doc.get_attribute_annotation(
-                            attribute
+                            attribute=attribute, arm_id=arm_id, outcome_id=outcome_id
                         )
                         llm_extraction = llm_annotation.output_data
                         llm_reasoning = llm_annotation.reasoning
@@ -448,11 +529,14 @@ class GoldStandardLLMEvaluator:
                             "document_id": document.safe_identity.document_id,
                             "external_id": document.safe_identity.external_id,
                             "document_name": document.name,
+                            "arm_id": arm.arm_id if arm else "",
+                            "arm_title": arm.arm_title if arm else "",
+                            "outcome_id": outcome.outcome_id if outcome else "",
+                            "outcome_title": outcome.outcome_title if outcome else "",
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
                             "llm_verbatim_text": llm_verbatim,
-                            "extraction_run_id": self.extraction_run_id,
                         }
                     )

@@ -120,6 +120,13 @@ class Attribute(BaseModel):
     output_data_type: AttributeType  # One of the defined output data types
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
+    is_arm_specific: bool = Field(
+        default=False, description="If true, an arm should be specified for annotations"
+    )
+    is_outcome_specific: bool = Field(
+        default=False,
+        description="If true, an outcome should be specified for annotations",
+    )
 
     def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
         """
@@ -327,6 +334,57 @@ ANNOTATION_COERCION_STRATEGIES: dict[
 }
 
 
+# TODO: Add arm characteristics (as enums?) that
+# are held by all arms (e.g. intervention/control)
+class StudyArm(BaseModel):
+    """
+    An arm of a study.
+
+    A study can have multiple arms, each describing an experimental group.
+    """
+
+    arm_id: str = Field(
+        ..., description="A unique identifier for this arm within the document"
+    )
+    arm_title: str = Field(..., description="The name of the arm")
+    arm_description: str = Field(..., description="Detailed description of the arm")
+
+
+# TODO: Add outcome characteristics that are
+# held by all outcomes (e.g. primary/secondary)
+class StudyOutcome(BaseModel):
+    """
+    An outcome of a study.
+
+    A study can have multiple outcomes, each of which can be measured across study arms.
+    """
+
+    outcome_id: str = Field(
+        ..., description="A unique identifier for this arm within the document"
+    )
+    outcome_title: str = Field(..., description="The name of the outcome")
+    outcome_description: str = Field(
+        ..., description="Detailed description of the outcome"
+    )
+
+
+class StudyArmsDefinitionSchema(BaseModel):
+    """LLM extraction schema for study arms."""
+
+    arms: tuple[StudyArm, ...] = Field(
+        default=(),
+        description="List of all distinct intervention arms found in the text.",
+    )
+
+
+class StudyOutcomesDefinitionSchema(BaseModel):
+    """LLM extraction schema for study outcomes."""
+
+    outcomes: tuple[StudyOutcome, ...] = Field(
+        default=(), description="List of all distinct outcomes found in the text."
+    )
+
+
 class GoldStandardAnnotation(BaseModel):
     """
     A single gold standard annotation for an attribute.
@@ -344,6 +402,21 @@ class GoldStandardAnnotation(BaseModel):
         )
     )
     annotation_type: AnnotationType
+
+    arm_context: StudyArm | None = Field(
+        default=None,
+        description=(
+            "The specific study arm this annotation belongs to."
+            " If None, then it is a study/outcome-wide annotation."
+        ),
+    )
+    outcome_context: StudyOutcome | None = Field(
+        default=None,
+        description=(
+            "The specific outcome this annotation belongs to."
+            " If None, then it is a study/arm-wide annotation"
+        ),
+    )
     additional_text: str | None = Field(
         description="Notes provided by the annotator - usually the citation "
         " from the paper containing the context window where the attribute is found",
@@ -436,6 +509,22 @@ class LLMAnnotationResponse(BaseModel):
                     attribute_type.to_json_type() for attribute_type in AttributeType
                 ]
             },
+        ),
+    )
+    arm_id: str | None = Field(
+        default=None,
+        description=(
+            "The unique arm_id this annotation applies to. "
+            "Must match of the IDs defined in study_arms."
+            "Use null if not specific to an arm."
+        ),
+    )
+    outcome_id: str | None = Field(
+        default=None,
+        description=(
+            "The unique outcome_id this annotation applies to. "
+            "Must match of the IDs defined in study_outcomes."
+            "Use null if not specific to an outcome."
         ),
     )
     additional_text: str | None = Field(

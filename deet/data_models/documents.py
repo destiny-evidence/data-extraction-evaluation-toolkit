@@ -21,6 +21,8 @@ from deet.data_models.base import (
     Attribute,
     GoldStandardAnnotation,
     GoldStandardAnnotationTypeVar,
+    StudyArm,
+    StudyOutcome,
 )
 from deet.exceptions import (
     BadDocumentIdError,
@@ -562,21 +564,38 @@ class GoldStandardAnnotatedDocument(
 
     document: DocumentTypeVar
     annotations: list[GoldStandardAnnotationTypeVar]
+    study_arms: tuple[StudyArm, ...] = ()
+    study_outcomes: tuple[StudyOutcome, ...] = ()
 
-    def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
+    def get_attribute_annotation(
+        self,
+        attribute: Attribute,
+        arm_id: str | None = None,
+        outcome_id: str | None = None,
+    ) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
         result = None
         output_data: Any
         for annotation in self.annotations:
             if annotation.attribute.attribute_id == attribute.attribute_id:
-                if result is not None:
-                    multiple_matches = (
-                        "More than one annotation found for "
-                        f"attribute: {attribute.attribute_label}. We don't know how to"
-                        "interpret which is the canonical version."
-                    )
-                    raise DuplicateAnnotationError(multiple_matches)
-                result = annotation
+                annotation_arm_id = (
+                    annotation.arm_context.arm_id if annotation.arm_context else None
+                )
+                annotation_outcome_id = (
+                    annotation.outcome_context.outcome_id
+                    if annotation.outcome_context
+                    else None
+                )
+                if annotation_arm_id == arm_id and annotation_outcome_id == outcome_id:
+                    if result is not None:
+                        multiple_matches = (
+                            "More than one annotation found for "
+                            f"attribute: {attribute.attribute_label}. "
+                            "We don't know how to"
+                            "interpret which is the canonical version."
+                        )
+                        raise DuplicateAnnotationError(multiple_matches)
+                    result = annotation
 
         if result is None:
             try:
