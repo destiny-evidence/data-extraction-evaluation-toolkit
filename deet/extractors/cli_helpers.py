@@ -1,18 +1,17 @@
 """Helper functions to run extraction via the CLI."""
 
-import datetime
 from collections.abc import Sequence
 from pathlib import Path
 
 import typer
 import yaml
-from loguru import logger
 from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
+from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
 from deet.extractors.llm_data_extractor import (
     DataExtractionConfig,
     ExtractionRunOutput,
@@ -57,24 +56,6 @@ def load_config_from_typer_context(
         fail_with_message(f"Config validation error in {config_path}:\n{e}")
 
 
-def init_extraction_run(
-    out_dir: Path,
-    run_name: str,
-) -> ExperimentArtefacts:
-    """Set up ID, folder and logging for data extraction run."""
-    extraction_run_id = (
-        datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")
-        + f"_{run_name}"
-    )
-
-    experiment_out_dir = out_dir / extraction_run_id
-    experiment_out_dir.mkdir(parents=True)
-
-    logger.add(experiment_out_dir / "deet.log", level="DEBUG")
-
-    return ExperimentArtefacts(base_dir=experiment_out_dir, run_id=extraction_run_id)
-
-
 def prepare_documents(
     documents: Sequence[Document],
     config: DataExtractionConfig,
@@ -96,9 +77,13 @@ def prepare_documents(
     if config.default_context_type == ContextType.FULL_DOCUMENT:
         if linked_document_path.exists():
             notify(f"Loading linked documents from {linked_document_path}")
-            documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
-            if documents:
-                return documents
+            linked_documents = []
+            for document in documents:
+                document_id = document.safe_identity.document_id
+                document_path = linked_document_path / f"{document_id}.json"
+                linked_documents.append(Document.load(document_path))
+            if linked_documents:
+                return linked_documents
 
             notify(f"Couldn't find linked documents in {linked_document_path}")
         if pdf_dir is None:
@@ -164,7 +149,9 @@ def run_extraction_pipeline(
 
     config = load_config_from_typer_context(typer_context, config_path)
 
-    experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
+    experiment_artefacts = ExperimentArtefacts.create(
+        deet_project.experiments_dir, run_name=run_name
+    )
 
     if prompt_population is not None:
         processed_annotation_data.populate_custom_prompts(
@@ -174,6 +161,20 @@ def run_extraction_pipeline(
             fail_with_message(
                 "No attributes selected. Perhaps you forgot to edit your prompt file"
             )
+
+    project_evaluation_splits = deet_project.load_splits()
+    project_evaluation_splits.dump_to_json(
+        experiment_artefacts.evaluation_splits_snapshot
+    )
+    processed_annotation_data.filter_documents_by_ids(
+        project_evaluation_splits.active_ids
+    )
+    if not processed_annotation_data.documents:
+        no_documents = (
+            "No documents in evaluation stage"
+            f" {project_evaluation_splits.current_stage}"
+        )
+        fail_with_message(no_documents)
 
     data_extractor = LLMDataExtractor(config=config)
 
@@ -211,3 +212,21 @@ def run_extraction_pipeline(
     )
 
     return run_output, processed_annotation_data, experiment_artefacts
+
+
+def evaluate_extraction_pipeline(
+    processed_annotation_data: ProcessedAnnotationData,
+    run_output: ExtractionRunOutput,
+    experiment_artefacts: ExperimentArtefacts,
+) -> None:
+    """Evaluate results of an extraction pipeline."""
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
+        llm_annotated_documents=run_output.annotated_documents,
+        attributes=processed_annotation_data.attributes,
+        extraction_run_id=experiment_artefacts.run_id,
+    )
+    evaluator.evaluate_llm_annotations()
+    evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
+    evaluator.export_llm_comparison(experiment_artefacts.comparison)
+    evaluator.display_metrics()

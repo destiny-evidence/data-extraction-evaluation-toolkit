@@ -304,9 +304,12 @@ def test_extract_happy_path(tmp_path):
     mock_project.experiments_dir = exp_dir
     mock_project.pdf_dir = tmp_path / "pdfs"
 
+    mock_doc = MagicMock()
+    mock_doc.safe_identity.document_id = 1
+
     mock_processed_data = MagicMock()
     mock_processed_data.attributes = [1]
-    mock_processed_data.documents = []
+    mock_processed_data.documents = [mock_doc]
     mock_processed_data.annotated_documents = []
 
     mock_project.process_data.return_value = mock_processed_data

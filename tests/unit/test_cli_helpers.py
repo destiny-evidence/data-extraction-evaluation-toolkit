@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml  # type:ignore[import-untyped]
+from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.documents import ContextType, Document
 from deet.extractors.cli_helpers import (
-    init_extraction_run,
     load_config_from_typer_context,
     prepare_documents,
 )
@@ -113,30 +113,6 @@ def test_load_or_init_config_file_doesnt_exist_reverts_project(config_path, conf
     assert loaded_config.model_dump() == config.model_dump()
 
 
-def test_init_extraction_run(tmp_path):
-    """Ensure it creates the folder; ensure it creates deet.log."""
-    out_dir = tmp_path / "experiments"
-    out_dir.mkdir()
-    run_name = "test_run"
-
-    with patch("deet.extractors.cli_helpers.logger") as mock_logger:
-        experiment_artefacts = init_extraction_run(out_dir, run_name)
-
-    # run ID format contains timestamp and run name
-    assert run_name in experiment_artefacts.run_id
-    assert "_" in experiment_artefacts.run_id  # timestamp separator
-
-    # check experiment directory was created
-    assert experiment_artefacts.base_dir.exists()
-    assert experiment_artefacts.base_dir.is_dir()
-    assert experiment_artefacts.base_dir.parent == out_dir
-
-    # check logger.add was called with log file path
-    mock_logger.add.assert_called_once()
-    log_path = mock_logger.add.call_args[0][0]
-    assert log_path == experiment_artefacts.base_dir / "deet.log"
-
-
 def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_path):
     """Return just the documents when context type is abstract only."""
     config.default_context_type = ContextType.ABSTRACT_ONLY
@@ -162,15 +138,24 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     pdf_dir = tmp_path / "pdfs"
     pdf_dir.mkdir()
 
+    documents = [
+        Document(document_id=1234, name="1234", citation=ReferenceFileInput()),
+        Document(document_id=3456, name="1234", citation=ReferenceFileInput()),
+    ]
     # Create some mock linked document files
-    (linked_doc_path / "doc1.json").write_text("{}")
-    (linked_doc_path / "doc2.json").write_text("{}")
+    for document in documents:
+        document.init_document_identity()
+        (
+            (linked_doc_path / f"{document.safe_identity.document_id}.json").write_text(
+                "{}"
+            )
+        )
 
     mock_loaded_doc = MagicMock(spec=Document)
 
     with patch.object(Document, "load", return_value=mock_loaded_doc) as mock_load:
         result = prepare_documents(
-            documents=[],
+            documents=documents,
             config=config,
             linked_document_path=linked_doc_path,
             pdf_dir=pdf_dir,

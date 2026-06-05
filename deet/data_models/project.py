@@ -13,7 +13,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
+from loguru import logger
+
 if TYPE_CHECKING:
+    from deet.data_models.evaluation_splits import EvaluationSplits
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
@@ -136,6 +139,11 @@ class DeetProject(BaseModel):
         """Return path to config file."""
         return self.root / "default_extraction_config.yaml"
 
+    @property
+    def evaluation_splits_path(self) -> Path:
+        """Return path to file recording evaluation split state."""
+        return self.root / "evaluation_splits.json"
+
     # Configuration and validation
     model_config = ConfigDict(
         json_encoders={Path: str},
@@ -217,13 +225,47 @@ class DeetProject(BaseModel):
         converter = self.gold_standard_data_format.get_annotation_converter()
         return converter.process_annotation_file(self.gold_standard_data_path)
 
+    def get_all_doc_ids(self) -> list[int]:
+        """Process the full dataset and return all document IDs."""
+        processed_data = self.process_data()
+        return processed_data.all_doc_ids
+
+    def load_splits(self) -> EvaluationSplits:
+        """Load split state."""
+        from deet.data_models.evaluation_splits import EvaluationSplits
+
+        return EvaluationSplits.load(self.evaluation_splits_path)
+
 
 @dataclass(frozen=True)
 class ExperimentArtefacts:
     """Defines the structure of a data extraction experiment directory."""
 
     base_dir: Path
-    run_id: str
+
+    @classmethod
+    def create(cls, experiments_dir: Path, run_name: str) -> ExperimentArtefacts:
+        """Initialise and create a new experiments directory."""
+        extraction_run_id = (
+            datetime.now(tz=UTC).strftime("%Y-%m-%d_%H-%M-%S") + f"_{run_name}"
+        )
+
+        experiment_out_dir = experiments_dir / extraction_run_id
+        experiment_out_dir.mkdir(parents=True)
+
+        logger.add(experiment_out_dir / "deet.log", level="DEBUG")
+
+        return cls(base_dir=experiment_out_dir)
+
+    @property
+    def is_complete(self) -> bool:
+        """Verify the experiment directory contains a completed and evaluated run."""
+        return self.config_snapshot.exists() and self.metrics.exists()
+
+    @property
+    def run_id(self) -> str:
+        """Return identifier (based on the directory where the experiment lives)."""
+        return self.base_dir.name
 
     @property
     def metrics(self) -> Path:
@@ -244,6 +286,11 @@ class ExperimentArtefacts:
     def config_snapshot(self) -> Path:
         """Return location of csv capturing config used."""
         return self.base_dir / "config.yaml"
+
+    @property
+    def evaluation_splits_snapshot(self) -> Path:
+        """Return location of json capturing how docs were split for evaluation."""
+        return self.base_dir / "evaluation_splits.json"
 
     @property
     def llm_annotations(self) -> Path:

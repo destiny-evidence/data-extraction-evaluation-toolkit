@@ -166,3 +166,7 @@ class LitellmModelNotMappedError(Exception):
     characteristic message; we translate that to this type so callers can
     handle it without a broad ``except Exception``.
     """
+
+
+class SplitsValidationError(Exception):
+    """Raised when invalid allocation of documents to splits is attemped."""
