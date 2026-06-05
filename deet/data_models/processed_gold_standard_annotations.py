@@ -3,7 +3,7 @@
 import csv
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Generic, Literal
+from typing import Any, Literal
 
 from loguru import logger
 from pydantic import BaseModel
@@ -13,12 +13,11 @@ from deet.data_models.base import (
     AnnotationType,
     Attribute,
     AttributeType,
-    AttributeTypeVar,
-    GoldStandardAnnotationTypeVar,
+    GoldStandardAnnotation,
 )
 from deet.data_models.documents import (
-    DocumentTypeVar,
-    GoldStandardAnnotatedDocumentTypeVar,
+    Document,
+    GoldStandardAnnotatedDocument,
 )
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.eppi import (
@@ -31,7 +30,7 @@ from deet.data_models.eppi import (
 from deet.processors.linker import DocumentReferenceLinker
 
 
-class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
+class ProcessedAttributeData[AttributeT: Attribute](BaseModel):
     """
     Structured result from annotation processing.
 
@@ -39,7 +38,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
     subclass this
     """
 
-    attributes: list[AttributeTypeVar]
+    attributes: list[AttributeT]
 
     def _custom_prompts_cli(self) -> None:
         """
@@ -255,15 +254,12 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         return len(self.attributes)
 
 
-class ProcessedAnnotationData(
-    ProcessedAttributeData,
-    Generic[
-        AttributeTypeVar,
-        DocumentTypeVar,
-        GoldStandardAnnotationTypeVar,
-        GoldStandardAnnotatedDocumentTypeVar,
-    ],
-):
+class ProcessedAnnotationData[
+    AttributeT: Attribute,
+    DocumentType: Document,
+    GoldStandardAnnotationType: GoldStandardAnnotation,
+    GoldStandardAnnotatedDocumentType: GoldStandardAnnotatedDocument,
+](ProcessedAttributeData[AttributeT]):
     """
     Structured result from annotation processing.
 
@@ -271,9 +267,9 @@ class ProcessedAnnotationData(
     annotation data with useful properties and methods.
     """
 
-    documents: list[DocumentTypeVar]
-    annotations: list[GoldStandardAnnotationTypeVar]
-    annotated_documents: list[GoldStandardAnnotatedDocumentTypeVar]
+    documents: list[DocumentType]
+    annotations: list[GoldStandardAnnotationType]
+    annotated_documents: list[GoldStandardAnnotatedDocumentType]
     attribute_id_to_label: dict[int, str]
 
     @property
@@ -293,13 +289,13 @@ class ProcessedAnnotationData(
 
     def get_attributes_by_attribute_type(
         self, attribute_type: AttributeType
-    ) -> list[AttributeTypeVar]:
+    ) -> list[AttributeT]:
         """Get all attributes of a specific type."""
         return [
             attr for attr in self.attributes if attr.output_data_type == attribute_type
         ]
 
-    def get_documents_with_annotations(self) -> list[DocumentTypeVar]:
+    def get_documents_with_annotations(self) -> list[DocumentType]:
         """Get only documents that have annotations."""
         annotated_doc_ids = {
             doc.document.document_id for doc in self.annotated_documents
@@ -308,7 +304,7 @@ class ProcessedAnnotationData(
 
     def get_annotations_by_annotation_type(
         self, annotation_type: AnnotationType
-    ) -> list[GoldStandardAnnotationTypeVar]:
+    ) -> list[GoldStandardAnnotationType]:
         """Get all annotations of a specific type (human/llm)."""
         return [
             ann for ann in self.annotations if ann.annotation_type == annotation_type
