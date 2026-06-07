@@ -5,12 +5,14 @@ import time
 from pathlib import Path
 from threading import Thread
 
+import litellm
 import pytest
 import vcr
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 from typer.testing import CliRunner
+import os
 
 from deet.data_models.documents import Document
 from deet.data_models.project import DeetProject, ExperimentArtefacts
@@ -324,6 +326,19 @@ def test_extraction_with_evaluation(
     shutil.copy(
         dataset_base_path / "prompt_definitions.csv", deet_project.prompt_csv_path
     )
+
+    litellm.telemetry = False  # Disable any hidden outbound telemetry calls
+
+    # 2. Force the underlying HTTP client to avoid async pooling/HTTP2
+    # This ensures it hits VCR's standard socket patches
+    import os
+
+    os.environ["LITELLM_FORCE_SYNC"] = "True"
+
+    # If your version uses the OpenAI client mapping directly under litellm:
+    import httpx
+
+    litellm.client_session = httpx.Client(http2=False)
 
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0

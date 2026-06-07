@@ -292,7 +292,7 @@ def vcr_config():
     return {
         "ignore_hosts": ["raw.githubusercontent.com"],
         "decode_compressed_response": True,
-        "match_on": ["method", "uri", "json_body"],
+        "match_on": ["method", "uri"],
         "filter_headers": ["authorization", "api-key", "x-api-key"],
         "before_record_request": scrub_request_uri,
         "before_record_response": scrub_response_secrets,
