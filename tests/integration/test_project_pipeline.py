@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Thread
 
 import pytest
+import vcr
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
@@ -196,7 +197,11 @@ def assert_llm_csv_contains_values(path: Path) -> None:
 @pytest.mark.vcr
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_extraction_without_evaluating(
-    runner, dataset_base_path, tmp_project_workspace, initialised_project_workspace
+    runner,
+    dataset_base_path,
+    tmp_project_workspace,
+    initialised_project_workspace,
+    request,
 ):
     """Test whether Alice can extract data using the LLM."""
     # Alice makes sure she is in the project directory she created on project init
@@ -215,9 +220,15 @@ def test_extraction_without_evaluating(
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0
 
-    result = runner.invoke(
-        app, ["experiments", "predict", "--config-path", deet_project.config_path]
-    )
+    cassette_filename = f"{request.node.name}.yaml"
+    cassette_path = str(Path("tests/integration/cassettes") / cassette_filename)
+
+    record_mode = request.config.getoption("--record-mode", default="none")
+
+    with vcr.use_cassette(cassette_path, record_mode=record_mode):
+        result = runner.invoke(
+            app, ["experiments", "predict", "--config-path", deet_project.config_path]
+        )
     assert result.exit_code == 0
 
     # Alice makes sure her experiments dir exists
