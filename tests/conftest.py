@@ -261,6 +261,7 @@ def scrub_response_secrets(response: dict[str, Any]):
 
 def scrub_request_uri(request: Request) -> Request:
     """Remove secrets from uri."""
+    print(f"\n[VCR DEBUG] Processing Request URI: {request.uri}")
     settings = get_settings()
 
     clean_secrets = [
