@@ -272,8 +272,8 @@ def scrub_request_uri(request: Request) -> Request:
     ]
 
     for secret in clean_secrets:
-        if secret in request.uri:
-            request.uri = request.uri.replace(secret, "DUMMY_SECRET")
+        if secret.lower() in request.uri.lower():
+            request.uri = "https://dummy.secret/"
 
     return request
 

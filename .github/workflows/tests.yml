@@ -25,7 +25,7 @@ jobs:
     env:
       UV_CACHE_DIR: /tmp/.uv-cache  # Configure a constant location for the uv cache
       AZURE_API_KEY: "DUMMY_SECRET"
-      AZURE_API_BASE: "DUMMY_SECRET"
+      AZURE_API_BASE: "https://dummy.secret"
     steps:
       - name: Checkout source
         uses: actions/checkout@v6

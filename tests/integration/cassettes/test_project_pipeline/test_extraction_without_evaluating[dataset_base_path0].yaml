@@ -107,36 +107,37 @@ interactions:
       x-stainless-retry-count:
       - '0'
     method: POST
-    uri: DUMMY_SECRETopenai/deployments/gpt-4o-mini/chat/completions?api-version=2024-02-15-preview
+    uri: https://dummy.secret
   response:
     body:
       string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"Sixty
-        patients undergoing ambulatory anterior cruciate ligament repair of the knee;;
-        Group 1 ( 29 patients );; Group 2 ( 31 patients )\",\"additional_text\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
-        ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received
-        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The context
-        provides specific information about the study participants, including the
-        total number of patients (Sixty patients), the groups they were divided into
-        (Group 1 with 29 patients and Group 2 with 31 patients), and the condition
-        they were undergoing surgery for (ambulatory anterior cruciate ligament repair
-        of the knee).\"},{\"attribute_id\":5,\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
+        under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
+        60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
+        ) of plain mepivacaine\",\"additional_text\":\"Sixty patients undergoing ambulatory
+        anterior cruciate ligament repair of the knee under spinal anesthesia were
+        randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5
+        % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg
+        dose ) of plain mepivacaine .\",\"reasoning\":\"The context provides specific
+        information about the study participants, including the total number of patients
+        (Sixty), the conditions they were undergoing (ambulatory anterior cruciate
+        ligament repair of the knee), and the breakdown of participants in each group
+        (Group 1 and Group 2).\"},{\"attribute_id\":5,\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
         context does not provide any specific information regarding the age of the
-        study participants.\"}]}","name":"json_tool_call"},"id":"call_B8frihfa9NzMy5wToYqErvDo","type":"function"}]}}],"created":1780847938,"id":"chatcmpl-DoABmp2mnzDKCBrg9Zh5IsAld0CYt","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":234,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":45,"engine_ttlt_ms":2060,"pre_inference_ms":228,"service_tbt_ms":9,"service_ttft_ms":538,"service_ttlt_ms":2550,"total_duration_ms":2332,"user_visible_ttft_ms":311},"prompt_tokens":1239,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1024},"total_tokens":1473}}
+        study participants.\"}]}","name":"json_tool_call"},"id":"call_1MMylWsRVuyuOEK1QMFTe8EW","type":"function"}]}}],"created":1780865813,"id":"chatcmpl-DoEq5tAj78Kxa8a1qKAKyFxwq6uUd","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":268,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":7,"engine_ttft_ms":60,"engine_ttlt_ms":1855,"pre_inference_ms":124,"service_tbt_ms":7,"service_ttft_ms":443,"service_ttlt_ms":2234,"total_duration_ms":2119,"user_visible_ttft_ms":319},"prompt_tokens":1239,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1507}}
 
         '
     headers:
       Content-Length:
-      - '2324'
+      - '2398'
       Content-Type:
       - application/json
       Date:
-      - Sun, 07 Jun 2026 15:59:00 GMT
+      - Sun, 07 Jun 2026 20:56:55 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 0f997066-401d-4f72-b4eb-37888a7e8bcc
+      - 7edf5071-077d-4116-b962-922a0c33fed2
       azureai-fe-is-streaming:
       - 'False'
       azureml-model-session:
@@ -178,7 +179,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 9cbaff96-9ecc-4b3d-a664-0d5ec16d2e43
+      - 7df86144-8962-47d0-9757-146b4f13585e
     status:
       code: 200
       message: OK
@@ -280,7 +281,7 @@ interactions:
       x-stainless-retry-count:
       - '0'
     method: POST
-    uri: DUMMY_SECRETopenai/deployments/gpt-4o-mini/chat/completions?api-version=2024-02-15-preview
+    uri: https://dummy.secret
   response:
     body:
       string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"thirty-six
@@ -291,21 +292,21 @@ interactions:
         that the study participants were ''thirty-six young male students'', which
         provides information about the sample size, sex, and age group.\"},{\"attribute_id\":5,\"output_data\":\"young\",\"additional_text\":\"thirty-six
         young male students\",\"reasoning\":\"The term ''young'' is used to describe
-        the age of the participants, indicating they are likely in their late teens
-        to early twenties.\"}]}","name":"json_tool_call"},"id":"call_tdj378lAYYhzatChORjlTtOi","type":"function"}]}}],"created":1780847941,"id":"chatcmpl-DoABpJoUHHXg43Yw3MSFLwalzxrpN","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":165,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":10,"engine_ttft_ms":42,"engine_ttlt_ms":1646,"pre_inference_ms":97,"service_tbt_ms":10,"service_ttft_ms":415,"service_ttlt_ms":2012,"total_duration_ms":1926,"user_visible_ttft_ms":318},"prompt_tokens":1012,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1177}}
+        the age of the study participants, indicating they are likely in their late
+        teens to early twenties.\"}]}","name":"json_tool_call"},"id":"call_qGXPQi1FMKielJebH2SeKS3V","type":"function"}]}}],"created":1780865816,"id":"chatcmpl-DoEq8p6nuSLDUdJGmwR83KgGixGRY","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":166,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":7,"engine_ttft_ms":43,"engine_ttlt_ms":1160,"pre_inference_ms":92,"service_tbt_ms":7,"service_ttft_ms":382,"service_ttlt_ms":1492,"total_duration_ms":1409,"user_visible_ttft_ms":290},"prompt_tokens":1012,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1178}}
 
         '
     headers:
       Content-Length:
-      - '2051'
+      - '2055'
       Content-Type:
       - application/json
       Date:
-      - Sun, 07 Jun 2026 15:59:03 GMT
+      - Sun, 07 Jun 2026 20:56:57 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 7cddc4b3-26a7-4297-900d-bdc0f26ff247
+      - 7fad7b84-a358-486d-8dba-c0a1a1fc00ef
       azureai-fe-is-streaming:
       - 'False'
       azureml-model-session:
@@ -347,7 +348,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 310c0832-5956-4968-a515-8d547e448cd9
+      - 42977898-d29c-432b-97ff-5e23b9c1906f
     status:
       code: 200
       message: OK
