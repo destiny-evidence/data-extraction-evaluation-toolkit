@@ -24,6 +24,8 @@ jobs:
     if: github.event.pull_request.draft == false
     env:
       UV_CACHE_DIR: /tmp/.uv-cache  # Configure a constant location for the uv cache
+      AZURE_API_KEY: "DUMMY_SECRET"
+      AZURE_API_BASE: "DUMMY_SECRET"
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
@@ -64,10 +66,10 @@ jobs:
 
           if [ "$TARGET_BRANCH" = "main" ]; then
             echo "Running all tests (including real files)..."
-            uv run pytest --cov=deet --cov-report=xml
+            uv run pytest --cov=deet --cov-report=xml --record-mode=none
           else
             echo "Omitting real file parser tests..."
-            uv run pytest --ignore=tests/test_parser_real_files.py --cov=deet --cov-report=xml
+            uv run pytest --ignore=tests/test_parser_real_files.py --cov=deet --cov-report=xml --record-mode=none
           fi
 
       - name: Code coverage reporting
