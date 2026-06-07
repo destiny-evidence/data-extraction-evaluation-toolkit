@@ -429,6 +429,7 @@ class LLMDataExtractor:
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to process {document.name}: {e}")
                     logger.debug("Error details", exc_info=True)
+                    raise e
 
         run_metadata = ExtractionRunMetadata(
             model=self.model,
