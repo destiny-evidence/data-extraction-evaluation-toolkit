@@ -286,6 +286,8 @@ def pytest_recording_configure(config, vcr):
 @pytest.fixture(scope="module")
 def vcr_config():
     """Instruct pytest-recording to use the custom registered serializer."""
+    base_cassette_path = Path(__file__).parent / "integration" / "cassettes"
+
     return {
         "ignore_hosts": ["raw.githubusercontent.com"],
         "decode_compressed_response": True,
@@ -293,4 +295,5 @@ def vcr_config():
         "filter_headers": ["authorization", "api-key", "x-api-key"],
         "before_record_request": scrub_request_uri,
         "before_record_response": scrub_response_secrets,
+        "cassette_dir": str(base_cassette_path),
     }
