@@ -205,38 +205,49 @@ def normalise_nested_json(data: str):
 
 def json_body_match(r1, r2) -> bool:
     """Parse two vcr request bodies as JSON for strict comparison."""
-    try:
-        body1 = json.loads(
-            r1.body.decode("utf-8") if isinstance(r1.body, bytes) else r1.body
+
+    def get_str(body):
+        if isinstance(body, bytes):
+            return body.decode("utf-8", errors="replace").strip()
+        return str(body).strip() if body is not None else ""
+
+    s1 = get_str(r1.body)
+    s2 = get_str(r2.body)
+
+    # 1. Safe Fallback: If either body is empty, do a straight string match.
+    # This prevents GET requests or empty payloads from crashing your suite.
+    if not s1 or not s2:
+        return bool(s1 == s2)
+
+    # 2. Safe Fallback: If it obviously isn't JSON text, don't try to parse it as JSON.
+    is_json_structure = s1.startswith(("{", "[")) and s2.startswith(("{", "["))
+    if not is_json_structure:
+        return bool(s1 == s2)
+
+    # 3. Strict Execution: It looks like JSON, so it MUST parse perfectly.
+    # If json.loads fails here, we LET IT CRASH so you can see the corruption.
+    body1 = json.loads(s1)
+    body2 = json.loads(s2)
+
+    cleaned_body1 = normalise_nested_json(body1)
+    cleaned_body2 = normalise_nested_json(body2)
+    is_match = bool(cleaned_body1 == cleaned_body2)
+
+    # If it successfully parsed but the content doesn't match, show the diff
+    if not is_match:
+        import difflib
+        import pprint
+
+        print("\n❌ VCR REQUEST BODY MISMATCH DETECTED!")
+        str1 = pprint.pformat(cleaned_body1, sort_dicts=True).splitlines()
+        str2 = pprint.pformat(cleaned_body2, sort_dicts=True).splitlines()
+        diff = difflib.unified_diff(
+            str1, str2, fromfile="Cassette", tofile="Live Request"
         )
-        body2 = json.loads(
-            r2.body.decode("utf-8") if isinstance(r2.body, bytes) else r2.body
-        )
+        print("\n".join(diff))
+        print("===============================================================\n")
 
-        cleaned_body1 = normalise_nested_json(body1)
-        cleaned_body2 = normalise_nested_json(body2)
-
-        is_match = cleaned_body1 == cleaned_body2
-
-        if not is_match:
-            import difflib
-            import pprint
-
-            print("\n❌ VCR BODY MISMATCH DETECTED! SHOWING DELTA:")
-            # Pretty print to sorted lines to isolate genuine data differences
-            str1 = pprint.pformat(cleaned_body1, sort_dicts=True).splitlines()
-            str2 = pprint.pformat(cleaned_body2, sort_dicts=True).splitlines()
-
-            diff = difflib.unified_diff(
-                str1, str2, fromfile="Cassette", tofile="Live Request"
-            )
-            print("\n".join(diff))
-            print("===============================================\n")
-
-        return bool(cleaned_body1 == cleaned_body2)
-
-    except (json.JSONDecodeError, AttributeError, TypeError):
-        return bool(r1.body == r2.body)
+    return is_match
 
 
 def scrub_response_secrets(response: dict[str, Any]):
