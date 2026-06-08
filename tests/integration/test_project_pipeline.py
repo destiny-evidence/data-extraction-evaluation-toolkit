@@ -251,7 +251,11 @@ def test_extraction_without_evaluating(
 @pytest.mark.vcr
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_extraction_without_evaluating_or_linking(
-    runner, dataset_base_path, tmp_project_workspace, initialised_project_workspace
+    runner,
+    dataset_base_path,
+    tmp_project_workspace,
+    initialised_project_workspace,
+    no_parser_cache,
 ):
     """Test whether Alice can extract data using the LLM."""
     # Alice makes sure she is in the project directory she created on project init

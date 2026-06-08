@@ -3,6 +3,7 @@ import unicodedata
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pydantic import SecretStr
@@ -38,6 +39,20 @@ def mock_check_language(monkeypatch):
         "deet.processors.parser.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
     )
+
+
+@pytest.fixture
+def no_parser_cache():
+    """Bypasses the diskcache memoize decorator for a specific test execution."""
+
+    def pass_through_decorator(*args, **kwargs):
+        def decorator(func):
+            return func
+
+        return decorator
+
+    with patch("diskcache.Cache.memoize", pass_through_decorator):
+        yield
 
 
 @pytest.fixture
