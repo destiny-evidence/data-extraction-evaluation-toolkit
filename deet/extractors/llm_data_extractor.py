@@ -426,7 +426,7 @@ class LLMDataExtractor:
                     if result.total_cost_usd is not None:
                         total_cost = (total_cost or 0.0) + result.total_cost_usd
 
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.error(f"Failed to process {document.name}: {e}")
                     logger.debug("Error details", exc_info=True)
                     raise e
@@ -701,6 +701,8 @@ class LLMDataExtractor:
                 f"Estimated input cost: ${prompt_cost:.6f} USD "
                 f"({input_tokens} tokens)"
             )
+
+        print(f"LITELLM CALL: {self.api_base}")
 
         response = litellm.completion(
             model=self.model,

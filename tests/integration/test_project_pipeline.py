@@ -7,12 +7,10 @@ from threading import Thread
 
 import litellm
 import pytest
-import vcr
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 from typer.testing import CliRunner
-import os
 
 from deet.data_models.documents import Document
 from deet.data_models.project import DeetProject, ExperimentArtefacts
@@ -222,15 +220,9 @@ def test_extraction_without_evaluating(
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0
 
-    cassette_filename = f"{request.node.name}.yaml"
-    cassette_path = str(Path("tests/integration/cassettes") / cassette_filename)
-
-    record_mode = request.config.getoption("--record-mode", default="none")
-
-    with vcr.use_cassette(cassette_path, record_mode=record_mode):
-        result = runner.invoke(
-            app, ["experiments", "predict", "--config-path", deet_project.config_path]
-        )
+    result = runner.invoke(
+        app, ["experiments", "predict", "--config-path", deet_project.config_path]
+    )
     assert result.exit_code == 0
 
     # Alice makes sure her experiments dir exists
@@ -331,8 +323,6 @@ def test_extraction_with_evaluation(
 
     # 2. Force the underlying HTTP client to avoid async pooling/HTTP2
     # This ensures it hits VCR's standard socket patches
-    import os
-
     os.environ["LITELLM_FORCE_SYNC"] = "True"
 
     # If your version uses the OpenAI client mapping directly under litellm:

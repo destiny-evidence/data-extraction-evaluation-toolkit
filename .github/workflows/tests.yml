@@ -45,8 +45,8 @@ jobs:
             uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
             uv-${{ runner.os }}
 
-      - name: Install Pandoc
-        run: sudo apt-get update && sudo apt-get install -y pandoc
+      # - name: Install Pandoc
+      #   run: sudo apt-get update && sudo apt-get install -y pandoc
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
@@ -70,7 +70,7 @@ jobs:
             uv run pytest --cov=deet --cov-report=xml --record-mode=none
           else
             echo "Omitting real file parser tests..."
-            uv run pytest tests/integration/test_project_pipeline.py --ignore=tests/test_parser_real_files.py --cov=deet --cov-report=xml --record-mode=none -s
+            uv run pytest tests/integration/test_project_pipeline.py --ignore=tests/test_parser_real_files.py  --record-mode=none -s
           fi
 
       - name: Code coverage reporting
