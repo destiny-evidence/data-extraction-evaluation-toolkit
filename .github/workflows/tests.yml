@@ -70,7 +70,7 @@ jobs:
             uv run pytest --cov=deet --cov-report=xml --record-mode=none
           else
             echo "Omitting real file parser tests..."
-            uv run pytest --cov=deet --cov-report=xml --ignore=tests/test_parser_real_files.py  --record-mode=none
+            uv run pytest --cov=deet --cov-report=xml --ignore=tests/test_parser_real_files.py  --record-mode=none -s
           fi
 
       - name: Code coverage reporting
