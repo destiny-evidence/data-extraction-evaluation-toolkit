@@ -107,36 +107,37 @@ interactions:
       x-stainless-retry-count:
       - '0'
     method: POST
-    uri: https://dummy.secret
+    uri: https://dummy.secret/
   response:
     body:
       string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
-        60-mg dose );; Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose )\",\"additional_text\":\"Sixty
+        under spinal anesthesia;;Group 1 ( 29 patients ) received 4 mL of 1.5 % (
+        60-mg dose );;Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose )\",\"additional_text\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
         under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
         ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received
         4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The context
         provides specific information about the study participants, including the
-        total number of patients (Sixty), their condition (undergoing ambulatory anterior
-        cruciate ligament repair of the knee), and the breakdown of participants in
-        each group (Group 1 and Group 2).\"},{\"attribute_id\":5,\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
+        total number of patients (sixty), the conditions they were undergoing (anterior
+        cruciate ligament repair), and the breakdown of participants in each group
+        (29 in Group 1 and 31 in Group 2). This information is directly related to
+        the study participants.\"},{\"attribute_id\":5,\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
         context does not provide any specific information regarding the age of the
-        study participants.\"}]}","name":"json_tool_call"},"id":"call_cd43gAGRoseCEWf4qaBfhrOy","type":"function"}]}}],"created":1780865823,"id":"chatcmpl-DoEqF0Oxy4OJG90j17KP1bn2Vbg5H","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":260,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":7,"engine_ttft_ms":46,"engine_ttlt_ms":1985,"pre_inference_ms":97,"service_tbt_ms":7,"service_ttft_ms":737,"service_ttlt_ms":2667,"total_duration_ms":2579,"user_visible_ttft_ms":640},"prompt_tokens":1239,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1499}}
+        study participants.\"}]}","name":"json_tool_call"},"id":"call_qgOvSC2c4Okr9VGq6U4oi8HF","type":"function"}]}}],"created":1780954428,"id":"chatcmpl-DobtMERLm0kpUz7NpMDS8nziHHvea","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":272,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":47,"engine_ttlt_ms":2452,"pre_inference_ms":176,"service_tbt_ms":9,"service_ttft_ms":487,"service_ttlt_ms":2943,"total_duration_ms":2769,"user_visible_ttft_ms":311},"prompt_tokens":1239,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1511}}
 
         '
     headers:
       Content-Length:
-      - '2368'
+      - '2429'
       Content-Type:
       - application/json
       Date:
-      - Sun, 07 Jun 2026 20:57:05 GMT
+      - Mon, 08 Jun 2026 21:33:50 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 0b8d42c5-ad37-4bc8-be5e-b67cfc5a5d2d
+      - 26e768eb-3986-4bba-ad2b-ebe18bbbe068
       azureai-fe-is-streaming:
       - 'False'
       azureml-model-session:
@@ -178,7 +179,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 93fffe01-0077-46a7-8006-71354f2e1d9f
+      - 2a33a471-cd9b-414f-85fa-31eb7ac29984
     status:
       code: 200
       message: OK
@@ -280,34 +281,32 @@ interactions:
       x-stainless-retry-count:
       - '0'
     method: POST
-    uri: https://dummy.secret
+    uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"Thirty-six
+      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"thirty-six
         young male students\",\"additional_text\":\"Thirty-six young male students
         performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups
         : 3 min of static active stretching ( SAS ) , 3 min of dynamic active stretching
         ( DAS ) , or control ( CON ) .\",\"reasoning\":\"The context explicitly states
-        that the study participants were ''Thirty-six young male students'', which
-        provides information about the sample size, sex, and age group.\"},{\"attribute_id\":5,\"output_data\":\"young\",\"additional_text\":\"Thirty-six
-        young male students performed 5 min of jogging as a warm-up and were allocated
-        to 1 of 3 groups : 3 min of static active stretching ( SAS ) , 3 min of dynamic
-        active stretching ( DAS ) , or control ( CON ) .\",\"reasoning\":\"The term
-        ''young'' is used to describe the age of the participants, indicating they
-        are likely in their late teens to early twenties.\"}]}","name":"json_tool_call"},"id":"call_goI4DVLfVKzBGGZV0RvpmqTE","type":"function"}]}}],"created":1780865826,"id":"chatcmpl-DoEqImz7sguaQtjegFovl7MsfNBw5","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":211,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":7,"engine_ttft_ms":57,"engine_ttlt_ms":1583,"pre_inference_ms":90,"service_tbt_ms":7,"service_ttft_ms":407,"service_ttlt_ms":1928,"total_duration_ms":1847,"user_visible_ttft_ms":317},"prompt_tokens":1012,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1223}}
+        that the study participants were ''thirty-six young male students'', which
+        provides information about the sample size, sex, and age group of the participants.\"},{\"attribute_id\":5,\"output_data\":\"young\",\"additional_text\":\"thirty-six
+        young male students\",\"reasoning\":\"The term ''young'' is used to describe
+        the age of the study participants, as mentioned in the phrase ''thirty-six
+        young male students''.\"}]}","name":"json_tool_call"},"id":"call_ccbymkspmWXDgEsTyYZS54bi","type":"function"}]}}],"created":1780954432,"id":"chatcmpl-DobtQjWW6CqTXMQN49hu2hlaBMc4I","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":171,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":8,"engine_ttft_ms":31,"engine_ttlt_ms":1482,"pre_inference_ms":95,"service_tbt_ms":9,"service_ttft_ms":730,"service_ttlt_ms":2178,"total_duration_ms":2092,"user_visible_ttft_ms":636},"prompt_tokens":1012,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1183}}
 
         '
     headers:
       Content-Length:
-      - '2237'
+      - '2070'
       Content-Type:
       - application/json
       Date:
-      - Sun, 07 Jun 2026 20:57:07 GMT
+      - Mon, 08 Jun 2026 21:33:53 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 9cc421fd-efb1-4e08-b26a-f89ce0a8a7f8
+      - bd249708-e80c-4523-a05f-629793a55973
       azureai-fe-is-streaming:
       - 'False'
       azureml-model-session:
@@ -349,7 +348,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 384a8458-341d-4714-bdf5-04cfe9b4680a
+      - e15f874f-8025-4d36-ba8c-ae3423e6658b
     status:
       code: 200
       message: OK
