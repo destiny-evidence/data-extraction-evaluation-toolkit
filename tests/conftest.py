@@ -219,14 +219,17 @@ def json_body_match(r1, r2) -> bool:
         is_match = cleaned_body1 == cleaned_body2
 
         if not is_match:
-            import pprint
             import difflib
+            import pprint
+
             print("\n❌ VCR BODY MISMATCH DETECTED! SHOWING DELTA:")
             # Pretty print to sorted lines to isolate genuine data differences
             str1 = pprint.pformat(cleaned_body1, sort_dicts=True).splitlines()
             str2 = pprint.pformat(cleaned_body2, sort_dicts=True).splitlines()
-            
-            diff = difflib.unified_diff(str1, str2, fromfile="Cassette", tofile="Live Request")
+
+            diff = difflib.unified_diff(
+                str1, str2, fromfile="Cassette", tofile="Live Request"
+            )
             print("\n".join(diff))
             print("===============================================\n")
 
@@ -305,7 +308,7 @@ def vcr_config():
     return {
         "ignore_hosts": ["raw.githubusercontent.com"],
         "decode_compressed_response": True,
-        "match_on": ["method", "uri", ],
+        "match_on": ["method", "uri"],
         "filter_headers": ["authorization", "api-key", "x-api-key"],
         "before_record_request": scrub_request_uri,
         "before_record_response": scrub_response_secrets,
