@@ -265,7 +265,6 @@ def test_extraction_without_evaluating_or_linking(
     )
 
     result = runner.invoke(app, ["project", "link"])
-    print(result.output)
     assert result.exit_code == 0
 
     # Alice doesn't want to bother linking yet, she just extracts directly
@@ -280,6 +279,7 @@ def test_extraction_without_evaluating_or_linking(
             "--ignore-references",
         ],
     )
+    print(result.output)
     assert result.exit_code == 0
 
     # Alice makes sure her experiments dir exists
