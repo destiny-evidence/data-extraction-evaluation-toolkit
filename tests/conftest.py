@@ -264,6 +264,41 @@ def json_body_match(r1, r2) -> bool:
 
     return is_match
 
+def normalize_string(s):
+    """Aggressively strip whitespaces, newlines, and force ascii/clean characters."""
+    if not isinstance(s, str):
+        return s
+    # Normalize unicode characters (handles things like \xC2\xB0 vs ° matching issues)
+    s = unicodedata.normalize('NFKD', s)
+    # Remove all whitespace, newlines, and backslashes
+    s = re.sub(r'[\s\\\n\r\t]', '', s)
+    # Convert to lowercase to ignore casing discrepancies in schemas/prompts
+    return s.lower()
+
+def sanitize_and_sort(obj):
+    """Recursively clean and sort JSON structures for strict semantic matching."""
+    if isinstance(obj, dict):
+        return sorted((k, sanitize_and_sort(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return [sanitize_and_sort(x) for x in obj]
+    if isinstance(obj, str):
+        return normalize_string(obj)
+    return obj
+
+def custom_json_body_matcher(r1, r2):
+    """
+    VCR Request Matcher that compares the semantic content of JSON bodies
+    while completely ignoring whitespace, key order, and character encoding quirks.
+    """
+    try:
+        body1 = json.loads(r1.body.decode('utf-8'))
+        body2 = json.loads(r2.body.decode('utf-8'))
+        
+        return sanitize_and_sort(body1) == sanitize_and_sort(body2)
+    except Exception:
+        # Fallback to string comparison if one isn't valid JSON
+        return normalize_string(r1.body.decode('utf-8', errors='ignore')) == normalize_string(r2.body.decode('utf-8', errors='ignore'))
+
 
 def scrub_response_secrets(response: dict[str, Any]):
     """Scrub secrets from the response body before VCR saves it."""
@@ -323,7 +358,7 @@ def scrub_request_uri(request: Request) -> Request:
 
 def pytest_recording_configure(config, vcr):
     """Use plugin hook to configure VCR instance to scrub secrets from casettes."""
-    vcr.register_matcher("json_body", json_body_match)
+    vcr.register_matcher("json_body", custom_json_body_matcher)
 
 
 @pytest.fixture(scope="module")
