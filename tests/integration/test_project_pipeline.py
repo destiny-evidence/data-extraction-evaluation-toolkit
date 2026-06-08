@@ -223,6 +223,8 @@ def test_extraction_without_evaluating(
     result = runner.invoke(
         app, ["experiments", "predict", "--config-path", deet_project.config_path]
     )
+    if result.exit_code != 0:
+        print(result.output)
     assert result.exit_code == 0
 
     # Alice makes sure her experiments dir exists
