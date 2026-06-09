@@ -1,11 +1,15 @@
 import json
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import pytest
+from pydantic import SecretStr
+from vcr.request import Request
 
 from deet.processors.converter_register import SupportedImportFormat
 from deet.processors.parser import ParsedOutput
+from deet.settings import get_settings
 
 
 @pytest.fixture
@@ -173,4 +177,71 @@ def valid_project_data(tmp_path, sample_eppi_data):
         "gold_standard_data_format": SupportedImportFormat.EPPI_JSON,
         "environment_file": "project",
         "pdf_dir": tmp_path,  # A real directory
+    }
+
+
+def scrub_response_secrets(response: dict[str, Any]):
+    """Scrub secrets from the response body before VCR saves it."""
+    settings = get_settings()
+
+    clean_secrets = [
+        val.get_secret_value()
+        for _, val in settings
+        if isinstance(val, SecretStr)
+        and val.get_secret_value()
+        and len(val.get_secret_value()) > 4
+    ]
+
+    body_data = response["body"]["string"]
+
+    is_bytes = isinstance(body_data, bytes)
+    body_str = body_data.decode("utf-8") if is_bytes else body_data
+
+    for secret in clean_secrets:
+        body_str = body_str.replace(secret, "DUMMY_SECRET")
+
+    response["body"]["string"] = body_str.encode("utf-8") if is_bytes else body_str
+
+    if "headers" in response:
+        headers = response["headers"]
+        for k in list(headers.keys()):
+            if k.lower() == "content-length":
+                actual_len = len(response["body"]["string"])
+                headers[k] = [str(actual_len)]
+
+    return response
+
+
+def scrub_request_uri(request: Request) -> Request:
+    """Remove secrets from uri."""
+    settings = get_settings()
+
+    clean_secrets = [
+        val.get_secret_value()
+        for _, val in settings
+        if isinstance(val, SecretStr)
+        and val.get_secret_value()
+        and len(val.get_secret_value()) > 4
+    ]
+
+    for secret in clean_secrets:
+        if secret.lower() in request.uri.lower():
+            request.uri = "https://dummy.secret/"
+
+    return request
+
+
+@pytest.fixture(scope="module")
+def vcr_config():
+    """Configure vcr to focus on llm calls and scrub secrets."""
+    base_cassette_path = Path(__file__).parent / "integration" / "cassettes"
+
+    return {
+        "ignore_hosts": ["raw.githubusercontent.com"],
+        "decode_compressed_response": True,
+        "match_on": ["method", "uri"],
+        "filter_headers": ["authorization", "api-key", "x-api-key"],
+        "before_record_request": scrub_request_uri,
+        "before_record_response": scrub_response_secrets,
+        "cassette_dir": str(base_cassette_path),
     }

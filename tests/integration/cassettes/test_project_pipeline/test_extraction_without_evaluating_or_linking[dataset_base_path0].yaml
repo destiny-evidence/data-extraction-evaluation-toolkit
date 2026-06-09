@@ -1,0 +1,354 @@
+interactions:
+- request:
+    body: '{"messages":[{"role":"system","content":"You will be provided with a context
+      from a paper and a list of questions below.\nBased on the context, answer each
+      question as true or false and return a list of JSON objects.\n\nPlease explain
+      step by step reasoning behind each answer.\nYou should also cite text from the
+      paper context to support your answer if the answer is True. If the citation
+      is present at multiple places, please cite all of them in the additional_text
+      key. You can separate the citations with ------.\n\nIMPORTANT: Be careful to
+      distinguish between the current paper''s findings and references to previous
+      literature. When the text refers to other studies (indicated by citation markers
+      like reference numbers [1], author names and years (Smith et al., 2020), etc.),
+      do not use these statements as evidence for the current paper''s attributes.
+      Only use statements that directly describe the current paper''s methodology.\n\n\nPaper
+      text is provided inside the JSON under the \"context\" key.\n\nInput JSON:\n{input_json}\n"},{"role":"user","content":"{\"context\":
+      \"The anesthetic and recovery profile of two doses ( 60 and 80 mg ) of plain
+      mepivacaine for ambulatory spinal anesthesia . UNLABELLED Reports of transient
+      neurological symptoms with the use of subarachnoid lidocaine has generated interest
+      in alternate local anesthetics of intermediate duration , such as mepivacaine
+      . This prospective randomized , double-blinded , dose-response study examined
+      the anesthetic and recovery profiles of 60- and 80-mg doses of preservative-free
+      plain mepivacaine for ambulatory spinal anesthesia . Sixty patients undergoing
+      ambulatory anterior cruciate ligament repair of the knee under spinal anesthesia
+      were randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5
+      % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
+      ) of plain mepivacaine . All patients received a combined spinal-epidural anesthetic
+      technique . The epidural catheter was used only in the event the surgery outlasted
+      the duration of surgical anesthesia with subarachnoid mepivacaine . Epidural
+      supplementation was administered in three patients ( 12 % ) in Group 1 and one
+      patient ( 3 % ) in Group 2 when the sensory block regressed to L-1 with surgery
+      expected to last longer than 15 min . The cephalad dermatome level of the block
+      and degree of motor block was comparable in the two groups . Times to two-segment
+      and T-10 regression were comparable in the two groups ( 112 +/- 26 min in Group
+      1 versus 122 +/- 28 min in Group 2 ) . Time to L-1 regression was significantly
+      longer in Group 2 ( 146 +/- 28 min in Group 1 versus 159 +/- 19 min in Group
+      2 ) . All of the ambulatory milestones were significantly faster in Group 1
+      . Side effects , such as hypotension and emesis were negligible , severe bradycardia
+      and urinary retention did not occur , and none of the patients in the two groups
+      reported transient neurological symptoms over 24 h. In conclusion , plain mepivacaine
+      in a 60- or 80-mg dose is a suitable local anesthetic choice for ambulatory
+      spinal anesthesia with respect to anesthetic , as well as recovery profiles
+      . IMPLICATIONS We evaluated the anesthetic and recovery profiles of 60- and
+      80-mg doses of plain mepivacaine for ambulatory spinal anesthesia . Both doses
+      produced comparable sensory and motor block . Sensory and motor regression and
+      ambulatory milestones were 20-30 min longer with the 80-mg dose . Side effects
+      were negligible and transient neurological symptoms were not reported during
+      a 24-h follow-up .\", \"attributes\": [{\"prompt\": \"From the given source
+      context, extract ALL pieces of text that describe the study participants, including
+      descriptors such as sex, age, sample size, and any  diseases/conditions (including
+      experimentally induced conditions). Treat this as an exhaustive named-entity
+      data extraction task extracting only brief snippets of text or phrases. Extract
+      text EXACTLY as it is mentioned in the source context and if applicable, divide
+      extracted text snippets with double semicolon (;;). Do not extract any text
+      if participant information is not reported.\", \"attribute_id\": 1, \"output_data_type\":
+      \"string\"}, {\"prompt\": \"From the given source context, extract ALL pieces
+      of text that describe the age of study participants, with no additional information.
+      Treat this as an exhaustive named-entity data extraction task extracting only
+      brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
+      the source context and if applicable, divide extracted text snippets with double
+      semicolon (;;). Do not extract any text if participant information is not reported.\",
+      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-4o-mini","temperature":0.1,"tool_choice":{"type":"function","function":{"name":"json_tool_call"}},"tools":[{"type":"function","function":{"name":"json_tool_call","parameters":{"$defs":{"LLMAnnotationResponse":{"additionalProperties":false,"description":"LLM
+      response model for a single annotation.\n\nThis mirrors EppiGoldStandardAnnotation
+      structure but uses attribute_id\ninstead of full EppiAttribute object, as the
+      LLM cannot provide the full\nattribute object.","properties":{"attribute_id":{"description":"The
+      ID of the EPPI attribute being annotated","title":"Attribute Id","type":"integer"},"output_data":{"anyOf":[{"type":"string"},{"type":"integer"},{"type":"number"},{"type":"boolean"},{"items":{"additionalProperties":false,"type":"object"},"type":"array"},{"additionalProperties":false,"type":"object"}],"description":"The
+      LLM''s annotation.","title":"Output Data"},"additional_text":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Supporting
+      text from document containing the context window where the attribute is found","title":"Additional
+      Text"},"reasoning":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Reasoning
+      or explanation for the annotation decision","title":"Reasoning"}},"required":["attribute_id","output_data","additional_text","reasoning"],"title":"LLMAnnotationResponse","type":"object"}},"additionalProperties":false,"description":"Root
+      schema for LLM annotation extraction response.\n\nThis structure matches the
+      expected format that can be converted\nto list[GoldStandardAnnotation] after
+      attribute resolution.","properties":{"annotations":{"description":"List of annotations
+      extracted from the document","items":{"$ref":"#/$defs/LLMAnnotationResponse"},"title":"Annotations","type":"array"}},"required":["annotations"],"title":"LLMResponseSchema","type":"object"}}}]}'
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '6577'
+      Content-Type:
+      - application/json
+      Host:
+      - eppireasoning.openai.azure.com
+      User-Agent:
+      - AzureOpenAI/Python 1.109.1
+      X-Stainless-Arch:
+      - x64
+      X-Stainless-Async:
+      - 'false'
+      X-Stainless-Lang:
+      - python
+      X-Stainless-OS:
+      - Linux
+      X-Stainless-Package-Version:
+      - 1.109.1
+      X-Stainless-Raw-Response:
+      - 'true'
+      X-Stainless-Runtime:
+      - CPython
+      X-Stainless-Runtime-Version:
+      - 3.12.11
+      x-stainless-read-timeout:
+      - '600.0'
+      x-stainless-retry-count:
+      - '0'
+    method: POST
+    uri: https://dummy.secret/
+  response:
+    body:
+      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"Sixty
+        patients undergoing ambulatory anterior cruciate ligament repair of the knee
+        under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
+        60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
+        ) of plain mepivacaine\",\"additional_text\":\"Sixty patients undergoing ambulatory
+        anterior cruciate ligament repair of the knee under spinal anesthesia were
+        randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5
+        % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg
+        dose ) of plain mepivacaine .\",\"reasoning\":\"The context provides specific
+        information about the study participants, including the total number of patients
+        (Sixty), the conditions they were undergoing (ambulatory anterior cruciate
+        ligament repair), and the breakdown of participants in each group (Group 1
+        and Group 2).\"},{\"attribute_id\":5,\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
+        context does not provide any specific information regarding the age of the
+        study participants.\"}]}","name":"json_tool_call"},"id":"call_u48vCbxm8Dut8WxA0mW8LfMc","type":"function"}]}}],"created":1781012798,"id":"chatcmpl-Dor4oEESumd1ZX5hp0p6xyBZCQZdy","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":265,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":13,"engine_ttft_ms":31,"engine_ttlt_ms":3567,"pre_inference_ms":117,"service_tbt_ms":13,"service_ttft_ms":425,"service_ttlt_ms":3955,"total_duration_ms":3846,"user_visible_ttft_ms":308},"prompt_tokens":1239,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1504}}
+
+        '
+    headers:
+      Content-Length:
+      - '2391'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 09 Jun 2026 13:46:41 GMT
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      apim-request-id:
+      - aeb8903c-6214-4cdb-9fd1-d476be408023
+      azureai-fe-is-streaming:
+      - 'False'
+      azureml-model-session:
+      - d20260528174849-b64f88ce
+      skip-error-remapping:
+      - 'true'
+      x-accel-buffering:
+      - 'no'
+      x-content-type-options:
+      - nosniff
+      x-ms-deployment-name:
+      - gpt-4o-mini
+      x-ms-is-spilled-over:
+      - 'false'
+      x-ms-rai-invoked:
+      - 'true'
+      x-ms-region:
+      - Sweden Central
+      x-ms-served-model:
+      - gpt-4o-mini-2024-07-18
+      x-ratelimit-abusepenalty-active:
+      - 'False'
+      x-ratelimit-key:
+      - gpt-4o-mini
+      x-ratelimit-limit-requests:
+      - '13900'
+      x-ratelimit-limit-tokens:
+      - '1390000'
+      x-ratelimit-remaining-requests:
+      - '13899'
+      x-ratelimit-remaining-tokens:
+      - '1388761'
+      x-ratelimit-renewalperiod-requests:
+      - '60'
+      x-ratelimit-renewalperiod-tokens:
+      - '60'
+      x-ratelimit-reset-requests:
+      - '0'
+      x-ratelimit-reset-tokens:
+      - '0'
+      x-request-id:
+      - 716152ae-d132-4db6-99f7-73b64da2a8da
+    status:
+      code: 200
+      message: OK
+- request:
+    body: "{\"messages\":[{\"role\":\"system\",\"content\":\"You will be provided
+      with a context from a paper and a list of questions below.\\nBased on the context,
+      answer each question as true or false and return a list of JSON objects.\\n\\nPlease
+      explain step by step reasoning behind each answer.\\nYou should also cite text
+      from the paper context to support your answer if the answer is True. If the
+      citation is present at multiple places, please cite all of them in the additional_text
+      key. You can separate the citations with ------.\\n\\nIMPORTANT: Be careful
+      to distinguish between the current paper's findings and references to previous
+      literature. When the text refers to other studies (indicated by citation markers
+      like reference numbers [1], author names and years (Smith et al., 2020), etc.),
+      do not use these statements as evidence for the current paper's attributes.
+      Only use statements that directly describe the current paper's methodology.\\n\\n\\nPaper
+      text is provided inside the JSON under the \\\"context\\\" key.\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
+      \\\"Acute effects of static active or dynamic active stretching on eccentric-exercise-induced
+      hamstring muscle damage . OBJECTIVES To examine whether an acute bout of active
+      or dynamic hamstring-stretching exercises would reduce the amount of muscle
+      damage observed after a strenuous eccentric task and to determine whether the
+      stretching protocols elicit similar responses . DESIGN A randomized controlled
+      clinical trial . METHODS Thirty-six young male students performed 5 min of jogging
+      as a warm-up and were allocated to 1 of 3 groups : 3 min of static active stretching
+      ( SAS ) , 3 min of dynamic active stretching ( DAS ) , or control ( CON ) .
+      All subjects performed eccentric exercise immediately after stretching . Heart
+      rate , core temperature , maximal voluntary isometric contraction , passive
+      hip flexion , passive hamstring stiffness ( PHS ) , plasma creatine kinase activity
+      , and myoglobin were recorded at prestretching , at poststretching , and every
+      day after the eccentric exercises for 5 d. RESULTS After stretching , the change
+      in hip flexion was significantly higher in the SAS ( 5\xC2\xB0 ) and DAS ( 10.8\xC2\xB0
+      ) groups than in the CON ( -4.1\xC2\xB0 ) group . The change in PHS was significantly
+      higher in the DAS ( 5.6 % ) group than in the CON ( -5.7 % ) and SAS ( -6.7
+      % ) groups . Furthermore , changes in muscle-damage markers were smaller in
+      the SAS group than in the DAS and CON groups . CONCLUSIONS Prior active stretching
+      could be useful for attenuating the symptoms of muscle damage after eccentric
+      exercise . SAS is recommended over DAS as a stretching protocol in terms of
+      strength , hamstring range of motion , and damage markers .\\\", \\\"attributes\\\":
+      [{\\\"prompt\\\": \\\"From the given source context, extract ALL pieces of text
+      that describe the study participants, including descriptors such as sex, age,
+      sample size, and any  diseases/conditions (including experimentally induced
+      conditions). Treat this as an exhaustive named-entity data extraction task extracting
+      only brief snippets of text or phrases. Extract text EXACTLY as it is mentioned
+      in the source context and if applicable, divide extracted text snippets with
+      double semicolon (;;). Do not extract any text if participant information is
+      not reported.\\\", \\\"attribute_id\\\": 1, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"From the given source context, extract ALL pieces of text
+      that describe the age of study participants, with no additional information.
+      Treat this as an exhaustive named-entity data extraction task extracting only
+      brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
+      the source context and if applicable, divide extracted text snippets with double
+      semicolon (;;). Do not extract any text if participant information is not reported.\\\",
+      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"temperature\":0.1,\"tool_choice\":{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\"}},\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\",\"parameters\":{\"$defs\":{\"LLMAnnotationResponse\":{\"additionalProperties\":false,\"description\":\"LLM
+      response model for a single annotation.\\n\\nThis mirrors EppiGoldStandardAnnotation
+      structure but uses attribute_id\\ninstead of full EppiAttribute object, as the
+      LLM cannot provide the full\\nattribute object.\",\"properties\":{\"attribute_id\":{\"description\":\"The
+      ID of the EPPI attribute being annotated\",\"title\":\"Attribute Id\",\"type\":\"integer\"},\"output_data\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"},{\"type\":\"number\"},{\"type\":\"boolean\"},{\"items\":{\"additionalProperties\":false,\"type\":\"object\"},\"type\":\"array\"},{\"additionalProperties\":false,\"type\":\"object\"}],\"description\":\"The
+      LLM's annotation.\",\"title\":\"Output Data\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
+      text from document containing the context window where the attribute is found\",\"title\":\"Additional
+      Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"attribute_id\",\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"description\":\"Root
+      schema for LLM annotation extraction response.\\n\\nThis structure matches the
+      expected format that can be converted\\nto list[GoldStandardAnnotation] after
+      attribute resolution.\",\"properties\":{\"annotations\":{\"description\":\"List
+      of annotations extracted from the document\",\"items\":{\"$ref\":\"#/$defs/LLMAnnotationResponse\"},\"title\":\"Annotations\",\"type\":\"array\"}},\"required\":[\"annotations\"],\"title\":\"LLMResponseSchema\",\"type\":\"object\"}}}]}"
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '5749'
+      Content-Type:
+      - application/json
+      Host:
+      - eppireasoning.openai.azure.com
+      User-Agent:
+      - AzureOpenAI/Python 1.109.1
+      X-Stainless-Arch:
+      - x64
+      X-Stainless-Async:
+      - 'false'
+      X-Stainless-Lang:
+      - python
+      X-Stainless-OS:
+      - Linux
+      X-Stainless-Package-Version:
+      - 1.109.1
+      X-Stainless-Raw-Response:
+      - 'true'
+      X-Stainless-Runtime:
+      - CPython
+      X-Stainless-Runtime-Version:
+      - 3.12.11
+      x-stainless-read-timeout:
+      - '600.0'
+      x-stainless-retry-count:
+      - '0'
+    method: POST
+    uri: https://dummy.secret/
+  response:
+    body:
+      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"thirty-six
+        young male students\",\"additional_text\":\"Thirty-six young male students
+        performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups
+        : 3 min of static active stretching ( SAS ) , 3 min of dynamic active stretching
+        ( DAS ) , or control ( CON ) .\",\"reasoning\":\"The context explicitly states
+        that the study participants were thirty-six young male students, which provides
+        information about the sample size, sex, and age group.\"},{\"attribute_id\":5,\"output_data\":\"young\",\"additional_text\":\"thirty-six
+        young male students\",\"reasoning\":\"The term ''young'' is used to describe
+        the age of the study participants, indicating that they are not older adults.\"}]}","name":"json_tool_call"},"id":"call_FmugFLpxo5qcA9oSuXouw1lE","type":"function"}]}}],"created":1781012803,"id":"chatcmpl-Dor4taWenq2G1GNYdujxZ3BbQnjW2","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":160,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":15,"engine_ttft_ms":40,"engine_ttlt_ms":2442,"pre_inference_ms":159,"service_tbt_ms":15,"service_ttft_ms":510,"service_ttlt_ms":2889,"total_duration_ms":2750,"user_visible_ttft_ms":351},"prompt_tokens":1012,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1172}}
+
+        '
+    headers:
+      Content-Length:
+      - '2033'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 09 Jun 2026 13:46:45 GMT
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      apim-request-id:
+      - b461e784-079c-4faa-9eef-e1436409f104
+      azureai-fe-is-streaming:
+      - 'False'
+      azureml-model-session:
+      - d20260528174849-b64f88ce
+      skip-error-remapping:
+      - 'true'
+      x-accel-buffering:
+      - 'no'
+      x-content-type-options:
+      - nosniff
+      x-ms-deployment-name:
+      - gpt-4o-mini
+      x-ms-is-spilled-over:
+      - 'false'
+      x-ms-rai-invoked:
+      - 'true'
+      x-ms-region:
+      - Sweden Central
+      x-ms-served-model:
+      - gpt-4o-mini-2024-07-18
+      x-ratelimit-abusepenalty-active:
+      - 'False'
+      x-ratelimit-key:
+      - gpt-4o-mini
+      x-ratelimit-limit-requests:
+      - '13900'
+      x-ratelimit-limit-tokens:
+      - '1390000'
+      x-ratelimit-remaining-requests:
+      - '13899'
+      x-ratelimit-remaining-tokens:
+      - '1388988'
+      x-ratelimit-renewalperiod-requests:
+      - '60'
+      x-ratelimit-renewalperiod-tokens:
+      - '60'
+      x-ratelimit-reset-requests:
+      - '0'
+      x-ratelimit-reset-tokens:
+      - '0'
+      x-request-id:
+      - e89ff480-d55a-4b5d-b56d-c000ac2e35a4
+    status:
+      code: 200
+      message: OK
+version: 1
