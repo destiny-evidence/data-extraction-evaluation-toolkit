@@ -718,7 +718,12 @@ class LLMDataExtractor:
             max_tokens=self.config.max_tokens,
         )
 
-        response_content = response.choices[0].message.content
+        msg = response.choices[0].message
+
+        if getattr(msg, "content", None) is not None:
+            response_content = msg.content
+        elif getattr(msg, "tool_calls", None):
+            response_content = msg.tool_calls[0].function.arguments
         logger.debug(f"raw response: {response_content}")
 
         input_tokens = 0
