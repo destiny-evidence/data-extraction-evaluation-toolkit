@@ -20,6 +20,7 @@ class AnnotationType(StrEnum):
 
     HUMAN = auto()
     LLM = auto()
+    KEYWORD = auto()
 
 
 class AttributeType(StrEnum):
