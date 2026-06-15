@@ -23,9 +23,7 @@ import yaml
 from pydantic import (
     BaseModel,
     ConfigDict,
-    DirectoryPath,
     Field,
-    FilePath,
     PrivateAttr,
     field_validator,
 )
@@ -53,12 +51,12 @@ class DeetProject(BaseModel):
         str,
         UI(
             help="Give your project a name. This will help you to identify it later",
-            valid="Must be at least 2 characters",
+            valid="Must be at least 1 character",
         ),
-    ] = Field(..., description="The name of a deet project", min_length=2)
+    ] = Field(..., description="The name of a deet project", min_length=1)
 
     gold_standard_data_path: Annotated[
-        FilePath,
+        Path,
         UI(
             help=(
                 "A file containing a list of documents from which you wish to"
@@ -70,7 +68,7 @@ class DeetProject(BaseModel):
             instructions="press Tab to autocomplete, '/' to go to next directory",
             valid="Must be a valid .csv or .json path",
         ),
-    ] = Field(..., description="Path to raw data")
+    ] = Field(..., description="Path to gold standard annotated data")
 
     gold_standard_data_format: Annotated[
         SupportedImportFormat,
@@ -83,7 +81,7 @@ class DeetProject(BaseModel):
     ] = Field(..., description="Format of gold standard annotations")
 
     pdf_dir: Annotated[
-        DirectoryPath | None,
+        Path | None,
         UI(
             help=(
                 "If you want to extract data from full texts, "
@@ -136,6 +134,29 @@ class DeetProject(BaseModel):
         """Return path to config file."""
         return self.root / "default_extraction_config.yaml"
 
+    @property
+    def gold_standard_data_abspath(self) -> Path:
+        """
+        Return a usable path to the gold-standard data.
+
+        ``gold_standard_data_path`` is stored relative to the project root (and
+        never persisted as an absolute path, so ``project.yaml`` stays portable).
+        This joins it with the root only for I/O.
+        """
+        return self.root / self.gold_standard_data_path
+
+    @property
+    def pdf_dir_abspath(self) -> Path | None:
+        """
+        Return a usable path to the pdf directory, or None if unset.
+
+        ``pdf_dir`` is stored relative to the project root and joined with it here
+        only for I/O; it is never persisted as an absolute path.
+        """
+        if self.pdf_dir is None:
+            return None
+        return self.root / self.pdf_dir
+
     # Configuration and validation
     model_config = ConfigDict(
         json_encoders={Path: str},
@@ -151,13 +172,45 @@ class DeetProject(BaseModel):
             raise ValueError(unsupported_ext)
         return value
 
-    @field_validator("pdf_dir", mode="after")
+    @field_validator("pdf_dir", mode="before")
     @classmethod
-    def _process_pdf_dir(cls, value: Path) -> Path | None:
-        """Parse empty string to None (not cwd), otherwise return path."""
-        if value == "" or value is None:
+    def _process_pdf_dir(cls, value: object) -> object | None:
+        """Parse empty string to None (not cwd) before Path coercion."""
+        if isinstance(value, str) and value.strip() == "":
             return None
         return value
+
+    def anchor_to(self, root: Path, source_dir: Path | None = None) -> None:
+        """
+        Anchor the project to ``root``, re-expressing resource paths relative to it.
+
+        Resource paths are authored relative to ``source_dir`` (default cwd, i.e.
+        where the wizard ran). They are rewritten relative to ``root`` so they stay
+        correct when ``root`` differs from that directory (as with
+        ``deet project new``). The stored values remain relative, never absolute.
+        """
+        source = source_dir or Path.cwd()
+        self.gold_standard_data_path = (
+            source / self.gold_standard_data_path
+        ).relative_to(root, walk_up=True)
+        if self.pdf_dir is not None:
+            self.pdf_dir = (source / self.pdf_dir).relative_to(root, walk_up=True)
+        self._root = root
+
+    def validate_resources(self) -> None:
+        """Check that the project's resource paths exist on disk."""
+        if not self.gold_standard_data_abspath.exists():
+            missing = (
+                f"Gold standard data not found at {self.gold_standard_data_abspath} "
+                f"(stored as '{self.gold_standard_data_path}', relative to {self.root})"
+            )
+            raise FileNotFoundError(missing)
+        if self.pdf_dir_abspath is not None and not self.pdf_dir_abspath.is_dir():
+            missing_pdfs = (
+                f"PDF directory not found at {self.pdf_dir_abspath} "
+                f"(stored as '{self.pdf_dir}', relative to {self.root})"
+            )
+            raise FileNotFoundError(missing_pdfs)
 
     def setup(self) -> None:
         """
@@ -166,6 +219,9 @@ class DeetProject(BaseModel):
         Create directory structure, process gold-standard data, and create
             prompt csv and link map
         """
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.validate_resources()
+
         processed_data = self.process_data()
         notify("Successfully parsed processed data.", level=LogLevel.SUCCESS)
 
@@ -173,7 +229,7 @@ class DeetProject(BaseModel):
         notify("Initialised prompt definition file.", level=LogLevel.SUCCESS)
 
         processed_data.export_linkage_mapper_csv(
-            file_path=self.link_map_path, document_base_dir=self.pdf_dir
+            file_path=self.link_map_path, document_base_dir=self.pdf_dir_abspath
         )
         notify("Initialised reference-pdf link mapping file.", level=LogLevel.SUCCESS)
 
@@ -185,8 +241,15 @@ class DeetProject(BaseModel):
 
         self.dump_to_yaml()
 
-    def dump_to_yaml(self, target: Path = PROJECT_FILE) -> None:
-        """Write a minimal ``project.yaml`` file to save project options."""
+    def dump_to_yaml(self, target: Path | None = None) -> None:
+        """
+        Write a minimal ``project.yaml`` file to save project options.
+
+        Written to the project root by default. Resource paths are stored as their
+        relative values, never resolved to absolute, so the file stays portable.
+        """
+        target = target if target is not None else self.root / PROJECT_FILE
+        target.parent.mkdir(parents=True, exist_ok=True)
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
             yaml.safe_dump(data, f)
@@ -202,20 +265,47 @@ class DeetProject(BaseModel):
         )
 
     @classmethod
-    def load(cls, filename: Path = PROJECT_FILE) -> DeetProject:
-        """Load a project from a toml file."""
-        data = yaml.safe_load(filename.read_text())
-        return cls.model_validate(data["project"])
+    def find_project_file(cls, start: Path | None = None) -> Path | None:
+        """
+        Search from ``start`` (default cwd) upward for a ``project.yaml``.
+
+        Returns the path to the first ``project.yaml`` found walking towards the
+        filesystem root, or None if there is none. This lets deet commands run from
+        anywhere inside the project tree, like git.
+        """
+        current = (start or Path.cwd()).resolve()
+        for directory in (current, *current.parents):
+            candidate = directory / PROJECT_FILE
+            if candidate.is_file():
+                return candidate
+        return None
 
     @classmethod
-    def exists(cls) -> bool:
-        """Check if project exists in current directory."""
-        return PROJECT_FILE.exists()
+    def load(cls, start: Path | None = None) -> DeetProject:
+        """
+        Load a project by searching upward from ``start`` (default cwd).
+
+        The project root is anchored to the directory containing ``project.yaml``;
+        stored resource paths stay relative and are resolved against that root.
+        """
+        project_file = cls.find_project_file(start)
+        if project_file is None:
+            not_found = "No project.yaml found in the current directory or its parents"
+            raise FileNotFoundError(not_found)
+        data = yaml.safe_load(project_file.read_text())
+        project = cls.model_validate(data["project"])
+        project._root = project_file.parent  # noqa: SLF001
+        return project
+
+    @classmethod
+    def exists(cls, start: Path | None = None) -> bool:
+        """Check if a project exists in the current directory or any parent."""
+        return cls.find_project_file(start) is not None
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
         converter = self.gold_standard_data_format.get_annotation_converter()
-        return converter.process_annotation_file(self.gold_standard_data_path)
+        return converter.process_annotation_file(self.gold_standard_data_abspath)
 
 
 @dataclass(frozen=True)
