@@ -22,6 +22,14 @@ Sleep 3500ms
 
 Enter
 
+# Data type
+Down
+Sleep 500ms
+Up
+Sleep 500ms
+Enter
+Sleep 1500ms
+
 # Path to raw data
 Backspace 15
 Type "re"
@@ -31,13 +39,7 @@ Sleep 350ms
 Enter
 Sleep 1500ms
 
-# Data type
-Down
-Sleep 500ms
-Up
-Sleep 500ms
-Enter
-Sleep 1500ms
+
 
 # Path to pdfs
 Backspace 15
