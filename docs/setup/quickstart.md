@@ -156,6 +156,14 @@ Now that you've defined your prompts, you are ready to extract data from your do
     Running `deet experiments evaluate` will create a folder in your project's
     `data-extraction-experiments` directory, run the data extraction pipeline,
     and save the results of that experiment to the newly created folder.
+    It will also save a snapshot of the prompts you used, as well as the config you used,
+    making it easy to reproduce your experiments.
+    If you wish to use prompts from a different location than the default location
+    for your project, you can run an experiment with the `--prompt-csv-path` option, e.g.
+
+    ```sh
+    deet experiments evaluate --prompt-csv-path my-custom-prompts.csv
+    ```
 
 - **Python**
 
