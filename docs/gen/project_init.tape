@@ -22,16 +22,6 @@ Sleep 3500ms
 
 Enter
 
-Sleep 500ms
-Type "a"
-Enter
-Sleep 1000ms
-
-Type " new project"
-Sleep 500ms
-Enter
-Sleep 500ms
-
 # Path to raw data
 Backspace 15
 Type "re"

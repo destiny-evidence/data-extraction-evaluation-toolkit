@@ -88,7 +88,8 @@ class DeetProject(BaseModel):
                 "choose a directory that contains your pdfs."
                 " You will have an opportunity to link this later"
                 " by running `deet link-documents-fulltexts`"
-            )
+            ),
+            instructions="press Tab to autocomplete, '/' to go to next directory",
         ),
     ] = Field(None, description="Path to folder containing PDFs")
 
