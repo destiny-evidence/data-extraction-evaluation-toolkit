@@ -55,6 +55,16 @@ class DeetProject(BaseModel):
         ),
     ] = Field(..., description="The name of a deet project", min_length=1)
 
+    gold_standard_data_format: Annotated[
+        SupportedImportFormat,
+        UI(
+            help=(
+                "The format of a file describing documents,"
+                " attributes, and annotations."
+            )
+        ),
+    ] = Field(..., description="Format of gold standard annotations")
+
     gold_standard_data_path: Annotated[
         Path,
         UI(
@@ -69,16 +79,6 @@ class DeetProject(BaseModel):
             valid="Must be a valid .csv or .json path",
         ),
     ] = Field(..., description="Path to gold standard annotated data")
-
-    gold_standard_data_format: Annotated[
-        SupportedImportFormat,
-        UI(
-            help=(
-                "The format of your raw data. "
-                "Choose from the list of supported formats"
-            )
-        ),
-    ] = Field(..., description="Format of gold standard annotations")
 
     pdf_dir: Annotated[
         Path | None,
