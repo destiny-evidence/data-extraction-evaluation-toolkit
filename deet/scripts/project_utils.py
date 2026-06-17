@@ -2,11 +2,14 @@
 """CLI helpers for the ``deet project`` setup/creation commands."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from deet.data_models.project import DeetProject
 
 import typer
 from InquirerPy import inquirer
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from deet.processors.converter_register import SupportedImportFormat
 from deet.settings import DataExtractionSettings, LogLevel
@@ -40,12 +43,7 @@ def run_init_wizard(root: Path, name: str) -> None:
     project.anchor_to(root)
     project.setup()
 
-    console.clear()
-    configure_env_md = render_template("project/configure_env.md")
-    console.print(info_panel(configure_env_md, ":key: Credential management"))
-    continue_after_key()
-    settings = run_model_wizard(DataExtractionSettings)
-    settings.dump_to_env(target_path=root / ".env")
+    _configure_credentials(root / ".env")
 
     new_directory = root.relative_to(Path.cwd())
 
@@ -140,6 +138,104 @@ def prompt_name() -> str:
     console.clear()
     console.print(wizard_field_help("name", ui_help))
     return str(inquire_pydantic_field(DeetProject, "name", info, ui))
+
+
+def _configure_credentials(env_path: Path) -> None:
+    """
+    Run the credentials wizard, writing to the given ``.env``.
+
+    Used by both ``init``/``new`` (first-time setup) and ``edit``. Secrets left
+    unchanged come back as ``None`` from the wizard, which ``dump_to_env`` skips, so
+    existing ``.env`` values are preserved.
+    """
+    console.clear()
+    console.print(
+        info_panel(
+            render_template("project/configure_env.md"), ":key: Credential management"
+        )
+    )
+    continue_after_key()
+
+    settings = run_model_wizard(DataExtractionSettings)
+    settings.dump_to_env(target_path=env_path)
+
+
+def _editable_field_names(model: type[BaseModel]) -> list[str]:
+    """Return the model's wizard-editable field names (those with UI metadata)."""
+    return [
+        name
+        for name, info in model.model_fields.items()
+        if get_ui_metadata(info) is not None
+    ]
+
+
+def _project_display_defaults(project: "DeetProject") -> dict[str, str]:
+    """
+    Build display-ready, editable defaults for the edit wizard.
+
+    Paths are absolute so they stay correct when edit runs from a subdirectory;
+    they are re-relativised against the project root by ``anchor_to`` afterwards.
+    """
+    pdf_abspath = project.pdf_dir_abspath
+    return {
+        "name": project.name,
+        "gold_standard_data_format": project.gold_standard_data_format.value,
+        "gold_standard_data_path": str(project.gold_standard_data_abspath),
+        "pdf_dir": str(pdf_abspath) if pdf_abspath is not None else "",
+    }
+
+
+def run_edit(project: "DeetProject", field: str | None) -> None:
+    """
+    Re-collect a project's fields (pre-filled) and rewrite ``project.yaml``.
+
+    Does NOT run ``setup()``, so existing artefacts (prompt CSV, link map, experiment
+    dirs) are preserved. ``field`` edits a single field; otherwise the full wizard
+    runs and credentials may be updated too.
+    """
+    from deet.data_models.project import DeetProject
+
+    original_data_path = project.gold_standard_data_path
+    original_format = project.gold_standard_data_format
+    display = _project_display_defaults(project)
+
+    if field is None:
+        updated = run_model_wizard(DeetProject, defaults=display)
+    else:
+        info = DeetProject.model_fields.get(field)
+        ui = get_ui_metadata(info) if info is not None else None
+        if info is None or ui is None:
+            editable = ", ".join(_editable_field_names(DeetProject))
+            fail_with_message(
+                f"'{field}' is not an editable field. Choose one of: {editable}."
+            )
+        console.clear()
+        console.print(wizard_field_help(field, ui.help))
+        new_value = inquire_pydantic_field(
+            DeetProject, field, info, ui, default_override=display[field]
+        )
+        updated = DeetProject.model_validate({**display, field: new_value})
+
+    updated.anchor_to(project.root)
+    updated.created_at = project.created_at
+    updated.dump_to_yaml()
+
+    if field is None:
+        _configure_credentials(project.root / ".env")
+
+    if (
+        updated.gold_standard_data_path != original_data_path
+        or updated.gold_standard_data_format != original_format
+    ):
+        notify(
+            "Gold-standard data source changed. The prompt CSV and link map were "
+            "generated from the previous data and may now be stale -- regenerate them"
+            " with `deet project regenerate-prompt-csv` and"
+            " `deet project regenerate-link-map` if needed.",
+            level=LogLevel.WARNING,
+        )
+
+    notify(f"Project '{updated.name}' updated.", level=LogLevel.SUCCESS)
 
 
 # Shared options, so `init` and `new` accept identical headless arguments.
