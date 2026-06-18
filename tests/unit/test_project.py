@@ -59,7 +59,7 @@ def test_anchor_to_stores_relative_paths_and_dumps_portable_yaml(
     assert "reports.json" in yaml_text
 
 
-def test_load_searches_upward_from_subdirectory(tmp_path, sample_eppi_data):
+def test_load_reads_project_from_given_directory(tmp_path, sample_eppi_data):
     data_file = tmp_path / "data" / "reports.json"
     data_file.parent.mkdir()
     data_file.write_text(json.dumps(sample_eppi_data))
@@ -67,11 +67,15 @@ def test_load_searches_upward_from_subdirectory(tmp_path, sample_eppi_data):
 
     _make_project(project_root, data_file).setup()
 
-    nested = project_root / "data-extraction-experiments"
-    loaded = DeetProject.load(start=nested)
+    loaded = DeetProject.load(project_root)
 
     assert loaded.root == project_root.resolve()
     assert loaded.gold_standard_data_abspath.resolve() == data_file.resolve()
+
+
+def test_load_raises_when_no_project_in_directory(tmp_path):
+    with pytest.raises(FileNotFoundError, match="No project"):
+        DeetProject.load(tmp_path)
 
 
 def test_validate_resources_raises_for_missing_data(tmp_path):

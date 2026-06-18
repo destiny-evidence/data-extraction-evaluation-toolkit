@@ -266,42 +266,28 @@ class DeetProject(BaseModel):
         )
 
     @classmethod
-    def find_project_file(cls, start: Path | None = None) -> Path | None:
+    def load(cls, project_dir: Path | None = None) -> DeetProject:
         """
-        Search from ``start`` (default cwd) upward for a ``project.yaml``.
+        Load the project from ``project_dir`` (default: the current directory).
 
-        Returns the path to the first ``project.yaml`` found walking towards the
-        filesystem root, or None if there is none. This lets deet commands run from
-        anywhere inside the project tree, like git.
+        The project root is anchored to that directory; stored resource paths stay
+        relative and are resolved against it. deet commands are run from the project
+        directory.
         """
-        current = (start or Path.cwd()).resolve()
-        for directory in (current, *current.parents):
-            candidate = directory / PROJECT_FILE
-            if candidate.is_file():
-                return candidate
-        return None
-
-    @classmethod
-    def load(cls, start: Path | None = None) -> DeetProject:
-        """
-        Load a project by searching upward from ``start`` (default cwd).
-
-        The project root is anchored to the directory containing ``project.yaml``;
-        stored resource paths stay relative and are resolved against that root.
-        """
-        project_file = cls.find_project_file(start)
-        if project_file is None:
-            not_found = "No project.yaml found in the current directory or its parents"
+        root = (project_dir or Path.cwd()).resolve()
+        project_file = root / PROJECT_FILE
+        if not project_file.is_file():
+            not_found = f"No {PROJECT_FILE} found in {root}"
             raise FileNotFoundError(not_found)
         data = yaml.safe_load(project_file.read_text())
         project = cls.model_validate(data["project"])
-        project._root = project_file.parent  # noqa: SLF001
+        project._root = root  # noqa: SLF001
         return project
 
     @classmethod
-    def exists(cls, start: Path | None = None) -> bool:
-        """Check if a project exists in the current directory or any parent."""
-        return cls.find_project_file(start) is not None
+    def exists(cls, project_dir: Path | None = None) -> bool:
+        """Check whether a project exists in ``project_dir`` (default cwd)."""
+        return ((project_dir or Path.cwd()) / PROJECT_FILE).is_file()
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
