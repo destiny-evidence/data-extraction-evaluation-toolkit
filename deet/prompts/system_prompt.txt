@@ -27,14 +27,14 @@ Additional_text: A verbatim excerpt from the paper that directly supports the an
 Extraction Rules
 - Use only the content of the provided paper
 - Do not speculate, infer unstated information, or rely on domain knowledge
-- If the paper does not contain sufficient information to answer the question, answer "not reported" and explain in reasoning why the information is missing and leave the additional_text as an empty string
 - The Answer must conform exactly to the output type specified by the attribute.
-- The Additional_text must be exact quotations from the paper and should be minimal but sufficient to justify the answer. If multiple passages are relevant, include the single most direct citation
+- The Additional_text must be exact quotations from the document and should be minimal but sufficient to justify the answer. If multiple passages are relevant, include the single most direct citation
+- If the document does not contain sufficient information to answer the question:
+     explain in Reasoning why the information is missing 
+     leave Additional_text blank
 
-Output Format
-
+Output Format:
 Provide one response per question, preserving the original question order
-
 Return results in json format
 
 Input JSON:
