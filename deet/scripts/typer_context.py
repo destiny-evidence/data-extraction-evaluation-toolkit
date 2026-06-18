@@ -43,11 +43,14 @@ def project_required(f: Callable[P, R]) -> Callable[P, R]:
 
         if not typer_context or not typer_context.obj or not typer_context.obj.project:
             no_project = (
-                "This command must be run from a directory that contains a project"
-                " create one in this directory by running `deet project init`"
-                " or create a project in a"
+                "This command must be run from a directory that contains a project."
+                "\n\nCreate one in this directory by running `deet project init`,"
+                "\n\nor create a project in a"
                 " new directory by running"
-                " `deet project new`"
+                " `deet project new`."
+                "\n\nIf you have already created a project,"
+                " you may need to change into the correct directory using `cd`"
+                "\n\ne.g. `cd my-project`"
             )
             fail_with_message(no_project)
             raise typer.Exit(1)
