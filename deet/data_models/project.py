@@ -31,6 +31,7 @@ from pydantic import (
 )
 
 from deet.data_models.ui_schema import UI
+from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
     SupportedImportFormat,
@@ -192,8 +193,6 @@ class DeetProject(BaseModel):
 
     def export_config_template(self) -> None:
         """Export a default config template."""
-        from deet.extractors.llm_data_extractor import DataExtractionConfig
-
         config = DataExtractionConfig()
         config_dict = config.model_dump(mode="json")
         # Don't add system prompt text into the template
