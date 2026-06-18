@@ -4,10 +4,17 @@ import csv
 from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal, Never, TypeVar, cast
+from typing import Any, Literal, Never, TypeVar
 
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    create_model,
+    model_validator,
+)
 from pydantic.config import JsonDict, JsonValue
 from tabulate import tabulate
 
@@ -416,27 +423,20 @@ class LLMInputSchema(BaseModel):
 
 class LLMAnnotationResponse(BaseModel):
     """
-    LLM response model for a single annotation.
+    LLM response model for a single attribute's annotation.
 
-    This mirrors EppiGoldStandardAnnotation structure but uses attribute_id
-    instead of full EppiAttribute object, as the LLM cannot provide the full
-    attribute object.
+    Used as the base for the per-attribute sub-models produced by
+    :func:`build_llm_response_model`. The attribute identity is *not* stored on
+    this model; it is encoded in the parent field name (``attribute_<id>``) so
+    the LLM is never asked to repeat (and potentially mismatch) the id.
+
+    ``output_data`` is typed ``Any`` here and is always overridden with the
+    attribute's concrete Python type when the dynamic sub-model is built.
     """
 
-    attribute_id: int = Field(
-        ..., description="The ID of the EPPI attribute being annotated"
-    )
     output_data: Any = Field(
         ...,
-        description="The LLM's annotation.",
-        json_schema_extra=cast(
-            "JsonDict",
-            {
-                "anyOf": [
-                    attribute_type.to_json_type() for attribute_type in AttributeType
-                ]
-            },
-        ),
+        description="The LLM's annotation for this attribute.",
     )
     additional_text: str | None = Field(
         ...,
@@ -456,16 +456,90 @@ class LLMAnnotationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class LLMResponseSchema(BaseModel):
-    """
-    Root schema for LLM annotation extraction response.
+ATTRIBUTE_RESPONSE_KEY_PREFIX = "attribute_"
 
-    This structure matches the expected format that can be converted
-    to list[GoldStandardAnnotation] after attribute resolution.
-    """
 
-    annotations: list[LLMAnnotationResponse] = Field(
-        ..., description="List of annotations extracted from the document"
+def attribute_response_key(attribute_id: int) -> str:
+    """
+    Build the dynamic-model field name used for a given attribute.
+
+    Args:
+        attribute_id: The attribute's unique identifier.
+
+    Returns:
+        The field name, e.g. ``"attribute_1234"``.
+
+    """
+    return f"{ATTRIBUTE_RESPONSE_KEY_PREFIX}{attribute_id}"
+
+
+def attribute_id_from_response_key(key: str) -> int:
+    """
+    Recover the attribute id from a dynamic-model field name.
+
+    Args:
+        key: A field name such as ``"attribute_1234"``.
+
+    Returns:
+        The integer attribute id encoded in the key.
+
+    Raises:
+        ValueError: If ``key`` does not encode a valid integer attribute id.
+
+    """
+    raw_id = key.removeprefix(ATTRIBUTE_RESPONSE_KEY_PREFIX)
+    try:
+        return int(raw_id)
+    except ValueError as exc:
+        msg = f"Cannot recover attribute id from response key {key!r}"
+        raise ValueError(msg) from exc
+
+
+def build_llm_response_model(attributes: list[Attribute]) -> type[BaseModel]:
+    """
+    Build a dynamic LLM response model from the selected attributes.
+
+    Each attribute becomes a required, correctly typed sub-model keyed by
+    ``attribute_<id>`` on the returned root model. Because every key is required
+    and ``extra="forbid"`` is set at every level, the JSON schema forces the LLM
+    to return exactly one response per attribute - no missing attributes, no
+    extra/hallucinated attributes, and ``output_data`` constrained to the
+    attribute's concrete type. This also yields a schema that providers such as
+    Ollama accept as valid (unlike an ``Any``-typed field).
+
+    Args:
+        attributes: The attributes to extract; must be non-empty.
+
+    Returns:
+        A dynamically created Pydantic model class suitable for use as a
+        structured-output schema and for validating the LLM response.
+
+    Raises:
+        ValueError: If ``attributes`` is empty.
+
+    """
+    if not attributes:
+        msg = "Cannot build an LLM response model from an empty attribute list"
+        raise ValueError(msg)
+
+    response_fields: dict[str, tuple[type[BaseModel], Any]] = {}
+    for attribute in attributes:
+        output_type = attribute.output_data_type.to_python_type()
+        attribute_model = create_model(
+            f"Attribute{attribute.attribute_id}Response",
+            __base__=LLMAnnotationResponse,
+            output_data=(
+                output_type,
+                Field(..., description="The LLM's annotation for this attribute."),
+            ),
+        )
+        response_fields[attribute_response_key(attribute.attribute_id)] = (
+            attribute_model,
+            Field(..., description=attribute.attribute_label),
+        )
+
+    return create_model(
+        "DynamicLLMResponse",
+        __config__=ConfigDict(extra="forbid"),
+        **response_fields,
     )
-
-    model_config = ConfigDict(extra="forbid")
