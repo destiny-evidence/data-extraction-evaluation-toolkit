@@ -76,8 +76,7 @@ class DeetProject(BaseModel):
         SupportedImportFormat,
         UI(
             help=(
-                "The format of your raw data. "
-                "Choose from the list of supported formats"
+                "The format of your raw data. Choose from the list of supported formats"
             )
         ),
     ] = Field(..., description="Format of gold standard annotations")
@@ -196,8 +195,12 @@ class DeetProject(BaseModel):
         from deet.extractors.llm_data_extractor import DataExtractionConfig
 
         config = DataExtractionConfig()
+        config_dict = config.model_dump(mode="json")
+        # Don't add system prompt text into the template
+        # system_prompt.txt picked up automatically.
+        config_dict.get("prompt_config", {}).pop("system_prompt", None)
         self.config_path.write_text(
-            yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
+            yaml.safe_dump(config_dict, sort_keys=False),
             encoding="utf-8",
         )
 
