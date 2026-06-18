@@ -237,7 +237,7 @@ def test_new_project_creates_directory_and_anchors():
     ):
         mock_wizard.side_effect = [fake_project, fake_settings]
 
-        result = runner.invoke(app, ["project", "new", "My Project"])
+        result = runner.invoke(app, ["project", "new", "--name", "My Project"])
         target = Path(td) / "my-project"
 
         assert result.exit_code == 0
@@ -245,6 +245,35 @@ def test_new_project_creates_directory_and_anchors():
         fake_project.anchor_to.assert_called_once_with(target)
         fake_project.setup.assert_called_once()
         fake_settings.dump_to_env.assert_called_once()
+
+
+def test_new_project_prompts_for_name_when_omitted():
+    fake_project = MagicMock(spec=DeetProject)
+    fake_settings = MagicMock(spec=DataExtractionSettings)
+
+    with (
+        runner.isolated_filesystem() as td,
+        patch(
+            "deet.data_models.project.DeetProject.load",
+            side_effect=FileNotFoundError,
+        ),
+        patch(
+            "deet.scripts.commands.project.inquire_pydantic_field",
+            return_value="My Project",
+        ) as mock_name_prompt,
+        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.commands.project.continue_after_key"),
+        patch("deet.scripts.commands.project.console.clear"),
+    ):
+        mock_wizard.side_effect = [fake_project, fake_settings]
+
+        result = runner.invoke(app, ["project", "new"])
+        target = Path(td) / "my-project"
+
+        assert result.exit_code == 0
+        mock_name_prompt.assert_called_once()  # name collected interactively
+        assert target.exists()
+        fake_project.anchor_to.assert_called_once_with(target)
 
 
 def test_new_project_headless_with_args():
@@ -259,7 +288,8 @@ def test_new_project_headless_with_args():
     ):
         Path("references.json").touch()
         result = runner.invoke(
-            app, ["project", "new", "My Project", "-d", "references.json"]
+            app,
+            ["project", "new", "--name", "My Project", "-d", "references.json"],
         )
         target = Path(td) / "my-project"
 

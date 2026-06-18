@@ -23,7 +23,8 @@ from deet.ui.terminal import (
     render_template,
     run_model_wizard,
 )
-from deet.ui.terminal.components import info_panel
+from deet.ui.terminal.components import info_panel, wizard_field_help
+from deet.ui.terminal.wizards import get_ui_metadata, inquire_pydantic_field
 
 app = typer.Typer(help="Commands to create and configure deet projects.")
 
@@ -199,10 +200,29 @@ def init(
     )
 
 
+def _prompt_name() -> str:
+    """Prompt for a project name."""
+    from deet.data_models.project import DeetProject
+
+    info = DeetProject.model_fields["name"]
+    ui = get_ui_metadata(info)
+    if ui is None:
+        no_ui = "No UI component for name"
+        raise ValueError(no_ui)
+    ui_help = ui.help + (
+        ". The name you enter will be standardised and used to create a directory"
+    )
+    console.clear()
+    console.print(wizard_field_help("name", ui_help))
+    return str(inquire_pydantic_field(DeetProject, "name", info, ui))
+
+
 @app.command()
 def new(
-    name: Annotated[str, typer.Argument(help="Project name")],
     *,
+    name: Annotated[
+        str | None, typer.Option(help="Project name (prompted if omitted).")
+    ] = None,
     data_path: DataPathOption = None,
     data_type: DataFormatOption = SupportedImportFormat.EPPI_JSON,
     pdf_dir: PdfDirOption = None,
@@ -213,9 +233,13 @@ def new(
 
     A directory named after ``name`` (slugified) is created in the current
     directory and the project is set up inside it, leaving the current directory
-    untouched. Leave the data and pdf options empty to enter the interactive
-    wizard. Use `deet project init` to turn the current directory into a project.
+    untouched. Omit ``name`` to be prompted for it. Leave the data and pdf options
+    empty to enter the interactive wizard. Use `deet project init` to turn the
+    current directory into a project.
     """
+    if name is None:
+        name = _prompt_name()
+
     target = Path.cwd() / slugify(name)
     _guard_overwrite(
         target, force=force_overwrite, interactive=not any([data_path, pdf_dir])
