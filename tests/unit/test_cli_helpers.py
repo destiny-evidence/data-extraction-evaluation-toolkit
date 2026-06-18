@@ -1,15 +1,18 @@
 """Tests for deet/extractors/cli_helpers.py."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml  # type:ignore[import-untyped]
 
 from deet.data_models.documents import ContextType, Document
+from deet.data_models.extraction import ExtractionRunMetadata, ExtractionRunOutput
 from deet.extractors.cli_helpers import (
     init_extraction_run,
     load_config_from_typer_context,
     prepare_documents,
+    run_extraction_pipeline,
 )
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 
@@ -135,6 +138,61 @@ def test_init_extraction_run(tmp_path):
     mock_logger.add.assert_called_once()
     log_path = mock_logger.add.call_args[0][0]
     assert log_path == experiment_artefacts.base_dir / "deet.log"
+
+
+def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
+    """run_extraction_pipeline should persist run metadata (cost/tokens) to disk."""
+    exp_dir = tmp_path / "experiments"
+
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+    mock_project.pdf_dir = tmp_path / "pdfs"
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = []
+    mock_project.process_data.return_value = mock_processed_data
+
+    mock_typer_context = MagicMock()
+    mock_typer_context.obj.project = mock_project
+
+    run_metadata = ExtractionRunMetadata(
+        model="gpt-4o-mini",
+        total_input_tokens=100,
+        total_output_tokens=50,
+        total_cost_usd=0.0123,
+        per_document_tokens={"doc-1": {"input_tokens": 100, "output_tokens": 50}},
+    )
+    run_output = ExtractionRunOutput(annotated_documents=[], metadata=run_metadata)
+
+    with (
+        patch(
+            "deet.extractors.cli_helpers.load_config_from_typer_context",
+            return_value=config,
+        ),
+        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.prepare_documents", return_value=[]),
+    ):
+        mock_extractor = mock_extractor_cls.return_value
+        mock_extractor.config = config
+        mock_extractor.extract_from_documents.return_value = run_output
+
+        result_output, _, experiment_artefacts = run_extraction_pipeline(
+            typer_context=mock_typer_context,
+            prompt_population=None,
+        )
+
+    assert result_output is run_output
+
+    metadata_path = experiment_artefacts.run_metadata
+    assert metadata_path.name == "run_metadata.json"
+    assert metadata_path.exists()
+
+    written = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert written["model"] == "gpt-4o-mini"
+    assert written["total_input_tokens"] == 100
+    assert written["total_output_tokens"] == 50
+    assert written["total_cost_usd"] == 0.0123
 
 
 def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_path):
