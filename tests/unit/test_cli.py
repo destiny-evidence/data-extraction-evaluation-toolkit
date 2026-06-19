@@ -12,9 +12,9 @@ from deet.data_models.project import DeetProject
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
-from deet.scripts.commands.project import slugify
 from deet.scripts.typer_context import CLIState, project_required
 from deet.settings import DataExtractionSettings
+from deet.utils.text import slugify
 
 runner = CliRunner()
 
@@ -138,9 +138,9 @@ def test_init_project_initialises_in_emptydir():
 
     with (
         patch("deet.data_models.project.DeetProject.load") as mock_load,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
         mock_load.side_effect = FileNotFoundError
         mock_wizard.side_effect = [fake_project, fake_settings]
@@ -161,10 +161,10 @@ def test_init_project_aborts_no_overwrite():
     with (
         runner.isolated_filesystem(),
         patch("deet.data_models.project.DeetProject.load", return_value=fake_project),
-        patch("deet.scripts.commands.project.inquirer.confirm") as mock_confirm,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        patch("deet.scripts.project_utils.inquirer.confirm") as mock_confirm,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
         Path("project.yaml").touch()  # an existing project in the current dir
         mock_confirm.return_value.execute.return_value = False
@@ -187,10 +187,10 @@ def test_init_project_overwrites_after_confirm():
     with (
         runner.isolated_filesystem(),
         patch("deet.data_models.project.DeetProject.load", return_value=fake_project),
-        patch("deet.scripts.commands.project.inquirer.confirm") as mock_confirm,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        patch("deet.scripts.project_utils.inquirer.confirm") as mock_confirm,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
         Path("project.yaml").touch()  # an existing project in the current dir
         mock_confirm.return_value.execute.return_value = True
@@ -231,9 +231,9 @@ def test_new_project_creates_directory_and_anchors():
             "deet.data_models.project.DeetProject.load",
             side_effect=FileNotFoundError,
         ),
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
         mock_wizard.side_effect = [fake_project, fake_settings]
 
@@ -258,12 +258,12 @@ def test_new_project_prompts_for_name_when_omitted():
             side_effect=FileNotFoundError,
         ),
         patch(
-            "deet.scripts.commands.project.inquire_pydantic_field",
+            "deet.scripts.project_utils.inquire_pydantic_field",
             return_value="My Project",
         ) as mock_name_prompt,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
         mock_wizard.side_effect = [fake_project, fake_settings]
 
@@ -284,7 +284,7 @@ def test_new_project_headless_with_args():
             side_effect=FileNotFoundError,
         ),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
     ):
         Path("references.json").touch()
         result = runner.invoke(
