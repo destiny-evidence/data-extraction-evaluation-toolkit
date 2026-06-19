@@ -30,5 +30,5 @@ If you prefer to skip the wizard, edit the config file `{{project.config_path}}`
 and pass this as a command line argument
 
 ```sh
-deet run --config-path {{project.config_path}} extract
+deet experiments evaluate --config-path {{project.config_path}} extract
 ```

@@ -89,7 +89,7 @@ class DeetProject(BaseModel):
                 "If you want to extract data from full texts, "
                 "choose a directory that contains your pdfs."
                 " You will have an opportunity to link this later"
-                " by running `deet link-documents-fulltexts`"
+                " by running `deet project link`"
             )
         ),
     ] = Field(None, description="Path to folder containing PDFs")
