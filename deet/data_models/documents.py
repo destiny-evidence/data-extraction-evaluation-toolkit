@@ -41,11 +41,11 @@ from deet.utils.identifier_utils import (
 class ContextType(StrEnum):
     """Types of context that can be provided to the LLM."""
 
-    EMPTY = auto()
+    # TODO: implement EMPTY = auto()
     FULL_DOCUMENT = auto()
     ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
+    # TODO: RAG_SNIPPETS = auto()
+    # TODO: CUSTOM = auto()
 
 
 class DocumentIDSource(StrEnum):
@@ -302,7 +302,7 @@ class Document(BaseModel):
     name: str
     citation: ReferenceFileInput
     context: str | None = None  # new defaults, empty
-    context_type: ContextType | None = ContextType.EMPTY
+    context_type: ContextType | None = None
     document_id: int | str | None = None  # add support for str ids, e.g. uuid
     document_identity: DocumentIdentity | None = None
 
@@ -372,10 +372,8 @@ class Document(BaseModel):
             if self.context is None:
                 no_context_err = base_err_msg + "`context` is empty."
                 raise ValueError(no_context_err)
-            if self.context_type is None or self.context_type == ContextType.EMPTY:
-                bad_context_type_err = (
-                    base_err_msg + "`context_type` musnt be None or EMPTY."
-                )
+            if self.context_type is None:
+                bad_context_type_err = base_err_msg + "`context_type` musnt be None."
                 raise ValueError(bad_context_type_err)
             if self.document_identity is None:
                 no_doc_id_err = (

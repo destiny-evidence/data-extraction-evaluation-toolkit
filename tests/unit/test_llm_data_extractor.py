@@ -302,17 +302,6 @@ def test_call_llm_truncates_to_empty_when_system_and_attributes_exceed_max(
     assert user_content["context"] == ""
 
 
-def test_prepare_context_not_implemented(
-    llm_extractor: LLMDataExtractor,
-    sample_eppi_document,
-):
-    """Test that RAG and CUSTOM context types raise NotImplementedError."""
-    payload = "This is the full text."
-    llm_extractor.config.default_context_type = ContextType.RAG_SNIPPETS
-    with pytest.raises(NotImplementedError):
-        llm_extractor._prepare_context(payload=payload)
-
-
 def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
     """Test the generation of the structured JSON user message."""
     context = "Sample context"
