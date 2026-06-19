@@ -131,7 +131,7 @@ Once you are happy with this file, you can link the documents
 Setting up a project creates a file called `prompts/prompt_definitions.csv` with a row for each of the attributes you can extract from your data.
 Edit this file, creating a prompt in the `prompt` column.
 Leave the `prompt` column blank for any attribute you do not wish to extract.
-You can also edit the `output_data_type` column (see [deet.data_models.base.AttributeType](../reference/api.md#deet.data_models.base.AttributeType)) if the automatically parsed data type is incorrect.
+You can also edit the `output_data_type` column ([more info](../concepts/data-extraction.md#attributes)) if the automatically parsed data type is incorrect.
 
 {{ read_csv('examples/quickstart/prompts/prompt_definitions.csv') }}
 
