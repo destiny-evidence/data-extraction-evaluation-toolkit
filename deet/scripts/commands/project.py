@@ -217,6 +217,17 @@ def link(typer_context: typer.Context) -> None:
         )
         linked_document.save(file_path)
 
+    # TODO: Nice message explaining what happened
+    console.print(
+        info_panel(
+            render_template(
+                "project/linked",
+                linked_documents=linked_documents,
+                documents=processed_annotation_data.documents,
+            )
+        )
+    )
+
 
 @app.command()
 def test_llm_config(
