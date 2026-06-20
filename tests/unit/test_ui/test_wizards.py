@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field, SecretStr
 
 from deet.data_models.ui_schema import UI
 from deet.ui.terminal.wizards import (
+    _BACK_KEY,
+    GO_BACK,
     get_ui_metadata,
     inquire_pydantic_field,
     run_model_wizard,
@@ -157,3 +159,46 @@ def test_pydantic_validation_logic_in_wizard(mock_number):
     assert captured_validator("5") is True
     assert captured_validator("15") is False
     assert captured_validator("not-a-number") is False
+
+
+class TwoFieldModel(BaseModel):
+    """Model with two prompted fields, to test back-navigation."""
+
+    __test__ = False
+    a: Annotated[str, UI(help="a")] = Field(..., description="a")
+    b: Annotated[str, UI(help="b")] = Field(..., description="b")
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_back_step_reprompts_previous_field(mock_inquire):
+    mock_inquire.side_effect = ["A", GO_BACK, "A2", "B"]
+
+    result = run_model_wizard(TwoFieldModel)
+
+    assert mock_inquire.call_count == 4
+    assert result.a == "A2"
+    assert result.b == "B"
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_first_field_not_back_navigable(mock_inquire):
+    mock_inquire.side_effect = ["A", "B"]
+
+    run_model_wizard(TwoFieldModel)
+
+    # the first field can't go back; every later field can
+    assert mock_inquire.call_args_list[0].kwargs["allow_back"] is False
+    assert mock_inquire.call_args_list[1].kwargs["allow_back"] is True
+
+
+@patch("InquirerPy.inquirer.text")
+def test_inquire_back_enabled_registers_back_key_and_filter_none_safe(mock_text):
+    field_info = SampleModel.model_fields["str_field"]
+    ui = UI(help="help", valid="valid")
+
+    inquire_pydantic_field(SampleModel, "str_field", field_info, ui, allow_back=True)
+
+    mock_text.return_value.register_kb.assert_called_once_with(_BACK_KEY, eager=True)
+    kwargs = mock_text.call_args.kwargs
+    assert kwargs["filter"](None) is None
+    assert kwargs["filter"]("  x ") == "x"
