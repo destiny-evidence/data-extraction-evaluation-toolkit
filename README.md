@@ -4,6 +4,18 @@ The Data Extraction and Evaluation Toolkit (DEET) is a suite of tools, data mode
 
 [Docs](https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/)
 
+## .env when using hierarchical extraction
+
+The following information is expected. The top bit is for the non-hierarchical deet, while thebottom bit is new. 
+
+
+AZURE_API_KEY=yourkeyhere
+AZURE_API_BASE=https://eppireasoning.openai.azure.com/
+AZURE_API_VERSION=2024-02-15-preview
+AZURE_DEPLOYMENT=gpt-4o-mini
+
+LLM_MODEL=azure/gpt-5.2
+
 ## Hierarchical RCT extraction (pre-defined schema)
 
 DEET includes an experimental hierarchical extraction workflow that uses a pre-defined schema for RCT so far. This workflow is config-driven and reads one or more markdown inputs, runs the hierarchical extraction pipeline, and writes structured outputs.
@@ -51,6 +63,8 @@ python -m deet.custom_hierarchical write_hierarchical_prompts_csv --study-type R
 This generates a CSV with columns class, attribute, prompt, and datatype. You can review and edit prompts in this file before extraction.
 
 Step 2: run dynamic extraction using both the config file and the prompt CSV.
+
+You can use the python script custom_hierarchical_demo.py from the root folder and hard-code paths, or use the following method below:
 
 ~~~sh
 python -m deet.custom_hierarchical custom_extract hierarchical_prompts.csv hierarchical_config.json
