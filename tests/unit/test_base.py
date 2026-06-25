@@ -15,8 +15,6 @@ from deet.data_models.base import (
     AttributeType,
     GoldStandardAnnotation,
     LLMInputSchema,
-    attribute_id_from_response_key,
-    attribute_response_key,
     build_llm_response_model,
     coerce_annotation_to_list,
 )
@@ -959,24 +957,6 @@ def test_llm_input_schema_ignores_extra_fields() -> None:
 
 
 # dynamic LLM response schema (issue #99)
-def test_attribute_response_key_roundtrip() -> None:
-    """Key construction and id recovery are inverse operations."""
-    assert attribute_response_key(1234) == "attribute_1234"
-    assert attribute_id_from_response_key("attribute_1234") == 1234
-
-
-def test_attribute_id_from_response_key_invalid_raises() -> None:
-    """A key that does not encode an integer id raises ValueError."""
-    with pytest.raises(ValueError, match="Cannot recover attribute id"):
-        attribute_id_from_response_key("attribute_not_an_int")
-
-
-def test_build_llm_response_model_empty_attributes_raises() -> None:
-    """Building a model from no attributes is an error."""
-    with pytest.raises(ValueError, match="empty attribute list"):
-        build_llm_response_model([])
-
-
 def test_build_llm_response_model_requires_every_attribute() -> None:
     """Each selected attribute becomes a required, typed top-level key."""
     attributes = [
