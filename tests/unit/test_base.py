@@ -1013,8 +1013,9 @@ def test_build_llm_response_model_requires_every_attribute() -> None:
             },
         }
     )
-    assert valid.attribute_1234.output_data is True
-    assert valid.attribute_2345.output_data == 120
+    parsed = valid.model_dump()
+    assert parsed["attribute_1234"]["output_data"] is True
+    assert parsed["attribute_2345"]["output_data"] == 120
 
 
 def test_build_llm_response_model_enforces_output_data_type() -> None:

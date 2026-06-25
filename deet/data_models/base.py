@@ -4,7 +4,7 @@ import csv
 from collections.abc import Callable
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Literal, Never, TypeVar
+from typing import Any, Literal, Never, TypeVar, cast
 
 from loguru import logger
 from pydantic import (
@@ -456,6 +456,12 @@ class LLMAnnotationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class _DynamicLLMResponseBase(BaseModel):
+    """Base for dynamically generated LLM response models."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
 ATTRIBUTE_RESPONSE_KEY_PREFIX = "attribute_"
 
 
@@ -540,6 +546,6 @@ def build_llm_response_model(attributes: list[Attribute]) -> type[BaseModel]:
 
     return create_model(
         "DynamicLLMResponse",
-        __config__=ConfigDict(extra="forbid"),
-        **response_fields,
+        __base__=_DynamicLLMResponseBase,
+        **cast(Any, response_fields),
     )
