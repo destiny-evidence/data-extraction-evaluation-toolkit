@@ -998,6 +998,29 @@ def test_build_llm_response_model_requires_every_attribute() -> None:
     assert parsed["attribute_2345"]["output_data"] == 120
 
 
+def test_build_llm_response_model_reuses_schema_per_attribute_type() -> None:
+    """Attributes with the same type share one cached sub-model class."""
+    attributes = [
+        Attribute(
+            prompt="Has intervention?",
+            output_data_type=AttributeType.BOOL,
+            attribute_id=1234,
+            attribute_label="Has intervention",
+        ),
+        Attribute(
+            prompt="Is relevant?",
+            output_data_type=AttributeType.BOOL,
+            attribute_id=5678,
+            attribute_label="Is relevant",
+        ),
+    ]
+    model = build_llm_response_model(attributes)
+
+    bool_submodel = AttributeType.BOOL.llm_annotation_response_model()
+    assert model.model_fields["attribute_1234"].annotation is bool_submodel
+    assert model.model_fields["attribute_5678"].annotation is bool_submodel
+
+
 def test_build_llm_response_model_enforces_output_data_type() -> None:
     """output_data is constrained to the attribute's declared type."""
     attributes = [

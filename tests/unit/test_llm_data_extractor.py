@@ -445,6 +445,33 @@ def test_parse_llm_response_missing_attribute_raises(
         )
 
 
+def test_parse_llm_response_attribute_lookup_mismatch_raises(
+    llm_extractor,
+    sample_eppi_attributes,
+):
+    """A validated model field with no matching attribute must raise."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    valid_response = json.dumps(
+        {
+            "attribute_1234": {
+                "output_data": True,
+                "reasoning": "Found.",
+                "additional_text": "Citation.",
+            },
+            "attribute_2345": {
+                "output_data": False,
+                "reasoning": "Not found.",
+                "additional_text": "No citation.",
+            },
+        }
+    )
+    mismatched_attributes = [sample_eppi_attributes[0]]
+    with pytest.raises(ValueError, match="No attribute found for ID: 2345"):
+        llm_extractor._parse_llm_response(
+            valid_response, response_model, mismatched_attributes
+        )
+
+
 def test_parse_llm_response_validation_error(
     llm_extractor,
     sample_eppi_attributes,

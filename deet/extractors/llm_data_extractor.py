@@ -790,8 +790,11 @@ class LLMDataExtractor:
             attribute_id = attribute_id_from_response_key(field_name)
             attribute = attributes_by_id.get(attribute_id)
             if attribute is None:
-                logger.warning(f"No attribute found for ID: {attribute_id}")
-                continue
+                msg = (
+                    f"No attribute found for ID: {attribute_id}. "
+                    "The dynamic response model and attribute list are out of sync."
+                )
+                raise ValueError(msg)
 
             attribute_response = getattr(validated_response, field_name)
             additional_text = (
