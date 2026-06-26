@@ -334,6 +334,7 @@ def test_extract_happy_path(tmp_path):
         mock_extractor.config = fake_config
         mock_run_output = MagicMock()
         mock_run_output.annotated_documents = mock_processed_data.annotated_documents
+        mock_run_output.metadata.model_dump_json.return_value = "{}"
         mock_extractor.extract_from_documents.return_value = mock_run_output
 
         mock_evaluator = mock_evaluator_cls.return_value
