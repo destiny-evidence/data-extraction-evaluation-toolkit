@@ -1,7 +1,7 @@
 """Core data models regarding annotations."""
 
 import csv
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Literal, Never, TypeVar, cast
@@ -470,6 +470,56 @@ class LLMAnnotationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class StaticLLMAnnotationResponse(LLMAnnotationResponse):
+    """
+    Untyped LLM annotation response model where attribute_id is defined per
+    annotation.
+    """
+
+    attribute_id: int = Field(
+        ..., description="The ID of the attribute being annotated."
+    )
+
+
+class BaseLLMResponse(BaseModel):
+    """Base for all LLM response models."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class LLMResponseSchema(BaseLLMResponse):
+    """
+    Static response schema containing a list of StaticLLMAnnotationResponses.
+
+    This structure contains a list of StaticLLMAnnotationResponses, where
+    each response has an attribute_id, and output_data_type is untyped.
+
+    Responses of this type are cheaper to request, since the json schema passed to
+    the llm is shorter. However such a schema does not require llms to produce
+    exactly one annotation per attribute, or to make sure that output_data_type
+    matches that defined at the attribute level.
+    """
+
+    annotations: list[StaticLLMAnnotationResponse] = Field(
+        ..., description="List of annotations extracted from the document"
+    )
+
+
+class DynamicLLMResponseBase(BaseLLMResponse):
+    """
+    The base for dynamically generated schemas.
+
+    We can expect that each field is typed as a subclass of LLMAnnotationResponse.
+    """
+
+    def iter_attribute_responses(self) -> Iterator[tuple[str, LLMAnnotationResponse]]:
+        """Yield field names and safely typed LLMAnnotationResponses."""
+        for field_name in self.__class__.model_fields:
+            value = getattr(self, field_name)
+            if isinstance(value, LLMAnnotationResponse):
+                yield field_name, value
+
+
 _llm_annotation_response_models: dict[AttributeType, type[BaseModel]] = {}
 
 
@@ -501,12 +551,6 @@ def _llm_annotation_response_model_for_type(
     )
     _llm_annotation_response_models[attribute_type] = model
     return model
-
-
-class _DynamicLLMResponseBase(BaseModel):
-    """Base for dynamically generated LLM response models."""
-
-    model_config = ConfigDict(extra="forbid")
 
 
 ATTRIBUTE_RESPONSE_KEY_PREFIX = "attribute_"
@@ -548,7 +592,9 @@ def attribute_id_from_response_key(key: str) -> int:
         raise ValueError(msg) from exc
 
 
-def build_llm_response_model(attributes: list[Attribute]) -> type[BaseModel]:
+def build_llm_response_model(
+    attributes: list[Attribute],
+) -> type[DynamicLLMResponseBase]:
     """
     Build a dynamic LLM response model from the selected attributes.
 
@@ -584,6 +630,6 @@ def build_llm_response_model(attributes: list[Attribute]) -> type[BaseModel]:
 
     return create_model(
         "DynamicLLMResponse",
-        __base__=_DynamicLLMResponseBase,
+        __base__=DynamicLLMResponseBase,
         **cast(Any, response_fields),
     )

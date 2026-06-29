@@ -20,8 +20,12 @@ from pydantic import (
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    BaseLLMResponse,
+    DynamicLLMResponseBase,
     GoldStandardAnnotation,
+    LLMAnnotationResponse,
     LLMInputSchema,
+    LLMResponseSchema,
     attribute_id_from_response_key,
     build_llm_response_model,
 )
@@ -172,6 +176,15 @@ class DataExtractionConfig(BaseModel):
     # Prompt
     prompt_config: PromptConfig = Field(
         default_factory=PromptConfig, description="Prompt configuration"
+    )
+
+    dynamic_json_schema: bool = Field(
+        default=True,
+        description=(
+            "If True, produce dynamic json schema with a key for each attribute"
+            " and where each attribute response is typed (marginally more expensive but"
+            " may be more likely to produce valid output)."
+        ),
     )
 
     # Output
@@ -334,12 +347,18 @@ class LLMDataExtractor:
         prompt = self._generate_user_message_json(
             payload=context, attributes=selected_attributes
         )
-        # Build a response schema specific to the selected attributes so the LLM
-        # must return exactly one correctly typed response per attribute.
-        response_model = build_llm_response_model(selected_attributes)
+
+        response_model: type[BaseLLMResponse]
+
+        if self.config.dynamic_json_schema:
+            response_model = build_llm_response_model(selected_attributes)
+        else:
+            response_model = LLMResponseSchema
+
         llm_response, messages, output_tokens, input_tokens = self._call_llm(
             prompt=prompt, response_model=response_model
         )
+
         annotations = self._parse_llm_response(
             response_content=llm_response,
             response_model=response_model,
@@ -670,7 +689,7 @@ class LLMDataExtractor:
     def _call_llm(
         self,
         prompt: str,
-        response_model: type[BaseModel],
+        response_model: type[BaseLLMResponse],
     ) -> tuple[str, list[dict[str, Any]], int, int]:
         """
         Call the LLM with the given prompt.
@@ -741,10 +760,91 @@ class LLMDataExtractor:
 
         return response_content, messages, output_tokens, input_tokens
 
+    def _create_gold_standard_annotation(
+        self, llm_annotation_response: LLMAnnotationResponse, attribute: Attribute
+    ) -> GoldStandardAnnotation:
+        """Create GoldStandardAnnotation from LLMAnnotationResponse."""
+        additional_text = (
+            llm_annotation_response.additional_text
+            if self.config.include_additional_text
+            else None
+        )
+        reasoning = (
+            llm_annotation_response.reasoning if self.config.include_reasoning else None
+        )
+        return GoldStandardAnnotation(
+            attribute=attribute,
+            raw_data=llm_annotation_response.output_data,
+            annotation_type=AnnotationType.LLM,
+            additional_text=additional_text,
+            reasoning=reasoning,
+        )
+
+    def _parse_static_llm_response_annotations(
+        self,
+        validated_response: LLMResponseSchema,
+        attributes_by_id: dict[int, Attribute],
+    ) -> list[GoldStandardAnnotation]:
+        """Convert each response from a list of responses into an annotation."""
+        logger.debug(
+            f"Parsing LLM response with {len(validated_response.annotations)} "
+            f"attribute responses"
+        )
+        annotations: list[GoldStandardAnnotation] = []
+        for llm_annotation in validated_response.annotations:
+            attribute = attributes_by_id.get(llm_annotation.attribute_id)
+            if attribute is None:
+                logger.warning(
+                    f"No attribute found for ID: {llm_annotation.attribute_id}"
+                )
+                continue
+
+            annotations.append(
+                self._create_gold_standard_annotation(llm_annotation, attribute)
+            )
+
+        return annotations
+
+    def _parse_dynamic_llm_response_annotations(
+        self,
+        response_model: type[DynamicLLMResponseBase],
+        validated_response: DynamicLLMResponseBase,
+        attributes_by_id: dict[int, Attribute],
+    ) -> list[GoldStandardAnnotation]:
+        """Convert each field of a Dynamic response model into an annotation."""
+        logger.debug(
+            f"Parsing LLM response with {len(response_model.model_fields)} "
+            f"attribute responses"
+        )
+        annotations = []
+        for (
+            field_name,
+            attribute_response,
+        ) in validated_response.iter_attribute_responses():
+            attribute_id = attribute_id_from_response_key(field_name)
+            attribute = attributes_by_id.get(attribute_id)
+            if attribute is None:
+                msg = (
+                    f"No attribute found for ID: {attribute_id}. "
+                    "The dynamic response model and attribute list are out of sync."
+                )
+                raise ValueError(msg)
+
+            annotations.append(
+                self._create_gold_standard_annotation(attribute_response, attribute)
+            )
+            logger.debug(
+                f"Created annotation for attribute {attribute.attribute_id}: "
+                f"output_data={attribute_response.output_data}"
+            )
+
+        logger.debug(f"Successfully parsed {len(annotations)} annotations")
+        return annotations
+
     def _parse_llm_response(
         self,
         response_content: str,
-        response_model: type[BaseModel],
+        response_model: type[BaseLLMResponse],
         attributes: list[Attribute],
     ) -> list[GoldStandardAnnotation]:
         """
@@ -781,46 +881,20 @@ class LLMDataExtractor:
             raise ValueError(error_msg) from je
 
         attributes_by_id = {attr.attribute_id: attr for attr in attributes}
-        annotations = []
-        logger.debug(
-            f"Parsing LLM response with {len(response_model.model_fields)} "
-            f"attribute responses"
+
+        if self.config.dynamic_json_schema:
+            dynamic_model = cast("type[DynamicLLMResponseBase]", response_model)
+            dynamic_response = cast("DynamicLLMResponseBase", validated_response)
+            return self._parse_dynamic_llm_response_annotations(
+                response_model=dynamic_model,
+                validated_response=dynamic_response,
+                attributes_by_id=attributes_by_id,
+            )
+
+        static_response = cast("LLMResponseSchema", validated_response)
+        return self._parse_static_llm_response_annotations(
+            validated_response=static_response, attributes_by_id=attributes_by_id
         )
-        for field_name in response_model.model_fields:
-            attribute_id = attribute_id_from_response_key(field_name)
-            attribute = attributes_by_id.get(attribute_id)
-            if attribute is None:
-                msg = (
-                    f"No attribute found for ID: {attribute_id}. "
-                    "The dynamic response model and attribute list are out of sync."
-                )
-                raise ValueError(msg)
-
-            attribute_response = getattr(validated_response, field_name)
-            additional_text = (
-                attribute_response.additional_text
-                if self.config.include_additional_text
-                else None
-            )
-            reasoning = (
-                attribute_response.reasoning if self.config.include_reasoning else None
-            )
-            # Convert to full EppiGoldStandardAnnotation
-            annotation = GoldStandardAnnotation(
-                attribute=attribute,
-                raw_data=attribute_response.output_data,
-                annotation_type=AnnotationType.LLM,
-                additional_text=additional_text,
-                reasoning=reasoning,
-            )
-            annotations.append(annotation)
-            logger.debug(
-                f"Created annotation for attribute {attribute.attribute_id}: "
-                f"output_data={attribute_response.output_data}"
-            )
-
-        logger.debug(f"Successfully parsed {len(annotations)} annotations")
-        return annotations
 
     def _save_results(
         self,
