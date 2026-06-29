@@ -317,7 +317,7 @@ def test_extract_happy_path(tmp_path):
     with (
         patch("deet.data_models.project.DeetProject.load") as mock_loader,
         patch("deet.extractors.cli_helpers.run_model_wizard") as mock_wizard,
-        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.get_data_extractor") as mock_get_extractor,
         patch("deet.extractors.cli_helpers.continue_after_key"),
         patch("deet.extractors.cli_helpers.console.clear"),
         patch("deet.extractors.cli_helpers.prepare_documents") as mock_prepare,
@@ -330,7 +330,7 @@ def test_extract_happy_path(tmp_path):
         fake_config = DataExtractionConfig()
         mock_wizard.return_value = fake_config
 
-        mock_extractor = mock_extractor_cls.return_value
+        mock_extractor = mock_get_extractor.return_value
         mock_extractor.config = fake_config
         mock_run_output = MagicMock()
         mock_run_output.annotated_documents = mock_processed_data.annotated_documents

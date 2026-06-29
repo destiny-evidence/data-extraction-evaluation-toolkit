@@ -11,13 +11,11 @@ from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.data_models.extraction import ExtractionRunOutput
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
-from deet.extractors.llm_data_extractor import (
-    DataExtractionConfig,
-    ExtractionRunOutput,
-    LLMDataExtractor,
-)
+from deet.extractors.base_extractor import DataExtractionConfig
+from deet.extractors.extractor_registry import get_data_extractor
 from deet.processors.directory_processor import create_documents_from_directory
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.ui import fail_with_message, notify
@@ -157,8 +155,6 @@ def run_extraction_pipeline(
     ignore_references: bool = False,
 ) -> tuple[ExtractionRunOutput, ProcessedAnnotationData, ExperimentArtefacts]:
     """Run the standard data extraction pipeline from the CLI."""
-    import yaml
-
     deet_project: DeetProject = typer_context.obj.project
     processed_annotation_data = deet_project.process_data()
 
@@ -175,7 +171,7 @@ def run_extraction_pipeline(
                 "No attributes selected. Perhaps you forgot to edit your prompt file"
             )
 
-    data_extractor = LLMDataExtractor(config=config)
+    data_extractor = get_data_extractor(config=config)
 
     if ignore_references:
         if deet_project.pdf_dir is None:
