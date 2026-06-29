@@ -218,4 +218,10 @@ def run_extraction_pipeline(  # noqa: PLR0913
         encoding="utf-8",
     )
 
+    experiment_artefacts.run_metadata.write_text(
+        run_output.metadata.model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+    logger.info(f"Run metadata saved to: {experiment_artefacts.run_metadata}")
+
     return run_output, processed_annotation_data, experiment_artefacts

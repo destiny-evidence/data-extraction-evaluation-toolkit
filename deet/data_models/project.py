@@ -254,3 +254,8 @@ class ExperimentArtefacts:
     def llm_annotation_csv(self) -> Path:
         """Return location of csv containing llm extractions."""
         return self.base_dir / "llm_annotations.csv"
+
+    @property
+    def run_metadata(self) -> Path:
+        """Return location of json capturing run metadata (cost, tokens, model)."""
+        return self.base_dir / "run_metadata.json"
