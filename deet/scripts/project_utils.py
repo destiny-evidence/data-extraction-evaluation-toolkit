@@ -142,7 +142,8 @@ def prompt_name() -> str:
     return str(inquire_pydantic_field(DeetProject, "name", info, ui))
 
 
-# Shared options, so `init` and `new` accept identical headless arguments.
+# Shared options, so `init` and `new` accept identical arguments when
+# run without the wizard.
 DataPathOption = Annotated[
     Path | None,
     typer.Option(
