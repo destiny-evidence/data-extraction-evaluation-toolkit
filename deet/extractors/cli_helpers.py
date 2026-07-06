@@ -178,18 +178,18 @@ def run_extraction_pipeline(
     data_extractor = LLMDataExtractor(config=config)
 
     if ignore_references:
-        if deet_project.pdf_dir is None:
+        if deet_project.pdf_dir_abspath is None:
             fail_with_message(
                 "This project doesn't specify a pdf directory. "
                 "Either edit the yaml file to create one or re-initialise the project."
             )
-        documents = create_documents_from_directory(deet_project.pdf_dir)
+        documents = create_documents_from_directory(deet_project.pdf_dir_abspath)
     else:
         documents = prepare_documents(
             processed_annotation_data.documents,
             config,
             linked_document_path=deet_project.linked_documents_path,
-            pdf_dir=deet_project.pdf_dir,
+            pdf_dir=deet_project.pdf_dir_abspath,
             link_map_path=deet_project.link_map_path,
         )
 
