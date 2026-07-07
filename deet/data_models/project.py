@@ -329,5 +329,5 @@ class ExperimentArtefacts:
 
     @property
     def run_metadata(self) -> Path:
-        """Return location of json capturing run metadata (cost, tokens, model)."""
+        """Return location of json capturing run metadata (cost, tokens, timing)."""
         return self.base_dir / "run_metadata.json"

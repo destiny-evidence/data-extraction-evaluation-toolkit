@@ -6,12 +6,15 @@ from pathlib import Path
 from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.documents import Document
+from deet.data_models.extraction import DocumentParsingStats
 from deet.processors.linker import DocumentReferenceLinker, DocumentReferenceMapping
 from deet.utils.identifier_utils import hash_n_strings_to_document_id
 
 
-def create_documents_from_directory(directory_path: Path) -> Sequence[Document]:
-    """Find PDF and Markdown files turns them into linked documents."""
+def create_documents_from_directory(
+    directory_path: Path,
+) -> tuple[Sequence[Document], dict[str, DocumentParsingStats]]:
+    """Find PDF and Markdown files and turn them into linked documents."""
     target_files = list(directory_path.glob("*.md"))
     md_stems = {p.stem for p in target_files}
 
@@ -40,11 +43,12 @@ def create_documents_from_directory(directory_path: Path) -> Sequence[Document]:
         )
 
     if not mock_references:
-        return []
+        return [], {}
 
     linker = DocumentReferenceLinker(
         references=mock_references,
         document_reference_mapping=mock_mappings,
         document_base_dir=directory_path,
     )
-    return linker.link_many_references_parsed_documents()
+    documents = linker.link_many_references_parsed_documents()
+    return documents, linker.document_parsing_stats

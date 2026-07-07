@@ -12,9 +12,11 @@ from loguru import logger
 from pydantic import BaseModel, field_validator, model_validator
 
 from deet.data_models.documents import Document
+from deet.data_models.extraction import DocumentParsingStats
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
+from deet.utils.timing import PerfTimer
 
 parser = DocumentParser()
 
@@ -167,11 +169,11 @@ class MappingImporter:
         }
 
 
-        Raises:
+        Raises
             JsonStyleError: if bad json style.
 
 
-        Returns:
+        Returns
             dict[int, Path]: the pre-validation object.
 
 
@@ -408,6 +410,7 @@ class DocumentReferenceLinker:
         self.parser = parser
 
         self.linking_strategies = linking_strategies or self.LINKING_STRATEGY_HIERARCHY
+        self.document_parsing_stats: dict[str, DocumentParsingStats] = {}
 
     def _create_linking_factory(
         self, linking_strategy: LinkingStrategy
@@ -452,7 +455,7 @@ class DocumentReferenceLinker:
           therein.
 
 
-        Yields:
+        Yields
              Generator[LinkedInterimPayload].
 
         """
@@ -493,7 +496,7 @@ class DocumentReferenceLinker:
         best guess at `author_year.pdf` filename structure.
 
 
-        Yields:
+        Yields
             Generator[LinkedInterimPayload]:
 
 
@@ -544,7 +547,7 @@ class DocumentReferenceLinker:
         assumption that files are named `id.pdf`, e.g `12345678.pdf`.
 
 
-        Yields:
+        Yields
             Generator[LinkedInterimPayload]:
 
 
@@ -583,7 +586,7 @@ class DocumentReferenceLinker:
         This strategy looks up documents using their external_id field instead of
         the internal document_id field.
 
-        Yields:
+        Yields
             Generator[LinkedInterimPayload]:
 
         """
@@ -624,7 +627,7 @@ class DocumentReferenceLinker:
         Attempt to pre-fill doc-file mappings
         using LinkingStrategies.
 
-        Returns:
+        Returns
             a dict of {document_id: matched_file_path}
             for documents where a match was found.
             Unmatched documents are absent from the result.
@@ -778,6 +781,7 @@ class DocumentReferenceLinker:
         linked_documents: list[Document] = []
         processed_doc_ids = set()
         n_docs_to_link = len(self.documents_references)
+        self.document_parsing_stats = {}
 
         for strategy in self.linking_strategies:
             if len(linked_documents) == n_docs_to_link:
@@ -796,17 +800,30 @@ class DocumentReferenceLinker:
                         )
                         continue
 
-                    # parse only if pdf.
+                    doc_id_str = str(interim_payload.document_id)
                     if interim_payload.format == "pdf":
-                        parsed_output = self._parse_pdf(
-                            interim_payload.file_path,
-                            return_images=return_images,
-                            return_metadata=return_metadata,
+                        with PerfTimer() as parse_timer:
+                            parsed_output = self._parse_pdf(
+                                interim_payload.file_path,
+                                return_images=return_images,
+                                return_metadata=return_metadata,
+                            )
+                        self.document_parsing_stats[doc_id_str] = DocumentParsingStats(
+                            parsing_seconds=parse_timer.seconds,
+                            parsing_skipped=False,
                         )
                     elif interim_payload.format == "md":
+                        with PerfTimer() as parse_timer:
+                            md_text = interim_payload.file_path.read_text(
+                                encoding="utf-8"
+                            )
                         parsed_output = ParsedOutput(
-                            text=interim_payload.file_path.read_text(encoding="utf-8"),
+                            text=md_text,
                             parser_library="unknown",
+                        )
+                        self.document_parsing_stats[doc_id_str] = DocumentParsingStats(
+                            parsing_seconds=parse_timer.seconds,
+                            parsing_skipped=False,
                         )
                     else:
                         logger.warning(

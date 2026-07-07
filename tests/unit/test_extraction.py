@@ -20,6 +20,7 @@ from deet.data_models.extraction import (
     DocumentExtractionResult,
     ExtractionRunMetadata,
     ExtractionRunOutput,
+    PerDocumentStats,
 )
 
 
@@ -135,7 +136,7 @@ def test_extraction_run_metadata_defaults() -> None:
     assert meta.total_input_tokens == 0
     assert meta.total_output_tokens == 0
     assert meta.total_cost_usd is None
-    assert meta.per_document_tokens == {}
+    assert meta.per_document == {}
 
 
 def test_extraction_run_metadata_explicit_fields() -> None:
@@ -145,13 +146,13 @@ def test_extraction_run_metadata_explicit_fields() -> None:
         total_input_tokens=100,
         total_output_tokens=50,
         total_cost_usd=0.05,
-        per_document_tokens={"1": {"input_tokens": 100, "output_tokens": 50}},
+        per_document={"1": PerDocumentStats(input_tokens=100, output_tokens=50)},
     )
     assert meta.model == "gpt-4o-mini"
     assert meta.total_input_tokens == 100
     assert meta.total_output_tokens == 50
     assert meta.total_cost_usd == pytest.approx(0.05)
-    assert meta.per_document_tokens["1"]["input_tokens"] == 100
+    assert meta.per_document["1"].input_tokens == 100
 
 
 def test_extraction_run_output_round_trip() -> None:
