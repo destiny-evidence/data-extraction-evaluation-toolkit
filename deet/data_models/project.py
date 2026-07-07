@@ -242,14 +242,14 @@ class DeetProject(BaseModel):
 
         self.dump_to_yaml()
 
-    def dump_to_yaml(self, target: Path | None = None) -> None:
+    def dump_to_yaml(self) -> None:
         """
         Write a minimal ``project.yaml`` file to save project options.
 
         Written to the project root by default. Resource paths are stored as their
         relative values, never resolved to absolute, so the file stays portable.
         """
-        target = target if target is not None else self.root / PROJECT_FILE
+        target = self.root / PROJECT_FILE
         target.parent.mkdir(parents=True, exist_ok=True)
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
@@ -283,11 +283,6 @@ class DeetProject(BaseModel):
         project = cls.model_validate(data["project"])
         project._root = root  # noqa: SLF001
         return project
-
-    @classmethod
-    def exists(cls, project_dir: Path | None = None) -> bool:
-        """Check whether a project exists in ``project_dir`` (default cwd)."""
-        return ((project_dir or Path.cwd()) / PROJECT_FILE).is_file()
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
@@ -331,3 +326,8 @@ class ExperimentArtefacts:
     def llm_annotation_csv(self) -> Path:
         """Return location of csv containing llm extractions."""
         return self.base_dir / "llm_annotations.csv"
+
+    @property
+    def run_metadata(self) -> Path:
+        """Return location of json capturing run metadata (cost, tokens, model)."""
+        return self.base_dir / "run_metadata.json"

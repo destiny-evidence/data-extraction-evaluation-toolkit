@@ -9,7 +9,12 @@ import pytest
 from loguru import logger
 from pydantic import ValidationError
 
-from deet.data_models.base import AnnotationType, GoldStandardAnnotation, LLMInputSchema
+from deet.data_models.base import (
+    AnnotationType,
+    GoldStandardAnnotation,
+    LLMInputSchema,
+    build_llm_response_model,
+)
 from deet.data_models.documents import ContextType
 from deet.data_models.eppi import (
     AttributeType,
@@ -112,14 +117,16 @@ def mock_litellm_completion():
     """Fixture to mock the litellm.completion call."""
     with patch("litellm.completion") as mock_completion:
         response_content = {
-            "annotations": [
-                {
-                    "attribute_id": 1234,
-                    "output_data": True,
-                    "reasoning": "Found in text.",
-                    "additional_text": "Citation here.",
-                }
-            ]
+            "attribute_1234": {
+                "output_data": True,
+                "reasoning": "Found in text.",
+                "additional_text": "Citation here.",
+            },
+            "attribute_2345": {
+                "output_data": False,
+                "reasoning": "Not found in text.",
+                "additional_text": "No citation.",
+            },
         }
         mock_response = MagicMock()
         mock_response.choices[0].message.content = json.dumps(response_content)
@@ -264,8 +271,9 @@ def test_call_llm_raises_when_payload_exceeds_max_by_default(
     )
     llm_extractor.config.max_context_tokens = 1000
     llm_extractor.config.truncate_on_overflow = False
+    response_model = build_llm_response_model(sample_eppi_attributes)
     with pytest.raises(ValueError, match="exceeds max_context_tokens"):
-        llm_extractor._call_llm(prompt=prompt)
+        llm_extractor._call_llm(prompt=prompt, response_model=response_model)
 
 
 def test_call_llm_truncates_when_truncate_on_overflow_enabled(
@@ -279,7 +287,8 @@ def test_call_llm_truncates_when_truncate_on_overflow_enabled(
     )
     llm_extractor.config.max_context_tokens = 1000
     llm_extractor.config.truncate_on_overflow = True
-    llm_extractor._call_llm(prompt=prompt)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    llm_extractor._call_llm(prompt=prompt, response_model=response_model)
     call_args = mock_litellm_completion.call_args
     user_content = json.loads(call_args.kwargs["messages"][1]["content"])
     assert len(user_content["context"]) < len(long_context)
@@ -296,7 +305,8 @@ def test_call_llm_truncates_to_empty_when_system_and_attributes_exceed_max(
     )
     llm_extractor.config.max_context_tokens = 5
     llm_extractor.config.truncate_on_overflow = True
-    llm_extractor._call_llm(prompt=prompt)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    llm_extractor._call_llm(prompt=prompt, response_model=response_model)
     call_args = mock_litellm_completion.call_args
     user_content = json.loads(call_args.kwargs["messages"][1]["content"])
     assert user_content["context"] == ""
@@ -339,10 +349,13 @@ def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
 
 
 @pytest.mark.parametrize("llm_provider", [*list(LLMProvider), "unsupported_provider"])
-def test_call_llm(mock_litellm_completion, mock_settings, llm_provider):
+def test_call_llm(
+    mock_litellm_completion, mock_settings, llm_provider, sample_eppi_attributes
+):
     """Test the _call_llm method."""
     prompt = '{"key": "value"}'
     mock_settings.llm_provider = llm_provider
+    response_model = build_llm_response_model(sample_eppi_attributes)
 
     if llm_provider in [member.value for member in LLMProvider]:
         config = DataExtractionConfig(
@@ -351,7 +364,7 @@ def test_call_llm(mock_litellm_completion, mock_settings, llm_provider):
 
         llm_extractor = create_llm_extractor(config, mock_settings)
         response, messages, output_tokens, input_tokens = llm_extractor._call_llm(
-            prompt
+            prompt, response_model=response_model
         )
 
         mock_litellm_completion.assert_called_once()
@@ -382,32 +395,81 @@ def test_call_llm(mock_litellm_completion, mock_settings, llm_provider):
 def test_parse_llm_response(
     llm_extractor, sample_eppi_attributes, sample_eppi_document
 ):
-    """Test successful parsing of a valid LLM response."""
+    """Test successful parsing of a valid keyed LLM response."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
     response_content = json.dumps(
         {
-            "annotations": [
-                {
-                    "attribute_id": 1234,
-                    "output_data": True,
-                    "reasoning": "Found.",
-                    "additional_text": "Citation.",
-                }
-            ]
+            "attribute_1234": {
+                "output_data": True,
+                "reasoning": "Found.",
+                "additional_text": "Citation.",
+            },
+            "attribute_2345": {
+                "output_data": False,
+                "reasoning": "Not found.",
+                "additional_text": "No citation.",
+            },
         }
     )
     annotations = llm_extractor._parse_llm_response(
-        response_content, sample_eppi_attributes
+        response_content, response_model, sample_eppi_attributes
     )
-    # it filters through ids which exist in both,
-    # so even though the length of sample_eppi_attributes is
-    # longer than response_content,
-    # below is expeceted behaviour and we're happy.
-    assert len(annotations) == 1
-    annotation = annotations[0]
-    assert isinstance(annotation, GoldStandardAnnotation)
-    assert annotation.attribute.attribute_id == 1234
-    assert annotation.output_data is True
-    assert annotation.annotation_type == AnnotationType.LLM
+    # The dynamic schema requires a response for every selected attribute.
+    assert len(annotations) == 2
+    by_id = {a.attribute.attribute_id: a for a in annotations}
+    assert all(isinstance(a, GoldStandardAnnotation) for a in annotations)
+    assert by_id[1234].output_data is True
+    assert by_id[2345].output_data is False
+    assert by_id[1234].annotation_type == AnnotationType.LLM
+
+
+def test_parse_llm_response_missing_attribute_raises(
+    llm_extractor,
+    sample_eppi_attributes,
+):
+    """A response omitting a required attribute must fail validation."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    # Only one of the two required attributes is present.
+    incomplete_response = json.dumps(
+        {
+            "attribute_1234": {
+                "output_data": True,
+                "reasoning": "Found.",
+                "additional_text": "Citation.",
+            }
+        }
+    )
+    with pytest.raises(ValidationError):
+        llm_extractor._parse_llm_response(
+            incomplete_response, response_model, sample_eppi_attributes
+        )
+
+
+def test_parse_llm_response_attribute_lookup_mismatch_raises(
+    llm_extractor,
+    sample_eppi_attributes,
+):
+    """A validated model field with no matching attribute must raise."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    valid_response = json.dumps(
+        {
+            "attribute_1234": {
+                "output_data": True,
+                "reasoning": "Found.",
+                "additional_text": "Citation.",
+            },
+            "attribute_2345": {
+                "output_data": False,
+                "reasoning": "Not found.",
+                "additional_text": "No citation.",
+            },
+        }
+    )
+    mismatched_attributes = [sample_eppi_attributes[0]]
+    with pytest.raises(ValueError, match="No attribute found for ID: 2345"):
+        llm_extractor._parse_llm_response(
+            valid_response, response_model, mismatched_attributes
+        )
 
 
 def test_parse_llm_response_validation_error(
@@ -415,11 +477,17 @@ def test_parse_llm_response_validation_error(
     sample_eppi_attributes,
 ):
     """Test that _parse_llm_response raises ValidationError for bad schema."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
     invalid_response = json.dumps(
-        {"annotations": [{"attribute_id": "attr1"}]}
-    )  # Missing fields
+        {
+            "attribute_1234": {"output_data": True},
+            "attribute_2345": {"output_data": False},
+        }
+    )  # Missing additional_text/reasoning fields
     with pytest.raises(ValidationError):
-        llm_extractor._parse_llm_response(invalid_response, sample_eppi_attributes)
+        llm_extractor._parse_llm_response(
+            invalid_response, response_model, sample_eppi_attributes
+        )
 
 
 def test_parse_llm_response_json_decode_error(
@@ -427,9 +495,12 @@ def test_parse_llm_response_json_decode_error(
     sample_eppi_attributes,
 ):
     """Test that _parse_llm_response raises ValueError for invalid JSON."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
     invalid_json = "this is not json"
     with pytest.raises(ValueError, match="Invalid JSON"):
-        llm_extractor._parse_llm_response(invalid_json, sample_eppi_attributes)
+        llm_extractor._parse_llm_response(
+            invalid_json, response_model, sample_eppi_attributes
+        )
 
 
 def test_extract_from_document(
@@ -446,14 +517,15 @@ def test_extract_from_document(
         context_type=ContextType.FULL_DOCUMENT,
     )
     assert isinstance(result, DocumentExtractionResult)
-    assert len(result.annotations) == 1
+    # The dynamic schema requires a response for every selected attribute.
+    assert len(result.annotations) == 2
     assert isinstance(result.messages, list)
     assert len(result.messages) >= 1
     assert result.output_tokens == 42
     assert result.input_tokens == 100
     assert result.model is not None
     assert result.timestamp is not None
-    assert result.annotations[0].attribute.attribute_id == 1234
+    assert {a.attribute.attribute_id for a in result.annotations} == {1234, 2345}
     mock_litellm_completion.assert_called_once()
 
 

@@ -238,7 +238,8 @@ def run_edit(project: "DeetProject", field: str | None) -> None:
     notify(f"Project '{updated.name}' updated.", level=LogLevel.SUCCESS)
 
 
-# Shared options, so `init` and `new` accept identical headless arguments.
+# Shared options, so `init` and `new` accept identical arguments when
+# run without the wizard.
 DataPathOption = Annotated[
     Path | None,
     typer.Option(

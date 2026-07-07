@@ -43,7 +43,7 @@ class EnumHandler(WidgetCreator):
         )
 
     def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
-        """Execute an inquirer.select prompt."""
+        """Render an interactive dropdown using inquirerpy.select."""
         enum_type = cast("type[Enum]", field_info.annotation)
         widget_args["choices"] = [e.value for e in enum_type]
         return inquirer.select(**widget_args).execute()
