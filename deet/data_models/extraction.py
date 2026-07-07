@@ -33,10 +33,9 @@ class RunMetadataNotes(BaseModel):
     """Human-readable notes for timing fields in run metadata."""
 
     total_pipeline_duration_seconds: str = (
-        "Wall-clock time for the full extraction run through export. Includes "
-        "time spent in the interactive extraction CLI when the config wizard is "
-        "shown. The sum of stage_durations_seconds is often lower because wizard "
-        "time and other setup steps are not assigned to a stage."
+        "Wall-clock time for the extraction run, from loading project data "
+        "through export of experiment snapshots. Includes time spent in the "
+        "interactive CLI config wizard when no config file is provided."
     )
     stage_durations_seconds: dict[str, str] = Field(
         default_factory=lambda: dict(RUN_STAGE_NOTES),
