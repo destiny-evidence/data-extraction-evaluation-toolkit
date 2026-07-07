@@ -1,18 +1,22 @@
 interactions:
 - request:
     body: '{"messages":[{"role":"system","content":"You will be provided with a context
-      from a paper and a list of questions below.\nBased on the context, answer each
-      question as true or false and return a list of JSON objects.\n\nPlease explain
-      step by step reasoning behind each answer.\nYou should also cite text from the
-      paper context to support your answer if the answer is True. If the citation
-      is present at multiple places, please cite all of them in the additional_text
-      key. You can separate the citations with ------.\n\nIMPORTANT: Be careful to
-      distinguish between the current paper''s findings and references to previous
-      literature. When the text refers to other studies (indicated by citation markers
-      like reference numbers [1], author names and years (Smith et al., 2020), etc.),
-      do not use these statements as evidence for the current paper''s attributes.
-      Only use statements that directly describe the current paper''s methodology.\n\n\nPaper
-      text is provided inside the JSON under the \"context\" key.\n\nInput JSON:\n{input_json}\n"},{"role":"user","content":"{\"context\":
+      from a paper and a list of attributes (questions) below.\nBased on the context,
+      answer every attribute and return a single JSON object containing one response
+      per attribute. Each attribute response is keyed by its attribute id in the form
+      \"attribute_<id>\" and must contain the output_data, additional_text and reasoning
+      fields. You must provide a response for every attribute and must not invent
+      attributes that were not asked for.\n\nPlease explain step by step reasoning
+      behind each answer.\nYou should also cite text from the paper context to support
+      your answer if the answer is True. If the citation is present at multiple places,
+      please cite all of them in the additional_text key. You can separate the citations
+      with ------.\n\nIMPORTANT: Be careful to distinguish between the current paper''s
+      findings and references to previous literature. When the text refers to other
+      studies (indicated by citation markers like reference numbers [1], author names
+      and years (Smith et al., 2020), etc.), do not use these statements as evidence
+      for the current paper''s attributes. Only use statements that directly describe
+      the current paper''s methodology.\n\n\nPaper text is provided inside the JSON
+      under the \"context\" key.\n\nInput JSON:\n{input_json}\n"},{"role":"user","content":"{\"context\":
       \"The anesthetic and recovery profile of two doses ( 60 and 80 mg ) of plain
       mepivacaine for ambulatory spinal anesthesia . UNLABELLED Reports of transient
       neurological symptoms with the use of subarachnoid lidocaine has generated interest
@@ -58,19 +62,11 @@ interactions:
       brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
       the source context and if applicable, divide extracted text snippets with double
       semicolon (;;). Do not extract any text if participant information is not reported.\",
-      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-4o-mini","temperature":0.1,"tool_choice":{"type":"function","function":{"name":"json_tool_call"}},"tools":[{"type":"function","function":{"name":"json_tool_call","parameters":{"$defs":{"LLMAnnotationResponse":{"additionalProperties":false,"description":"LLM
-      response model for a single annotation.\n\nThis mirrors EppiGoldStandardAnnotation
-      structure but uses attribute_id\ninstead of full EppiAttribute object, as the
-      LLM cannot provide the full\nattribute object.","properties":{"attribute_id":{"description":"The
-      ID of the EPPI attribute being annotated","title":"Attribute Id","type":"integer"},"output_data":{"anyOf":[{"type":"string"},{"type":"integer"},{"type":"number"},{"type":"boolean"},{"items":{"additionalProperties":false,"type":"object"},"type":"array"},{"additionalProperties":false,"type":"object"}],"description":"The
-      LLM''s annotation.","title":"Output Data"},"additional_text":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Supporting
+      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-4o-mini","temperature":0.1,"tool_choice":{"type":"function","function":{"name":"json_tool_call"}},"tools":[{"type":"function","function":{"name":"json_tool_call","parameters":{"$defs":{"LLMSTRINGAnnotationResponse":{"additionalProperties":false,"properties":{"output_data":{"description":"The
+      LLM''s annotation for this attribute.","title":"Output Data","type":"string"},"additional_text":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Supporting
       text from document containing the context window where the attribute is found","title":"Additional
       Text"},"reasoning":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Reasoning
-      or explanation for the annotation decision","title":"Reasoning"}},"required":["attribute_id","output_data","additional_text","reasoning"],"title":"LLMAnnotationResponse","type":"object"}},"additionalProperties":false,"description":"Root
-      schema for LLM annotation extraction response.\n\nThis structure matches the
-      expected format that can be converted\nto list[GoldStandardAnnotation] after
-      attribute resolution.","properties":{"annotations":{"description":"List of annotations
-      extracted from the document","items":{"$ref":"#/$defs/LLMAnnotationResponse"},"title":"Annotations","type":"array"}},"required":["annotations"],"title":"LLMResponseSchema","type":"object"}}}]}'
+      or explanation for the annotation decision","title":"Reasoning"}},"required":["output_data","additional_text","reasoning"],"title":"LLMSTRINGAnnotationResponse","type":"object"}},"additionalProperties":false,"properties":{"attribute_1":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse","description":"participants"},"attribute_5":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse","description":"participants_Age_text"}},"required":["attribute_1","attribute_5"],"title":"DynamicLLMResponse","type":"object"}}}]}'
     headers:
       Accept:
       - application/json
@@ -79,7 +75,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '6577'
+      - '6195'
       Content-Type:
       - application/json
       Host:
@@ -110,38 +106,35 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"Sixty
+      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
         under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
         60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
-        ) of plain mepivacaine\",\"additional_text\":\"Sixty patients undergoing ambulatory
-        anterior cruciate ligament repair of the knee under spinal anesthesia were
-        randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5
-        % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg
-        dose ) of plain mepivacaine .\",\"reasoning\":\"The context provides specific
-        information about the study participants, including the total number of patients
-        (Sixty), the conditions they were undergoing (ambulatory anterior cruciate
-        ligament repair), and the breakdown of participants in each group (Group 1
-        and Group 2).\"},{\"attribute_id\":5,\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
+        ) of plain mepivacaine\",\"additional_text\":null,\"reasoning\":\"The context
+        provides specific information about the study participants, including the
+        total number of patients (sixty), their condition (undergoing ambulatory anterior
+        cruciate ligament repair of the knee), and the breakdown of participants in
+        each group (Group 1 with 29 patients and Group 2 with 31 patients). This information
+        is directly related to the study participants.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
         context does not provide any specific information regarding the age of the
-        study participants.\"}]}","name":"json_tool_call"},"id":"call_u48vCbxm8Dut8WxA0mW8LfMc","type":"function"}]}}],"created":1781012798,"id":"chatcmpl-Dor4oEESumd1ZX5hp0p6xyBZCQZdy","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":265,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":13,"engine_ttft_ms":31,"engine_ttlt_ms":3567,"pre_inference_ms":117,"service_tbt_ms":13,"service_ttft_ms":425,"service_ttlt_ms":3955,"total_duration_ms":3846,"user_visible_ttft_ms":308},"prompt_tokens":1239,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1504}}
+        study participants. Therefore, there are no snippets to extract for this attribute.\"}}","name":"json_tool_call"},"id":"call_47jHPIQjkPaIw5nzjgPAk9CS","type":"function"}]}}],"created":1783403503,"id":"chatcmpl-Dyt0Z0nC2z82k8b7SxEU1WSChfZQt","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_965c8b9ecf","usage":{"completion_tokens":210,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":30,"engine_ttlt_ms":1891,"pre_inference_ms":131,"service_tbt_ms":9,"service_ttft_ms":258,"service_ttlt_ms":2106,"total_duration_ms":1984,"user_visible_ttft_ms":127},"prompt_tokens":1249,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1459}}
 
         '
     headers:
       Content-Length:
-      - '2391'
+      - '2241'
       Content-Type:
       - application/json
       Date:
-      - Tue, 09 Jun 2026 13:46:41 GMT
+      - Tue, 07 Jul 2026 05:51:45 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - aeb8903c-6214-4cdb-9fd1-d476be408023
+      - 046249ff-fb1a-4e6f-b54b-653614a30f7b
       azureai-fe-is-streaming:
       - 'False'
       azureml-model-session:
-      - d20260528174849-b64f88ce
+      - d20260619232122-2d06f3a3
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
@@ -169,7 +162,7 @@ interactions:
       x-ratelimit-remaining-requests:
       - '13899'
       x-ratelimit-remaining-tokens:
-      - '1388761'
+      - '1388751'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -179,24 +172,28 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 716152ae-d132-4db6-99f7-73b64da2a8da
+      - 800e3360-8f1b-4cd6-a437-79660b1e5ffb
     status:
       code: 200
       message: OK
 - request:
     body: "{\"messages\":[{\"role\":\"system\",\"content\":\"You will be provided
-      with a context from a paper and a list of questions below.\\nBased on the context,
-      answer each question as true or false and return a list of JSON objects.\\n\\nPlease
-      explain step by step reasoning behind each answer.\\nYou should also cite text
-      from the paper context to support your answer if the answer is True. If the
-      citation is present at multiple places, please cite all of them in the additional_text
-      key. You can separate the citations with ------.\\n\\nIMPORTANT: Be careful
-      to distinguish between the current paper's findings and references to previous
-      literature. When the text refers to other studies (indicated by citation markers
-      like reference numbers [1], author names and years (Smith et al., 2020), etc.),
-      do not use these statements as evidence for the current paper's attributes.
-      Only use statements that directly describe the current paper's methodology.\\n\\n\\nPaper
-      text is provided inside the JSON under the \\\"context\\\" key.\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
+      with a context from a paper and a list of attributes (questions) below.\\nBased
+      on the context, answer every attribute and return a single JSON object containing
+      one response per attribute. Each attribute response is keyed by its attribute
+      id in the form \\\"attribute_<id>\\\" and must contain the output_data, additional_text
+      and reasoning fields. You must provide a response for every attribute and must
+      not invent attributes that were not asked for.\\n\\nPlease explain step by step
+      reasoning behind each answer.\\nYou should also cite text from the paper context
+      to support your answer if the answer is True. If the citation is present at
+      multiple places, please cite all of them in the additional_text key. You can
+      separate the citations with ------.\\n\\nIMPORTANT: Be careful to distinguish
+      between the current paper's findings and references to previous literature.
+      When the text refers to other studies (indicated by citation markers like reference
+      numbers [1], author names and years (Smith et al., 2020), etc.), do not use
+      these statements as evidence for the current paper's attributes. Only use statements
+      that directly describe the current paper's methodology.\\n\\n\\nPaper text is
+      provided inside the JSON under the \\\"context\\\" key.\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
       \\\"Acute effects of static active or dynamic active stretching on eccentric-exercise-induced
       hamstring muscle damage . OBJECTIVES To examine whether an acute bout of active
       or dynamic hamstring-stretching exercises would reduce the amount of muscle
@@ -232,19 +229,11 @@ interactions:
       brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
       the source context and if applicable, divide extracted text snippets with double
       semicolon (;;). Do not extract any text if participant information is not reported.\\\",
-      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"temperature\":0.1,\"tool_choice\":{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\"}},\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\",\"parameters\":{\"$defs\":{\"LLMAnnotationResponse\":{\"additionalProperties\":false,\"description\":\"LLM
-      response model for a single annotation.\\n\\nThis mirrors EppiGoldStandardAnnotation
-      structure but uses attribute_id\\ninstead of full EppiAttribute object, as the
-      LLM cannot provide the full\\nattribute object.\",\"properties\":{\"attribute_id\":{\"description\":\"The
-      ID of the EPPI attribute being annotated\",\"title\":\"Attribute Id\",\"type\":\"integer\"},\"output_data\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"},{\"type\":\"number\"},{\"type\":\"boolean\"},{\"items\":{\"additionalProperties\":false,\"type\":\"object\"},\"type\":\"array\"},{\"additionalProperties\":false,\"type\":\"object\"}],\"description\":\"The
-      LLM's annotation.\",\"title\":\"Output Data\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
+      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"temperature\":0.1,\"tool_choice\":{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\"}},\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\",\"parameters\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
+      LLM's annotation for this attribute.\",\"title\":\"Output Data\",\"type\":\"string\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
       text from document containing the context window where the attribute is found\",\"title\":\"Additional
       Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
-      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"attribute_id\",\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"description\":\"Root
-      schema for LLM annotation extraction response.\\n\\nThis structure matches the
-      expected format that can be converted\\nto list[GoldStandardAnnotation] after
-      attribute resolution.\",\"properties\":{\"annotations\":{\"description\":\"List
-      of annotations extracted from the document\",\"items\":{\"$ref\":\"#/$defs/LLMAnnotationResponse\"},\"title\":\"Annotations\",\"type\":\"array\"}},\"required\":[\"annotations\"],\"title\":\"LLMResponseSchema\",\"type\":\"object\"}}}]}"
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_1\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"participants\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"participants_Age_text\"}},\"required\":[\"attribute_1\",\"attribute_5\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"}}}]}"
     headers:
       Accept:
       - application/json
@@ -253,7 +242,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '5749'
+      - '5367'
       Content-Type:
       - application/json
       Host:
@@ -284,32 +273,31 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"annotations\":[{\"attribute_id\":1,\"output_data\":\"thirty-six
-        young male students\",\"additional_text\":\"Thirty-six young male students
-        performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups
-        : 3 min of static active stretching ( SAS ) , 3 min of dynamic active stretching
-        ( DAS ) , or control ( CON ) .\",\"reasoning\":\"The context explicitly states
-        that the study participants were thirty-six young male students, which provides
-        information about the sample size, sex, and age group.\"},{\"attribute_id\":5,\"output_data\":\"young\",\"additional_text\":\"thirty-six
-        young male students\",\"reasoning\":\"The term ''young'' is used to describe
-        the age of the study participants, indicating that they are not older adults.\"}]}","name":"json_tool_call"},"id":"call_FmugFLpxo5qcA9oSuXouw1lE","type":"function"}]}}],"created":1781012803,"id":"chatcmpl-Dor4taWenq2G1GNYdujxZ3BbQnjW2","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"filtered":false,"detected":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_4dcfea0a44","usage":{"completion_tokens":160,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":15,"engine_ttft_ms":40,"engine_ttlt_ms":2442,"pre_inference_ms":159,"service_tbt_ms":15,"service_ttft_ms":510,"service_ttlt_ms":2889,"total_duration_ms":2750,"user_visible_ttft_ms":351},"prompt_tokens":1012,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1172}}
+      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
+        young male students\",\"additional_text\":\"thirty-six young male students\",\"reasoning\":\"The
+        context specifies that the study involved ''thirty-six young male students''
+        as participants, which provides information about the sample size, sex, and
+        age group.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"young\",\"reasoning\":\"The
+        term ''young'' is used to describe the age of the participants, indicating
+        they are likely in their late teens to early twenties, but no specific age
+        range is provided.\"}}","name":"json_tool_call"},"id":"call_e9J4MM4if4tg90YuLvNDJYzD","type":"function"}]}}],"created":1783403506,"id":"chatcmpl-Dyt0cI4GUsKGk81vF5uXsYiDQDsgP","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_965c8b9ecf","usage":{"completion_tokens":115,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":10,"engine_ttft_ms":29,"engine_ttlt_ms":1178,"pre_inference_ms":102,"service_tbt_ms":10,"service_ttft_ms":210,"service_ttlt_ms":1356,"total_duration_ms":1262,"user_visible_ttft_ms":108},"prompt_tokens":1022,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1137}}
 
         '
     headers:
       Content-Length:
-      - '2033'
+      - '1853'
       Content-Type:
       - application/json
       Date:
-      - Tue, 09 Jun 2026 13:46:45 GMT
+      - Tue, 07 Jul 2026 05:51:47 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - b461e784-079c-4faa-9eef-e1436409f104
+      - df589b7d-d181-4ceb-8575-3b66d24a8b64
       azureai-fe-is-streaming:
       - 'False'
       azureml-model-session:
-      - d20260528174849-b64f88ce
+      - d20260619232122-2d06f3a3
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
@@ -337,7 +325,7 @@ interactions:
       x-ratelimit-remaining-requests:
       - '13899'
       x-ratelimit-remaining-tokens:
-      - '1388988'
+      - '1388978'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -347,7 +335,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - e89ff480-d55a-4b5d-b56d-c000ac2e35a4
+      - cfd790e6-8102-4c1f-b283-99baf1164b89
     status:
       code: 200
       message: OK
