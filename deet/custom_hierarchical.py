@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
+from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
 from deet.hierarchical_mvp.utils import configure_lm, load_study_context
 from deet.logger import logger
 
@@ -59,6 +60,35 @@ def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
     return rows
 
 
+def build_cochrane_hierarchical_prompt_rows() -> list[dict[str, str]]:
+    """Build prompt rows from classes defined in CochraneRCT models."""
+    rows: list[dict[str, str]] = []
+
+    for _, cls in cochrane_models.__dict__.items():
+        if not isinstance(cls, type):
+            continue
+        if cls.__module__ != cochrane_models.__name__:
+            continue
+        if not issubclass(cls, BaseModel):
+            continue
+
+        for field_name, field_info in cls.model_fields.items():
+            description = field_info.description or ""
+            annotation = field_info.annotation
+            datatype = getattr(annotation, "__name__", str(annotation))
+
+            rows.append(
+                {
+                    "class": cls.__name__,
+                    "attribute": field_name,
+                    "prompt": description,
+                    "datatype": datatype,
+                }
+            )
+
+    return rows
+
+
 def write_hierarchical_prompts_csv(
     study_type: str = "RCT",
     csv_outpath: str | Path | None = None,
@@ -67,9 +97,11 @@ def write_hierarchical_prompts_csv(
     match study_type:
         case "RCT":
             rows = build_hierarchical_prompt_rows()
+        case "CochraneRCT":
+            rows = build_cochrane_hierarchical_prompt_rows()
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT"
             )
 
     if csv_outpath is None:

@@ -8,6 +8,8 @@ import dspy
 from deet.logger import logger
 
 from .RCTmodel import Intervention, Study
+from .CochraneRCTmodel import Intervention as CochraneIntervention
+from .CochraneRCTmodel import Study as CochraneStudy
 
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
@@ -100,3 +102,51 @@ def export_csv(
             writer.writerow(outcome.to_csv_row())
 
     logger.info(f"CSV files saved to {csv_dir}/")
+
+
+def export_cochrane_csv(
+    study: CochraneStudy,
+    study_name: str,
+    predictions_dir: Path,
+    timestamp: str,
+) -> None:
+    """
+    Write three timestamped CSV files for a Cochrane RCT extraction into
+    predictions/<study_name>/:
+        - study_<timestamp>.csv
+        - interventions_<timestamp>.csv
+        - outcomes_<timestamp>.csv
+    """
+    csv_dir = predictions_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- study.csv ---
+    study_path = csv_dir / f"study_{timestamp}.csv"
+    with study_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CochraneStudy.csv_fieldnames())
+        writer.writeheader()
+        writer.writerow(study.to_csv_row())
+
+    # --- interventions.csv ---
+    interventions_path = csv_dir / f"interventions_{timestamp}.csv"
+    with interventions_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CochraneIntervention.csv_fieldnames())
+        writer.writeheader()
+        for arm in study.interventions:
+            writer.writerow(arm.to_csv_row())
+
+    # --- outcomes.csv ---
+    outcomes_path = csv_dir / f"outcomes_{timestamp}.csv"
+    with outcomes_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=CochraneStudy.outcome_csv_fieldnames(), extrasaction="ignore"
+        )
+        writer.writeheader()
+        for outcome in (
+            study.dichotomous_outcomes
+            + study.continuous_outcomes
+            + study.other_outcomes
+        ):
+            writer.writerow(outcome.to_csv_row())
+
+    logger.info(f"Cochrane CSV files saved to {csv_dir}/")

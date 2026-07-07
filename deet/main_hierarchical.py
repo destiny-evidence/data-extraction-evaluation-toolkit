@@ -12,9 +12,10 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from deet.hierarchical_mvp.CochraneRCTextraction import CochraneRCTExtractionPipeline
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTmodel import Study
-from deet.hierarchical_mvp.utils import configure_lm, export_csv, load_study_context
+from deet.hierarchical_mvp.utils import configure_lm, export_cochrane_csv, export_csv, load_study_context
 from deet.logger import logger
 
 # ---------------------------------------------------------------------------
@@ -141,11 +142,21 @@ def extract(context: str, study_type: str) -> Study:
         case "RCT":
             pipeline = RCTExtractionPipeline()
             return pipeline(context=context)
+        case "CochraneRCT":
+            pipeline = CochraneRCTExtractionPipeline()
+            return pipeline(context=context)
         case _:
-            raise ValueError(f"Unsupported study_type '{study_type}'. Supported: RCT")
+            raise ValueError(
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT"
+            )
 
 
-def save_data(study: Study, input_paths: list[str], output_parent_dir: str) -> None:
+def save_data(
+    study: Study,
+    input_paths: list[str],
+    output_parent_dir: str,
+    study_type: str = "RCT",
+) -> None:
     """Persist extracted study payload to JSON and CSV outputs."""
     output_dir = Path(output_parent_dir)
 
@@ -160,7 +171,11 @@ def save_data(study: Study, input_paths: list[str], output_parent_dir: str) -> N
     output_path.write_text(output_data, encoding="utf-8")
     logger.info(f"JSON saved to {output_path}")
 
-    export_csv(study, study_name, output_dir, timestamp)
+    match study_type:
+        case "CochraneRCT":
+            export_cochrane_csv(study, study_name, output_dir, timestamp)
+        case _:
+            export_csv(study, study_name, output_dir, timestamp)
 
 
 def main() -> None:
@@ -208,6 +223,7 @@ def main() -> None:
         study=study,
         input_paths=input_paths,
         output_parent_dir=output_parent_dir,
+        study_type=config["study_type"],
     )  # does what it says (I hope :) )
 
 
