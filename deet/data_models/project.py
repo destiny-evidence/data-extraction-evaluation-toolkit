@@ -16,11 +16,13 @@ from typing import TYPE_CHECKING, Annotated
 from loguru import logger
 
 if TYPE_CHECKING:
-    from deet.data_models.evaluation_splits import EvaluationSplits
+    from deet.data_models.evaluation_strategies.base import (
+        BaseEvaluationStrategy,
+        BaseSplits,
+    )
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
-
 
 import yaml
 from pydantic import (
@@ -31,6 +33,7 @@ from pydantic import (
     field_validator,
 )
 
+from deet.data_models.enums import EvaluationStrategyName
 from deet.data_models.ui_schema import UI
 from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
@@ -95,6 +98,8 @@ class DeetProject(BaseModel):
             instructions="press Tab to autocomplete, '/' to go to next directory",
         ),
     ] = Field(None, description="Path to folder containing PDFs")
+
+    evaluation_strategy: EvaluationStrategyName = EvaluationStrategyName.NONE
 
     # Project metadata
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -302,11 +307,13 @@ class DeetProject(BaseModel):
         processed_data = self.process_data()
         return processed_data.all_doc_ids
 
-    def load_splits(self) -> EvaluationSplits:
+    def load_evaluation_strategy(
+        self,
+    ) -> BaseEvaluationStrategy[BaseSplits]:
         """Load split state."""
-        from deet.data_models.evaluation_splits import EvaluationSplits
+        from deet.data_models.evaluation_strategies import _STRATEGY_REGISTRY
 
-        return EvaluationSplits.load(self.evaluation_splits_path)
+        return _STRATEGY_REGISTRY[self.evaluation_strategy](self)
 
 
 @dataclass(frozen=True)

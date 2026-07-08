@@ -163,17 +163,14 @@ def run_extraction_pipeline(
                 "No attributes selected. Perhaps you forgot to edit your prompt file"
             )
 
-    project_evaluation_splits = deet_project.load_splits()
-    project_evaluation_splits.dump_to_json(
-        experiment_artefacts.evaluation_splits_snapshot
-    )
-    processed_annotation_data.filter_documents_by_ids(
-        project_evaluation_splits.active_ids
-    )
+    evaluation_strategy = deet_project.load_evaluation_strategy()
+    evaluation_strategy.snapshot(experiment_artefacts)
+    active_ids = evaluation_strategy.get_active_ids(deet_project)
+    processed_annotation_data.filter_documents_by_ids(active_ids)
     if not processed_annotation_data.documents:
         no_documents = (
             "No documents in evaluation stage"
-            f" {project_evaluation_splits.current_stage}"
+            f" {evaluation_strategy.splits.current_stage}"
         )
         fail_with_message(no_documents)
 

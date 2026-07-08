@@ -123,10 +123,11 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     mock_project = MagicMock()
     mock_project.experiments_dir = exp_dir
     mock_project.pdf_dir = tmp_path / "pdfs"
+    mock_project.load_evaluation_strategy.return_value.get_active_ids.return_value = [1]
 
     mock_processed_data = MagicMock()
     mock_processed_data.attributes = [1]
-    mock_processed_data.documents = []
+    mock_processed_data.documents = [MagicMock()]
     mock_project.process_data.return_value = mock_processed_data
 
     mock_typer_context = MagicMock()
