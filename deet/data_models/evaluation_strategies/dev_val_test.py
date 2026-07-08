@@ -143,7 +143,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         """Make a new splits object with all project IDs."""
         return DevValTestSplits.load(project.evaluation_splits_path)
 
-    def add_dev(
+    def _add_dev(
         self, size: int, project: DeetProject, project_doc_ids: list[int]
     ) -> None:
         """Add unassigned documents to the development pool."""
@@ -231,7 +231,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
     def _act_on_validation(
         self, typer_context: Context, project_doc_ids: list[int]
     ) -> None:
-        """Select a past experiment config and eval against a fresh validation set."""
+        """Given validation, choose to return to development or move to testing."""
         from InquirerPy import inquirer
 
         from deet.data_models.project import ExperimentArtefacts
@@ -339,7 +339,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
                             message="How many documents would you like to add?"
                         ).execute()
                     )
-                self.add_dev(size, project, project_doc_ids)
+                self._add_dev(size, project, project_doc_ids)
                 return
 
             if action == "validate":
