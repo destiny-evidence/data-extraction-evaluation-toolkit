@@ -5,6 +5,11 @@ from unittest.mock import patch
 
 import pytest
 
+from deet.data_models.enums import EvaluationStrategyName
+from deet.data_models.evaluation_strategies.dev_val_test import (
+    DevValTestEvaluationStrategy,
+)
+from deet.data_models.evaluation_strategies.null import NullEvaluationStrategy
 from deet.data_models.project import PROJECT_FILE, DeetProject, ExperimentArtefacts
 from deet.processors.converter_register import SupportedImportFormat
 
@@ -108,3 +113,33 @@ def test_validate_resources_raises_for_missing_data(tmp_path):
 
     with pytest.raises(FileNotFoundError, match="Gold standard data not found"):
         project.validate_resources()
+
+
+def test_load_evaluation_strategy_defaults_to_null(tmp_path):
+    project = DeetProject(
+        name="test",
+        gold_standard_data_path=tmp_path / "data.json",
+        gold_standard_data_format=SupportedImportFormat.EPPI_JSON,
+        pdf_dir=None,
+    )
+    project._root = tmp_path
+
+    with patch.object(DeetProject, "get_all_doc_ids", return_value=[1, 2, 3]):
+        strategy = project.load_evaluation_strategy()
+
+    assert isinstance(strategy, NullEvaluationStrategy)
+
+
+def test_load_evaluation_strategy_dev_val_test(tmp_path):
+    project = DeetProject(
+        name="test",
+        gold_standard_data_path=tmp_path / "data.json",
+        gold_standard_data_format=SupportedImportFormat.EPPI_JSON,
+        evaluation_strategy=EvaluationStrategyName.DEV_VAL_TEST,
+        pdf_dir=None,
+    )
+    project._root = tmp_path
+
+    strategy = project.load_evaluation_strategy()
+
+    assert isinstance(strategy, DevValTestEvaluationStrategy)
