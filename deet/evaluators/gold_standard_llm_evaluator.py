@@ -16,10 +16,10 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import AttributeTypeVar
+from deet.data_models.base import Attribute
 from deet.data_models.documents import (
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
-    GoldStandardAnnotatedDocumentTypeVar,
 )
 from deet.data_models.evaluation import (
     METRICS,
@@ -121,11 +121,9 @@ class GoldStandardLLMEvaluator:
 
     def __init__(
         self,
-        gold_standard_annotated_documents: Sequence[
-            GoldStandardAnnotatedDocumentTypeVar
-        ],
-        llm_annotated_documents: Sequence[GoldStandardAnnotatedDocumentTypeVar],
-        attributes: Sequence[AttributeTypeVar],
+        gold_standard_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
+        llm_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
+        attributes: Sequence[Attribute],
         extraction_run_id: str,
         custom_metrics: list[str] | None = None,
     ) -> None:
@@ -305,6 +303,7 @@ class GoldStandardLLMEvaluator:
                 f,
                 fieldnames=[
                     "document_id",
+                    "external_id",
                     "document_name",
                     "attribute_id",
                     "attribute_label",
@@ -386,6 +385,7 @@ class GoldStandardLLMEvaluator:
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
+                            "external_id": doc.document.safe_identity.external_id,
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
@@ -409,6 +409,7 @@ class GoldStandardLLMEvaluator:
                 f,
                 fieldnames=[
                     "document_id",
+                    "external_id",
                     "document_name",
                     "attribute_id",
                     "attribute_label",
@@ -443,6 +444,7 @@ class GoldStandardLLMEvaluator:
                     writer.writerow(
                         {
                             "document_id": document.safe_identity.document_id,
+                            "external_id": document.safe_identity.external_id,
                             "document_name": document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,

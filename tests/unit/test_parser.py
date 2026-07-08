@@ -78,9 +78,9 @@ def mock_pypandoc(monkeypatch):
     """Stub `pypandoc.convert_file`."""
     monkeypatch.setattr(
         "deet.processors.parser.pypandoc.convert_file",
-        lambda file,
-        to,
-        **kwargs: f"converted {file} to {to} ({kwargs.get('format', '')})",
+        lambda file, to, **kwargs: (
+            f"converted {file} to {to} ({kwargs.get('format', '')})"
+        ),
     )
 
 

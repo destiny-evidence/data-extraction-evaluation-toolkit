@@ -2,15 +2,20 @@
 
 Project root: `{{project.root}}`
 
+{% if new_directory!="." %}
+Change into this directory by running `cd {{new_directory}}`
+{% endif %}
+
 ### Next steps
 
 1. **Define your prompts:** open your prompt definition file,
 and add a prompt in the prompt column for each attribute you want
 to extract. `{{project.prompt_csv_path}}`
 
-2. **Point your documents to files:** open your link map and add a
+2. **Point your documents to files:** open your link map and confirm the
 filename for the full text you want to link each document to
-`{{project.link_map_path}}`
+`{{project.link_map_path}}`. This has been automatically pre-filled, but please
+check all paths are correct and add any missing paths.
 
 3. **Link documents:** link documents to full texts using the link map. Run
 

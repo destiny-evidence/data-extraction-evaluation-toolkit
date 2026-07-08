@@ -1,6 +1,7 @@
 """Tests for stuff in the processors/linker.py module."""
 
 import json
+import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -1284,3 +1285,309 @@ def test_linker_link_many_with_images_and_metadata(tmp_path):
         return_images=True,
         return_metadata=True,
     )
+
+
+# guess_file_paths
+def test_guess_file_paths_by_id(tmp_path):
+    """Test guess_file_paths matches files named by document ID."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    pdf_file = docs_dir / "12345678.pdf"
+    pdf_file.write_text("fake pdf")
+
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert 12345678 in result
+    assert result[12345678] == pdf_file
+
+
+def test_guess_file_paths_by_author_year(tmp_path):
+    """Test guess_file_paths matches files named by author_year."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    pdf_file = docs_dir / "smith_2024.pdf"
+    pdf_file.write_text("fake pdf")
+
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            first_author="J Smith",
+            year="2024",
+            doi=None,
+        ),
+    )
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert 12345678 in result
+    assert result[12345678] == pdf_file
+
+
+def test_guess_file_paths_no_match(tmp_path):
+    """Test guess_file_paths returns empty dict when no files match."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "99999999.pdf").write_text("fake pdf")
+
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert result == {}
+
+
+def test_guess_file_paths_no_base_dir():
+    """Test guess_file_paths returns empty dict when no document_base_dir is set."""
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc])
+    result = linker.guess_file_paths()
+
+    assert result == {}
+
+
+def test_guess_file_paths_first_match_wins(tmp_path):
+    """Test guess_file_paths uses first-match-wins across strategies."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    # both FILENAME_ID and FILENAME_AUTHOR_YEAR would match this document;
+    # FILENAME_ID runs first, so its path should win.
+    id_pdf = docs_dir / "12345678.pdf"
+    id_pdf.write_text("id match")
+    author_pdf = docs_dir / "smith_2024.pdf"
+    author_pdf.write_text("author match")
+
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            first_author="J Smith",
+            year="2024",
+            doi=None,
+        ),
+    )
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    result = linker.guess_file_paths()
+
+    assert result[12345678] == id_pdf
+
+
+def test_guess_file_paths_custom_strategies(tmp_path):
+    """Test guess_file_paths respects a custom strategy list."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("id match")
+    author_pdf = docs_dir / "smith_2024.pdf"
+    author_pdf.write_text("author match")
+
+    doc = Document(
+        name="Test",
+        citation=ReferenceFileInput(),
+        document_id=12345678,
+        document_identity=DocumentIdentity(
+            document_id=12345678,
+            document_id_source=DocumentIDSource.EPPI_ITEM_ID,
+            first_author="J Smith",
+            year="2024",
+            doi=None,
+        ),
+    )
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    # only author-year strategy, so the id-named file should NOT be matched
+    result = linker.guess_file_paths(
+        strategies=[LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST]
+    )
+
+    assert result[12345678] == author_pdf
+
+
+def test_guess_file_paths_excludes_mapping_file_strategy(tmp_path):
+    """Test guess_file_paths silently drops MAPPING_FILE if passed in strategies."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("fake pdf")
+
+    doc = Document(name="Test", citation=ReferenceFileInput(), document_id=12345678)
+    doc.init_document_identity()
+
+    linker = DocumentReferenceLinker(references=[doc], document_base_dir=docs_dir)
+    # passing MAPPING_FILE explicitly should not crash; it gets filtered out
+    result = linker.guess_file_paths(
+        strategies=[LinkingStrategy.MAPPING_FILE, LinkingStrategy.FILENAME_ID]
+    )
+
+    assert 12345678 in result
+
+
+def test_guess_file_paths_multiple_documents(tmp_path):
+    """Test guess_file_paths matches multiple documents."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("doc 1")
+    (docs_dir / "87654321.pdf").write_text("doc 2")
+
+    doc1 = Document(name="Doc 1", citation=ReferenceFileInput(), document_id=12345678)
+    doc1.init_document_identity()
+    doc2 = Document(name="Doc 2", citation=ReferenceFileInput(), document_id=87654321)
+    doc2.init_document_identity()
+
+    linker = DocumentReferenceLinker(
+        references=[doc1, doc2], document_base_dir=docs_dir
+    )
+    result = linker.guess_file_paths()
+
+    assert set(result.keys()) == {12345678, 87654321}
+
+
+def test_guess_file_paths_partial_match(tmp_path):
+    """Test guess_file_paths returns only matched documents."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "12345678.pdf").write_text("doc 1")
+    # no file for doc2
+
+    doc1 = Document(name="Doc 1", citation=ReferenceFileInput(), document_id=12345678)
+    doc1.init_document_identity()
+    doc2 = Document(name="Doc 2", citation=ReferenceFileInput(), document_id=87654321)
+    doc2.init_document_identity()
+
+    linker = DocumentReferenceLinker(
+        references=[doc1, doc2], document_base_dir=docs_dir
+    )
+    result = linker.guess_file_paths()
+
+    assert 12345678 in result
+    assert 87654321 not in result
+
+
+def test_linker_get_linkages_filename_external_id():
+    """Test _get_linkages_filename_external_id links documents by external ID."""
+    # Create test documents with external IDs
+    doc1 = Document(
+        name="Test Doc 1",
+        citation=ReferenceFileInput(doi="10.1000/test1"),
+        document_id=12345678,  # This becomes internal_id
+    )
+
+    # Manually set external_id
+    doc1.document_identity = DocumentIdentity(
+        document_id=12345678,
+        external_id="EXT12345678",  # This is the external ID we'll match against
+        doi="10.1000/test1",
+        first_author="Smith",
+        year="2024",
+    )
+
+    doc2 = Document(
+        name="Test Doc 2",
+        citation=ReferenceFileInput(doi="10.1000/test2"),
+        document_id=87654321,  # This becomes internal_id
+    )
+
+    # Manually set external_id
+    doc2.document_identity = DocumentIdentity(
+        document_id=87654321,
+        external_id="EXT87654321",  # This is the external ID we'll match against
+        doi="10.1000/test2",
+        first_author="Jones",
+        year="2024",
+    )
+
+    # Create a mock file system with files named after external IDs
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+
+        # Create files with external IDs in their names
+        pdf_file1 = tmp_path / "EXT12345678.pdf"
+        pdf_file1.write_text("test content 1")
+
+        pdf_file2 = tmp_path / "EXT87654321.pdf"
+        pdf_file2.write_text("test content 2")
+
+        # Create a file that doesn't match any external ID
+        pdf_file3 = tmp_path / "NONMATCHING.pdf"
+        pdf_file3.write_text("test content 3")
+
+        # Mock the linker to use this directory
+        linker = DocumentReferenceLinker(
+            references=[doc1, doc2],
+            document_base_dir=tmp_path,
+        )
+
+        # Test the new external ID linking functionality
+        linkages = list(linker._get_linkages_filename_external_id())
+
+        # Should find 2 linkages (one for each external ID)
+        assert len(linkages) == 2
+
+        # Check that we got the right files
+        file_paths = {str(linkage.file_path) for linkage in linkages}
+        assert str(pdf_file1) in file_paths
+        assert str(pdf_file2) in file_paths
+
+        # Verify that the third file wasn't matched (doesn't have matching external ID)
+        assert str(pdf_file3) not in file_paths
+
+        # Verify that document IDs are correctly returned
+        doc_ids = {linkage.document_id for linkage in linkages}
+        assert 12345678 in doc_ids  # First document's internal ID
+        assert 87654321 in doc_ids  # Second document's internal ID
+
+
+def test_linker_get_linkages_filename_external_id_no_match():
+    """
+    Test _get_linkages_filename_external_id handles files
+    with no matching external IDs.
+    """
+    # Create test documents with external IDs
+    doc1 = Document(
+        name="Test Doc 1",
+        citation=ReferenceFileInput(doi="10.1000/test1"),
+        document_id=12345678,
+    )
+
+    # Manually set external_id
+    doc1.document_identity = DocumentIdentity(
+        document_id=12345678,
+        external_id="EXT12345678",
+        doi="10.1000/test1",
+        first_author="Smith",
+        year="2024",
+    )
+
+    # Create a mock file system with files that don't match external IDs
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+
+        # Create files with non-matching names
+        pdf_file = tmp_path / "DIFFERENT_ID.pdf"
+        pdf_file.write_text("test content")
+
+        # Mock the linker to use this directory
+        linker = DocumentReferenceLinker(
+            references=[doc1],
+            document_base_dir=tmp_path,
+        )
+
+        # Test the new external ID linking functionality
+        linkages = list(linker._get_linkages_filename_external_id())
+
+        # Should find 0 linkages (no matches)
+        assert len(linkages) == 0

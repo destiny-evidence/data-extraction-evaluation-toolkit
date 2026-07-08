@@ -1,6 +1,6 @@
 project:
-  created_at: '2026-05-20T08:21:52.305479Z'
+  created_at: '2026-06-17T11:09:54.503309Z'
   gold_standard_data_format: eppi_json
   gold_standard_data_path: reports.json
-  name: a new project
+  name: quickstart
   pdf_dir: pdfs

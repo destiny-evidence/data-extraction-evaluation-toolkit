@@ -20,6 +20,7 @@ This is where we will store configuration options and the results of your data e
 
     To set up a project using the CLI, run `deet project init` from the directory
     where you would like to store your project.
+    Alternatively, you can run `deet project new` to create a project in a new directory.
     This will interactively collect the information required to set your project up,
     and also prompt you to enter credentials for making API calls to LLMs.
 
@@ -76,10 +77,12 @@ This is where we will store configuration options and the results of your data e
 ### Linking documents to pdfs
 
 If you want to extract data from the full texts of your documents, you will need to edit the file `link_map.csv` created in your project directory by setting up deet, to point each document to the file that contains its pdf.
+On initialising a project, this is pre-filled with plausible mappings, but you should check that these are correct
+and add any missing paths yourself.
 
 {{ read_csv('examples/quickstart/link_map.csv') }}
 
-After you have edited this file, you can link the documents
+Once you are happy with this file, you can link the documents
 
 <div class="grid cards" markdown>
 
