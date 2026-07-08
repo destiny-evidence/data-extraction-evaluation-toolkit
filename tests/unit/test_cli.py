@@ -1,5 +1,6 @@
 """Tests for deet/scripts/cli.py."""
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,6 +14,7 @@ from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
 from deet.scripts.typer_context import CLIState, project_required
 from deet.settings import DataExtractionSettings
+from deet.utils.text import slugify
 
 runner = CliRunner()
 
@@ -136,9 +138,9 @@ def test_init_project_initialises_in_emptydir():
 
     with (
         patch("deet.data_models.project.DeetProject.load") as mock_load,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
         mock_load.side_effect = FileNotFoundError
         mock_wizard.side_effect = [fake_project, fake_settings]
@@ -157,22 +159,23 @@ def test_init_project_aborts_no_overwrite():
     fake_settings = MagicMock(spec=DataExtractionSettings)
 
     with (
-        patch("deet.data_models.project.DeetProject.load") as mock_load,
-        patch("deet.scripts.commands.project.inquirer.confirm") as mock_confirm,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        runner.isolated_filesystem(),
+        patch("deet.data_models.project.DeetProject.load", return_value=fake_project),
+        patch("deet.scripts.project_utils.inquirer.confirm") as mock_confirm,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
-        mock_load.return_value = fake_project
+        Path("project.yaml").touch()  # an existing project in the current dir
         mock_confirm.return_value.execute.return_value = False
         mock_wizard.side_effect = [fake_project, fake_settings]
 
         result = runner.invoke(app, ["project", "init"])
 
-    assert result.exit_code == 1
-    assert mock_wizard.call_count == 0
-    fake_project.setup.assert_not_called()
-    fake_settings.dump_to_env.assert_not_called()
+        assert result.exit_code == 1
+        assert mock_wizard.call_count == 0
+        fake_project.setup.assert_not_called()
+        fake_settings.dump_to_env.assert_not_called()
 
 
 def test_init_project_overwrites_after_confirm():
@@ -182,22 +185,117 @@ def test_init_project_overwrites_after_confirm():
     new_project = MagicMock(spec=DeetProject)
 
     with (
-        patch("deet.data_models.project.DeetProject.load") as mock_load,
-        patch("deet.scripts.commands.project.inquirer.confirm") as mock_confirm,
-        patch("deet.scripts.commands.project.run_model_wizard") as mock_wizard,
-        patch("deet.scripts.commands.project.continue_after_key"),
-        patch("deet.scripts.commands.project.console.clear"),
+        runner.isolated_filesystem(),
+        patch("deet.data_models.project.DeetProject.load", return_value=fake_project),
+        patch("deet.scripts.project_utils.inquirer.confirm") as mock_confirm,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
     ):
-        mock_load.return_value = fake_project
+        Path("project.yaml").touch()  # an existing project in the current dir
         mock_confirm.return_value.execute.return_value = True
         mock_wizard.side_effect = [new_project, fake_settings]
 
         result = runner.invoke(app, ["project", "init"])
 
-    assert result.exit_code == 0
-    assert mock_wizard.call_count == 2
-    new_project.setup.assert_called_once()
-    fake_settings.dump_to_env.assert_called_once()
+        assert result.exit_code == 0
+        assert mock_wizard.call_count == 2
+        new_project.setup.assert_called_once()
+        fake_settings.dump_to_env.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("My Project", "my-project"),
+        ("  Climate & Health v2 ", "climate-health-v2"),
+        ("already-slug", "already-slug"),
+    ],
+)
+def test_slugify(name, expected):
+    assert slugify(name) == expected
+
+
+def test_slugify_rejects_unusable_name():
+    with pytest.raises(ValueError, match="Could not derive"):
+        slugify("---")
+
+
+def test_new_project_creates_directory_and_anchors():
+    fake_project = MagicMock(spec=DeetProject)
+    fake_settings = MagicMock(spec=DataExtractionSettings)
+
+    with (
+        runner.isolated_filesystem() as td,
+        patch(
+            "deet.data_models.project.DeetProject.load",
+            side_effect=FileNotFoundError,
+        ),
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
+    ):
+        mock_wizard.side_effect = [fake_project, fake_settings]
+
+        result = runner.invoke(app, ["project", "new", "--name", "My Project"])
+        target = Path(td) / "my-project"
+
+        assert result.exit_code == 0
+        assert target.exists()
+        fake_project.anchor_to.assert_called_once_with(target)
+        fake_project.setup.assert_called_once()
+        fake_settings.dump_to_env.assert_called_once()
+
+
+def test_new_project_prompts_for_name_when_omitted():
+    fake_project = MagicMock(spec=DeetProject)
+    fake_settings = MagicMock(spec=DataExtractionSettings)
+
+    with (
+        runner.isolated_filesystem() as td,
+        patch(
+            "deet.data_models.project.DeetProject.load",
+            side_effect=FileNotFoundError,
+        ),
+        patch(
+            "deet.scripts.project_utils.inquire_pydantic_field",
+            return_value="My Project",
+        ) as mock_name_prompt,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
+    ):
+        mock_wizard.side_effect = [fake_project, fake_settings]
+
+        result = runner.invoke(app, ["project", "new"])
+        target = Path(td) / "my-project"
+
+        assert result.exit_code == 0
+        mock_name_prompt.assert_called_once()  # name collected interactively
+        assert target.exists()
+        fake_project.anchor_to.assert_called_once_with(target)
+
+
+def test_new_project_headless_with_args():
+    with (
+        runner.isolated_filesystem() as td,
+        patch(
+            "deet.data_models.project.DeetProject.load",
+            side_effect=FileNotFoundError,
+        ),
+        patch("deet.data_models.project.DeetProject.setup", return_value=None),
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+    ):
+        Path("references.json").touch()
+        result = runner.invoke(
+            app,
+            ["project", "new", "--name", "My Project", "-d", "references.json"],
+        )
+        target = Path(td) / "my-project"
+
+        assert result.exit_code == 0
+        assert target.exists()
+        mock_wizard.assert_not_called()
 
 
 def test_init_project_noninteractive(tmp_path):
@@ -208,71 +306,47 @@ def test_init_project_noninteractive(tmp_path):
         patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
     ):
-        result = runner.invoke(
-            app,
-            ["project", "init", "-n", "test-project", "-d", str(data_file)],
-        )
+        result = runner.invoke(app, ["project", "init", "-d", str(data_file)])
 
     assert result.exit_code == 0
 
 
 def test_init_project_noninteractive_fails_with_insufficient_args(tmp_path):
-    data_file = tmp_path / "references.json"
-    data_file.touch()
-
     with (
         patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
     ):
-        result = runner.invoke(
-            app,
-            [
-                "project",
-                "init",
-                "-n",
-                "test-project",
-            ],
-        )
+        result = runner.invoke(app, ["project", "init", "-p", str(tmp_path)])
 
-    assert "validation error for DeetProject" in result.output
+    assert "is required to create a project" in result.output
     assert result.exit_code == 1
 
 
-def test_init_project_noninteractive_no_overwrite(tmp_path, valid_project_data):
-    sample_project = DeetProject.model_validate(valid_project_data)
-
-    data_file = tmp_path / "references.json"
-    data_file.touch()
-
+def test_init_project_noninteractive_no_overwrite():
     with (
-        patch("deet.data_models.project.DeetProject.load", return_value=sample_project),
+        runner.isolated_filesystem(),
+        patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
     ):
-        result = runner.invoke(
-            app,
-            ["project", "init", "-n", "test-project", "-d", str(data_file)],
-        )
+        Path("project.yaml").touch()  # an existing project in the current dir
+        Path("references.json").touch()
+        result = runner.invoke(app, ["project", "init", "-d", "references.json"])
 
-    assert "Project already exists" in result.stderr
-    assert result.exit_code == 1
+        assert "already exists" in result.stderr
+        assert result.exit_code == 1
 
 
-def test_init_project_noninteractive_force_overwrite(tmp_path, valid_project_data):
-    sample_project = DeetProject.model_validate(valid_project_data)
-
-    data_file = tmp_path / "references.json"
-    data_file.touch()
-
+def test_init_project_noninteractive_force_overwrite():
     with (
-        patch("deet.data_models.project.DeetProject.load", return_value=sample_project),
+        runner.isolated_filesystem(),
+        patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
     ):
-        result = runner.invoke(
-            app,
-            ["project", "init", "-n", "test-project", "-d", str(data_file), "-f"],
-        )
+        Path("project.yaml").touch()  # existing project, overridden by --force
+        Path("references.json").touch()
+        result = runner.invoke(app, ["project", "init", "-d", "references.json", "-f"])
 
-    assert result.exit_code == 0
+        assert result.exit_code == 0
 
 
 def test_link(valid_project_data):
@@ -334,6 +408,7 @@ def test_extract_happy_path(tmp_path):
         mock_extractor.config = fake_config
         mock_run_output = MagicMock()
         mock_run_output.annotated_documents = mock_processed_data.annotated_documents
+        mock_run_output.metadata.model_dump_json.return_value = "{}"
         mock_extractor.extract_from_documents.return_value = mock_run_output
 
         mock_evaluator = mock_evaluator_cls.return_value

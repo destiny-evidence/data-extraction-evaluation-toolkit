@@ -1,4 +1,4 @@
-# ruff: noqa: PLC0415, B008
+# ruff: noqa: PLC0415
 """Sub-commands for project initialisation and configuration."""
 
 from pathlib import Path
@@ -10,115 +10,79 @@ if TYPE_CHECKING:
 
 import typer
 from InquirerPy import inquirer
-from pydantic import ValidationError
 
 from deet.processors.converter_register import SupportedImportFormat
-from deet.scripts.typer_context import project_required
-from deet.settings import DataExtractionSettings, LogLevel
-from deet.ui import fail_with_message, notify
-from deet.ui.terminal import (
-    console,
-    continue_after_key,
-    render_template,
-    run_model_wizard,
+from deet.scripts.project_utils import (
+    DataFormatOption,
+    DataPathOption,
+    ForceOption,
+    PdfDirOption,
+    create_project,
+    guard_overwrite,
+    prompt_name,
 )
-from deet.ui.terminal.components import info_panel
+from deet.scripts.typer_context import project_required
+from deet.settings import LogLevel
+from deet.ui import fail_with_message, notify
+from deet.utils.text import slugify
 
 app = typer.Typer(help="Commands to create and configure deet projects.")
 
 
 @app.command()
-def init(  # noqa: PLR0913
-    typer_context: typer.Context,
+def init(
     *,
-    name: str = typer.Option(
-        None, "--name", "-n", help="Project name (min 2 characters)"
-    ),
-    data_path: Path = typer.Option(
-        None,
-        "--data",
-        "-d",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        resolve_path=True,
-        help="Path to your gold standard annotation data",
-    ),
-    data_type: SupportedImportFormat = typer.Option(
-        SupportedImportFormat.EPPI_JSON,
-        "--format",
-        "-t",
-        help="Format of your gold standard annotated data.",
-    ),
-    pdf_dir: Path | None = typer.Option(
-        None,
-        "--pdfs",
-        "-p",
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        resolve_path=True,
-        help="The folder where your pdfs for data extraction are stored.",
-    ),
-    force_overwrite: bool = typer.Option(
-        False,  # noqa: FBT003
-        "--force",
-        "-f",
-        help="Overwrite existing project data",
-    ),
+    data_path: DataPathOption = None,
+    data_type: DataFormatOption = SupportedImportFormat.EPPI_JSON,
+    pdf_dir: PdfDirOption = None,
+    force_overwrite: ForceOption = False,
 ) -> None:
     """
-    Initialise a new project.
+    Initialise a new project in the current directory.
 
-    Leave command line arguments empty to enter interactive wizard.
+    The project name is taken from the current directory. Leave the data and pdf
+    options empty to enter the interactive wizard.
+    Use deet project new to create a project in a new directory.
     """
-    from deet.data_models.project import DeetProject
+    root = Path.cwd()
+    guard_overwrite(
+        root, force=force_overwrite, interactive=not any([data_path, pdf_dir])
+    )
+    create_project(
+        root, root.name, data_path=data_path, data_type=data_type, pdf_dir=pdf_dir
+    )
 
-    existing_project: DeetProject = typer_context.obj.project
 
-    if any([name, data_path, pdf_dir]):
-        if existing_project and not force_overwrite:
-            fail_with_message("Project already exists. ")
-        try:
-            project = DeetProject(
-                name=name,
-                gold_standard_data_path=data_path,
-                gold_standard_data_format=data_type,
-                pdf_dir=pdf_dir,
-            )
-        except ValidationError as e:
-            fail_with_message(f"Invalid project configuration:\n{e}")
-        project.setup()
-        return
+@app.command()
+def new(
+    *,
+    name: Annotated[
+        str | None, typer.Option(help="Project name (prompted if omitted).")
+    ] = None,
+    data_path: DataPathOption = None,
+    data_type: DataFormatOption = SupportedImportFormat.EPPI_JSON,
+    pdf_dir: PdfDirOption = None,
+    force_overwrite: ForceOption = False,
+) -> None:
+    """
+    Create a new project in its own directory, named after ``name``.
 
-    if existing_project is not None:
-        notify(
-            (
-                f"Project {existing_project.name} already exists in this directory. "
-                "Continuing could overwrite data and settings"
-            ),
-            level=LogLevel.WARNING,
-        )
-        if not inquirer.confirm("Overwrite existing project?").execute():
-            fail_with_message("Exiting..")
+    Leave the data and pdf options
+    empty to enter the interactive wizard. Use `deet project init` to turn the
+    current directory into a project.
+    """
+    if name is None:
+        name = prompt_name()
 
-    console.clear()
-    init_md = render_template("project/init")
-    console.print(info_panel(init_md, title=":speedboat: project set-up"))
-    continue_after_key()
-
-    project = run_model_wizard(DeetProject)
-    project.setup()
-
-    console.clear()
-    configure_env_md = render_template("project/configure_env.md")
-    console.print(info_panel(configure_env_md, ":key: Credential management"))
-    continue_after_key()
-    settings = run_model_wizard(DataExtractionSettings)
-    settings.dump_to_env()
-
-    console.clear()
-    console.print(info_panel(render_template("project/success.md", project=project)))
+    target = Path.cwd() / slugify(name)
+    guard_overwrite(
+        target, force=force_overwrite, interactive=not any([data_path, pdf_dir])
+    )
+    target.mkdir(parents=True, exist_ok=True)
+    notify(f"Creating project in {target}", level=LogLevel.INFO)
+    create_project(
+        target, name, data_path=data_path, data_type=data_type, pdf_dir=pdf_dir
+    )
 
 
 @app.command()
@@ -137,7 +101,8 @@ def regenerate_link_map(typer_context: typer.Context) -> None:
     processed_annotation_data = deet_project.process_data()
 
     processed_annotation_data.export_linkage_mapper_csv(
-        file_path=deet_project.link_map_path, document_base_dir=deet_project.pdf_dir
+        file_path=deet_project.link_map_path,
+        document_base_dir=deet_project.pdf_dir_abspath,
     )
 
 
@@ -198,7 +163,7 @@ def link(typer_context: typer.Context) -> None:
 
     linker = DocumentReferenceLinker(
         references=processed_annotation_data.documents,
-        document_base_dir=deet_project.pdf_dir,
+        document_base_dir=deet_project.pdf_dir_abspath,
         document_reference_mapping=deet_project.link_map_path,
         linking_strategies=[LinkingStrategy.MAPPING_FILE],
     )

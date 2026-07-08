@@ -20,6 +20,7 @@ This is where we will store configuration options and the results of your data e
 
     To set up a project using the CLI, run `deet project init` from the directory
     where you would like to store your project.
+    Alternatively, you can run `deet project new` to create a project in a new directory.
     This will interactively collect the information required to set your project up,
     and also prompt you to enter credentials for making API calls to LLMs.
 

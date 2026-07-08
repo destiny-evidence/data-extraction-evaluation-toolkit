@@ -178,18 +178,18 @@ def run_extraction_pipeline(
     data_extractor = LLMDataExtractor(config=config)
 
     if ignore_references:
-        if deet_project.pdf_dir is None:
+        if deet_project.pdf_dir_abspath is None:
             fail_with_message(
                 "This project doesn't specify a pdf directory. "
                 "Either edit the yaml file to create one or re-initialise the project."
             )
-        documents = create_documents_from_directory(deet_project.pdf_dir)
+        documents = create_documents_from_directory(deet_project.pdf_dir_abspath)
     else:
         documents = prepare_documents(
             processed_annotation_data.documents,
             config,
             linked_document_path=deet_project.linked_documents_path,
-            pdf_dir=deet_project.pdf_dir,
+            pdf_dir=deet_project.pdf_dir_abspath,
             link_map_path=deet_project.link_map_path,
         )
 
@@ -209,5 +209,11 @@ def run_extraction_pipeline(
         yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False),
         encoding="utf-8",
     )
+
+    experiment_artefacts.run_metadata.write_text(
+        run_output.metadata.model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+    logger.info(f"Run metadata saved to: {experiment_artefacts.run_metadata}")
 
     return run_output, processed_annotation_data, experiment_artefacts
