@@ -3,12 +3,12 @@ DSPy signatures and extraction pipeline for Cochrane RCT data extraction.
 
 Identical pipeline structure to RCTextraction.py but bound to CochraneRCTmodel
 classes with Cochrane-specific Study_Characteristics and Intervention fields.
+OtherOutcomes are not extracted in this variant.
 
 Pipeline steps:
   1. ExtractStudyInfo             — extract study-level metadata and identify all intervention arms
   2. ExtractDichotomousOutcomes   — extract binary event outcomes per identified arm
   3. ExtractContinuousOutcomes    — extract mean/SD outcomes per identified arm
-  4. ExtractOtherOutcomes         — extract all remaining outcome types per identified arm
 """
 
 from __future__ import annotations
@@ -19,7 +19,6 @@ from .CochraneRCTmodel import (
     Continuous_Outcome,
     Dichotomous_Outcome,
     Intervention,
-    Other_Outcome,
     Study,
     Study_Characteristics,
 )
@@ -103,30 +102,6 @@ class ExtractContinuousOutcomes(dspy.Signature):
     )
 
 
-class ExtractOtherOutcomes(dspy.Signature):
-    """
-    You are a systematic review assistant.
-
-    Given the same RCT context and the already-identified intervention arms,
-    extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text.
-
-    For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.
-
-    Report values exactly as they appear in the source — do not calculate or impute.
-    If a value is not reported, use the string "NR".
-    """
-
-    context: str = dspy.InputField(
-        desc="Concatenated markdown text from one or more parsed PDFs, all describing the same RCT"
-    )
-    interventions: list[Intervention] = dspy.InputField(
-        desc="The intervention arms already identified for this trial"
-    )
-    flexible_outcomes: list[Other_Outcome] = dspy.OutputField(
-        desc="All data related to every 'other type' outcome reported in the study."
-    )
-
-
 # ---------------------------------------------------------------------------
 # Pipeline module
 # ---------------------------------------------------------------------------
@@ -134,12 +109,11 @@ class ExtractOtherOutcomes(dspy.Signature):
 
 class CochraneRCTExtractionPipeline(dspy.Module):
     """
-    Four-step DSPy pipeline for structured Cochrane RCT data extraction.
+    Three-step DSPy pipeline for structured Cochrane RCT data extraction.
 
     Step 1 — extract Cochrane study metadata and identify intervention arms.
     Step 2 — extract all dichotomous outcomes, informed by the identified arms.
     Step 3 — extract all continuous outcomes, informed by the identified arms.
-    Step 4 — extract all other outcomes, informed by the identified arms.
     """
 
     def __init__(self) -> None:
@@ -147,7 +121,6 @@ class CochraneRCTExtractionPipeline(dspy.Module):
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
         self.extract_dichotomous = dspy.Predict(ExtractDichotomousOutcomes)
         self.extract_continuous = dspy.Predict(ExtractContinuousOutcomes)
-        self.extract_other = dspy.Predict(ExtractOtherOutcomes)
 
     def forward(self, context: str) -> Study:
         # Step 1: study characteristics + intervention arms
@@ -165,16 +138,9 @@ class CochraneRCTExtractionPipeline(dspy.Module):
             interventions=study_pred.interventions,
         )
 
-        # Step 4: other outcomes — pass identified interventions as context
-        other_pred = self.extract_other(
-            context=context,
-            interventions=study_pred.interventions,
-        )
-
         return Study(
             study_characteristics=study_pred.study_characteristics,
             interventions=study_pred.interventions,
             dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
             continuous_outcomes=cont_pred.continuous_outcomes,
-            other_outcomes=other_pred.flexible_outcomes,
         )

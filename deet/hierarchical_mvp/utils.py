@@ -120,6 +120,10 @@ def export_cochrane_csv(
     csv_dir = predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
 
+    # Use the LLM-extracted study identifier (STD-author-year) for all CSV rows.
+    # Fall back to the input file stem if it was not extracted.
+    study_id = (study.study_characteristics.study or "").strip() or study_name
+
     # --- study.csv ---
     study_path = csv_dir / f"study_{timestamp}.csv"
     with study_path.open("w", newline="", encoding="utf-8") as f:
@@ -128,25 +132,28 @@ def export_cochrane_csv(
         writer.writerow(study.to_csv_row())
 
     # --- interventions.csv ---
+    # Prepend the "Study" column so every intervention row carries the study ID.
     interventions_path = csv_dir / f"interventions_{timestamp}.csv"
+    iv_fieldnames = ["Study"] + CochraneIntervention.csv_fieldnames()
     with interventions_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CochraneIntervention.csv_fieldnames())
+        writer = csv.DictWriter(f, fieldnames=iv_fieldnames, restval="")
         writer.writeheader()
         for arm in study.interventions:
-            writer.writerow(arm.to_csv_row())
+            writer.writerow({"Study": study_id, **arm.to_csv_row()})
 
     # --- outcomes.csv ---
+    # Each outcome object holds data for both arms and produces two rows.
     outcomes_path = csv_dir / f"outcomes_{timestamp}.csv"
     with outcomes_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
-            f, fieldnames=CochraneStudy.outcome_csv_fieldnames(), extrasaction="ignore"
+            f,
+            fieldnames=CochraneStudy.outcome_csv_fieldnames(),
+            extrasaction="ignore",
+            restval="",
         )
         writer.writeheader()
-        for outcome in (
-            study.dichotomous_outcomes
-            + study.continuous_outcomes
-            + study.other_outcomes
-        ):
-            writer.writerow(outcome.to_csv_row())
+        for outcome in study.dichotomous_outcomes + study.continuous_outcomes:
+            for row in outcome.to_csv_rows(study=study_id):
+                writer.writerow(row)
 
     logger.info(f"Cochrane CSV files saved to {csv_dir}/")
