@@ -54,6 +54,8 @@ class DevValTestSplits(BaseSplits):
     validation_ids: list[int] = Field(default_factory=list)
     test_ids: list[int] = Field(default_factory=list)
 
+    validation_run_id: str | None = None
+
     def _get_list_for_stage(self, stage: DevValTestEvaluationStage) -> list[int]:
         """Return the list of document IDs for a stage."""
         stage_mapping = {
@@ -161,7 +163,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             " are still unassigned."
         )
 
-    def validate_run(
+    def _validate_run(
         self,
         typer_context: Context,
         size: int,
@@ -199,7 +201,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
                 DevValTestEvaluationStage.VALIDATION, project_doc_ids, size
             )
             self.splits.current_stage = DevValTestEvaluationStage.VALIDATION
-            self.splits.dump_to_json(deet_project.evaluation_splits_path)
         except SplitsValidationError as e:
             fail_with_message(str(e))
 
@@ -223,6 +224,24 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             run_output=run_output,
             experiment_artefacts=experiment_artefacts,
         )
+        self.splits.validation_run_id = experiment_artefacts.run_id
+        self.splits.dump_to_json(deet_project.evaluation_splits_path)
+        self.snapshot(experiment_artefacts)
+
+    def _act_on_validation(
+        self, typer_context: Context, project_doc_ids: list[int]
+    ) -> None:
+        """Select a past experiment config and eval against a fresh validation set."""
+        from InquirerPy import inquirer
+
+        from deet.data_models.project import ExperimentArtefacts
+        from deet.extractors.cli_helpers import (
+            evaluate_extraction_pipeline,
+            run_extraction_pipeline,
+        )
+        from deet.ui import fail_with_message
+
+        deet_project: DeetProject = typer_context.obj.project
 
         decision = inquirer.select(
             message="Based on these metrics, how would you like to proceed?",
@@ -249,6 +268,12 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
                 self.splits.finalise_test(project_doc_ids)
             except SplitsValidationError as e:
                 fail_with_message(str(e))
+
+            if self.splits.validation_run_id is None:
+                fail_with_message("No validation run id")
+            selected_experiment = ExperimentArtefacts(
+                base_dir=deet_project.experiments_dir / self.splits.validation_run_id
+            )
 
             self.splits.dump_to_json(deet_project.evaluation_splits_path)
 
@@ -297,30 +322,39 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             f"Unassigned:  {len(unassigned)} documents"
         )
 
-        choices = [{"name": "Add documents to development set", "value": "add-dev"}]
-        if self.splits.development_ids:
-            choices.append({"name": "Move to validation", "value": "validate"})
+        if self.splits.current_stage == DevValTestEvaluationStage.DEVELOPMENT:
+            choices = [{"name": "Add documents to development set", "value": "add-dev"}]
+            if self.splits.development_ids:
+                choices.append({"name": "Move to validation", "value": "validate"})
 
-        if action is None:
-            action = inquirer.select(
-                message="what would you like to do?", choices=choices
-            ).execute()
+            if action is None:
+                action = inquirer.select(
+                    message="what would you like to do?", choices=choices
+                ).execute()
 
-        if action == "add-dev":
-            if size is None:
-                size = int(
-                    inquirer.number(
-                        message="How many documents would you like to add?"
-                    ).execute()
-                )
-            self.add_dev(size, project, project_doc_ids)
-            return
+            if action == "add-dev":
+                if size is None:
+                    size = int(
+                        inquirer.number(
+                            message="How many documents would you like to add?"
+                        ).execute()
+                    )
+                self.add_dev(size, project, project_doc_ids)
+                return
 
-        if action == "validate":
-            if size is None:
-                size = int(
-                    inquirer.number(
-                        message="How many documents would you like to add?"
-                    ).execute()
-                )
-            self.validate_run(typer_context=typer_context, size=size)
+            if action == "validate":
+                if size is None:
+                    size = int(
+                        inquirer.number(
+                            message="How many documents would you like to add?"
+                        ).execute()
+                    )
+                self._validate_run(typer_context=typer_context, size=size)
+
+        if self.splits.current_stage == DevValTestEvaluationStage.VALIDATION:
+            self._act_on_validation(
+                typer_context=typer_context, project_doc_ids=project_doc_ids
+            )
+
+        elif self.splits.current_stage == DevValTestEvaluationStage.TEST:
+            notify("Test is complete. No further action available")
