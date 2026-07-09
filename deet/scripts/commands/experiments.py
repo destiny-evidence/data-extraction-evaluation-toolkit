@@ -48,7 +48,7 @@ RunNameOption = Annotated[
     ),
 ]
 
-PromptLocationOption = Annotated[
+PromptPathOption = Annotated[
     Path | None,
     typer.Option(
         help=(
@@ -65,7 +65,7 @@ def evaluate(  # noqa: PLR0913
     typer_context: typer.Context,
     config_path: ConfigPathOption = None,
     prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
-    prompt_csv_path: PromptLocationOption = None,
+    prompt_csv_path: PromptPathOption = None,
     run_name: RunNameOption = "",
     custom_evaluation_metrics: Annotated[
         list[str] | None,
@@ -117,7 +117,7 @@ def predict(  # noqa: PLR0913
     typer_context: typer.Context,
     config_path: ConfigPathOption = None,
     prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
-    prompt_csv_path: PromptLocationOption = None,
+    prompt_csv_path: PromptPathOption = None,
     run_name: RunNameOption = "",
     ignore_references: bool = typer.Option(  # noqa: FBT001
         default=False,
