@@ -180,6 +180,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         result_output, _, experiment_artefacts = run_extraction_pipeline(
             typer_context=mock_typer_context,
             prompt_population=None,
+            prompt_csv_path=None,
         )
 
     assert result_output is run_output

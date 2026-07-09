@@ -16,39 +16,57 @@ app = typer.Typer(
     )
 )
 
+# Shared options
+ConfigPathOption = Annotated[
+    Path | None,
+    typer.Option(
+        help="A path to a config file containing options for data "
+        "extraction configuration. A template with defaults is generated"
+        " on project setup."
+        "\nLeave this blank to configure interactively."
+    ),
+]
+
+PromptPopulationOption = Annotated[
+    CustomPromptPopulationMethod | None,
+    typer.Option(
+        help="A method to define custom prompts for your attributes to be "
+        "extracted. Leave blank to use the prompts in your gold standard "
+        "data. Set to `file` to provide a file of prompt definitions "
+        "(make sure this is supplied below). Set to `cli` to define prompts"
+        " interactively in the CLI. With `file`, only attributes that appear "
+        "in the CSV with a non-empty `prompt` are kept for extraction and "
+        "evaluation (see also `--csv-path`)."
+    ),
+]
+
+RunNameOption = Annotated[
+    str,
+    typer.Option(
+        help="A name for the run (which will appended to a timestamp) "
+        "to help you identify this run later"
+    ),
+]
+
+PromptPathOption = Annotated[
+    Path | None,
+    typer.Option(
+        help=(
+            "A custom location of a csv file to read prompts from"
+            " (if not default project location)"
+        )
+    ),
+]
+
 
 @app.command()
 @project_required
-def evaluate(
+def evaluate(  # noqa: PLR0913
     typer_context: typer.Context,
-    config_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to a config file containing options for data "
-            "extraction configuration. A template with defaults is generated"
-            " on project setup."
-            "\nLeave this blank to configure interactively."
-        ),
-    ] = None,
-    prompt_population: Annotated[
-        CustomPromptPopulationMethod | None,
-        typer.Option(
-            help="A method to define custom prompts for your attributes to be "
-            "extracted. Leave blank to use the prompts in your gold standard "
-            "data. Set to `file` to provide a file of prompt definitions "
-            "(make sure this is supplied below). Set to `cli` to define prompts"
-            " interactively in the CLI. With `file`, only attributes that appear "
-            "in the CSV with a non-empty `prompt` are kept for extraction and "
-            "evaluation (see also `--csv-path`)."
-        ),
-    ] = CustomPromptPopulationMethod.FILE,
-    run_name: Annotated[
-        str,
-        typer.Option(
-            help="A name for the run (which will appended to a timestamp) "
-            "to help you identify this run later"
-        ),
-    ] = "",
+    config_path: ConfigPathOption = None,
+    prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
+    prompt_csv_path: PromptPathOption = None,
+    run_name: RunNameOption = "",
     custom_evaluation_metrics: Annotated[
         list[str] | None,
         typer.Option(
@@ -73,6 +91,7 @@ def evaluate(
     run_output, processed_annotation_data, experiment_artefacts = (
         run_extraction_pipeline(
             typer_context=typer_context,
+            prompt_csv_path=prompt_csv_path,
             config_path=config_path,
             prompt_population=prompt_population,
             run_name=run_name,
@@ -94,36 +113,12 @@ def evaluate(
 
 @app.command()
 @project_required
-def predict(
+def predict(  # noqa: PLR0913
     typer_context: typer.Context,
-    config_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to a config file containing options for data "
-            "extraction configuration. A template with defaults is generated"
-            " on project setup."
-            "\nLeave this blank to configure interactively."
-        ),
-    ] = None,
-    prompt_population: Annotated[
-        CustomPromptPopulationMethod | None,
-        typer.Option(
-            help="A method to define custom prompts for your attributes to be "
-            "extracted. Leave blank to use the prompts in your gold standard "
-            "data. Set to `file` to provide a file of prompt definitions "
-            "(make sure this is supplied below). Set to `cli` to define prompts"
-            " interactively in the CLI. With `file`, only attributes that appear "
-            "in the CSV with a non-empty `prompt` are kept for extraction and "
-            "evaluation (see also `--csv-path`)."
-        ),
-    ] = CustomPromptPopulationMethod.FILE,
-    run_name: Annotated[
-        str,
-        typer.Option(
-            help="A name for the run (which will appended to a timestamp) "
-            "to help you identify this run later"
-        ),
-    ] = "",
+    config_path: ConfigPathOption = None,
+    prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
+    prompt_csv_path: PromptPathOption = None,
+    run_name: RunNameOption = "",
     ignore_references: bool = typer.Option(  # noqa: FBT001
         default=False,
         help=(
@@ -145,6 +140,7 @@ def predict(
     (run_output, processed_annotation_data, experiment_artefacts) = (
         run_extraction_pipeline(
             typer_context=typer_context,
+            prompt_csv_path=prompt_csv_path,
             config_path=config_path,
             prompt_population=prompt_population,
             run_name=run_name,

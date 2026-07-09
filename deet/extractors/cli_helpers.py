@@ -146,8 +146,9 @@ def prepare_documents(
     return None
 
 
-def run_extraction_pipeline(
+def run_extraction_pipeline(  # noqa: PLR0913
     typer_context: typer.Context,
+    prompt_csv_path: Path | None,
     config_path: Path | None = None,
     prompt_population: (
         CustomPromptPopulationMethod | None
@@ -167,8 +168,15 @@ def run_extraction_pipeline(
     experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
 
     if prompt_population is not None:
+        if (
+            prompt_population == CustomPromptPopulationMethod.FILE
+            and prompt_csv_path is not None
+            and not prompt_csv_path.exists()
+        ):
+            fail_with_message(f"Prompt csv {prompt_csv_path} cannot be found")
         processed_annotation_data.populate_custom_prompts(
-            method=prompt_population, filepath=deet_project.prompt_csv_path
+            method=prompt_population,
+            filepath=prompt_csv_path or deet_project.prompt_csv_path,
         )
         if not processed_annotation_data.attributes:
             fail_with_message(
