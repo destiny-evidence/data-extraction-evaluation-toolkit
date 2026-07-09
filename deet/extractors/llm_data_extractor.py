@@ -33,7 +33,7 @@ from deet.data_models.extraction import (
     ExtractionRunMetadata,
     ExtractionRunOutput,
 )
-from deet.exceptions import LitellmModelNotMappedError
+from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
     LLMProvider,
@@ -342,12 +342,12 @@ class LLMDataExtractor:
             for document in iterable_documents:
                 logger.info(f"Processing document: {document.name}")
 
-                if context_type == ContextType.ABSTRACT_ONLY:
-                    document.set_abstract_context()
-                elif context_type == ContextType.FULL_DOCUMENT:
-                    document.context = document.safe_parsed_document.text
-
                 try:
+                    if context_type == ContextType.ABSTRACT_ONLY:
+                        document.set_abstract_context()
+                    elif context_type == ContextType.FULL_DOCUMENT:
+                        document.context = document.safe_parsed_document.text
+
                     result = self.extract_from_document(
                         attributes=attributes,
                         filter_attribute_ids=filter_attribute_ids,
@@ -371,6 +371,8 @@ class LLMDataExtractor:
                     if result.total_cost_usd is not None:
                         total_cost = (total_cost or 0.0) + result.total_cost_usd
 
+                except NoAbstractError as e:
+                    logger.warning(f"Skipping {document.name}: {e}")
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to process {document.name}: {e}")
                     logger.debug("Error details", exc_info=True)
