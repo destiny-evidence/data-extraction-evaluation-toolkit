@@ -430,9 +430,7 @@ def test_test_llm_config():
     mock_cfg = MagicMock(spec=DataExtractionConfig)
 
     with (
-        patch(
-            "deet.extractors.cli_helpers.load_config_from_typer_context"
-        ) as mock_load,
+        patch("deet.extractors.cli_helpers.load_or_init_config") as mock_load,
         patch(
             "deet.extractors.llm_data_extractor.LLMDataExtractor"
         ) as mock_extractor_cls,

@@ -11,8 +11,6 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import typer
-
     from deet.data_models.enums import EvaluationStrategyName
     from deet.data_models.project import DeetProject, ExperimentArtefacts
 
@@ -47,7 +45,6 @@ class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
     def run_splits_wizard(
         self,
         project: DeetProject,
-        typer_context: typer.Context,
         *,
         action: str | None = None,
         size: int | None = None,

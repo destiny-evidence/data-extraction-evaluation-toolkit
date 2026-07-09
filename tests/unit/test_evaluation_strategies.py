@@ -64,7 +64,6 @@ def test_run_splits_wizard_add_dev_dispatches_correctly(tmp_path):
     ):
         strategy.run_splits_wizard(
             project=mock_project,
-            typer_context=MagicMock(),
             action="add-dev",
             size=2,
         )
@@ -91,7 +90,6 @@ def test_run_splits_wizard_validation_stage_dispatches_to_act_on_validation(tmp_
     with patch.object(strategy, "_act_on_validation") as mock_act:
         strategy.run_splits_wizard(
             project=mock_project,
-            typer_context=MagicMock(),
             action="accept",
         )
 
@@ -114,15 +112,10 @@ def test_act_on_validation_reject_returns_to_development(tmp_path):
 
     strategy = DevValTestEvaluationStrategy(mock_project)
 
-    mock_ctx = MagicMock()
-    mock_ctx.obj.project = mock_project
-
-    with patch(
-        "deet.data_models.evaluation_strategies.dev_val_test.inquirer"
-    ) as mock_inquirer:
+    with patch("InquirerPy.inquirer") as mock_inquirer:
         mock_inquirer.select.return_value.execute.return_value = "reject"
         strategy._act_on_validation(
-            typer_context=mock_ctx, project_doc_ids=[1, 2, 3, 4]
+            deet_project=mock_project, project_doc_ids=[1, 2, 3, 4]
         )
 
     reloaded = DevValTestSplits.load(splits_path)

@@ -10,7 +10,7 @@ from destiny_sdk.references import ReferenceFileInput
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.extraction import ExtractionRunMetadata, ExtractionRunOutput
 from deet.extractors.cli_helpers import (
-    load_config_from_typer_context,
+    load_or_init_config,
     prepare_documents,
     run_extraction_pipeline,
 )
@@ -57,8 +57,7 @@ def mock_documents():
 
 def test_load_or_init_config_file_exists(config_path, config):
     """Test loading config from existing file."""
-    mock_typer_context = MagicMock()
-    loaded_config = load_config_from_typer_context(mock_typer_context, config_path)
+    loaded_config = load_or_init_config(config_path)
 
     assert isinstance(loaded_config, DataExtractionConfig)
     assert loaded_config.model_dump() == config.model_dump()
@@ -66,22 +65,20 @@ def test_load_or_init_config_file_exists(config_path, config):
 
 def test_load_or_init_config_file_exists_invalid_yaml(tmp_path):
     """Test loading config from existing file."""
-    mock_typer_context = MagicMock()
     config_path = tmp_path / "bad_yaml.yaml"
     config_path.write_text("model_name: gpt-4\n  invalid_indent: true")
     with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
-        load_config_from_typer_context(mock_typer_context, config_path)
+        load_or_init_config(config_path)
 
     assert "YAML Syntax Error" in mock_fail.call_args[0][0]
 
 
 def test_load_or_init_config_file_exists_invalid_config(tmp_path):
     """Test loading config from existing file."""
-    mock_typer_context = MagicMock()
     config_path = tmp_path / "bad_yaml.yaml"
     config_path.write_text("provider: unsupported_provider")
     with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
-        load_config_from_typer_context(mock_typer_context, config_path)
+        load_or_init_config(config_path)
 
     assert "Config validation error" in mock_fail.call_args[0][0]
 
@@ -89,10 +86,9 @@ def test_load_or_init_config_file_exists_invalid_config(tmp_path):
 def test_load_or_init_config_file_doesnt_exist(tmp_path):
     """Test initializing default config when file doesn't exist."""
     non_existent_path = tmp_path / "non_existent_config.yaml"
-    mock_typer_context = MagicMock()
 
     with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
-        load_config_from_typer_context(mock_typer_context, non_existent_path)
+        load_or_init_config(non_existent_path)
 
     assert "file not found" in mock_fail.call_args[0][0]
 
@@ -110,7 +106,7 @@ def test_load_or_init_config_file_doesnt_exist_reverts_project(config_path, conf
         patch("deet.extractors.cli_helpers.console.clear"),
     ):
         mock_wizard.return_value = config
-        loaded_config = load_config_from_typer_context(mock_typer_context, None)
+        loaded_config = load_or_init_config(None)
 
     assert isinstance(loaded_config, DataExtractionConfig)
     assert loaded_config.model_dump() == config.model_dump()
@@ -130,9 +126,6 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     mock_processed_data.documents = [MagicMock()]
     mock_project.process_data.return_value = mock_processed_data
 
-    mock_typer_context = MagicMock()
-    mock_typer_context.obj.project = mock_project
-
     run_metadata = ExtractionRunMetadata(
         model="gpt-4o-mini",
         total_input_tokens=100,
@@ -144,7 +137,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
 
     with (
         patch(
-            "deet.extractors.cli_helpers.load_config_from_typer_context",
+            "deet.extractors.cli_helpers.load_or_init_config",
             return_value=config,
         ),
         patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
@@ -155,7 +148,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         mock_extractor.extract_from_documents.return_value = run_output
 
         result_output, _, experiment_artefacts = run_extraction_pipeline(
-            typer_context=mock_typer_context,
+            deet_project=mock_project,
             prompt_population=None,
         )
 

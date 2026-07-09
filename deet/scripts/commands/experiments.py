@@ -73,9 +73,11 @@ def evaluate(
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
+    deet_project: DeetProject = typer_context.obj.project
+
     run_output, processed_annotation_data, experiment_artefacts = (
         run_extraction_pipeline(
-            typer_context=typer_context,
+            deet_project=deet_project,
             config_path=config_path,
             prompt_population=prompt_population,
             run_name=run_name,
@@ -145,9 +147,11 @@ def predict(
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
+    deet_project: DeetProject = typer_context.obj.project
+
     (run_output, processed_annotation_data, experiment_artefacts) = (
         run_extraction_pipeline(
-            typer_context=typer_context,
+            deet_project=deet_project,
             config_path=config_path,
             prompt_population=prompt_population,
             run_name=run_name,
@@ -180,5 +184,5 @@ def splits(
     """Manage evaluation splits for this project."""
     deet_project: DeetProject = typer_context.obj.project
     deet_project.load_evaluation_strategy().run_splits_wizard(
-        project=deet_project, typer_context=typer_context, action=action, size=size
+        project=deet_project, action=action, size=size
     )

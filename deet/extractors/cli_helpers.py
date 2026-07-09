@@ -3,7 +3,6 @@
 from collections.abc import Sequence
 from pathlib import Path
 
-import typer
 import yaml
 from loguru import logger
 from pydantic import ValidationError
@@ -26,18 +25,9 @@ from deet.ui.terminal.components import info_panel
 from deet.ui.terminal.wizards import continue_after_key, run_model_wizard
 
 
-def load_config_from_typer_context(
-    typer_context: typer.Context, config_path: Path | None
-) -> DataExtractionConfig:
+def load_or_init_config(config_path: Path | None) -> DataExtractionConfig:
     """Load config from project context or path, or fail informatively."""
     if config_path is None:
-        if not typer_context.obj.project:
-            no_config = (
-                "This command is being run outside of a deet project, "
-                "and no config file has been provided. Either run this "
-                "from a project directory, or provide a config file."
-            )
-            fail_with_message(no_config)
         console.clear()
         console.print(
             info_panel(
@@ -133,7 +123,7 @@ def prepare_documents(
 
 
 def run_extraction_pipeline(
-    typer_context: typer.Context,
+    deet_project: DeetProject,
     config_path: Path | None = None,
     prompt_population: (
         CustomPromptPopulationMethod | None
@@ -145,10 +135,9 @@ def run_extraction_pipeline(
     """Run the standard data extraction pipeline from the CLI."""
     import yaml
 
-    deet_project: DeetProject = typer_context.obj.project
     processed_annotation_data = deet_project.process_data()
 
-    config = load_config_from_typer_context(typer_context, config_path)
+    config = load_or_init_config(config_path)
 
     experiment_artefacts = ExperimentArtefacts.create(
         deet_project.experiments_dir, run_name=run_name

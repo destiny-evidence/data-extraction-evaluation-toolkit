@@ -27,8 +27,6 @@ if TYPE_CHECKING:
     from collections.abc import Collection
     from pathlib import Path
 
-    from typer import Context
-
     from deet.data_models.project import DeetProject, ExperimentArtefacts
 
 
@@ -164,9 +162,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         )
 
     def _validate_run(
-        self,
-        typer_context: Context,
-        size: int,
+        self, deet_project: DeetProject, size: int, project_doc_ids: list[int]
     ) -> None:
         """Select a past experiment config and eval against a fresh validation set."""
         from InquirerPy import inquirer
@@ -177,8 +173,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             run_extraction_pipeline,
         )
         from deet.ui import fail_with_message, notify
-
-        deet_project: DeetProject = typer_context.obj.project
 
         all_experiments = [
             ExperimentArtefacts(base_dir=path)
@@ -193,8 +187,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         selected_experiment: ExperimentArtefacts = inquirer.select(
             message="Select the experiment configuration to validate:", choices=choices
         ).execute()
-
-        project_doc_ids = deet_project.get_all_doc_ids()
 
         try:
             n_added = self.splits.add_to_stage(
@@ -214,7 +206,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
 
         run_output, processed_annotation_data, experiment_artefacts = (
             run_extraction_pipeline(
-                typer_context=typer_context,
+                deet_project=deet_project,
                 config_path=selected_experiment.config_snapshot,
                 run_name="VALIDATION",
             )
@@ -229,7 +221,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         self.snapshot(experiment_artefacts)
 
     def _act_on_validation(
-        self, typer_context: Context, project_doc_ids: list[int]
+        self, deet_project: DeetProject, project_doc_ids: list[int]
     ) -> None:
         """Given validation, choose to return to development or move to testing."""
         from InquirerPy import inquirer
@@ -240,8 +232,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             run_extraction_pipeline,
         )
         from deet.ui import fail_with_message
-
-        deet_project: DeetProject = typer_context.obj.project
 
         decision = inquirer.select(
             message="Based on these metrics, how would you like to proceed?",
@@ -279,7 +269,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
 
             run_output, processed_annotation_data, experiment_artefacts = (
                 run_extraction_pipeline(
-                    typer_context=typer_context,
+                    deet_project=deet_project,
                     config_path=selected_experiment.config_snapshot,
                     run_name="FINAL_TEST",
                 )
@@ -301,7 +291,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
     def run_splits_wizard(
         self,
         project: DeetProject,
-        typer_context: Context,
         *,
         action: str | None = None,
         size: int | None = None,
@@ -349,11 +338,13 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
                             message="How many documents would you like to add?"
                         ).execute()
                     )
-                self._validate_run(typer_context=typer_context, size=size)
+                self._validate_run(
+                    deet_project=project, size=size, project_doc_ids=project_doc_ids
+                )
 
         if self.splits.current_stage == DevValTestEvaluationStage.VALIDATION:
             self._act_on_validation(
-                typer_context=typer_context, project_doc_ids=project_doc_ids
+                deet_project=project, project_doc_ids=project_doc_ids
             )
 
         elif self.splits.current_stage == DevValTestEvaluationStage.TEST:

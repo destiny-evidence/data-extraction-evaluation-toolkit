@@ -2,8 +2,6 @@
 
 from enum import auto
 
-import typer
-
 from deet.data_models.enums import EvaluationStrategyName
 from deet.data_models.evaluation_strategies.base import (
     BaseEvaluationStage,
@@ -57,11 +55,13 @@ class NullEvaluationStrategy(BaseEvaluationStrategy[NullSplits]):
     def run_splits_wizard(
         self,
         project: DeetProject,
-        typer_context: typer.Context,
         *,
         action: str | None = None,
         size: int | None = None,
         experiment: str | None = None,
     ) -> None:
         """Run the splits wizard."""
-        notify("nothing to see here, you have no evaluation strategy.")
+        notify(
+            "No evaluation strategy is selected."
+            " Evaluation will be run against all project documents"
+        )
