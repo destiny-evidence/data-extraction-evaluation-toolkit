@@ -152,16 +152,20 @@ def run_extraction_pipeline(
                 "No attributes selected. Perhaps you forgot to edit your prompt file"
             )
 
+    if not processed_annotation_data.documents:
+        no_documents = "No documents found in project"
+        fail_with_message(no_documents)
+
     evaluation_strategy = deet_project.load_evaluation_strategy()
     evaluation_strategy.snapshot(experiment_artefacts)
     active_ids = evaluation_strategy.get_active_ids(deet_project)
     processed_annotation_data.filter_documents_by_ids(active_ids)
     if not processed_annotation_data.documents:
-        no_documents = (
+        no_documents_in_stage = (
             "No documents in evaluation stage"
             f" {evaluation_strategy.splits.current_stage}"
         )
-        fail_with_message(no_documents)
+        fail_with_message(no_documents_in_stage)
 
     data_extractor = LLMDataExtractor(config=config)
 

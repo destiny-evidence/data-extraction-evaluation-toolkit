@@ -165,6 +165,64 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert written["total_cost_usd"] == 0.0123
 
 
+def test_run_extraction_pipeline_fails_when_project_has_no_documents(tmp_path, config):
+    """fail_with_message is called when the project data contains no documents."""
+    exp_dir = tmp_path / "experiments"
+    exp_dir.mkdir()
+
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = []
+    mock_project.process_data.return_value = mock_processed_data
+
+    with (
+        patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
+        patch(
+            "deet.extractors.cli_helpers.fail_with_message", side_effect=SystemExit
+        ) as mock_fail,
+        pytest.raises(SystemExit),
+    ):
+        run_extraction_pipeline(deet_project=mock_project, prompt_population=None)
+
+    assert "No documents found in project" in mock_fail.call_args[0][0]
+
+
+def test_run_extraction_pipeline_fails_when_no_documents_in_stage(tmp_path, config):
+    """fail_with_message called when filtering leaves no documents in active stage."""
+    exp_dir = tmp_path / "experiments"
+    exp_dir.mkdir()
+
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+    mock_strategy = mock_project.load_evaluation_strategy.return_value
+    mock_strategy.get_active_ids.return_value = []
+    mock_strategy.splits.current_stage = "development"
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = [MagicMock()]
+    mock_project.process_data.return_value = mock_processed_data
+
+    def clear_documents(ids):
+        mock_processed_data.documents = []
+
+    mock_processed_data.filter_documents_by_ids.side_effect = clear_documents
+
+    with (
+        patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
+        patch(
+            "deet.extractors.cli_helpers.fail_with_message", side_effect=SystemExit
+        ) as mock_fail,
+        pytest.raises(SystemExit),
+    ):
+        run_extraction_pipeline(deet_project=mock_project, prompt_population=None)
+
+    assert "No documents in evaluation stage" in mock_fail.call_args[0][0]
+
+
 def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_path):
     """Return just the documents when context type is abstract only."""
     config.default_context_type = ContextType.ABSTRACT_ONLY
