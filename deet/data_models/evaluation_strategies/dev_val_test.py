@@ -162,6 +162,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         run_output, processed_annotation_data, experiment_artefacts = (
             run_extraction_pipeline(
                 deet_project=deet_project,
+                prompt_csv_path=selected_experiment.prompts_snapshot,
                 config_path=selected_experiment.config_snapshot,
                 run_name="VALIDATION",
             )
@@ -225,6 +226,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             run_output, processed_annotation_data, experiment_artefacts = (
                 run_extraction_pipeline(
                     deet_project=deet_project,
+                    prompt_csv_path=selected_experiment.prompts_snapshot,
                     config_path=selected_experiment.config_snapshot,
                     run_name="FINAL_TEST",
                 )
