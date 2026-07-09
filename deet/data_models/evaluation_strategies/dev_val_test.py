@@ -7,7 +7,6 @@ This is described in detail at https://destiny-evidence.github.io/evaluation-boo
 
 from __future__ import annotations
 
-import random
 from enum import auto
 from typing import TYPE_CHECKING, ClassVar
 
@@ -66,38 +65,6 @@ class DevValTestSplits(BaseSplits):
         if not file_path.exists():
             return cls()
         return cls.model_validate_json(file_path.read_text(encoding="utf-8"))
-
-    def get_unassigned_ids(self, project_doc_ids: Collection[int]) -> list[int]:
-        """Filter a collection of document IDs to those which have not been assigned."""
-        assigned = (
-            set(self.development_ids) | set(self.validation_ids) | set(self.test_ids)
-        )
-        return [doc_id for doc_id in project_doc_ids if doc_id not in assigned]
-
-    def add_to_stage(
-        self,
-        stage: DevValTestEvaluationStage,
-        project_doc_ids: Collection[int],
-        size: int,
-    ) -> int:
-        """Sample from project_doc_ids and add to stage."""
-        unassigned = self.get_unassigned_ids(project_doc_ids)
-
-        target_list = self._get_list_for_stage(stage)
-
-        if size <= 0:
-            too_small = "Sample size must be greater than 0."
-            raise SplitsValidationError(too_small)
-        if len(unassigned) < size:
-            incompatible_size = (
-                f"Tried to assign {size} docs to the development set"
-                f" but only {len(unassigned)} are unassigned"
-            )
-            raise SplitsValidationError(incompatible_size)
-        target_ids = random.sample(unassigned, size)
-
-        target_list.extend(target_ids)
-        return len(target_ids)
 
     def finalise_test(self, project_doc_ids: Collection[int]) -> None:
         """Add all remaining docs to test."""

@@ -2,13 +2,17 @@
 
 from __future__ import annotations  # Makes all type annotations lazy strings
 
+import random
 from abc import ABC, abstractmethod
 from enum import StrEnum
 from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel
 
+from deet.exceptions import SplitsValidationError
+
 if TYPE_CHECKING:
+    from collections.abc import Collection
     from pathlib import Path
 
     from deet.data_models.enums import EvaluationStrategyName
@@ -74,6 +78,38 @@ class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
     def _get_list_for_stage(self, stage: StageT) -> list[int]:
         """Get the the ids in the field corresponding the stage."""
         return getattr(self, self._STAGE_FIELD_NAMES[stage])
+
+    def get_unassigned_ids(self, project_doc_ids: Collection[int]) -> list[int]:
+        """Filter a collection of document IDs to those which have not been assigned."""
+        assigned = set()
+        for field_name in self._STAGE_FIELD_NAMES.values():
+            assigned.update(getattr(self, field_name))
+
+        return [doc_id for doc_id in project_doc_ids if doc_id not in assigned]
+
+    def add_to_stage(
+        self,
+        stage: StageT,
+        project_doc_ids: Collection[int],
+        size: int,
+    ) -> int:
+        """Sample from unassigned and add to a stage."""
+        unassigned = self.get_unassigned_ids(project_doc_ids)
+        target_list = self._get_list_for_stage(stage)
+
+        if size <= 0:
+            too_small = "Sample size must be greater than 0."
+            raise SplitsValidationError(too_small)
+        if len(unassigned) < size:
+            incompatible_size = (
+                f"Tried to assign {size} docs to the development set"
+                f" but only {len(unassigned)} are unassigned"
+            )
+            raise SplitsValidationError(incompatible_size)
+
+        target_ids = random.sample(unassigned, size)
+        target_list.extend(target_ids)
+        return len(target_ids)
 
     @property
     def active_ids(self) -> list[int]:

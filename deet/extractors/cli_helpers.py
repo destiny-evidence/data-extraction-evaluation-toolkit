@@ -163,8 +163,8 @@ def run_extraction_pipeline(
     if not processed_annotation_data.documents:
         no_documents_in_stage = (
             "No documents in evaluation stage"
-            f" {evaluation_strategy.splits.current_stage}"
-            " Manage evaluation splits with `deet experiments splits`"
+            f" '{evaluation_strategy.splits.current_stage}'."
+            "\n\nManage evaluation splits with `deet experiments splits`"
         )
         fail_with_message(no_documents_in_stage)
 
