@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import random
 from enum import auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import Field
 
@@ -47,6 +47,12 @@ class DevValTestEvaluationStage(BaseEvaluationStage):
 class DevValTestSplits(BaseSplits):
     """Model to record how documents are allocated across dev-val-test splits."""
 
+    _STAGE_FIELD_NAMES: ClassVar[dict[BaseEvaluationStage, str]] = {
+        DevValTestEvaluationStage.DEVELOPMENT: "development_ids",
+        DevValTestEvaluationStage.VALIDATION: "validation_ids",
+        DevValTestEvaluationStage.TEST: "test_ids",
+    }
+
     current_stage: DevValTestEvaluationStage = DevValTestEvaluationStage.DEVELOPMENT
     development_ids: list[int] = Field(default_factory=list)
     validation_ids: list[int] = Field(default_factory=list)
@@ -54,26 +60,12 @@ class DevValTestSplits(BaseSplits):
 
     validation_run_id: str | None = None
 
-    def _get_list_for_stage(self, stage: DevValTestEvaluationStage) -> list[int]:
-        """Return the list of document IDs for a stage."""
-        stage_mapping = {
-            DevValTestEvaluationStage.DEVELOPMENT: self.development_ids,
-            DevValTestEvaluationStage.VALIDATION: self.validation_ids,
-            DevValTestEvaluationStage.TEST: self.test_ids,
-        }
-        return stage_mapping[stage]
-
     @classmethod
     def load(cls, file_path: Path) -> DevValTestSplits:
         """Load splits from file."""
         if not file_path.exists():
             return cls()
         return cls.model_validate_json(file_path.read_text(encoding="utf-8"))
-
-    @property
-    def active_ids(self) -> list[int]:
-        """Return the list of document IDs for the current evaluation stage."""
-        return self._get_list_for_stage(self.current_stage)
 
     def get_unassigned_ids(self, project_doc_ids: Collection[int]) -> list[int]:
         """Filter a collection of document IDs to those which have not been assigned."""
@@ -132,10 +124,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
     """Strategy to manage dynamic splitting into dev-val-test."""
 
     name = EvaluationStrategyName.DEV_VAL_TEST
-
-    def get_active_ids(self, project: DeetProject) -> list[int]:
-        """Return the active ids."""
-        return self.splits.active_ids
 
     def _load_splits(self, project: DeetProject) -> DevValTestSplits:
         """Make a new splits object with all project IDs."""

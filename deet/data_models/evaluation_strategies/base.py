@@ -4,7 +4,7 @@ from __future__ import annotations  # Makes all type annotations lazy strings
 
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel
 
@@ -33,9 +33,9 @@ class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
     def _load_splits(self, project: DeetProject) -> SplitsT:
         """Return the splits object for this strategy and project."""
 
-    @abstractmethod
     def get_active_ids(self, project: DeetProject) -> list[int]:
         """Return IDs to run the pipeline on."""
+        return self.splits.active_ids
 
     @abstractmethod
     def snapshot(self, artefacts: ExperimentArtefacts) -> None:
@@ -56,13 +56,26 @@ class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
 class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
     """Base object for persisting how document IDs are used for an experiment."""
 
+    _STAGE_FIELD_NAMES: ClassVar[dict[BaseEvaluationStage, str]]
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        """Check whether subclasses have defined _STAGE_FIELD_NAMES."""
+        if "_STAGE_FIELD_NAMES" not in cls.__dict__:
+            missing_names = f"{cls.__name__} must define _STAGE_FIELD_NAMES"
+            raise TypeError(missing_names)
+        super().__init_subclass__(**kwargs)
+
     current_stage: StageT
 
     def dump_to_json(self, path: Path) -> None:
         """Persist split state to json."""
         path.write_text(self.model_dump_json(indent=2), encoding="utf-8")
 
+    def _get_list_for_stage(self, stage: StageT) -> list[int]:
+        """Get the the ids in the field corresponding the stage."""
+        return getattr(self, self._STAGE_FIELD_NAMES[stage])
+
     @property
-    @abstractmethod
     def active_ids(self) -> list[int]:
-        """Return the current active ids."""
+        """Return the current active ids, based on the current stage."""
+        return self._get_list_for_stage(self.current_stage)

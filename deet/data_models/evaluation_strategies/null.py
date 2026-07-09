@@ -1,6 +1,7 @@
 """Null Evaluation strategy (== state prior to introduction of strategies)."""
 
 from enum import auto
+from typing import ClassVar
 
 from deet.data_models.enums import EvaluationStrategyName
 from deet.data_models.evaluation_strategies.base import (
@@ -25,14 +26,13 @@ class NullStage(BaseEvaluationStage):
 class NullSplits(BaseSplits):
     """Records document IDs used in the null strategy."""
 
+    _STAGE_FIELD_NAMES: ClassVar[dict[BaseEvaluationStage, str]] = {
+        NullStage.ALL: "all_ids"
+    }
+
     current_stage: NullStage = NullStage.ALL
 
     all_ids: list[int]
-
-    @property
-    def active_ids(self) -> list[int]:
-        """Return"""
-        return self.all_ids
 
 
 class NullEvaluationStrategy(BaseEvaluationStrategy[NullSplits]):
@@ -43,10 +43,6 @@ class NullEvaluationStrategy(BaseEvaluationStrategy[NullSplits]):
     def _load_splits(self, project: "DeetProject") -> NullSplits:
         """Make a new splits object with all project IDs."""
         return NullSplits(all_ids=project.get_all_doc_ids())
-
-    def get_active_ids(self, project: DeetProject) -> list[int]:
-        """As per previous behaviour, all project documents are active."""
-        return self.splits.active_ids
 
     def snapshot(self, artefacts: "ExperimentArtefacts") -> None:
         """Persist all project document ids."""
