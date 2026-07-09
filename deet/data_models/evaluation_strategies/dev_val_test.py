@@ -272,10 +272,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             self.splits.reject_validation()
             self.splits.dump_to_json(deet_project.evaluation_splits_path)
 
-    def snapshot(self, artefacts: ExperimentArtefacts) -> None:
-        """Persist all project document ids."""
-        self.splits.dump_to_json(artefacts.evaluation_splits_snapshot)
-
     def run_splits_wizard(
         self,
         project: DeetProject,

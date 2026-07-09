@@ -174,7 +174,7 @@ def splits(
     typer_context: typer.Context,
     action: Annotated[
         str | None,
-        typer.Option("--action", "-a", help="add-dev | validate | accept | reject"),
+        typer.Option("--action", "-a", help="add-dev | validate"),
     ] = None,
     size: Annotated[
         int | None,

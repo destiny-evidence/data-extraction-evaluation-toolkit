@@ -9,7 +9,7 @@ from deet.data_models.evaluation_strategies.base import (
     BaseEvaluationStrategy,
     BaseSplits,
 )
-from deet.data_models.project import DeetProject, ExperimentArtefacts
+from deet.data_models.project import DeetProject
 from deet.ui.messenger import notify
 
 
@@ -43,10 +43,6 @@ class NullEvaluationStrategy(BaseEvaluationStrategy[NullSplits]):
     def _load_splits(self, project: "DeetProject") -> NullSplits:
         """Make a new splits object with all project IDs."""
         return NullSplits(all_ids=project.get_all_doc_ids())
-
-    def snapshot(self, artefacts: "ExperimentArtefacts") -> None:
-        """Persist all project document ids."""
-        self.splits.dump_to_json(artefacts.evaluation_splits_snapshot)
 
     def run_splits_wizard(
         self,

@@ -164,6 +164,7 @@ def run_extraction_pipeline(
         no_documents_in_stage = (
             "No documents in evaluation stage"
             f" {evaluation_strategy.splits.current_stage}"
+            " Manage evaluation splits with `deet experiments splits`"
         )
         fail_with_message(no_documents_in_stage)
 

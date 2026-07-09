@@ -37,9 +37,9 @@ class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
         """Return IDs to run the pipeline on."""
         return self.splits.active_ids
 
-    @abstractmethod
     def snapshot(self, artefacts: ExperimentArtefacts) -> None:
         """Persist stategy state alongside an experiment run."""
+        self.splits.dump_to_json(artefacts.evaluation_splits_snapshot)
 
     @abstractmethod
     def run_splits_wizard(
