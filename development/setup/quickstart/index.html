@@ -1430,7 +1430,13 @@ options for your project.</p>
 to the <code>--config-path</code> argument.</p>
 <p>Running <code>deet experiments evaluate</code> will create a folder in your project's
 <code>data-extraction-experiments</code> directory, run the data extraction pipeline,
-and save the results of that experiment to the newly created folder.</p>
+and save the results of that experiment to the newly created folder.
+It will also save a snapshot of the prompts you used, as well as the config you used,
+making it easy to reproduce your experiments.
+If you wish to use prompts from a different location than the default location
+for your project, you can run an experiment with the <code>--prompt-csv-path</code> option, e.g.</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>experiments<span class="w"> </span>evaluate<span class="w"> </span>--prompt-csv-path<span class="w"> </span>my-custom-prompts.csv
+</code></pre></div>
 </li>
 <li>
 <p><strong>Python</strong></p>
