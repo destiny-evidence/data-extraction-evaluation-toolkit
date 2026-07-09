@@ -254,7 +254,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         unassigned = self.splits.get_unassigned_ids(project_doc_ids)
 
         notify(
-            f"Strategy:    dev/val/test\n"
+            f"Strategy:    {self.name}\n"
             f"Stage:       {self.splits.current_stage}\n"
             f"Development: {len(self.splits.development_ids)} documents\n"
             f"Validation:  {len(self.splits.validation_ids)} documents\n"
