@@ -88,27 +88,27 @@ class ParsedOutput(BaseModel):
         arbitrary_types_allowed=True
     )  # this is to allow our Executor class as a type.
 
-    @field_validator("text", mode="after")
-    @classmethod
-    def assess_language_quality(cls, value: str) -> str:
-        """
-        Assess language quality.
+    # @field_validator("text", mode="after")
+    # @classmethod
+    # def assess_language_quality(cls, value: str) -> str:
+    #     """
+    #     Assess language quality.
 
-        Args:
-            text (str): Parsed text.
+    #     Args:
+    #         text (str): Parsed text.
 
-        Raises:
-            MalformedLanguageError: If threshold not met.
+    #     Raises:
+    #         MalformedLanguageError: If threshold not met.
 
-        Returns:
-            str: parsed text.
+    #     Returns:
+    #         str: parsed text.
 
-        """
-        if not check_language(value):
-            logger.debug("check lang failed")
-            bad_language = "Supplied text didn't pass quality check."
-            raise ValueError(bad_language)
-        return value
+    #     """
+    #     if not check_language(value):
+    #         logger.debug("check lang failed")
+    #         bad_language = "Supplied text didn't pass quality check."
+    #         raise ValueError(bad_language)
+    #     return value
 
 
 class ParserLibrary(ABC):
