@@ -2,6 +2,10 @@
 
 Project root: `{{project.root}}`
 
+{% if new_directory!="." %}
+Change into this directory by running `cd {{new_directory}}`
+{% endif %}
+
 ### Next steps
 
 1. **Define your prompts:** open your prompt definition file,

@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 from destiny_sdk.references import ReferenceFileInput
+from pydantic import ValidationError
 
 from deet.data_models.base import (
     SUPPORTED_TYPES,
@@ -14,6 +15,7 @@ from deet.data_models.base import (
     AttributeType,
     GoldStandardAnnotation,
     LLMInputSchema,
+    build_llm_response_model,
     coerce_annotation_to_list,
 )
 from deet.data_models.documents import (
@@ -938,3 +940,121 @@ def test_llm_input_schema_ignores_extra_fields() -> None:
     schema = LLMInputSchema.model_validate(data)
     assert schema.prompt == "Test prompt"
     assert not hasattr(schema, "extra_field")
+
+
+# dynamic LLM response schema (issue #99)
+def test_build_llm_response_model_requires_every_attribute() -> None:
+    """Each selected attribute becomes a required, typed top-level key."""
+    attributes = [
+        Attribute(
+            prompt="Has intervention?",
+            output_data_type=AttributeType.BOOL,
+            attribute_id=1234,
+            attribute_label="Has intervention",
+        ),
+        Attribute(
+            prompt="Sample size?",
+            output_data_type=AttributeType.INTEGER,
+            attribute_id=2345,
+            attribute_label="Sample size",
+        ),
+    ]
+    model = build_llm_response_model(attributes)
+
+    schema = model.model_json_schema()
+    assert set(schema["required"]) == {"attribute_1234", "attribute_2345"}
+    assert schema["additionalProperties"] is False
+
+    valid = model.model_validate(
+        {
+            "attribute_1234": {
+                "output_data": True,
+                "additional_text": None,
+                "reasoning": None,
+            },
+            "attribute_2345": {
+                "output_data": 120,
+                "additional_text": "120 participants.",
+                "reasoning": "Stated directly.",
+            },
+        }
+    )
+    parsed = valid.model_dump()
+    assert parsed["attribute_1234"]["output_data"] is True
+    assert parsed["attribute_2345"]["output_data"] == 120
+
+
+def test_build_llm_response_model_reuses_schema_per_attribute_type() -> None:
+    """Attributes with the same type share one cached sub-model class."""
+    attributes = [
+        Attribute(
+            prompt="Has intervention?",
+            output_data_type=AttributeType.BOOL,
+            attribute_id=1234,
+            attribute_label="Has intervention",
+        ),
+        Attribute(
+            prompt="Is relevant?",
+            output_data_type=AttributeType.BOOL,
+            attribute_id=5678,
+            attribute_label="Is relevant",
+        ),
+    ]
+    model = build_llm_response_model(attributes)
+
+    bool_submodel = AttributeType.BOOL.llm_annotation_response_model()
+    assert model.model_fields["attribute_1234"].annotation is bool_submodel
+    assert model.model_fields["attribute_5678"].annotation is bool_submodel
+
+
+def test_build_llm_response_model_enforces_output_data_type() -> None:
+    """output_data is constrained to the attribute's declared type."""
+    attributes = [
+        Attribute(
+            prompt="Sample size?",
+            output_data_type=AttributeType.INTEGER,
+            attribute_id=2345,
+            attribute_label="Sample size",
+        ),
+    ]
+    model = build_llm_response_model(attributes)
+
+    with pytest.raises(ValidationError):
+        model.model_validate(
+            {
+                "attribute_2345": {
+                    "output_data": "not an int",
+                    "additional_text": None,
+                    "reasoning": None,
+                }
+            }
+        )
+
+
+def test_build_llm_response_model_forbids_extra_attributes() -> None:
+    """Unexpected top-level attributes are rejected."""
+    attributes = [
+        Attribute(
+            prompt="Has intervention?",
+            output_data_type=AttributeType.BOOL,
+            attribute_id=1234,
+            attribute_label="Has intervention",
+        ),
+    ]
+    model = build_llm_response_model(attributes)
+
+    with pytest.raises(ValidationError):
+        model.model_validate(
+            {
+                "attribute_1234": {
+                    "output_data": True,
+                    "additional_text": None,
+                    "reasoning": None,
+                },
+                "attribute_9999": {
+                    "output_data": False,
+                    "additional_text": None,
+                    "reasoning": None,
+                },
+            }
+        )

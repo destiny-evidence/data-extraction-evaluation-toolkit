@@ -43,8 +43,8 @@ class EnumHandler(WidgetCreator):
         )
 
     def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
-        """Execute an inquirer.select prompt."""
-        enum_type = cast(type[Enum], field_info.annotation)
+        """Render an interactive dropdown using inquirerpy.select."""
+        enum_type = cast("type[Enum]", field_info.annotation)
         widget_args["choices"] = [e.value for e in enum_type]
         return inquirer.select(**widget_args).execute()
 
@@ -54,7 +54,7 @@ class PathHandler(WidgetCreator):
 
     def can_handle(self, field_info: FieldInfo) -> bool:
         """Check if the field is a Path."""
-        return field_info.annotation is Path
+        return field_info.annotation is Path or Path in get_args(field_info.annotation)
 
     def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
         """Execute an inquirer.filepath prompt."""
@@ -185,13 +185,22 @@ def inquire_pydantic_field(
     raise NotImplementedError(not_implemented)
 
 
-def run_model_wizard[T: BaseModel](model_class: type[T]) -> T:
-    """Create a wizard from a pydantic model."""
-    answers = {}
+def run_model_wizard[T: BaseModel](
+    model_class: type[T], *, prefill: dict[str, object] | None = None
+) -> T:
+    """
+    Create a wizard from a pydantic model.
+
+    Fields present in ``prefill`` are not prompted for; their values are injected
+    into the model directly. This lets a caller supply a field (e.g. the project
+    name derived from a directory) instead of asking the user for it.
+    """
+    prefill = prefill or {}
+    answers: dict[str, object] = {}
     ui_steps: list[tuple[str, FieldInfo, UI]] = []
     for name, info in model_class.model_fields.items():
         ui = get_ui_metadata(info)
-        if ui is not None:
+        if ui is not None and name not in prefill:
             ui_steps.append((name, info, ui))
 
     total_steps = len(ui_steps)
@@ -203,6 +212,7 @@ def run_model_wizard[T: BaseModel](model_class: type[T]) -> T:
 
         answers[f_name] = inquire_pydantic_field(model_class, f_name, f_info, f_ui)
 
+    answers.update(prefill)
     return model_class.model_validate(answers)
 
 

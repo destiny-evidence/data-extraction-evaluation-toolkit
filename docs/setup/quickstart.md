@@ -20,6 +20,7 @@ This is where we will store configuration options and the results of your data e
 
     To set up a project using the CLI, run `deet project init` from the directory
     where you would like to store your project.
+    Alternatively, you can run `deet project new` to create a project in a new directory.
     This will interactively collect the information required to set your project up,
     and also prompt you to enter credentials for making API calls to LLMs.
 
@@ -160,6 +161,14 @@ Now that you've defined your prompts, you are ready to extract data from your do
     Running `deet experiments evaluate` will create a folder in your project's
     `data-extraction-experiments` directory, run the data extraction pipeline,
     and save the results of that experiment to the newly created folder.
+    It will also save a snapshot of the prompts you used, as well as the config you used,
+    making it easy to reproduce your experiments.
+    If you wish to use prompts from a different location than the default location
+    for your project, you can run an experiment with the `--prompt-csv-path` option, e.g.
+
+    ```sh
+    deet experiments evaluate --prompt-csv-path my-custom-prompts.csv
+    ```
 
 - **Python**
 
