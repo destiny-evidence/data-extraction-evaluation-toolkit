@@ -36,8 +36,10 @@ from deet.data_models.documents import (
 )
 from deet.data_models.extraction import (
     DocumentExtractionResult,
+    DocumentParsingStats,
     ExtractionRunMetadata,
     ExtractionRunOutput,
+    PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
 from deet.exceptions import LitellmModelNotMappedError
@@ -47,6 +49,7 @@ from deet.settings import (
     get_settings,
 )
 from deet.ui.terminal.render import optional_progress
+from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,
@@ -306,7 +309,7 @@ class LLMDataExtractor:
 
         Returns:
             DocumentExtractionResult with annotations, messages, token counts,
-            cost, model name, and timestamp.
+            cost, model name, LLM call duration, and timestamp.
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
@@ -355,9 +358,10 @@ class LLMDataExtractor:
         else:
             response_model = LLMResponseSchema
 
-        llm_response, messages, output_tokens, input_tokens = self._call_llm(
-            prompt=prompt, response_model=response_model
-        )
+        with measure_elapsed() as llm_timer:
+            llm_response, messages, output_tokens, input_tokens = self._call_llm(
+                prompt=prompt, response_model=response_model
+            )
 
         annotations = self._parse_llm_response(
             response_content=llm_response,
@@ -371,6 +375,7 @@ class LLMDataExtractor:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             model=self.model,
+            llm_call_seconds=llm_timer.seconds,
         )
 
     def extract_from_documents(  # noqa: PLR0913
@@ -381,6 +386,7 @@ class LLMDataExtractor:
         output_file: Path | None = None,
         context_type: ContextType | None = None,
         prompt_outfile: Path | None = None,
+        document_parsing: dict[str, DocumentParsingStats] | None = None,
         *,
         show_progress: bool = False,
     ) -> ExtractionRunOutput:
@@ -397,6 +403,7 @@ class LLMDataExtractor:
             context_type: Override config context type; if None, use config default.
             prompt_outfile: Optional path to write a single JSON object:
                 keys are document IDs, values are prompt payload (messages).
+            document_parsing: Optional per-document parsing stats from preparation.
             show_progress: Whether to show a progress bar.
 
         Returns:
@@ -406,8 +413,9 @@ class LLMDataExtractor:
         if context_type is None:
             context_type = self.config.default_context_type
 
+        parsing_by_doc = document_parsing or {}
         prompt_payloads: dict[str, Any] = {}
-        per_doc_tokens: dict[str, dict[str, int]] = {}
+        per_document: dict[str, PerDocumentExtractionStats] = {}
 
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
         total_input_tokens = 0
@@ -440,10 +448,14 @@ class LLMDataExtractor:
                     )
                     doc_id_str = str(document.safe_identity.document_id)
                     prompt_payloads[doc_id_str] = result.messages
-                    per_doc_tokens[doc_id_str] = {
-                        "input_tokens": result.input_tokens,
-                        "output_tokens": result.output_tokens,
-                    }
+                    parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
+                    per_document[doc_id_str] = PerDocumentExtractionStats(
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        parsing_seconds=parsing.parsing_seconds,
+                        parsing_skipped=parsing.parsing_skipped,
+                        llm_call_seconds=result.llm_call_seconds,
+                    )
                     total_input_tokens += result.input_tokens
                     total_output_tokens += result.output_tokens
                     if result.total_cost_usd is not None:
@@ -458,7 +470,7 @@ class LLMDataExtractor:
             total_input_tokens=total_input_tokens,
             total_output_tokens=total_output_tokens,
             total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
-            per_document_tokens=per_doc_tokens,
+            per_document=per_document,
         )
         run_output = ExtractionRunOutput(
             annotated_documents=llm_annotated_docs,
