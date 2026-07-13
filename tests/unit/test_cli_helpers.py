@@ -10,7 +10,7 @@ from deet.data_models.documents import ContextType, Document
 from deet.data_models.extraction import (
     ExtractionRunMetadata,
     ExtractionRunOutput,
-    PerDocumentStats,
+    PerDocumentExtractionStats,
 )
 from deet.extractors.cli_helpers import (
     init_extraction_run,
@@ -166,7 +166,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         total_output_tokens=50,
         total_cost_usd=0.0123,
         per_document={
-            "doc-1": PerDocumentStats(input_tokens=100, output_tokens=50),
+            "doc-1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
         },
     )
     run_output = ExtractionRunOutput(annotated_documents=[], metadata=run_metadata)
@@ -190,8 +190,8 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
 
     assert result_output is run_output
 
-    metadata_path = experiment_artefacts.run_metadata
-    assert metadata_path.name == "run_metadata.json"
+    metadata_path = experiment_artefacts.extraction_metadata
+    assert metadata_path.name == "extraction_metadata.json"
     assert metadata_path.exists()
 
     written = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -231,10 +231,12 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     (linked_doc_path / "doc1.json").write_text("{}")
     (linked_doc_path / "doc2.json").write_text("{}")
 
-    mock_loaded_doc = MagicMock(spec=Document)
-    mock_loaded_doc.safe_identity.document_id = 1
+    mock_doc_1 = MagicMock(spec=Document)
+    mock_doc_1.safe_identity.document_id = 1
+    mock_doc_2 = MagicMock(spec=Document)
+    mock_doc_2.safe_identity.document_id = 2
 
-    with patch.object(Document, "load", return_value=mock_loaded_doc):
+    with patch.object(Document, "load", side_effect=[mock_doc_1, mock_doc_2]):
         documents, parsing_stats = prepare_documents(
             documents=[],
             config=config,
@@ -246,6 +248,7 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     assert len(documents) == 2
     assert len(parsing_stats) == 2
     assert all(stats.parsing_skipped for stats in parsing_stats.values())
+    assert all(stats.parsing_seconds is None for stats in parsing_stats.values())
 
 
 def test_prepare_documents_unsupported_context_type(config, tmp_path, mock_documents):

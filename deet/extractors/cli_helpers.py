@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.enums import CustomPromptPopulationMethod
-from deet.data_models.extraction import DocumentParsingStats
+from deet.data_models.extraction import DocumentParsingStats, ExtractionPipelineStage
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
 from deet.extractors.llm_data_extractor import (
@@ -26,7 +26,7 @@ from deet.ui import fail_with_message, notify
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
 from deet.ui.terminal.wizards import continue_after_key, run_model_wizard
-from deet.utils.timing import PerfTimer
+from deet.utils.timing import measure_elapsed
 
 
 def load_config_from_typer_context(
@@ -174,15 +174,15 @@ def run_extraction_pipeline(
     stage_durations: dict[str, float] = {}
 
     deet_project: DeetProject = typer_context.obj.project
-    with PerfTimer() as stage_timer:
+    with measure_elapsed() as stage_timer:
         processed_annotation_data = deet_project.process_data()
-    stage_durations["annotation_conversion"] = stage_timer.seconds
+    stage_durations[ExtractionPipelineStage.annotation_conversion] = stage_timer.seconds
 
     config = load_config_from_typer_context(typer_context, config_path)
 
     experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
 
-    with PerfTimer() as stage_timer:
+    with measure_elapsed() as stage_timer:
         if prompt_population is not None:
             processed_annotation_data.populate_custom_prompts(
                 method=prompt_population, filepath=deet_project.prompt_csv_path
@@ -192,12 +192,12 @@ def run_extraction_pipeline(
                     "No attributes selected. "
                     "Perhaps you forgot to edit your prompt file"
                 )
-    stage_durations["prompt_population"] = stage_timer.seconds
+    stage_durations[ExtractionPipelineStage.prompt_population] = stage_timer.seconds
 
     data_extractor = LLMDataExtractor(config=config)
 
     document_parsing: dict[str, DocumentParsingStats] = {}
-    with PerfTimer() as stage_timer:
+    with measure_elapsed() as stage_timer:
         if ignore_references:
             if deet_project.pdf_dir_abspath is None:
                 fail_with_message(
@@ -216,9 +216,9 @@ def run_extraction_pipeline(
                 pdf_dir=deet_project.pdf_dir_abspath,
                 link_map_path=deet_project.link_map_path,
             )
-    stage_durations["document_preparation"] = stage_timer.seconds
+    stage_durations[ExtractionPipelineStage.document_preparation] = stage_timer.seconds
 
-    with PerfTimer() as stage_timer:
+    with measure_elapsed() as stage_timer:
         run_output = data_extractor.extract_from_documents(
             attributes=processed_annotation_data.attributes,
             documents=documents,
@@ -227,9 +227,9 @@ def run_extraction_pipeline(
             document_parsing=document_parsing,
             show_progress=True,
         )
-    stage_durations["llm_extraction"] = stage_timer.seconds
+    stage_durations[ExtractionPipelineStage.llm_extraction] = stage_timer.seconds
 
-    with PerfTimer() as stage_timer:
+    with measure_elapsed() as stage_timer:
         processed_annotation_data.export_attributes_csv_file(
             experiment_artefacts.prompts_snapshot
         )
@@ -240,18 +240,18 @@ def run_extraction_pipeline(
             ),
             encoding="utf-8",
         )
-    stage_durations["artifact_export"] = stage_timer.seconds
+    stage_durations[ExtractionPipelineStage.artifact_export] = stage_timer.seconds
 
     run_output.metadata.total_pipeline_duration_seconds = round(
         time.perf_counter() - pipeline_start, 3
     )
     run_output.metadata.stage_durations_seconds = stage_durations
 
-    experiment_artefacts.run_metadata.write_text(
+    experiment_artefacts.extraction_metadata.write_text(
         run_output.metadata.model_dump_json(indent=2),
         encoding="utf-8",
     )
 
-    logger.info(f"Run metadata saved to: {experiment_artefacts.run_metadata}")
+    logger.info(f"Run metadata saved to: {experiment_artefacts.extraction_metadata}")
 
     return run_output, processed_annotation_data, experiment_artefacts

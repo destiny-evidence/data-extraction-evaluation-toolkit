@@ -39,7 +39,7 @@ from deet.data_models.extraction import (
     DocumentParsingStats,
     ExtractionRunMetadata,
     ExtractionRunOutput,
-    PerDocumentStats,
+    PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
 from deet.exceptions import LitellmModelNotMappedError
@@ -49,7 +49,7 @@ from deet.settings import (
     get_settings,
 )
 from deet.ui.terminal.render import optional_progress
-from deet.utils.timing import PerfTimer
+from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,
@@ -358,7 +358,7 @@ class LLMDataExtractor:
         else:
             response_model = LLMResponseSchema
 
-        with PerfTimer() as llm_timer:
+        with measure_elapsed() as llm_timer:
             llm_response, messages, output_tokens, input_tokens = self._call_llm(
                 prompt=prompt, response_model=response_model
             )
@@ -415,7 +415,7 @@ class LLMDataExtractor:
 
         parsing_by_doc = document_parsing or {}
         prompt_payloads: dict[str, Any] = {}
-        per_document: dict[str, PerDocumentStats] = {}
+        per_document: dict[str, PerDocumentExtractionStats] = {}
 
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
         total_input_tokens = 0
@@ -449,7 +449,7 @@ class LLMDataExtractor:
                     doc_id_str = str(document.safe_identity.document_id)
                     prompt_payloads[doc_id_str] = result.messages
                     parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
-                    per_document[doc_id_str] = PerDocumentStats(
+                    per_document[doc_id_str] = PerDocumentExtractionStats(
                         input_tokens=result.input_tokens,
                         output_tokens=result.output_tokens,
                         parsing_seconds=parsing.parsing_seconds,

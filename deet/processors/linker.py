@@ -16,7 +16,7 @@ from deet.data_models.extraction import DocumentParsingStats
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
-from deet.utils.timing import PerfTimer
+from deet.utils.timing import measure_elapsed
 
 parser = DocumentParser()
 
@@ -802,7 +802,7 @@ class DocumentReferenceLinker:
 
                     doc_id_str = str(interim_payload.document_id)
                     if interim_payload.format == "pdf":
-                        with PerfTimer() as parse_timer:
+                        with measure_elapsed() as parse_timer:
                             parsed_output = self._parse_pdf(
                                 interim_payload.file_path,
                                 return_images=return_images,
@@ -813,7 +813,7 @@ class DocumentReferenceLinker:
                             parsing_skipped=False,
                         )
                     elif interim_payload.format == "md":
-                        with PerfTimer() as parse_timer:
+                        with measure_elapsed() as parse_timer:
                             md_text = interim_payload.file_path.read_text(
                                 encoding="utf-8"
                             )

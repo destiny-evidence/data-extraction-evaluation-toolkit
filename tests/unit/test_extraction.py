@@ -17,10 +17,13 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
 )
 from deet.data_models.extraction import (
+    PIPELINE_STAGE_NOTES,
     DocumentExtractionResult,
+    ExtractionPipelineStage,
     ExtractionRunMetadata,
     ExtractionRunOutput,
-    PerDocumentStats,
+    PerDocumentExtractionStats,
+    pipeline_stage_notes,
 )
 
 
@@ -146,7 +149,9 @@ def test_extraction_run_metadata_explicit_fields() -> None:
         total_input_tokens=100,
         total_output_tokens=50,
         total_cost_usd=0.05,
-        per_document={"1": PerDocumentStats(input_tokens=100, output_tokens=50)},
+        per_document={
+            "1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+        },
     )
     assert meta.model == "gpt-4o-mini"
     assert meta.total_input_tokens == 100
@@ -164,3 +169,11 @@ def test_extraction_run_output_round_trip() -> None:
     assert out.annotated_documents[0].document.name == "doc.pdf"
     assert out.metadata.model == "m"
     assert out.metadata.total_input_tokens == 10
+
+
+def test_pipeline_stage_notes_cover_all_stages() -> None:
+    """Every pipeline stage enum member has a human-readable note."""
+    notes = pipeline_stage_notes()
+    for stage in ExtractionPipelineStage:
+        assert stage.value in notes
+        assert notes[stage.value] == PIPELINE_STAGE_NOTES[stage]

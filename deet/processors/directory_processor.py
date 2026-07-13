@@ -14,7 +14,12 @@ from deet.utils.identifier_utils import hash_n_strings_to_document_id
 def create_documents_from_directory(
     directory_path: Path,
 ) -> tuple[Sequence[Document], dict[str, DocumentParsingStats]]:
-    """Find PDF and Markdown files and turn them into linked documents."""
+    """
+    Collect markdown and PDF files and return linked documents with parsing stats.
+
+    Collects ``.md`` files and ``.pdf`` files. PDFs whose stem already has a
+    matching ``.md`` are skipped.
+    """
     target_files = list(directory_path.glob("*.md"))
     md_stems = {p.stem for p in target_files}
 
