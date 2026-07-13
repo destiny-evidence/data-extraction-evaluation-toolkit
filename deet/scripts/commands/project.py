@@ -24,6 +24,8 @@ from deet.scripts.project_utils import (
 from deet.scripts.typer_context import project_required
 from deet.settings import LogLevel
 from deet.ui import fail_with_message, notify
+from deet.ui.terminal import console, render_template
+from deet.ui.terminal.components import info_panel
 from deet.utils.text import slugify
 
 app = typer.Typer(help="Commands to create and configure deet projects.")
