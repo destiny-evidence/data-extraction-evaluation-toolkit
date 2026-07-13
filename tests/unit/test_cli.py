@@ -506,7 +506,7 @@ def test_extract_happy_path(tmp_path):
             "deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator"
         ) as mock_evaluator_cls,
     ):
-        mock_prepare.return_value = []
+        mock_prepare.return_value = ([], {})
         mock_loader.return_value = mock_project
         fake_config = DataExtractionConfig()
         mock_wizard.return_value = fake_config

@@ -572,8 +572,8 @@ def test_extract_from_documents(
     assert meta["total_input_tokens"] == 100
     assert meta["total_output_tokens"] == 42
     doc_id_str = str(sample_eppi_document.safe_identity.document_id)
-    assert meta["per_document_tokens"][doc_id_str]["input_tokens"] == 100
-    assert meta["per_document_tokens"][doc_id_str]["output_tokens"] == 42
+    assert meta["per_document"][doc_id_str]["input_tokens"] == 100
+    assert meta["per_document"][doc_id_str]["output_tokens"] == 42
     assert "total_cost_usd" in meta
 
 

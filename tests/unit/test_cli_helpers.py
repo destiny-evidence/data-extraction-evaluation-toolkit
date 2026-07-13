@@ -7,7 +7,11 @@ import pytest
 import yaml  # type:ignore[import-untyped]
 
 from deet.data_models.documents import ContextType, Document
-from deet.data_models.extraction import ExtractionRunMetadata, ExtractionRunOutput
+from deet.data_models.extraction import (
+    ExtractionRunMetadata,
+    ExtractionRunOutput,
+    PerDocumentExtractionStats,
+)
 from deet.extractors.cli_helpers import (
     init_extraction_run,
     load_config_from_typer_context,
@@ -161,7 +165,9 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         total_input_tokens=100,
         total_output_tokens=50,
         total_cost_usd=0.0123,
-        per_document_tokens={"doc-1": {"input_tokens": 100, "output_tokens": 50}},
+        per_document={
+            "doc-1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+        },
     )
     run_output = ExtractionRunOutput(annotated_documents=[], metadata=run_metadata)
 
@@ -171,7 +177,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
             return_value=config,
         ),
         patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
-        patch("deet.extractors.cli_helpers.prepare_documents", return_value=[]),
+        patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
     ):
         mock_extractor = mock_extractor_cls.return_value
         mock_extractor.config = config
@@ -180,12 +186,13 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         result_output, _, experiment_artefacts = run_extraction_pipeline(
             typer_context=mock_typer_context,
             prompt_population=None,
+            prompt_csv_path=None,
         )
 
     assert result_output is run_output
 
-    metadata_path = experiment_artefacts.run_metadata
-    assert metadata_path.name == "run_metadata.json"
+    metadata_path = experiment_artefacts.extraction_metadata
+    assert metadata_path.name == "extraction_metadata.json"
     assert metadata_path.exists()
 
     written = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -201,7 +208,7 @@ def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_pat
     linked_doc_path = tmp_path / "linked_documents"
     pdf_dir = tmp_path / "pdfs"
 
-    result = prepare_documents(
+    documents, parsing_stats = prepare_documents(
         documents=mock_documents,
         config=config,
         linked_document_path=linked_doc_path,
@@ -209,7 +216,8 @@ def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_pat
         link_map_path=None,
     )
 
-    assert result == mock_documents
+    assert documents == mock_documents
+    assert parsing_stats == {}
 
 
 def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
@@ -224,10 +232,13 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     (linked_doc_path / "doc1.json").write_text("{}")
     (linked_doc_path / "doc2.json").write_text("{}")
 
-    mock_loaded_doc = MagicMock(spec=Document)
+    mock_doc_1 = MagicMock(spec=Document)
+    mock_doc_1.safe_identity.document_id = 1
+    mock_doc_2 = MagicMock(spec=Document)
+    mock_doc_2.safe_identity.document_id = 2
 
-    with patch.object(Document, "load", return_value=mock_loaded_doc) as mock_load:
-        result = prepare_documents(
+    with patch.object(Document, "load", side_effect=[mock_doc_1, mock_doc_2]):
+        documents, parsing_stats = prepare_documents(
             documents=[],
             config=config,
             linked_document_path=linked_doc_path,
@@ -235,8 +246,10 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
             link_map_path=None,
         )
 
-    assert len(result) == 2
-    assert mock_load.call_count == 2
+    assert len(documents) == 2
+    assert len(parsing_stats) == 2
+    assert all(stats.parsing_skipped for stats in parsing_stats.values())
+    assert all(stats.parsing_seconds is None for stats in parsing_stats.values())
 
 
 def test_prepare_documents_unsupported_context_type(config, tmp_path, mock_documents):
