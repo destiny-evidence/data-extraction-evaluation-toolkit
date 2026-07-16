@@ -5114,6 +5114,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#deet.scripts.commands.project.edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        edit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deet.scripts.commands.project.init" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5239,6 +5250,17 @@
     <span class="md-ellipsis">
       
         prompt_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deet.scripts.project_utils.run_edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_edit
       
     </span>
   </a>
@@ -10896,6 +10918,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#deet.scripts.commands.project.edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        edit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deet.scripts.commands.project.init" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11021,6 +11054,17 @@
     <span class="md-ellipsis">
       
         prompt_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deet.scripts.project_utils.run_edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_edit
       
     </span>
   </a>
@@ -14077,6 +14121,16 @@ This can change if the <code>AttributeType</code> of the <code>attribute</code> 
             </li>
         </ul>
 
+        <p>Validators:</p>
+        <ul>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;handle_output_data_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.base.GoldStandardAnnotation.handle_output_data_input&lt;/code&gt;)" href="#deet.data_models.base.GoldStandardAnnotation.handle_output_data_input">handle_output_data_input</a></code>
+            </li>
+        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
@@ -14277,7 +14331,7 @@ This can change if the <code>AttributeType</code> of the <code>attribute</code> 
             <code class="highlight language-python"><span class="n">handle_output_data_input</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
   </span>
 
 </h5>
@@ -20404,6 +20458,16 @@ the extracted information relates to.</p>
             </li>
         </ul>
 
+        <p>Validators:</p>
+        <ul>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;handle_output_data_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiGoldStandardAnnotation.handle_output_data_input&lt;/code&gt;)" href="#deet.data_models.base.GoldStandardAnnotation.handle_output_data_input">handle_output_data_input</a></code>
+            </li>
+        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/eppi.py</code></summary>
@@ -49871,6 +49935,67 @@ documents are created directly from the files contained in pdf_dir.</p>
 <div class="doc doc-object doc-function">
 
 
+<h5 id="deet.scripts.commands.project.edit" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">edit</span><span class="p">(</span><span class="n">typer_context</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Edit an existing project's configuration.</p>
+<p>Re-collects the project fields (pre-filled with the current values) and rewrites
+<code>project.yaml</code> WITHOUT regenerating artefacts (prompt CSV, link map, experiment
+dirs). Pass a field name to edit just that field; the full edit also lets you
+update credentials.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="nd">@project_required</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span>
+    <span class="n">typer_context</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span>
+    <span class="n">field</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">typer</span><span class="o">.</span><span class="n">Argument</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;Optionally edit a single field instead of all of them.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Edit an existing project&#39;s configuration.</span>
+
+<span class="sd">    Re-collects the project fields (pre-filled with the current values) and rewrites</span>
+<span class="sd">    ``project.yaml`` WITHOUT regenerating artefacts (prompt CSV, link map, experiment</span>
+<span class="sd">    dirs). Pass a field name to edit just that field; the full edit also lets you</span>
+<span class="sd">    update credentials.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">run_edit</span><span class="p">(</span><span class="n">typer_context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">project</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h5 id="deet.scripts.commands.project.init" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">init</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">data_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_type</span><span class="o">=</span><span class="n">SupportedImportFormat</span><span class="o">.</span><span class="n">EPPI_JSON</span><span class="p">,</span> <span class="n">pdf_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
@@ -49887,8 +50012,7 @@ Use deet project new to create a project in a new directory.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">32</span>
-<span class="normal">33</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
 <span class="normal">34</span>
 <span class="normal">35</span>
 <span class="normal">36</span>
@@ -49908,7 +50032,8 @@ Use deet project new to create a project in a new directory.</p>
 <span class="normal">50</span>
 <span class="normal">51</span>
 <span class="normal">52</span>
-<span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">53</span>
+<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">data_path</span><span class="p">:</span> <span class="n">DataPathOption</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -49956,28 +50081,7 @@ See <code>deet.processors.linker</code> for more details.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">167</span>
 <span class="normal">168</span>
 <span class="normal">169</span>
 <span class="normal">170</span>
@@ -49993,7 +50097,28 @@ See <code>deet.processors.linker</code> for more details.</p>
 <span class="normal">180</span>
 <span class="normal">181</span>
 <span class="normal">182</span>
-<span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@project_required</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">link</span><span class="p">(</span><span class="n">typer_context</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -50056,8 +50181,7 @@ current directory into a project.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">56</span>
-<span class="normal">57</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">57</span>
 <span class="normal">58</span>
 <span class="normal">59</span>
 <span class="normal">60</span>
@@ -50085,7 +50209,8 @@ current directory into a project.</p>
 <span class="normal">82</span>
 <span class="normal">83</span>
 <span class="normal">84</span>
-<span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">85</span>
+<span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -50139,21 +50264,21 @@ this re-creates it.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@project_required</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">regenerate_config_template</span><span class="p">(</span><span class="n">typer_context</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -50191,25 +50316,25 @@ this re-creates it.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 88</span>
-<span class="normal"> 89</span>
-<span class="normal"> 90</span>
-<span class="normal"> 91</span>
-<span class="normal"> 92</span>
-<span class="normal"> 93</span>
-<span class="normal"> 94</span>
-<span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span>
-<span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@project_required</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">regenerate_link_map</span><span class="p">(</span><span class="n">typer_context</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -50251,24 +50376,24 @@ this re-creates it.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@project_required</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">regenerate_prompt_csv</span><span class="p">(</span><span class="n">typer_context</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -50308,28 +50433,7 @@ this re-creates it.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/commands/project.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
-<span class="normal">198</span>
-<span class="normal">199</span>
-<span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span>
-<span class="normal">206</span>
-<span class="normal">207</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
 <span class="normal">210</span>
@@ -50349,7 +50453,28 @@ this re-creates it.</p>
 <span class="normal">224</span>
 <span class="normal">225</span>
 <span class="normal">226</span>
-<span class="normal">227</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_llm_config</span><span class="p">(</span>
     <span class="n">typer_context</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span>
     <span class="n">config_path</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -50465,7 +50590,9 @@ project is anchored to <code>root</code> and its directory structure written the
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/project_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 90</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
 <span class="normal"> 91</span>
 <span class="normal"> 92</span>
 <span class="normal"> 93</span>
@@ -50498,9 +50625,7 @@ project is anchored to <code>root</code> and its directory structure written the
 <span class="normal">120</span>
 <span class="normal">121</span>
 <span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_project</span><span class="p">(</span>
+<span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_project</span><span class="p">(</span>
     <span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -50561,7 +50686,9 @@ to overwrite when running interactively, or exits with guidance when headless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/project_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">62</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
 <span class="normal">63</span>
 <span class="normal">64</span>
 <span class="normal">65</span>
@@ -50584,9 +50711,7 @@ to overwrite when running interactively, or exits with guidance when headless
 <span class="normal">82</span>
 <span class="normal">83</span>
 <span class="normal">84</span>
-<span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">guard_overwrite</span><span class="p">(</span><span class="n">target_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">interactive</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">guard_overwrite</span><span class="p">(</span><span class="n">target_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">interactive</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Guard against overwriting an existing project at ``target_dir``.</span>
 
@@ -50634,7 +50759,9 @@ to overwrite when running interactively, or exits with guidance when headless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/project_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
 <span class="normal">129</span>
 <span class="normal">130</span>
 <span class="normal">131</span>
@@ -50646,9 +50773,7 @@ to overwrite when running interactively, or exits with guidance when headless
 <span class="normal">137</span>
 <span class="normal">138</span>
 <span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prompt_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">140</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prompt_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prompt for a project name.&quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">deet.data_models.project</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeetProject</span>
 
@@ -50663,6 +50788,144 @@ to overwrite when running interactively, or exits with guidance when headless
     <span class="n">console</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_field_help</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">ui_help</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">DeetProject</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">ui</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deet.scripts.project_utils.run_edit" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">run_edit</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span></code>
+
+</h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Re-collect a project's fields (pre-filled) and rewrite <code>project.yaml</code>.</p>
+<p>Does NOT run <code>setup()</code>, so existing artefacts (prompt CSV, link map, experiment
+dirs) are preserved. <code>field</code> edits a single field; otherwise the full wizard
+runs and credentials may be updated too. Does not validate that resource paths
+exist on disk; invalid paths will fail when derived artefacts are regenerated
+or the extraction pipeline runs.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>deet/scripts/project_utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_edit</span><span class="p">(</span><span class="n">project</span><span class="p">:</span> <span class="s2">&quot;DeetProject&quot;</span><span class="p">,</span> <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Re-collect a project&#39;s fields (pre-filled) and rewrite ``project.yaml``.</span>
+
+<span class="sd">    Does NOT run ``setup()``, so existing artefacts (prompt CSV, link map, experiment</span>
+<span class="sd">    dirs) are preserved. ``field`` edits a single field; otherwise the full wizard</span>
+<span class="sd">    runs and credentials may be updated too. Does not validate that resource paths</span>
+<span class="sd">    exist on disk; invalid paths will fail when derived artefacts are regenerated</span>
+<span class="sd">    or the extraction pipeline runs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">deet.data_models.project</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeetProject</span>
+
+    <span class="n">original_data_path</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">gold_standard_data_path</span>
+    <span class="n">original_format</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">gold_standard_data_format</span>
+    <span class="n">original_pdf_dir</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">pdf_dir</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">_project_display_defaults</span><span class="p">(</span><span class="n">project</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="n">run_model_wizard</span><span class="p">(</span><span class="n">DeetProject</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="n">display</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">DeetProject</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="n">ui</span> <span class="o">=</span> <span class="n">get_ui_metadata</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ui</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">editable</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_editable_field_names</span><span class="p">(</span><span class="n">DeetProject</span><span class="p">))</span>
+            <span class="n">fail_with_message</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&#39; is not an editable field. Choose one of: </span><span class="si">{</span><span class="n">editable</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_field_help</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">help</span><span class="p">))</span>
+        <span class="n">new_value</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
+            <span class="n">DeetProject</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="n">display</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="n">DeetProject</span><span class="o">.</span><span class="n">model_validate</span><span class="p">({</span><span class="o">**</span><span class="n">display</span><span class="p">,</span> <span class="n">field</span><span class="p">:</span> <span class="n">new_value</span><span class="p">})</span>
+
+    <span class="n">updated</span><span class="o">.</span><span class="n">anchor_to</span><span class="p">(</span><span class="n">project</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+    <span class="n">updated</span><span class="o">.</span><span class="n">created_at</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">created_at</span>
+    <span class="n">updated</span><span class="o">.</span><span class="n">dump_to_yaml</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_configure_credentials</span><span class="p">(</span><span class="n">project</span><span class="o">.</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;.env&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">updated</span><span class="o">.</span><span class="n">gold_standard_data_path</span> <span class="o">!=</span> <span class="n">original_data_path</span>
+        <span class="ow">or</span> <span class="n">updated</span><span class="o">.</span><span class="n">gold_standard_data_format</span> <span class="o">!=</span> <span class="n">original_format</span>
+        <span class="ow">or</span> <span class="n">updated</span><span class="o">.</span><span class="n">pdf_dir</span> <span class="o">!=</span> <span class="n">original_pdf_dir</span>
+    <span class="p">):</span>
+        <span class="n">notify</span><span class="p">(</span>
+            <span class="s2">&quot;Project data sources changed. Derived artefacts may be stale -- &quot;</span>
+            <span class="s2">&quot;regenerate the prompt CSV and link map with &quot;</span>
+            <span class="s2">&quot;`deet project regenerate-prompt-csv` and &quot;</span>
+            <span class="s2">&quot;`deet project regenerate-link-map` if needed, and re-run &quot;</span>
+            <span class="s2">&quot;`deet project link` if the PDF directory changed.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">LogLevel</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">notify</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Project &#39;</span><span class="si">{</span><span class="n">updated</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; updated.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">LogLevel</span><span class="o">.</span><span class="n">SUCCESS</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -50688,10 +50951,7 @@ the project structure and credentials into <code>root</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/scripts/project_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">27</span>
 <span class="normal">28</span>
 <span class="normal">29</span>
 <span class="normal">30</span>
@@ -50721,9 +50981,7 @@ the project structure and credentials into <code>root</code>.</p>
 <span class="normal">54</span>
 <span class="normal">55</span>
 <span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_init_wizard</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_init_wizard</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run the interactive project + credentials wizards and set the project up.</span>
 
@@ -50742,12 +51000,7 @@ the project structure and credentials into <code>root</code>.</p>
     <span class="n">project</span><span class="o">.</span><span class="n">anchor_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
     <span class="n">project</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
 
-    <span class="n">console</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-    <span class="n">configure_env_md</span> <span class="o">=</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;project/configure_env.md&quot;</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">info_panel</span><span class="p">(</span><span class="n">configure_env_md</span><span class="p">,</span> <span class="s2">&quot;:key: Credential management&quot;</span><span class="p">))</span>
-    <span class="n">continue_after_key</span><span class="p">()</span>
-    <span class="n">settings</span> <span class="o">=</span> <span class="n">run_model_wizard</span><span class="p">(</span><span class="n">DataExtractionSettings</span><span class="p">)</span>
-    <span class="n">settings</span><span class="o">.</span><span class="n">dump_to_env</span><span class="p">(</span><span class="n">target_path</span><span class="o">=</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;.env&quot;</span><span class="p">)</span>
+    <span class="n">_configure_credentials</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;.env&quot;</span><span class="p">)</span>
 
     <span class="n">new_directory</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">())</span>
 
@@ -51717,13 +51970,13 @@ are forbidden to help catch configuration drift early.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
-<span class="normal">220</span>
-<span class="normal">221</span>
-<span class="normal">222</span>
-<span class="normal">223</span>
-<span class="normal">224</span>
-<span class="normal">225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pause execution until the user acknowledges.&quot;&quot;&quot;</span>
     <span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span>
         <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
@@ -51816,7 +52069,7 @@ are forbidden to help catch configuration drift early.</p>
 
 
 <h4 id="deet.ui.terminal.run_model_wizard" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">run_model_wizard</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">run_model_wizard</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h4>
 
@@ -51827,23 +52080,14 @@ are forbidden to help catch configuration drift early.</p>
 <p>Fields present in <code>prefill</code> are not prompted for; their values are injected
 into the model directly. This lets a caller supply a field (e.g. the project
 name derived from a directory) instead of asking the user for it.</p>
+<p><code>defaults</code> maps a field name to a display-ready string shown as that field's
+editable default, so a caller can pre-fill current values while still prompting
+(e.g. <code>deet project edit</code>).</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
-<span class="normal">198</span>
-<span class="normal">199</span>
-<span class="normal">200</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">200</span>
 <span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
@@ -51859,8 +52103,33 @@ name derived from a directory) instead of asking the user for it.</p>
 <span class="normal">213</span>
 <span class="normal">214</span>
 <span class="normal">215</span>
-<span class="normal">216</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
-    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
+    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prefill</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">defaults</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a wizard from a pydantic model.</span>
@@ -51868,8 +52137,13 @@ name derived from a directory) instead of asking the user for it.</p>
 <span class="sd">    Fields present in ``prefill`` are not prompted for; their values are injected</span>
 <span class="sd">    into the model directly. This lets a caller supply a field (e.g. the project</span>
 <span class="sd">    name derived from a directory) instead of asking the user for it.</span>
+
+<span class="sd">    ``defaults`` maps a field name to a display-ready string shown as that field&#39;s</span>
+<span class="sd">    editable default, so a caller can pre-fill current values while still prompting</span>
+<span class="sd">    (e.g. ``deet project edit``).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">prefill</span> <span class="o">=</span> <span class="n">prefill</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="n">defaults</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="n">answers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">ui_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">UI</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -51884,7 +52158,9 @@ name derived from a directory) instead of asking the user for it.</p>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_header</span><span class="p">(</span><span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">))</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_field_help</span><span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">f_ui</span><span class="o">.</span><span class="n">help</span><span class="p">))</span>
 
-        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">)</span>
+        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
+            <span class="n">model_class</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="n">answers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prefill</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">answers</span><span class="p">)</span>
@@ -53484,13 +53760,13 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
-<span class="normal">220</span>
-<span class="normal">221</span>
-<span class="normal">222</span>
-<span class="normal">223</span>
-<span class="normal">224</span>
-<span class="normal">225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pause execution until the user acknowledges.&quot;&quot;&quot;</span>
     <span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span>
         <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
@@ -53534,7 +53810,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h5 id="deet.ui.terminal.wizards.inquire_pydantic_field" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="n">ui</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="n">ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h5>
 
@@ -53542,6 +53818,9 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
     <div class="doc doc-contents ">
 
         <p>Prompt user to provide data for pydantic field.</p>
+<p><code>default_override</code> (a display-ready string: a path, an enum value, or "" for
+an unset optional) replaces the field's own default when supplied, so callers
+can pre-fill the current value while still prompting (e.g. <code>deet project edit</code>).</p>
 
 
             <details class="mkdocstrings-source">
@@ -53581,10 +53860,32 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 <span class="normal">182</span>
 <span class="normal">183</span>
 <span class="normal">184</span>
-<span class="normal">185</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inquire_pydantic_field</span><span class="p">(</span>
-    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">ui</span><span class="p">:</span> <span class="n">UI</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inquire_pydantic_field</span><span class="p">(</span>
+    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span>
+    <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span>
+    <span class="n">ui</span><span class="p">:</span> <span class="n">UI</span><span class="p">,</span>
+    <span class="n">default_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prompt user to provide data for pydantic field.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prompt user to provide data for pydantic field.</span>
+
+<span class="sd">    ``default_override`` (a display-ready string: a path, an enum value, or &quot;&quot; for</span>
+<span class="sd">    an unset optional) replaces the field&#39;s own default when supplied, so callers</span>
+<span class="sd">    can pre-fill the current value while still prompting (e.g. ``deet project edit``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">pydantic_validate</span><span class="p">(</span><span class="n">answer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">is_optional</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
@@ -53599,7 +53900,9 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="n">default</span> <span class="o">=</span> <span class="n">field_info</span><span class="o">.</span><span class="n">get_default</span><span class="p">()</span>
+    <span class="n">default</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">default_override</span> <span class="k">if</span> <span class="n">default_override</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">field_info</span><span class="o">.</span><span class="n">get_default</span><span class="p">()</span>
+    <span class="p">)</span>
     <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">default</span> <span class="ow">in</span> <span class="p">(</span><span class="n">PydanticUndefined</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">default</span>
 
     <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
@@ -53627,7 +53930,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h5 id="deet.ui.terminal.wizards.run_model_wizard" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">run_model_wizard</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">run_model_wizard</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h5>
 
@@ -53638,23 +53941,14 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 <p>Fields present in <code>prefill</code> are not prompted for; their values are injected
 into the model directly. This lets a caller supply a field (e.g. the project
 name derived from a directory) instead of asking the user for it.</p>
+<p><code>defaults</code> maps a field name to a display-ready string shown as that field's
+editable default, so a caller can pre-fill current values while still prompting
+(e.g. <code>deet project edit</code>).</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
-<span class="normal">198</span>
-<span class="normal">199</span>
-<span class="normal">200</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">200</span>
 <span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
@@ -53670,8 +53964,33 @@ name derived from a directory) instead of asking the user for it.</p>
 <span class="normal">213</span>
 <span class="normal">214</span>
 <span class="normal">215</span>
-<span class="normal">216</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
-    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
+    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prefill</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">defaults</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a wizard from a pydantic model.</span>
@@ -53679,8 +53998,13 @@ name derived from a directory) instead of asking the user for it.</p>
 <span class="sd">    Fields present in ``prefill`` are not prompted for; their values are injected</span>
 <span class="sd">    into the model directly. This lets a caller supply a field (e.g. the project</span>
 <span class="sd">    name derived from a directory) instead of asking the user for it.</span>
+
+<span class="sd">    ``defaults`` maps a field name to a display-ready string shown as that field&#39;s</span>
+<span class="sd">    editable default, so a caller can pre-fill current values while still prompting</span>
+<span class="sd">    (e.g. ``deet project edit``).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">prefill</span> <span class="o">=</span> <span class="n">prefill</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="n">defaults</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="n">answers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">ui_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">UI</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -53695,7 +54019,9 @@ name derived from a directory) instead of asking the user for it.</p>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_header</span><span class="p">(</span><span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">))</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_field_help</span><span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">f_ui</span><span class="o">.</span><span class="n">help</span><span class="p">))</span>
 
-        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">)</span>
+        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
+            <span class="n">model_class</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="n">answers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prefill</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">answers</span><span class="p">)</span>
