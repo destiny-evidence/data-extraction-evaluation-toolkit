@@ -298,6 +298,114 @@ def test_new_project_headless_with_args():
         mock_wizard.assert_not_called()
 
 
+def _wizard_result_like(project):
+    """Build a MagicMock standing in for a wizard-produced project."""
+    updated = MagicMock(spec=DeetProject)
+    updated.name = project.name
+    updated.gold_standard_data_format = project.gold_standard_data_format
+    updated.gold_standard_data_path = project.gold_standard_data_path
+    updated.pdf_dir = project.pdf_dir
+    return updated
+
+
+def test_edit_project_full_writes_yaml_without_setup(
+    valid_project_data, monkeypatch, tmp_path
+):
+    monkeypatch.chdir(tmp_path)
+    project = DeetProject(**valid_project_data)
+    updated = _wizard_result_like(project)
+    settings_out = MagicMock(spec=DataExtractionSettings)
+    settings_out.azure_api_key = None
+    settings_out.azure_api_base = None
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=project),
+        patch(
+            "deet.scripts.project_utils.run_model_wizard",
+            side_effect=[updated, settings_out],
+        ) as mock_wizard,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
+    ):
+        result = runner.invoke(app, ["project", "edit"])
+
+    assert result.exit_code == 0
+    assert mock_wizard.call_count == 2  # project fields + credentials
+    updated.anchor_to.assert_called_once_with(project.root)
+    assert updated.created_at == project.created_at  # preserved, not reset
+    updated.dump_to_yaml.assert_called_once()
+    updated.setup.assert_not_called()  # artefacts NOT regenerated
+    # credentials are written to the project's own .env
+    settings_out.dump_to_env.assert_called_once_with(target_path=tmp_path / ".env")
+
+
+def test_edit_single_field_only_prompts_that_field(
+    valid_project_data, monkeypatch, tmp_path
+):
+    monkeypatch.chdir(tmp_path)
+    project = DeetProject(**valid_project_data)
+    updated = _wizard_result_like(project)
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=project),
+        patch(
+            "deet.scripts.project_utils.inquire_pydantic_field",
+            return_value="new_pdfs",
+        ),
+        patch(
+            "deet.data_models.project.DeetProject.model_validate", return_value=updated
+        ) as mock_validate,
+        patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
+        patch("deet.scripts.project_utils.console.clear"),
+    ):
+        result = runner.invoke(app, ["project", "edit", "pdf_dir"])
+
+    assert result.exit_code == 0
+    mock_wizard.assert_not_called()
+    updated.dump_to_yaml.assert_called_once()
+    updated.setup.assert_not_called()
+    merged = mock_validate.call_args.args[0]
+    assert merged["pdf_dir"] == "new_pdfs"
+
+
+def test_edit_rejects_unknown_field(valid_project_data, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    project = DeetProject(**valid_project_data)
+
+    with patch("deet.data_models.project.DeetProject.load", return_value=project):
+        result = runner.invoke(app, ["project", "edit", "bogus"])
+
+    assert result.exit_code == 1
+    assert "not an editable field" in result.stderr
+
+
+def test_edit_warns_when_data_source_changes(valid_project_data, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    project = DeetProject(**valid_project_data)
+    updated = _wizard_result_like(project)
+    updated.gold_standard_data_path = Path("different.json")  # changed
+    settings_out = MagicMock(spec=DataExtractionSettings)
+    settings_out.azure_api_key = None
+    settings_out.azure_api_base = None
+
+    with (
+        patch("deet.data_models.project.DeetProject.load", return_value=project),
+        patch(
+            "deet.scripts.project_utils.run_model_wizard",
+            side_effect=[updated, settings_out],
+        ),
+        patch("deet.scripts.project_utils.notify") as mock_notify,
+        patch("deet.scripts.project_utils.continue_after_key"),
+        patch("deet.scripts.project_utils.console.clear"),
+    ):
+        result = runner.invoke(app, ["project", "edit"])
+
+    assert result.exit_code == 0
+    assert any(
+        "regenerate" in str(call.args[0]).lower() for call in mock_notify.call_args_list
+    )
+
+
 def test_init_project_noninteractive(tmp_path):
     data_file = tmp_path / "references.json"
     data_file.touch()
