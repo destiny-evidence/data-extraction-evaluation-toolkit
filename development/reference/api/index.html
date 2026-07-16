@@ -51970,13 +51970,13 @@ are forbidden to help catch configuration drift early.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">241</span>
-<span class="normal">242</span>
-<span class="normal">243</span>
-<span class="normal">244</span>
-<span class="normal">245</span>
-<span class="normal">246</span>
-<span class="normal">247</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pause execution until the user acknowledges.&quot;&quot;&quot;</span>
     <span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span>
         <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
@@ -52083,49 +52083,76 @@ name derived from a directory) instead of asking the user for it.</p>
 <p><code>defaults</code> maps a field name to a display-ready string shown as that field's
 editable default, so a caller can pre-fill current values while still prompting
 (e.g. <code>deet project edit</code>).</p>
+<p>Every field after the first is back-navigable: pressing Ctrl+Left or Option+Left
+returns to the previous field, which is re-prompted with the answer already given.</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span>
-<span class="normal">206</span>
-<span class="normal">207</span>
-<span class="normal">208</span>
-<span class="normal">209</span>
-<span class="normal">210</span>
-<span class="normal">211</span>
-<span class="normal">212</span>
-<span class="normal">213</span>
-<span class="normal">214</span>
-<span class="normal">215</span>
-<span class="normal">216</span>
-<span class="normal">217</span>
-<span class="normal">218</span>
-<span class="normal">219</span>
-<span class="normal">220</span>
-<span class="normal">221</span>
-<span class="normal">222</span>
-<span class="normal">223</span>
-<span class="normal">224</span>
-<span class="normal">225</span>
-<span class="normal">226</span>
-<span class="normal">227</span>
-<span class="normal">228</span>
-<span class="normal">229</span>
-<span class="normal">230</span>
-<span class="normal">231</span>
-<span class="normal">232</span>
-<span class="normal">233</span>
-<span class="normal">234</span>
-<span class="normal">235</span>
-<span class="normal">236</span>
-<span class="normal">237</span>
-<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
     <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">prefill</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -52141,28 +52168,53 @@ editable default, so a caller can pre-fill current values while still prompting
 <span class="sd">    ``defaults`` maps a field name to a display-ready string shown as that field&#39;s</span>
 <span class="sd">    editable default, so a caller can pre-fill current values while still prompting</span>
 <span class="sd">    (e.g. ``deet project edit``).</span>
+
+<span class="sd">    Every field after the first is back-navigable: pressing Ctrl+Left or Option+Left</span>
+<span class="sd">    returns to the previous field, which is re-prompted with the answer already given.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">prefill</span> <span class="o">=</span> <span class="n">prefill</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="n">defaults</span> <span class="o">=</span> <span class="n">defaults</span> <span class="ow">or</span> <span class="p">{}</span>
-    <span class="n">answers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">ui_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">UI</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">ui</span> <span class="o">=</span> <span class="n">get_ui_metadata</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ui</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prefill</span><span class="p">:</span>
-            <span class="n">ui_steps</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">ui</span><span class="p">))</span>
-
+    <span class="n">answers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">prefill</span><span class="p">)</span>
+    <span class="n">ui_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">UI</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">ui</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ui</span> <span class="o">:=</span> <span class="n">get_ui_metadata</span><span class="p">(</span><span class="n">info</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">answers</span>
+    <span class="p">]</span>
     <span class="n">total_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ui_steps</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ui_steps</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">ui_steps</span><span class="p">):</span>
+        <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span> <span class="o">=</span> <span class="n">ui_steps</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
         <span class="n">console</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_header</span><span class="p">(</span><span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">))</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_header</span><span class="p">(</span><span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">))</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_field_help</span><span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">f_ui</span><span class="o">.</span><span class="n">help</span><span class="p">))</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Press Ctrl+C to exit&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;dim&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
+                <span class="s2">&quot;Press Ctrl+Left/Option+Left to go back&quot;</span><span class="p">,</span>
+                <span class="n">style</span><span class="o">=</span><span class="s2">&quot;dim&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
 
-        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
-            <span class="n">model_class</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
+        <span class="n">previous_answer</span> <span class="o">=</span> <span class="n">answers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">previous_answer</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">previous_answer</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
         <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
+            <span class="n">model_class</span><span class="p">,</span>
+            <span class="n">f_name</span><span class="p">,</span>
+            <span class="n">f_info</span><span class="p">,</span>
+            <span class="n">f_ui</span><span class="p">,</span>
+            <span class="n">default_override</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+            <span class="n">allow_back</span><span class="o">=</span><span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="n">GO_BACK</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
 
-    <span class="n">answers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prefill</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">answers</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -52770,33 +52822,37 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BoolHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BoolHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;WidgetCreator to handle boolean fields.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if field is a boolean.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span> <span class="ow">is</span> <span class="nb">bool</span> <span class="ow">or</span> <span class="nb">bool</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Use a inquirer confirm to return boolean.&quot;&quot;&quot;</span>
         <span class="n">widget_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;validate&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">widget_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;filter&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">widget_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;invalid_message&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -52829,9 +52885,9 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if field is a boolean.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span> <span class="ow">is</span> <span class="nb">bool</span> <span class="ow">or</span> <span class="nb">bool</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -52844,7 +52900,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.BoolHandler.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
 </h6>
 
@@ -52856,19 +52912,23 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Use a inquirer confirm to return boolean.&quot;&quot;&quot;</span>
     <span class="n">widget_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;validate&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">widget_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;filter&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">widget_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;invalid_message&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -52912,20 +52972,22 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DefaultHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DefaultHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fallback handler (simple text prompt).</span>
 
@@ -52936,9 +52998,11 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True, handling whatever is not covered by other strategies.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute a text prompt.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -52971,9 +53035,9 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return True, handling whatever is not covered by other strategies.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -52986,7 +53050,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.DefaultHandler.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
 </h6>
 
@@ -52998,11 +53062,15 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute a text prompt.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -53045,20 +53113,22 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EnumHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EnumHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;WidgetCreator to handle enums.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -53067,11 +53137,13 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
             <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">,</span> <span class="n">Enum</span>
         <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render an interactive dropdown using inquirerpy.select.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute an inquirer.select prompt.&quot;&quot;&quot;</span>
         <span class="n">enum_type</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;type[Enum]&quot;</span><span class="p">,</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
         <span class="n">widget_args</span><span class="p">[</span><span class="s2">&quot;choices&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">enum_type</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -53104,11 +53176,11 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the field is an enum.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span>
         <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">,</span> <span class="n">Enum</span>
@@ -53123,27 +53195,31 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.EnumHandler.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
 </h6>
 
 
     <div class="doc doc-contents ">
 
-        <p>Render an interactive dropdown using inquirerpy.select.</p>
+        <p>Execute an inquirer.select prompt.</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Render an interactive dropdown using inquirerpy.select.&quot;&quot;&quot;</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute an inquirer.select prompt.&quot;&quot;&quot;</span>
     <span class="n">enum_type</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;type[Enum]&quot;</span><span class="p">,</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
     <span class="n">widget_args</span><span class="p">[</span><span class="s2">&quot;choices&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">enum_type</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -53186,27 +53262,31 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span>
-<span class="normal">68</span>
-<span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NumberHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NumberHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;WidgetCreator to handle numbers.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -53214,19 +53294,23 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
         <span class="n">annotation</span> <span class="o">=</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span>
         <span class="k">return</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="nb">float</span> <span class="ow">or</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">int</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Execute an inquirer.number prompt, adjusted to whether float or not.</span>
 
 <span class="sd">        If it&#39;s optional, use a text prompt.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">):</span>
-            <span class="n">answer</span> <span class="o">=</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">answer</span> <span class="ow">is</span> <span class="n">GO_BACK</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">answer</span>
             <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="k">if</span> <span class="n">answer</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span> <span class="ow">is</span> <span class="nb">float</span><span class="p">:</span>
             <span class="n">widget_args</span><span class="p">[</span><span class="s2">&quot;float_allowed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -53259,10 +53343,10 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">67</span>
-<span class="normal">68</span>
-<span class="normal">69</span>
-<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the field is a number.&quot;&quot;&quot;</span>
     <span class="n">annotation</span> <span class="o">=</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span>
     <span class="k">return</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="nb">float</span> <span class="ow">or</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">int</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
@@ -53276,7 +53360,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.NumberHandler.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
 </h6>
 
@@ -53289,31 +53373,39 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Execute an inquirer.number prompt, adjusted to whether float or not.</span>
 
 <span class="sd">    If it&#39;s optional, use a text prompt.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">):</span>
-        <span class="n">answer</span> <span class="o">=</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">answer</span> <span class="ow">is</span> <span class="n">GO_BACK</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">answer</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="k">if</span> <span class="n">answer</span> <span class="k">else</span> <span class="kc">None</span>
 
     <span class="k">if</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span> <span class="ow">is</span> <span class="nb">float</span><span class="p">:</span>
         <span class="n">widget_args</span><span class="p">[</span><span class="s2">&quot;float_allowed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -53356,25 +53448,29 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
-<span class="normal">53</span>
-<span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PathHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PathHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;WidgetCreator to handle paths.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the field is a Path.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span> <span class="ow">is</span> <span class="n">Path</span> <span class="ow">or</span> <span class="n">Path</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute an inquirer.filepath prompt.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">filepath</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">filepath</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -53407,9 +53503,9 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the field is a Path.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span> <span class="ow">is</span> <span class="n">Path</span> <span class="ow">or</span> <span class="n">Path</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -53422,7 +53518,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.PathHandler.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
 </h6>
 
@@ -53434,11 +53530,15 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute an inquirer.filepath prompt.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">filepath</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">filepath</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -53481,20 +53581,22 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 87</span>
-<span class="normal"> 88</span>
-<span class="normal"> 89</span>
-<span class="normal"> 90</span>
-<span class="normal"> 91</span>
-<span class="normal"> 92</span>
-<span class="normal"> 93</span>
-<span class="normal"> 94</span>
-<span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SecretHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SecretHandler</span><span class="p">(</span><span class="n">WidgetCreator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Widget creator to handle secrets.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -53502,11 +53604,13 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
         <span class="n">annotation</span> <span class="o">=</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span>
         <span class="k">return</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="n">SecretStr</span> <span class="ow">or</span> <span class="n">SecretStr</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute an inquirer.secret prompt. Leave UNCHANGED_SECRET as None.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">field_info</span><span class="o">.</span><span class="n">get_default</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">widget_args</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNCHANGED_SECRET</span>
-        <span class="n">answer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">answer</span> <span class="o">==</span> <span class="n">UNCHANGED_SECRET</span> <span class="k">else</span> <span class="n">answer</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -53540,10 +53644,10 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the field is a secretstr.&quot;&quot;&quot;</span>
     <span class="n">annotation</span> <span class="o">=</span> <span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span>
     <span class="k">return</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="n">SecretStr</span> <span class="ow">or</span> <span class="n">SecretStr</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
@@ -53557,7 +53661,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.SecretHandler.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
 </h6>
 
@@ -53569,16 +53673,20 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute an inquirer.secret prompt. Leave UNCHANGED_SECRET as None.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">field_info</span><span class="o">.</span><span class="n">get_default</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">widget_args</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNCHANGED_SECRET</span>
-    <span class="n">answer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="n">_execute</span><span class="p">(</span><span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span><span class="o">**</span><span class="n">widget_args</span><span class="p">),</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">answer</span> <span class="o">==</span> <span class="n">UNCHANGED_SECRET</span> <span class="k">else</span> <span class="n">answer</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -53622,20 +53730,20 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WidgetCreator</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WidgetCreator</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract strategy to create Pyinquirer widgets from pydantic fields.&quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
@@ -53645,8 +53753,8 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the InquirerPy widget and return the validated result.&quot;&quot;&quot;</span>
         <span class="o">...</span>
 </code></pre></div></td></tr></table></div>
@@ -53685,10 +53793,10 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return True if this handler supports the given field.&quot;&quot;&quot;</span>
     <span class="o">...</span>
@@ -53702,7 +53810,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h6 id="deet.ui.terminal.wizards.WidgetCreator.execute" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -53718,15 +53826,15 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute the InquirerPy widget and return the validated result.&quot;&quot;&quot;</span>
     <span class="o">...</span>
 </code></pre></div></td></tr></table></div>
@@ -53760,13 +53868,13 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">241</span>
-<span class="normal">242</span>
-<span class="normal">243</span>
-<span class="normal">244</span>
-<span class="normal">245</span>
-<span class="normal">246</span>
-<span class="normal">247</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">continue_after_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pause execution until the user acknowledges.&quot;&quot;&quot;</span>
     <span class="n">inquirer</span><span class="o">.</span><span class="n">secret</span><span class="p">(</span>
         <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
@@ -53795,9 +53903,9 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_ui_metadata</span><span class="p">(</span><span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UI</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_ui_metadata</span><span class="p">(</span><span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UI</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get UI metadata from pydantic model field.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="nb">next</span><span class="p">((</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">field_info</span><span class="o">.</span><span class="n">metadata</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">UI</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -53810,7 +53918,7 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 
 
 <h5 id="deet.ui.terminal.wizards.inquire_pydantic_field" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="n">ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">inquire_pydantic_field</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="n">ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow_back</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 </h5>
 
@@ -53821,135 +53929,15 @@ If show_progress is True, uses a Rich progress bar that handles logs gracefully.
 <p><code>default_override</code> (a display-ready string: a path, an enum value, or "" for
 an unset optional) replaces the field's own default when supplied, so callers
 can pre-fill the current value while still prompting (e.g. <code>deet project edit</code>).</p>
+<p><code>allow_back</code> makes the prompt skippable with Ctrl+Left / Option+Left,
+returning GO_BACK so a multi-step wizard can return to the
+previous field. Standalone prompts leave it False (a single prompt has nowhere
+to go back to).</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span>
-<span class="normal">182</span>
-<span class="normal">183</span>
-<span class="normal">184</span>
-<span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inquire_pydantic_field</span><span class="p">(</span>
-    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span>
-    <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span>
-    <span class="n">ui</span><span class="p">:</span> <span class="n">UI</span><span class="p">,</span>
-    <span class="n">default_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Prompt user to provide data for pydantic field.</span>
-
-<span class="sd">    ``default_override`` (a display-ready string: a path, an enum value, or &quot;&quot; for</span>
-<span class="sd">    an unset optional) replaces the field&#39;s own default when supplied, so callers</span>
-<span class="sd">    can pre-fill the current value while still prompting (e.g. ``deet project edit``).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">pydantic_validate</span><span class="p">(</span><span class="n">answer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">is_optional</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">is_optional</span> <span class="ow">and</span> <span class="n">answer</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">model_class</span><span class="o">.</span><span class="n">__pydantic_validator__</span><span class="o">.</span><span class="n">validate_assignment</span><span class="p">(</span>
-                <span class="n">model_class</span><span class="o">.</span><span class="n">model_construct</span><span class="p">(),</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">answer</span>
-            <span class="p">)</span>
-        <span class="k">except</span> <span class="n">ValidationError</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-    <span class="n">default</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">default_override</span> <span class="k">if</span> <span class="n">default_override</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">field_info</span><span class="o">.</span><span class="n">get_default</span><span class="p">()</span>
-    <span class="p">)</span>
-    <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">default</span> <span class="ow">in</span> <span class="p">(</span><span class="n">PydanticUndefined</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">default</span>
-
-    <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">field_info</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
-        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="n">default</span><span class="p">,</span>
-        <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ans</span><span class="p">:</span> <span class="n">pydantic_validate</span><span class="p">(</span><span class="n">ans</span><span class="p">),</span>
-        <span class="s2">&quot;invalid_message&quot;</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">valid</span><span class="p">,</span>
-        <span class="s2">&quot;instruction&quot;</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">instructions</span><span class="p">,</span>
-        <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ans</span><span class="p">:</span> <span class="n">ans</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
-    <span class="p">}</span>
-
-    <span class="k">for</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">STRATEGIES</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">strategy</span><span class="o">.</span><span class="n">can_handle</span><span class="p">(</span><span class="n">field_info</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">strategy</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">)</span>
-
-    <span class="n">not_implemented</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;No widget could be created for field: </span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">not_implemented</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h5 id="deet.ui.terminal.wizards.run_model_wizard" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">run_model_wizard</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
-
-</h5>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Create a wizard from a pydantic model.</p>
-<p>Fields present in <code>prefill</code> are not prompted for; their values are injected
-into the model directly. This lets a caller supply a field (e.g. the project
-name derived from a directory) instead of asking the user for it.</p>
-<p><code>defaults</code> maps a field name to a display-ready string shown as that field's
-editable default, so a caller can pre-fill current values while still prompting
-(e.g. <code>deet project edit</code>).</p>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">200</span>
-<span class="normal">201</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
 <span class="normal">204</span>
@@ -53986,7 +53974,172 @@ editable default, so a caller can pre-fill current values while still prompting
 <span class="normal">235</span>
 <span class="normal">236</span>
 <span class="normal">237</span>
-<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inquire_pydantic_field</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+    <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span>
+    <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">field_info</span><span class="p">:</span> <span class="n">FieldInfo</span><span class="p">,</span>
+    <span class="n">ui</span><span class="p">:</span> <span class="n">UI</span><span class="p">,</span>
+    <span class="n">default_override</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">allow_back</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prompt user to provide data for pydantic field.</span>
+
+<span class="sd">    ``default_override`` (a display-ready string: a path, an enum value, or &quot;&quot; for</span>
+<span class="sd">    an unset optional) replaces the field&#39;s own default when supplied, so callers</span>
+<span class="sd">    can pre-fill the current value while still prompting (e.g. ``deet project edit``).</span>
+
+<span class="sd">    ``allow_back`` makes the prompt skippable with Ctrl+Left / Option+Left,</span>
+<span class="sd">    returning GO_BACK so a multi-step wizard can return to the</span>
+<span class="sd">    previous field. Standalone prompts leave it False (a single prompt has nowhere</span>
+<span class="sd">    to go back to).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pydantic_validate</span><span class="p">(</span><span class="n">answer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">is_optional</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">field_info</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_optional</span> <span class="ow">and</span> <span class="n">answer</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">model_class</span><span class="o">.</span><span class="n">__pydantic_validator__</span><span class="o">.</span><span class="n">validate_assignment</span><span class="p">(</span>
+                <span class="n">model_class</span><span class="o">.</span><span class="n">model_construct</span><span class="p">(),</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">answer</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ValidationError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="n">default</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">default_override</span> <span class="k">if</span> <span class="n">default_override</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">field_info</span><span class="o">.</span><span class="n">get_default</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">default</span> <span class="ow">in</span> <span class="p">(</span><span class="n">PydanticUndefined</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">default</span>
+
+    <span class="n">widget_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">field_info</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="n">default</span><span class="p">,</span>
+        <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ans</span><span class="p">:</span> <span class="n">pydantic_validate</span><span class="p">(</span><span class="n">ans</span><span class="p">),</span>
+        <span class="s2">&quot;invalid_message&quot;</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">valid</span><span class="p">,</span>
+        <span class="s2">&quot;instruction&quot;</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">instructions</span><span class="p">,</span>
+        <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ans</span><span class="p">:</span> <span class="n">ans</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ans</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">ans</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">STRATEGIES</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">strategy</span><span class="o">.</span><span class="n">can_handle</span><span class="p">(</span><span class="n">field_info</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">strategy</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">widget_args</span><span class="p">,</span> <span class="n">field_info</span><span class="p">,</span> <span class="n">allow_back</span><span class="o">=</span><span class="n">allow_back</span><span class="p">)</span>
+
+    <span class="n">not_implemented</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;No widget could be created for field: </span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">not_implemented</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="deet.ui.terminal.wizards.run_model_wizard" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">run_model_wizard</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefill</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a wizard from a pydantic model.</p>
+<p>Fields present in <code>prefill</code> are not prompted for; their values are injected
+into the model directly. This lets a caller supply a field (e.g. the project
+name derived from a directory) instead of asking the user for it.</p>
+<p><code>defaults</code> maps a field name to a display-ready string shown as that field's
+editable default, so a caller can pre-fill current values while still prompting
+(e.g. <code>deet project edit</code>).</p>
+<p>Every field after the first is back-navigable: pressing Ctrl+Left or Option+Left
+returns to the previous field, which is re-prompted with the answer already given.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>deet/ui/terminal/wizards.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_model_wizard</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">](</span>
     <span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">prefill</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -54002,28 +54155,53 @@ editable default, so a caller can pre-fill current values while still prompting
 <span class="sd">    ``defaults`` maps a field name to a display-ready string shown as that field&#39;s</span>
 <span class="sd">    editable default, so a caller can pre-fill current values while still prompting</span>
 <span class="sd">    (e.g. ``deet project edit``).</span>
+
+<span class="sd">    Every field after the first is back-navigable: pressing Ctrl+Left or Option+Left</span>
+<span class="sd">    returns to the previous field, which is re-prompted with the answer already given.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">prefill</span> <span class="o">=</span> <span class="n">prefill</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="n">defaults</span> <span class="o">=</span> <span class="n">defaults</span> <span class="ow">or</span> <span class="p">{}</span>
-    <span class="n">answers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">ui_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">UI</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">ui</span> <span class="o">=</span> <span class="n">get_ui_metadata</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ui</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prefill</span><span class="p">:</span>
-            <span class="n">ui_steps</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">ui</span><span class="p">))</span>
-
+    <span class="n">answers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">prefill</span><span class="p">)</span>
+    <span class="n">ui_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldInfo</span><span class="p">,</span> <span class="n">UI</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">ui</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ui</span> <span class="o">:=</span> <span class="n">get_ui_metadata</span><span class="p">(</span><span class="n">info</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">answers</span>
+    <span class="p">]</span>
     <span class="n">total_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ui_steps</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ui_steps</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">ui_steps</span><span class="p">):</span>
+        <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span> <span class="o">=</span> <span class="n">ui_steps</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
         <span class="n">console</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_header</span><span class="p">(</span><span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">))</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_header</span><span class="p">(</span><span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">))</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">wizard_field_help</span><span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">f_ui</span><span class="o">.</span><span class="n">help</span><span class="p">))</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Press Ctrl+C to exit&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;dim&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
+                <span class="s2">&quot;Press Ctrl+Left/Option+Left to go back&quot;</span><span class="p">,</span>
+                <span class="n">style</span><span class="o">=</span><span class="s2">&quot;dim&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
 
-        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
-            <span class="n">model_class</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">f_info</span><span class="p">,</span> <span class="n">f_ui</span><span class="p">,</span> <span class="n">default_override</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
+        <span class="n">previous_answer</span> <span class="o">=</span> <span class="n">answers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">previous_answer</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">previous_answer</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f_name</span><span class="p">)</span>
         <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">inquire_pydantic_field</span><span class="p">(</span>
+            <span class="n">model_class</span><span class="p">,</span>
+            <span class="n">f_name</span><span class="p">,</span>
+            <span class="n">f_info</span><span class="p">,</span>
+            <span class="n">f_ui</span><span class="p">,</span>
+            <span class="n">default_override</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+            <span class="n">allow_back</span><span class="o">=</span><span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="n">GO_BACK</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="n">answers</span><span class="p">[</span><span class="n">f_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
 
-    <span class="n">answers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prefill</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model_class</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">answers</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
