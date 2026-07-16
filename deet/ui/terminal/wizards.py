@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any, Final, cast, get_args
 
 from InquirerPy import inquirer
+from InquirerPy.base import BaseSimplePrompt
+from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from pydantic import BaseModel, SecretStr, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
@@ -15,6 +17,41 @@ from deet.ui.terminal import console
 from deet.ui.terminal.components import wizard_field_help, wizard_header
 
 UNCHANGED_SECRET = "<unchanged>"  # noqa: S105
+
+
+class _GoBack:
+    """Sentinel: the user asked to step back to the previous wizard field."""
+
+
+GO_BACK: Final = _GoBack()
+
+_BACK_KEY: Final = "c-left"
+_BACK_FALLBACK_KEY: Final[tuple[str, str]] = ("escape", "b")
+
+_BACK_KEY_BINDINGS: Final[tuple[tuple[str, ...], ...]] = (
+    (_BACK_KEY,),
+    _BACK_FALLBACK_KEY,
+)
+
+PromptResult = str | bool | None | _GoBack
+
+
+def _execute(prompt: BaseSimplePrompt, *, allow_back: bool) -> PromptResult:
+    """
+    Run an InquirerPy prompt; return GO_BACK if the back key was pressed.
+
+    When ``allow_back``, back keys are bound to exit the prompt with GO_BACK
+    as its result, so a multi-step wizard can return to the previous field.
+    """
+    if allow_back:
+
+        def _go_back(event: KeyPressEvent) -> None:
+            event.app.exit(result=GO_BACK)
+
+        for keys in _BACK_KEY_BINDINGS:
+            prompt.register_kb(*keys)(_go_back)
+
+    return prompt.execute()
 
 
 class WidgetCreator(ABC):
@@ -27,8 +64,8 @@ class WidgetCreator(ABC):
 
     @abstractmethod
     def execute(
-        self, widget_args: dict[str, Any], field_info: FieldInfo
-    ) -> str | None | bool:
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
         """Execute the InquirerPy widget and return the validated result."""
         ...
 
@@ -42,11 +79,13 @@ class EnumHandler(WidgetCreator):
             field_info.annotation, Enum
         )
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
-        """Render an interactive dropdown using inquirerpy.select."""
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
+        """Execute an inquirer.select prompt."""
         enum_type = cast("type[Enum]", field_info.annotation)
         widget_args["choices"] = [e.value for e in enum_type]
-        return inquirer.select(**widget_args).execute()
+        return _execute(inquirer.select(**widget_args), allow_back=allow_back)
 
 
 class PathHandler(WidgetCreator):
@@ -56,9 +95,11 @@ class PathHandler(WidgetCreator):
         """Check if the field is a Path."""
         return field_info.annotation is Path or Path in get_args(field_info.annotation)
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
         """Execute an inquirer.filepath prompt."""
-        return inquirer.filepath(**widget_args).execute()
+        return _execute(inquirer.filepath(**widget_args), allow_back=allow_back)
 
 
 class NumberHandler(WidgetCreator):
@@ -69,19 +110,23 @@ class NumberHandler(WidgetCreator):
         annotation = field_info.annotation
         return annotation is float or annotation is int or int in get_args(annotation)
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str | None:
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
         """
         Execute an inquirer.number prompt, adjusted to whether float or not.
 
         If it's optional, use a text prompt.
         """
         if type(None) in get_args(field_info.annotation):
-            answer = inquirer.text(**widget_args).execute()
+            answer = _execute(inquirer.text(**widget_args), allow_back=allow_back)
+            if answer is GO_BACK:
+                return answer
             return str(answer) if answer else None
 
         if field_info.annotation is float:
             widget_args["float_allowed"] = True
-        return inquirer.number(**widget_args).execute()
+        return _execute(inquirer.number(**widget_args), allow_back=allow_back)
 
 
 class SecretHandler(WidgetCreator):
@@ -92,11 +137,13 @@ class SecretHandler(WidgetCreator):
         annotation = field_info.annotation
         return annotation is SecretStr or SecretStr in get_args(annotation)
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str | None:
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
         """Execute an inquirer.secret prompt. Leave UNCHANGED_SECRET as None."""
         if field_info.get_default() is None:
             widget_args["default"] = UNCHANGED_SECRET
-        answer: str = inquirer.secret(**widget_args).execute()
+        answer = _execute(inquirer.secret(**widget_args), allow_back=allow_back)
         return None if answer == UNCHANGED_SECRET else answer
 
 
@@ -107,13 +154,15 @@ class BoolHandler(WidgetCreator):
         """Check if field is a boolean."""
         return field_info.annotation is bool or bool in get_args(field_info.annotation)
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> bool:
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
         """Use a inquirer confirm to return boolean."""
         widget_args.pop("validate", None)
         widget_args.pop("filter", None)
         widget_args.pop("invalid_message", None)
 
-        return inquirer.confirm(**widget_args).execute()
+        return _execute(inquirer.confirm(**widget_args), allow_back=allow_back)
 
 
 class DefaultHandler(WidgetCreator):
@@ -127,9 +176,11 @@ class DefaultHandler(WidgetCreator):
         """Return True, handling whatever is not covered by other strategies."""
         return True
 
-    def execute(self, widget_args: dict[str, Any], field_info: FieldInfo) -> str:
+    def execute(
+        self, widget_args: dict[str, Any], field_info: FieldInfo, *, allow_back: bool
+    ) -> PromptResult:
         """Execute a text prompt."""
-        return inquirer.text(**widget_args).execute()
+        return _execute(inquirer.text(**widget_args), allow_back=allow_back)
 
 
 STRATEGIES: Final[list[WidgetCreator]] = [
@@ -147,19 +198,26 @@ def get_ui_metadata(field_info: FieldInfo) -> UI | None:
     return next((item for item in field_info.metadata if isinstance(item, UI)), None)
 
 
-def inquire_pydantic_field(
+def inquire_pydantic_field(  # noqa: PLR0913
     model_class: type[BaseModel],
     field_name: str,
     field_info: FieldInfo,
     ui: UI,
     default_override: str | None = None,
-) -> str | bool | None:
+    *,
+    allow_back: bool = False,
+) -> PromptResult:
     """
     Prompt user to provide data for pydantic field.
 
     ``default_override`` (a display-ready string: a path, an enum value, or "" for
     an unset optional) replaces the field's own default when supplied, so callers
     can pre-fill the current value while still prompting (e.g. ``deet project edit``).
+
+    ``allow_back`` makes the prompt skippable with Ctrl+Left / Option+Left,
+    returning GO_BACK so a multi-step wizard can return to the
+    previous field. Standalone prompts leave it False (a single prompt has nowhere
+    to go back to).
     """
 
     def pydantic_validate(answer: str) -> bool | str:
@@ -186,12 +244,12 @@ def inquire_pydantic_field(
         "validate": lambda ans: pydantic_validate(ans),
         "invalid_message": ui.valid,
         "instruction": ui.instructions,
-        "filter": lambda ans: ans.strip(),
+        "filter": lambda ans: ans.strip() if isinstance(ans, str) else ans,
     }
 
     for strategy in STRATEGIES:
         if strategy.can_handle(field_info):
-            return strategy.execute(widget_args, field_info)
+            return strategy.execute(widget_args, field_info, allow_back=allow_back)
 
     not_implemented = f"No widget could be created for field: {field_name}"
     raise NotImplementedError(not_implemented)
@@ -213,28 +271,53 @@ def run_model_wizard[T: BaseModel](
     ``defaults`` maps a field name to a display-ready string shown as that field's
     editable default, so a caller can pre-fill current values while still prompting
     (e.g. ``deet project edit``).
+
+    Every field after the first is back-navigable: pressing Ctrl+Left or Option+Left
+    returns to the previous field, which is re-prompted with the answer already given.
     """
     prefill = prefill or {}
     defaults = defaults or {}
-    answers: dict[str, object] = {}
-    ui_steps: list[tuple[str, FieldInfo, UI]] = []
-    for name, info in model_class.model_fields.items():
-        ui = get_ui_metadata(info)
-        if ui is not None and name not in prefill:
-            ui_steps.append((name, info, ui))
-
+    answers: dict[str, object] = dict(prefill)
+    ui_steps: list[tuple[str, FieldInfo, UI]] = [
+        (name, info, ui)
+        for name, info in model_class.model_fields.items()
+        if (ui := get_ui_metadata(info)) is not None and name not in answers
+    ]
     total_steps = len(ui_steps)
 
-    for i, (f_name, f_info, f_ui) in enumerate(ui_steps, 1):
+    index = 0
+    while index < len(ui_steps):
+        f_name, f_info, f_ui = ui_steps[index]
         console.clear()
-        console.print(wizard_header(model_class.__name__, i, total_steps))
+        console.print(wizard_header(model_class.__name__, index + 1, total_steps))
         console.print(wizard_field_help(f_name, f_ui.help))
+        console.print("Press Ctrl+C to exit", style="dim")
+        if index > 0:
+            console.print(
+                "Press Ctrl+Left/Option+Left to go back",
+                style="dim",
+            )
 
-        answers[f_name] = inquire_pydantic_field(
-            model_class, f_name, f_info, f_ui, default_override=defaults.get(f_name)
+        previous_answer = answers.get(f_name)
+        seed = (
+            previous_answer
+            if isinstance(previous_answer, str)
+            else defaults.get(f_name)
         )
+        result = inquire_pydantic_field(
+            model_class,
+            f_name,
+            f_info,
+            f_ui,
+            default_override=seed,
+            allow_back=index > 0,
+        )
+        if result is GO_BACK:
+            index -= 1
+            continue
+        answers[f_name] = result
+        index += 1
 
-    answers.update(prefill)
     return model_class.model_validate(answers)
 
 
