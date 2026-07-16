@@ -26,6 +26,12 @@ class _GoBack:
 GO_BACK: Final = _GoBack()
 
 _BACK_KEY: Final = "c-left"
+_BACK_FALLBACK_KEY: Final[tuple[str, str]] = ("escape", "b")
+
+_BACK_KEY_BINDINGS: Final[tuple[tuple[str, ...], ...]] = (
+    (_BACK_KEY,),
+    _BACK_FALLBACK_KEY,
+)
 
 PromptResult = str | bool | None | _GoBack
 
@@ -34,14 +40,16 @@ def _execute(prompt: BaseSimplePrompt, *, allow_back: bool) -> PromptResult:
     """
     Run an InquirerPy prompt; return GO_BACK if the back key was pressed.
 
-    When ``allow_back``, the back key is bound eagerly to exit the prompt with GO_BACK
+    When ``allow_back``, back keys are bound eagerly to exit the prompt with GO_BACK
     as its result, so a multi-step wizard can return to the previous field.
     """
     if allow_back:
 
-        @prompt.register_kb(_BACK_KEY, eager=True)
-        def _(event: KeyPressEvent) -> None:
+        def _go_back(event: KeyPressEvent) -> None:
             event.app.exit(result=GO_BACK)
+
+        for keys in _BACK_KEY_BINDINGS:
+            prompt.register_kb(*keys, eager=True)(_go_back)
 
     return prompt.execute()
 
@@ -206,9 +214,10 @@ def inquire_pydantic_field(  # noqa: PLR0913
     an unset optional) replaces the field's own default when supplied, so callers
     can pre-fill the current value while still prompting (e.g. ``deet project edit``).
 
-    ``allow_back`` makes the prompt skippable with Ctrl+left, returning GO_BACK so a
-    multi-step wizard can return to the previous field. Standalone prompts leave it
-    False (a single prompt has nowhere to go back to).
+    ``allow_back`` makes the prompt skippable with Ctrl+Left / Option+Left,
+    returning GO_BACK so a multi-step wizard can return to the
+    previous field. Standalone prompts leave it False (a single prompt has nowhere
+    to go back to).
     """
 
     def pydantic_validate(answer: str) -> bool | str:
@@ -263,8 +272,8 @@ def run_model_wizard[T: BaseModel](
     editable default, so a caller can pre-fill current values while still prompting
     (e.g. ``deet project edit``).
 
-    Every field after the first is back-navigable: pressing Ctrl+left returns to the
-    previous field, which is re-prompted with the answer already given.
+    Every field after the first is back-navigable: pressing Ctrl+Left or Option+Left
+    returns to the previous field, which is re-prompted with the answer already given.
     """
     prefill = prefill or {}
     defaults = defaults or {}
@@ -284,7 +293,10 @@ def run_model_wizard[T: BaseModel](
         console.print(wizard_field_help(f_name, f_ui.help))
         console.print("Press Ctrl+C to exit", style="dim")
         if index > 0:
-            console.print("Press Ctrl+Left to go back", style="dim")
+            console.print(
+                "Press Ctrl+Left/Option+Left to go back",
+                style="dim",
+            )
 
         previous_answer = answers.get(f_name)
         seed = (

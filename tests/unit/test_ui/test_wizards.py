@@ -7,7 +7,9 @@ from pydantic import BaseModel, Field, SecretStr
 
 from deet.data_models.ui_schema import UI
 from deet.ui.terminal.wizards import (
+    _BACK_FALLBACK_KEY,
     _BACK_KEY,
+    _BACK_KEY_BINDINGS,
     GO_BACK,
     get_ui_metadata,
     inquire_pydantic_field,
@@ -198,7 +200,10 @@ def test_inquire_back_enabled_registers_back_key_and_filter_none_safe(mock_text)
 
     inquire_pydantic_field(SampleModel, "str_field", field_info, ui, allow_back=True)
 
-    mock_text.return_value.register_kb.assert_called_once_with(_BACK_KEY, eager=True)
+    assert _BACK_KEY_BINDINGS == ((_BACK_KEY,), _BACK_FALLBACK_KEY)
+    assert mock_text.return_value.register_kb.call_count == len(_BACK_KEY_BINDINGS)
+    mock_text.return_value.register_kb.assert_any_call(_BACK_KEY, eager=True)
+    mock_text.return_value.register_kb.assert_any_call(*_BACK_FALLBACK_KEY, eager=True)
     kwargs = mock_text.call_args.kwargs
     assert kwargs["filter"](None) is None
     assert kwargs["filter"]("  x ") == "x"
