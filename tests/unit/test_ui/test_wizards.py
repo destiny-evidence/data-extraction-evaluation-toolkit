@@ -202,8 +202,8 @@ def test_inquire_back_enabled_registers_back_key_and_filter_none_safe(mock_text)
 
     assert _BACK_KEY_BINDINGS == ((_BACK_KEY,), _BACK_FALLBACK_KEY)
     assert mock_text.return_value.register_kb.call_count == len(_BACK_KEY_BINDINGS)
-    mock_text.return_value.register_kb.assert_any_call(_BACK_KEY, eager=True)
-    mock_text.return_value.register_kb.assert_any_call(*_BACK_FALLBACK_KEY, eager=True)
+    mock_text.return_value.register_kb.assert_any_call(_BACK_KEY)
+    mock_text.return_value.register_kb.assert_any_call(*_BACK_FALLBACK_KEY)
     kwargs = mock_text.call_args.kwargs
     assert kwargs["filter"](None) is None
     assert kwargs["filter"]("  x ") == "x"

@@ -40,7 +40,7 @@ def _execute(prompt: BaseSimplePrompt, *, allow_back: bool) -> PromptResult:
     """
     Run an InquirerPy prompt; return GO_BACK if the back key was pressed.
 
-    When ``allow_back``, back keys are bound eagerly to exit the prompt with GO_BACK
+    When ``allow_back``, back keys are bound to exit the prompt with GO_BACK
     as its result, so a multi-step wizard can return to the previous field.
     """
     if allow_back:
@@ -49,7 +49,7 @@ def _execute(prompt: BaseSimplePrompt, *, allow_back: bool) -> PromptResult:
             event.app.exit(result=GO_BACK)
 
         for keys in _BACK_KEY_BINDINGS:
-            prompt.register_kb(*keys, eager=True)(_go_back)
+            prompt.register_kb(*keys)(_go_back)
 
     return prompt.execute()
 
