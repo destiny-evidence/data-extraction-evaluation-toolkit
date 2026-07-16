@@ -148,9 +148,19 @@ def get_ui_metadata(field_info: FieldInfo) -> UI | None:
 
 
 def inquire_pydantic_field(
-    model_class: type[BaseModel], field_name: str, field_info: FieldInfo, ui: UI
+    model_class: type[BaseModel],
+    field_name: str,
+    field_info: FieldInfo,
+    ui: UI,
+    default_override: str | None = None,
 ) -> str | bool | None:
-    """Prompt user to provide data for pydantic field."""
+    """
+    Prompt user to provide data for pydantic field.
+
+    ``default_override`` (a display-ready string: a path, an enum value, or "" for
+    an unset optional) replaces the field's own default when supplied, so callers
+    can pre-fill the current value while still prompting (e.g. ``deet project edit``).
+    """
 
     def pydantic_validate(answer: str) -> bool | str:
         is_optional = type(None) in get_args(field_info.annotation)
@@ -165,7 +175,9 @@ def inquire_pydantic_field(
         else:
             return True
 
-    default = field_info.get_default()
+    default = (
+        default_override if default_override is not None else field_info.get_default()
+    )
     default = "" if default in (PydanticUndefined, None) else default
 
     widget_args: dict[str, Any] = {
@@ -186,7 +198,10 @@ def inquire_pydantic_field(
 
 
 def run_model_wizard[T: BaseModel](
-    model_class: type[T], *, prefill: dict[str, object] | None = None
+    model_class: type[T],
+    *,
+    prefill: dict[str, object] | None = None,
+    defaults: dict[str, str] | None = None,
 ) -> T:
     """
     Create a wizard from a pydantic model.
@@ -194,8 +209,13 @@ def run_model_wizard[T: BaseModel](
     Fields present in ``prefill`` are not prompted for; their values are injected
     into the model directly. This lets a caller supply a field (e.g. the project
     name derived from a directory) instead of asking the user for it.
+
+    ``defaults`` maps a field name to a display-ready string shown as that field's
+    editable default, so a caller can pre-fill current values while still prompting
+    (e.g. ``deet project edit``).
     """
     prefill = prefill or {}
+    defaults = defaults or {}
     answers: dict[str, object] = {}
     ui_steps: list[tuple[str, FieldInfo, UI]] = []
     for name, info in model_class.model_fields.items():
@@ -210,7 +230,9 @@ def run_model_wizard[T: BaseModel](
         console.print(wizard_header(model_class.__name__, i, total_steps))
         console.print(wizard_field_help(f_name, f_ui.help))
 
-        answers[f_name] = inquire_pydantic_field(model_class, f_name, f_info, f_ui)
+        answers[f_name] = inquire_pydantic_field(
+            model_class, f_name, f_info, f_ui, default_override=defaults.get(f_name)
+        )
 
     answers.update(prefill)
     return model_class.model_validate(answers)

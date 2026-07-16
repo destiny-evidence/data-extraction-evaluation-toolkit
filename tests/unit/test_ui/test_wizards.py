@@ -61,6 +61,27 @@ def test_run_model_wizard_filters_fields(mock_inquire):
     assert result.auto_field == 25
 
 
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_threads_defaults(mock_inquire):
+    """`defaults` are passed through as each field's editable default override."""
+    mock_inquire.return_value = "test-str"
+
+    run_model_wizard(SampleModel, defaults={"str_field": "current value"})
+
+    _, kwargs = mock_inquire.call_args
+    assert kwargs["default_override"] == "current value"
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_default_override_none_without_defaults(mock_inquire):
+    mock_inquire.return_value = "test-str"
+
+    run_model_wizard(SampleModel)
+
+    _, kwargs = mock_inquire.call_args
+    assert kwargs["default_override"] is None
+
+
 def test_get_ui_metadata():
     str_field = SampleModel.model_fields["str_field"]
     auto_field = SampleModel.model_fields["auto_field"]
