@@ -304,6 +304,7 @@ def _wizard_result_like(project):
     updated.name = project.name
     updated.gold_standard_data_format = project.gold_standard_data_format
     updated.gold_standard_data_path = project.gold_standard_data_path
+    updated.pdf_dir = project.pdf_dir
     return updated
 
 

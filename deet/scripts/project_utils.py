@@ -191,12 +191,15 @@ def run_edit(project: "DeetProject", field: str | None) -> None:
 
     Does NOT run ``setup()``, so existing artefacts (prompt CSV, link map, experiment
     dirs) are preserved. ``field`` edits a single field; otherwise the full wizard
-    runs and credentials may be updated too.
+    runs and credentials may be updated too. Does not validate that resource paths
+    exist on disk; invalid paths will fail when derived artefacts are regenerated
+    or the extraction pipeline runs.
     """
     from deet.data_models.project import DeetProject
 
     original_data_path = project.gold_standard_data_path
     original_format = project.gold_standard_data_format
+    original_pdf_dir = project.pdf_dir
     display = _project_display_defaults(project)
 
     if field is None:
@@ -226,12 +229,14 @@ def run_edit(project: "DeetProject", field: str | None) -> None:
     if (
         updated.gold_standard_data_path != original_data_path
         or updated.gold_standard_data_format != original_format
+        or updated.pdf_dir != original_pdf_dir
     ):
         notify(
-            "Gold-standard data source changed. The prompt CSV and link map were "
-            "generated from the previous data and may now be stale -- regenerate them"
-            " with `deet project regenerate-prompt-csv` and"
-            " `deet project regenerate-link-map` if needed.",
+            "Project data sources changed. Derived artefacts may be stale -- "
+            "regenerate the prompt CSV and link map with "
+            "`deet project regenerate-prompt-csv` and "
+            "`deet project regenerate-link-map` if needed, and re-run "
+            "`deet project link` if the PDF directory changed.",
             level=LogLevel.WARNING,
         )
 
