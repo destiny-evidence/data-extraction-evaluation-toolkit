@@ -464,10 +464,24 @@ class CSVAnnotationConverter(AnnotationConverter):
         file_path: Path,
         attribute_fields: list[str] | None = None,
         reference_fields: dict | None = None,
+        ignored_fields: list[str] | None = None,
     ) -> tuple[list[str], dict[str, str], list[str], list[dict[str, Any]]]:
         """
         Load a CSV, normalize headers, and return all column names, attribute names,
         reference names, and rows.
+
+        Args:
+            file_path: Path to the CSV annotation file.
+            attribute_fields: Explicit list of columns to treat as attributes. When
+                provided, `ignored_fields` has no effect (the explicit list already
+                defines exactly what's used).
+            reference_fields: Mapping of reference field labels to CSV column names.
+            ignored_fields: Columns to exclude from the default attribute sweep that
+                happens when `attribute_fields` is not provided. Use this for columns
+                that are neither metadata, reference fields, nor attributes (e.g.
+                reviewer notes), so they're skipped entirely and never go through
+                type inference.
+
         """
         path = Path(file_path)
         with path.open(newline="", encoding="utf-8-sig") as f:
@@ -522,11 +536,24 @@ class CSVAnnotationConverter(AnnotationConverter):
                     msg = f"Reference fields not found in CSV: {unknown}"
                     raise ValueError(msg)
 
+            # --- validate ignored fields ---
+            normalized_ignored_fields = {
+                f.strip().lower() for f in (ignored_fields or [])
+            }
+            unknown_ignored = normalized_ignored_fields - set(colnames)
+            if unknown_ignored:
+                msg = f"Ignored fields not found in CSV: {unknown_ignored}"
+                raise ValueError(msg)
+
             # --- validate attribute fields ---
             # normalize and validate provided attribute fields
             if attribute_fields is None:
                 logger.info("No attribute fields provided")
-                excluded_fields = meta_fields | set(reference_fields.values())
+                excluded_fields = (
+                    meta_fields
+                    | set(reference_fields.values())
+                    | normalized_ignored_fields
+                )
                 resolved_attribute_fields = [
                     h for h in colnames if h not in excluded_fields
                 ]
@@ -636,6 +663,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         set_attribute_type: str | AttributeType | None = None,
         attribute_fields: list | None = None,
         reference_fields: dict | None = None,
+        ignored_fields: list[str] | None = None,
     ) -> ProcessedAnnotationData:
         """
         Process a complete CSV annotation file and return structured data.
@@ -648,6 +676,8 @@ class CSVAnnotationConverter(AnnotationConverter):
             attribute_fields: List of column names to be treated as document attributes.
             reference_fields: Dictionary mapping reference field labels(as defined in
             destiny_sdk.enhancements) to corresponding CSV column names.
+            ignored_fields: Columns to exclude entirely (neither reference nor
+            attribute) when `attribute_fields` is not explicitly provided.
 
 
         Returns:
@@ -665,7 +695,7 @@ class CSVAnnotationConverter(AnnotationConverter):
         logger.info(f"Processing annotation file: {file_path}")
 
         colnames, reference_fields, attribute_fields, rows = self.load_csv(
-            file_path, attribute_fields, reference_fields
+            file_path, attribute_fields, reference_fields, ignored_fields
         )
 
         attributes = self.build_attributes(attribute_fields, rows)
