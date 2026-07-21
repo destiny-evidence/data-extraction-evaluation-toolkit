@@ -20,6 +20,7 @@ from deet.scripts.project_utils import (
     create_project,
     guard_overwrite,
     prompt_name,
+    run_edit,
 )
 from deet.scripts.typer_context import project_required
 from deet.settings import LogLevel
@@ -83,6 +84,26 @@ def new(
     create_project(
         target, name, data_path=data_path, data_type=data_type, pdf_dir=pdf_dir
     )
+
+
+@app.command()
+@project_required
+def edit(
+    typer_context: typer.Context,
+    field: Annotated[
+        str | None,
+        typer.Argument(help="Optionally edit a single field instead of all of them."),
+    ] = None,
+) -> None:
+    """
+    Edit an existing project's configuration.
+
+    Re-collects the project fields (pre-filled with the current values) and rewrites
+    ``project.yaml`` WITHOUT regenerating artefacts (prompt CSV, link map, experiment
+    dirs). Pass a field name to edit just that field; the full edit also lets you
+    update credentials.
+    """
+    run_edit(typer_context.obj.project, field)
 
 
 @app.command()
