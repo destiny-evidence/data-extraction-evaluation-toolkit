@@ -3,9 +3,19 @@ from copy import deepcopy
 from unittest.mock import patch
 
 import pytest
+from destiny_sdk.references import ReferenceFileInput
 from loguru import logger
 from rich.table import Table
 
+from deet.data_models.base import AnnotationType, AttributeType
+from deet.data_models.eppi import (
+    EppiAttribute,
+    EppiAttributeSelectionType,
+    EppiDocument,
+    EppiGoldStandardAnnotatedDocument,
+    EppiGoldStandardAnnotation,
+    EppiItemAttributeFullTextDetails,
+)
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
 
 pytest_plugins = ["tests.unit.test_eppi"]
@@ -180,6 +190,8 @@ def test_evaluator_writes_comparison(evaluator_evaluated, tmp_path):
         "attribute_presence",
         "human_additional_text",
         "item_attribute_full_text_details",
+        "citation_page",
+        "citation_highlight_text",
         "human_extraction",
         "llm_extraction",
         "llm_reasoning",
@@ -196,6 +208,53 @@ def test_evaluator_writes_comparison(evaluator_evaluated, tmp_path):
         assert r["human_extraction"] == r["llm_extraction"]
         assert "human_verbatim_fuzzy_match_pct" in r
         assert "llm_verbatim_fuzzy_match_pct" in r
+        assert "citation_page" in r
+        assert "citation_highlight_text" in r
+        # Hand-built fixture has no EPPI markup; citation fields stay empty.
+        assert r["citation_page"] == ""
+        assert r["citation_highlight_text"] == ""
+
+
+def test_evaluator_comparison_exports_parsed_citations(tmp_path):
+    """Comparison CSV gets citation_page / citation_highlight_text from EPPI markup."""
+    attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=1,
+        attribute_label="Attribute 1",
+        output_data_type=AttributeType.BOOL,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    doc = EppiDocument(
+        name="Doc 1", citation=ReferenceFileInput(), document_id=12345678
+    )
+    annotation = EppiGoldStandardAnnotation(
+        attribute=attr,
+        output_data=True,
+        annotation_type=AnnotationType.HUMAN,
+        additional_text="Dolor si amet...",
+        item_attribute_full_text_details=[
+            EppiItemAttributeFullTextDetails(
+                item_document_id=423106,
+                text='Page 1:\n[¬s]"Dolor si amet...[¬e]"',
+            )
+        ],
+    )
+    annotated_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc, annotations=[annotation]
+    )
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=[annotated_doc],
+        llm_annotated_documents=[annotated_doc],
+        attributes=[attr],
+        extraction_run_id="citation_test",
+    )
+    comparison_csv_path = tmp_path / "comparison.csv"
+    evaluator.export_llm_comparison(comparison_csv_path)
+    rows = list(csv.DictReader(comparison_csv_path.open()))
+    assert len(rows) == 1
+    assert rows[0]["citation_page"] == "1"
+    assert rows[0]["citation_highlight_text"] == "Dolor si amet..."
+    assert "Page 1:" in rows[0]["item_attribute_full_text_details"]
+    assert "[¬s]" in rows[0]["item_attribute_full_text_details"]
 
 
 def test_evaluator_displays_metrics(evaluator_evaluated):
