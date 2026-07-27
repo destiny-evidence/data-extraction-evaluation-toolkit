@@ -23,6 +23,7 @@ jobs:
           - "3.12.11"
     if: github.event.pull_request.draft == false
     env:
+      DEET_STARTUP_BUDGET_S: 0.6 # Maximum time deet --help an take before tests break
       UV_CACHE_DIR: /tmp/.uv-cache  # Configure a constant location for the uv cache
     steps:
       - name: Checkout source

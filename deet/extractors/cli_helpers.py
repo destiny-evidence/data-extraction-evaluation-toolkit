@@ -1,6 +1,7 @@
 """Helper functions to run extraction via the CLI."""
 
 import datetime
+import time
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.data_models.extraction import DocumentParsingStats, ExtractionPipelineStage
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
 from deet.extractors.llm_data_extractor import (
@@ -24,6 +26,7 @@ from deet.ui import fail_with_message, notify
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
 from deet.ui.terminal.wizards import continue_after_key, run_model_wizard
+from deet.utils.timing import measure_elapsed
 
 
 def load_config_from_typer_context(
@@ -75,13 +78,23 @@ def init_extraction_run(
     return ExperimentArtefacts(base_dir=experiment_out_dir, run_id=extraction_run_id)
 
 
+def _cached_parsing_stats(
+    documents: Sequence[Document],
+) -> dict[str, DocumentParsingStats]:
+    """Build skipped parsing stats for documents loaded from cache."""
+    return {
+        str(document.safe_identity.document_id): DocumentParsingStats()
+        for document in documents
+    }
+
+
 def prepare_documents(
     documents: Sequence[Document],
     config: DataExtractionConfig,
     linked_document_path: Path,
     pdf_dir: Path | None,
     link_map_path: Path | None,
-) -> Sequence[Document]:
+) -> tuple[Sequence[Document], dict[str, DocumentParsingStats]]:
     """
     Load documents depending on the context type we want.
 
@@ -92,13 +105,13 @@ def prepare_documents(
     If fulltext, try to load linked documents, or create them if not.
     """
     if config.default_context_type == ContextType.ABSTRACT_ONLY:
-        return documents
+        return documents, {}
     if config.default_context_type == ContextType.FULL_DOCUMENT:
         if linked_document_path.exists():
             notify(f"Loading linked documents from {linked_document_path}")
             documents = [Document.load(f) for f in linked_document_path.glob("*.json")]
             if documents:
-                return documents
+                return documents, _cached_parsing_stats(documents)
 
             notify(f"Couldn't find linked documents in {linked_document_path}")
         if pdf_dir is None:
@@ -137,17 +150,18 @@ def prepare_documents(
                 )
                 fail_with_message(no_links)
 
-            return documents
+            return documents, linker.document_parsing_stats
 
     else:
         message = f"context type {config.default_context_type} not supported"
         fail_with_message(message)
 
-    return None
+    return None, {}
 
 
-def run_extraction_pipeline(
+def run_extraction_pipeline(  # noqa: PLR0913
     typer_context: typer.Context,
+    prompt_csv_path: Path | None,
     config_path: Path | None = None,
     prompt_population: (
         CustomPromptPopulationMethod | None
@@ -157,57 +171,95 @@ def run_extraction_pipeline(
     ignore_references: bool = False,
 ) -> tuple[ExtractionRunOutput, ProcessedAnnotationData, ExperimentArtefacts]:
     """Run the standard data extraction pipeline from the CLI."""
-    import yaml
+    pipeline_start = time.perf_counter()
+    stage_durations: dict[str, float] = {}
 
     deet_project: DeetProject = typer_context.obj.project
-    processed_annotation_data = deet_project.process_data()
+    with measure_elapsed() as stage_timer:
+        processed_annotation_data = deet_project.process_data()
+    stage_durations[ExtractionPipelineStage.annotation_conversion] = stage_timer.seconds
 
     config = load_config_from_typer_context(typer_context, config_path)
 
     experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
 
-    if prompt_population is not None:
-        processed_annotation_data.populate_custom_prompts(
-            method=prompt_population, filepath=deet_project.prompt_csv_path
-        )
-        if not processed_annotation_data.attributes:
-            fail_with_message(
-                "No attributes selected. Perhaps you forgot to edit your prompt file"
+    with measure_elapsed() as stage_timer:
+        if prompt_population is not None:
+            if (
+                prompt_population == CustomPromptPopulationMethod.FILE
+                and prompt_csv_path is not None
+                and not prompt_csv_path.exists()
+            ):
+                fail_with_message(f"Prompt csv {prompt_csv_path} cannot be found")
+            processed_annotation_data.populate_custom_prompts(
+                method=prompt_population,
+                filepath=prompt_csv_path or deet_project.prompt_csv_path,
             )
+            if not processed_annotation_data.attributes:
+                fail_with_message(
+                    "No attributes selected. "
+                    "Perhaps you forgot to edit your prompt file"
+                )
+    stage_durations[ExtractionPipelineStage.prompt_population] = stage_timer.seconds
 
     data_extractor = LLMDataExtractor(config=config)
 
-    if ignore_references:
-        if deet_project.pdf_dir is None:
-            fail_with_message(
-                "This project doesn't specify a pdf directory. "
-                "Either edit the yaml file to create one or re-initialise the project."
+    document_parsing: dict[str, DocumentParsingStats] = {}
+    with measure_elapsed() as stage_timer:
+        if ignore_references:
+            if deet_project.pdf_dir_abspath is None:
+                fail_with_message(
+                    "This project doesn't specify a pdf directory. "
+                    "Either edit the yaml file to create one or "
+                    "re-initialise the project."
+                )
+            documents, document_parsing = create_documents_from_directory(
+                deet_project.pdf_dir_abspath
             )
-        documents = create_documents_from_directory(deet_project.pdf_dir)
-    else:
-        documents = prepare_documents(
-            processed_annotation_data.documents,
-            config,
-            linked_document_path=deet_project.linked_documents_path,
-            pdf_dir=deet_project.pdf_dir,
-            link_map_path=deet_project.link_map_path,
+        else:
+            documents, document_parsing = prepare_documents(
+                processed_annotation_data.documents,
+                config,
+                linked_document_path=deet_project.linked_documents_path,
+                pdf_dir=deet_project.pdf_dir_abspath,
+                link_map_path=deet_project.link_map_path,
+            )
+    stage_durations[ExtractionPipelineStage.document_preparation] = stage_timer.seconds
+
+    with measure_elapsed() as stage_timer:
+        run_output = data_extractor.extract_from_documents(
+            attributes=processed_annotation_data.attributes,
+            documents=documents,
+            context_type=data_extractor.config.default_context_type,
+            output_file=experiment_artefacts.llm_annotations,
+            document_parsing=document_parsing,
+            show_progress=True,
+        )
+    stage_durations[ExtractionPipelineStage.llm_extraction] = stage_timer.seconds
+
+    with measure_elapsed() as stage_timer:
+        processed_annotation_data.export_attributes_csv_file(
+            experiment_artefacts.prompts_snapshot
         )
 
-    run_output = data_extractor.extract_from_documents(
-        attributes=processed_annotation_data.attributes,
-        documents=documents,
-        context_type=data_extractor.config.default_context_type,
-        output_file=experiment_artefacts.llm_annotations,
-        show_progress=True,
-    )
+        experiment_artefacts.config_snapshot.write_text(
+            yaml.safe_dump(
+                data_extractor.config.model_dump(mode="json"), sort_keys=False
+            ),
+            encoding="utf-8",
+        )
+    stage_durations[ExtractionPipelineStage.artifact_export] = stage_timer.seconds
 
-    processed_annotation_data.export_attributes_csv_file(
-        experiment_artefacts.prompts_snapshot
+    run_output.metadata.total_pipeline_duration_seconds = round(
+        time.perf_counter() - pipeline_start, 3
     )
+    run_output.metadata.stage_durations_seconds = stage_durations
 
-    experiment_artefacts.config_snapshot.write_text(
-        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False),
+    experiment_artefacts.extraction_metadata.write_text(
+        run_output.metadata.model_dump_json(indent=2),
         encoding="utf-8",
     )
+
+    logger.info(f"Run metadata saved to: {experiment_artefacts.extraction_metadata}")
 
     return run_output, processed_annotation_data, experiment_artefacts

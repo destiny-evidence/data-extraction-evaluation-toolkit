@@ -7,6 +7,10 @@ from pydantic import BaseModel, Field, SecretStr
 
 from deet.data_models.ui_schema import UI
 from deet.ui.terminal.wizards import (
+    _BACK_FALLBACK_KEY,
+    _BACK_KEY,
+    _BACK_KEY_BINDINGS,
+    GO_BACK,
     get_ui_metadata,
     inquire_pydantic_field,
     run_model_wizard,
@@ -59,6 +63,27 @@ def test_run_model_wizard_filters_fields(mock_inquire):
     assert mock_inquire.call_count == 1
     assert result.str_field == "test-str"
     assert result.auto_field == 25
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_threads_defaults(mock_inquire):
+    """`defaults` are passed through as each field's editable default override."""
+    mock_inquire.return_value = "test-str"
+
+    run_model_wizard(SampleModel, defaults={"str_field": "current value"})
+
+    _, kwargs = mock_inquire.call_args
+    assert kwargs["default_override"] == "current value"
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_default_override_none_without_defaults(mock_inquire):
+    mock_inquire.return_value = "test-str"
+
+    run_model_wizard(SampleModel)
+
+    _, kwargs = mock_inquire.call_args
+    assert kwargs["default_override"] is None
 
 
 def test_get_ui_metadata():
@@ -136,3 +161,49 @@ def test_pydantic_validation_logic_in_wizard(mock_number):
     assert captured_validator("5") is True
     assert captured_validator("15") is False
     assert captured_validator("not-a-number") is False
+
+
+class TwoFieldModel(BaseModel):
+    """Model with two prompted fields, to test back-navigation."""
+
+    __test__ = False
+    a: Annotated[str, UI(help="a")] = Field(..., description="a")
+    b: Annotated[str, UI(help="b")] = Field(..., description="b")
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_back_step_reprompts_previous_field(mock_inquire):
+    mock_inquire.side_effect = ["A", GO_BACK, "A2", "B"]
+
+    result = run_model_wizard(TwoFieldModel)
+
+    assert mock_inquire.call_count == 4
+    assert result.a == "A2"
+    assert result.b == "B"
+
+
+@patch("deet.ui.terminal.wizards.inquire_pydantic_field")
+def test_run_model_wizard_first_field_not_back_navigable(mock_inquire):
+    mock_inquire.side_effect = ["A", "B"]
+
+    run_model_wizard(TwoFieldModel)
+
+    # the first field can't go back; every later field can
+    assert mock_inquire.call_args_list[0].kwargs["allow_back"] is False
+    assert mock_inquire.call_args_list[1].kwargs["allow_back"] is True
+
+
+@patch("InquirerPy.inquirer.text")
+def test_inquire_back_enabled_registers_back_key_and_filter_none_safe(mock_text):
+    field_info = SampleModel.model_fields["str_field"]
+    ui = UI(help="help", valid="valid")
+
+    inquire_pydantic_field(SampleModel, "str_field", field_info, ui, allow_back=True)
+
+    assert _BACK_KEY_BINDINGS == ((_BACK_KEY,), _BACK_FALLBACK_KEY)
+    assert mock_text.return_value.register_kb.call_count == len(_BACK_KEY_BINDINGS)
+    mock_text.return_value.register_kb.assert_any_call(_BACK_KEY)
+    mock_text.return_value.register_kb.assert_any_call(*_BACK_FALLBACK_KEY)
+    kwargs = mock_text.call_args.kwargs
+    assert kwargs["filter"](None) is None
+    assert kwargs["filter"]("  x ") == "x"
