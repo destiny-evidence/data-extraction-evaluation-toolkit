@@ -15,17 +15,17 @@ For each question, produce a structured response containing the following fields
 Answer: A concise, direct answer to the question. The answer may be:
 
 - A Boolean (`true` or `false`) for BOOL questions.
-- A short string or text span extracted or paraphrased from the paper for STRING questions.
+- A short string or text span extracted or paraphrased from the document for STRING questions.
 - A whole number for INTEGER questions.
 - A decimal number for FLOAT questions.
 - A list of values for LIST questions.
 - A dictionary/object with key-value pairs for DICT questions.
 
-Reasoning: A clear explanation on how the answer was derived from the paper’s content.
-Additional_text: A verbatim excerpt from the paper that directly supports the answer.
+Reasoning: A clear explanation on how the answer was derived from the document's content.
+Additional_text: A verbatim excerpt from the document that directly supports the answer.
 
 Extraction Rules
-- Use only the content of the provided paper
+- Use only the content of the provided document
 - Do not speculate, infer unstated information, or rely on domain knowledge
 - The Answer must conform exactly to the output type specified by the attribute.
 - The Additional_text must be exact quotations from the document and should be minimal but sufficient to justify the answer. If multiple passages are relevant, include the single most direct citation
