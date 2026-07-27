@@ -4,9 +4,10 @@ import json
 from collections.abc import Sequence
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import litellm
+import yaml
 from loguru import logger
 from pydantic import (
     BaseModel,
@@ -19,9 +20,14 @@ from pydantic import (
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    BaseLLMResponse,
+    DynamicLLMResponseBase,
     GoldStandardAnnotation,
+    LLMAnnotationResponse,
     LLMInputSchema,
     LLMResponseSchema,
+    attribute_id_from_response_key,
+    build_llm_response_model,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -30,16 +36,23 @@ from deet.data_models.documents import (
 )
 from deet.data_models.extraction import (
     DocumentExtractionResult,
+    DocumentParsingStats,
     ExtractionRunMetadata,
     ExtractionRunOutput,
+    PerDocumentExtractionStats,
 )
+
+from deet.data_models.ui_schema import UI
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
     LLMProvider,
     get_settings,
 )
-from deet.utils.cli_utils import optional_progress
+
+
+from deet.ui.terminal.render import optional_progress
+from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,
@@ -100,23 +113,65 @@ class DataExtractionConfig(BaseModel):
     model_config = ConfigDict()
 
     # LLM
-    model: str = settings.llm_model
-    provider: LLMProvider = settings.llm_provider
-    temperature: float = settings.llm_temperature
-    max_tokens: int | None = settings.llm_max_tokens
-
-    # Context
-    default_context_type: ContextType = Field(
-        default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
+    provider: Annotated[
+        LLMProvider, UI(help="Choose from a list of supported LLM providers.")
+    ] = Field(default=LLMProvider.AZURE, description="LLM Provider")
+    model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
+        Field(
+            default="gpt-4o-mini",
+            description="LLM model identifier used for completions.",
+        )
     )
-    max_context_tokens: int | None = Field(
-        default_factory=lambda: settings.llm_max_context_tokens,
+    temperature: float = Field(
+        default=0.1,
+        description="Sampling temperature for the LLM.",
+        ge=0.0,
+    )
+    max_tokens: Annotated[
+        int | None,
+        UI(
+            help=(
+                "The maximum number of tokens in the LLM response. "
+                "Leave blank for the provider default."
+            )
+        ),
+    ] = Field(
+        default=None,
         description=(
-            "Maximum context length in tokens (total payload: system + attributes + "
-            "context). None = infer from model. Override to manage costs."
+            "Maximum number of tokens to generate (Leave blank for provider default)."
         ),
     )
-    truncate_on_overflow: bool = Field(
+
+    max_context_tokens: Annotated[
+        int | None,
+        UI(help=("Maximum input context length (Leave blank for provider default).")),
+    ] = Field(
+        default=None,
+        description=(
+            "Maximum input context length in tokens (system + attributes + "
+            "document). None = infer from model (litellm registry), else "
+            f"{DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK} via "
+            "DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK. Override to manage costs."
+        ),
+    )
+
+    # Context
+    default_context_type: Annotated[
+        ContextType, UI(help="Where to extract data from.")
+    ] = Field(
+        default=ContextType.FULL_DOCUMENT, description="Type of context to provide"
+    )
+
+    truncate_on_overflow: Annotated[
+        bool,
+        UI(
+            help=(
+                "Select true to truncate documents longer than max_context_tokens. "
+                "This will ensure extraction runs without crashing, but may mean"
+                " some parts of the document are not seen by the LLM."
+            )
+        ),
+    ] = Field(
         default=False,
         description=(
             "When True, automatically truncate context that exceeds "
@@ -127,6 +182,15 @@ class DataExtractionConfig(BaseModel):
     # Prompt
     prompt_config: PromptConfig = Field(
         default_factory=PromptConfig, description="Prompt configuration"
+    )
+
+    dynamic_json_schema: bool = Field(
+        default=True,
+        description=(
+            "If True, produce dynamic json schema with a key for each attribute"
+            " and where each attribute response is typed (marginally more expensive but"
+            " may be more likely to produce valid output)."
+        ),
     )
 
     # Output
@@ -153,6 +217,15 @@ class DataExtractionConfig(BaseModel):
             # Use shared fallback when model max tokens cannot be inferred.
             self.max_context_tokens = DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK
         return self
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> "DataExtractionConfig":
+        """Load config object from a yaml file."""
+        if not path.exists():
+            not_found = f"Config file not found at: {path}"
+            raise FileNotFoundError(not_found)
+
+        return cls.model_validate(yaml.safe_load(path.read_text()))
 
 
 class LLMDataExtractor:
@@ -239,7 +312,7 @@ class LLMDataExtractor:
 
         Returns:
             DocumentExtractionResult with annotations, messages, token counts,
-            cost, model name, and timestamp.
+            cost, model name, LLM call duration, and timestamp.
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
@@ -280,11 +353,23 @@ class LLMDataExtractor:
         prompt = self._generate_user_message_json(
             payload=context, attributes=selected_attributes
         )
-        llm_response, messages, output_tokens, input_tokens = self._call_llm(
-            prompt=prompt
-        )
+
+        response_model: type[BaseLLMResponse]
+
+        if self.config.dynamic_json_schema:
+            response_model = build_llm_response_model(selected_attributes)
+        else:
+            response_model = LLMResponseSchema
+
+        with measure_elapsed() as llm_timer:
+            llm_response, messages, output_tokens, input_tokens = self._call_llm(
+                prompt=prompt, response_model=response_model
+            )
+
         annotations = self._parse_llm_response(
-            response_content=llm_response, attributes=selected_attributes
+            response_content=llm_response,
+            response_model=response_model,
+            attributes=selected_attributes,
         )
 
         return DocumentExtractionResult(
@@ -293,6 +378,7 @@ class LLMDataExtractor:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             model=self.model,
+            llm_call_seconds=llm_timer.seconds,
         )
 
     def extract_from_documents(  # noqa: PLR0913
@@ -303,6 +389,7 @@ class LLMDataExtractor:
         output_file: Path | None = None,
         context_type: ContextType | None = None,
         prompt_outfile: Path | None = None,
+        document_parsing: dict[str, DocumentParsingStats] | None = None,
         *,
         show_progress: bool = False,
     ) -> ExtractionRunOutput:
@@ -319,6 +406,7 @@ class LLMDataExtractor:
             context_type: Override config context type; if None, use config default.
             prompt_outfile: Optional path to write a single JSON object:
                 keys are document IDs, values are prompt payload (messages).
+            document_parsing: Optional per-document parsing stats from preparation.
             show_progress: Whether to show a progress bar.
 
         Returns:
@@ -328,8 +416,9 @@ class LLMDataExtractor:
         if context_type is None:
             context_type = self.config.default_context_type
 
+        parsing_by_doc = document_parsing or {}
         prompt_payloads: dict[str, Any] = {}
-        per_doc_tokens: dict[str, dict[str, int]] = {}
+        per_document: dict[str, PerDocumentExtractionStats] = {}
 
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
         total_input_tokens = 0
@@ -362,10 +451,14 @@ class LLMDataExtractor:
                     )
                     doc_id_str = str(document.safe_identity.document_id)
                     prompt_payloads[doc_id_str] = result.messages
-                    per_doc_tokens[doc_id_str] = {
-                        "input_tokens": result.input_tokens,
-                        "output_tokens": result.output_tokens,
-                    }
+                    parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
+                    per_document[doc_id_str] = PerDocumentExtractionStats(
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        parsing_seconds=parsing.parsing_seconds,
+                        parsing_skipped=parsing.parsing_skipped,
+                        llm_call_seconds=result.llm_call_seconds,
+                    )
                     total_input_tokens += result.input_tokens
                     total_output_tokens += result.output_tokens
                     if result.total_cost_usd is not None:
@@ -382,7 +475,7 @@ class LLMDataExtractor:
             total_input_tokens=total_input_tokens,
             total_output_tokens=total_output_tokens,
             total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
-            per_document_tokens=per_doc_tokens,
+            per_document=per_document,
         )
         run_output = ExtractionRunOutput(
             annotated_documents=llm_annotated_docs,
@@ -610,12 +703,19 @@ class LLMDataExtractor:
             )
             raise ValueError(msg) from e
 
-    def _call_llm(self, prompt: str) -> tuple[str, list[dict[str, Any]], int, int]:
+    def _call_llm(
+        self,
+        prompt: str,
+        response_model: type[BaseLLMResponse],
+    ) -> tuple[str, list[dict[str, Any]], int, int]:
         """
         Call the LLM with the given prompt.
 
         Args:
             prompt: The user prompt (with context and attributes).
+            response_model: Dynamic Pydantic model describing the expected
+                response; its JSON schema is passed as the structured-output
+                schema so the LLM must return one typed entry per attribute.
 
         Returns:
             Tuple of (LLM response text, messages list, output token count,
@@ -644,8 +744,7 @@ class LLMDataExtractor:
         )
         if prompt_cost is not None:
             logger.info(
-                f"Estimated input cost: ${prompt_cost:.6f} USD "
-                f"({input_tokens} tokens)"
+                f"Estimated input cost: ${prompt_cost:.6f} USD ({input_tokens} tokens)"
             )
 
         response = litellm.completion(
@@ -658,7 +757,7 @@ class LLMDataExtractor:
                 "type": "json_schema",
                 "json_schema": {
                     "name": "llm_annotation_response",
-                    "schema": LLMResponseSchema.model_json_schema(),
+                    "schema": response_model.model_json_schema(),
                     "strict": True,
                 },
             },
@@ -678,28 +777,117 @@ class LLMDataExtractor:
 
         return response_content, messages, output_tokens, input_tokens
 
+    def _create_gold_standard_annotation(
+        self, llm_annotation_response: LLMAnnotationResponse, attribute: Attribute
+    ) -> GoldStandardAnnotation:
+        """Create GoldStandardAnnotation from LLMAnnotationResponse."""
+        additional_text = (
+            llm_annotation_response.additional_text
+            if self.config.include_additional_text
+            else None
+        )
+        reasoning = (
+            llm_annotation_response.reasoning if self.config.include_reasoning else None
+        )
+        return GoldStandardAnnotation(
+            attribute=attribute,
+            raw_data=llm_annotation_response.output_data,
+            annotation_type=AnnotationType.LLM,
+            additional_text=additional_text,
+            reasoning=reasoning,
+        )
+
+    def _parse_static_llm_response_annotations(
+        self,
+        validated_response: LLMResponseSchema,
+        attributes_by_id: dict[int, Attribute],
+    ) -> list[GoldStandardAnnotation]:
+        """Convert each response from a list of responses into an annotation."""
+        logger.debug(
+            f"Parsing LLM response with {len(validated_response.annotations)} "
+            f"attribute responses"
+        )
+        annotations: list[GoldStandardAnnotation] = []
+        for llm_annotation in validated_response.annotations:
+            attribute = attributes_by_id.get(llm_annotation.attribute_id)
+            if attribute is None:
+                logger.warning(
+                    f"No attribute found for ID: {llm_annotation.attribute_id}"
+                )
+                continue
+
+            annotations.append(
+                self._create_gold_standard_annotation(llm_annotation, attribute)
+            )
+
+        return annotations
+
+    def _parse_dynamic_llm_response_annotations(
+        self,
+        response_model: type[DynamicLLMResponseBase],
+        validated_response: DynamicLLMResponseBase,
+        attributes_by_id: dict[int, Attribute],
+    ) -> list[GoldStandardAnnotation]:
+        """Convert each field of a Dynamic response model into an annotation."""
+        logger.debug(
+            f"Parsing LLM response with {len(response_model.model_fields)} "
+            f"attribute responses"
+        )
+        annotations = []
+        for (
+            field_name,
+            attribute_response,
+        ) in validated_response.iter_attribute_responses():
+            attribute_id = attribute_id_from_response_key(field_name)
+            attribute = attributes_by_id.get(attribute_id)
+            if attribute is None:
+                msg = (
+                    f"No attribute found for ID: {attribute_id}. "
+                    "The dynamic response model and attribute list are out of sync."
+                )
+                raise ValueError(msg)
+
+            annotations.append(
+                self._create_gold_standard_annotation(attribute_response, attribute)
+            )
+            logger.debug(
+                f"Created annotation for attribute {attribute.attribute_id}: "
+                f"output_data={attribute_response.output_data}"
+            )
+
+        logger.debug(f"Successfully parsed {len(annotations)} annotations")
+        return annotations
+
     def _parse_llm_response(
         self,
         response_content: str,
+        response_model: type[BaseLLMResponse],
         attributes: list[Attribute],
     ) -> list[GoldStandardAnnotation]:
         """
-        Parse and validate LLM response against GoldStandardAnnotation structure.
+        Parse and validate LLM response against the dynamic response schema.
+
+        The response is validated against ``response_model`` (built from the
+        selected attributes), which guarantees one correctly typed entry per
+        attribute. Each ``attribute_<id>`` field is then mapped back to its
+        full Attribute and converted to a GoldStandardAnnotation.
 
         Args:
-            response_content: Raw JSON string response from LLM
-            attributes: List of attributes to match against
+            response_content: Raw JSON string response from LLM.
+            response_model: Dynamic model the response was requested against.
+            attributes: List of attributes to resolve ids against.
 
         Returns:
-            List of GoldStandardAnnotation objects
+            List of GoldStandardAnnotation objects.
 
         Raises:
-            ValidationError: If response fails schema validation.
+            ValidationError: If response fails schema validation (e.g. a missing
+                attribute, an extra attribute, or a mistyped ``output_data``).
             ValueError: If JSON parsing fails.
 
         """
         try:
-            validated_response = LLMResponseSchema.model_validate_json(response_content)
+            validated_response = response_model.model_validate_json(response_content)
         except ValidationError as ve:
             logger.error(f"LLM response failed schema validation: {ve}")
             logger.debug(f"Response content: {response_content}")
@@ -709,52 +897,21 @@ class LLMDataExtractor:
             logger.error(f"Failed to parse LLM response as JSON: {je}")
             raise ValueError(error_msg) from je
 
-        annotations = []
-        logger.debug(
-            f"Parsing LLM response with {len(validated_response.annotations)} "
-            f"annotations"
+        attributes_by_id = {attr.attribute_id: attr for attr in attributes}
+
+        if self.config.dynamic_json_schema:
+            dynamic_model = cast("type[DynamicLLMResponseBase]", response_model)
+            dynamic_response = cast("DynamicLLMResponseBase", validated_response)
+            return self._parse_dynamic_llm_response_annotations(
+                response_model=dynamic_model,
+                validated_response=dynamic_response,
+                attributes_by_id=attributes_by_id,
+            )
+
+        static_response = cast("LLMResponseSchema", validated_response)
+        return self._parse_static_llm_response_annotations(
+            validated_response=static_response, attributes_by_id=attributes_by_id
         )
-        for llm_annotation in validated_response.annotations:
-            # Resolve attribute_id to full Attribute
-            attribute = next(
-                (
-                    attr
-                    for attr in attributes
-                    if attr.attribute_id == llm_annotation.attribute_id
-                ),
-                None,
-            )
-
-            if not attribute:
-                logger.warning(
-                    f"No attribute found for ID: {llm_annotation.attribute_id}"
-                )
-                continue
-
-            additional_text = (
-                llm_annotation.additional_text
-                if self.config.include_additional_text
-                else None
-            )
-            reasoning = (
-                llm_annotation.reasoning if self.config.include_reasoning else None
-            )
-            # Convert to full EppiGoldStandardAnnotation
-            annotation = GoldStandardAnnotation(
-                attribute=attribute,
-                raw_data=llm_annotation.output_data,
-                annotation_type=AnnotationType.LLM,
-                additional_text=additional_text,
-                reasoning=reasoning,
-            )
-            annotations.append(annotation)
-            logger.debug(
-                f"Created annotation for attribute {attribute.attribute_id}: "
-                f"output_data={llm_annotation.output_data}"
-            )
-
-        logger.debug(f"Successfully parsed {len(annotations)} annotations")
-        return annotations
 
     def _save_results(
         self,

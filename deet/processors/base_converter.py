@@ -4,16 +4,15 @@ import json
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Generic
 
 from loguru import logger
 from pydantic import TypeAdapter
 
-from deet.data_models.base import AttributeType, AttributeTypeVar
+from deet.data_models.base import Attribute, AttributeType
 from deet.data_models.documents import (
-    DocumentTypeVar,
-    GoldStandardAnnotatedDocumentTypeVar,
-    GoldStandardAnnotationTypeVar,
+    Document,
+    GoldStandardAnnotatedDocument,
+    GoldStandardAnnotation,
 )
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 
@@ -33,15 +32,12 @@ class Outfiles(StrEnum):
     ATTRIBUTE_LABEL_MAPPING = auto()
 
 
-class AnnotationConverter(
-    Generic[
-        DocumentTypeVar,
-        AttributeTypeVar,
-        GoldStandardAnnotationTypeVar,
-        GoldStandardAnnotatedDocumentTypeVar,
-    ],
-    ABC,
-):
+class AnnotationConverter[
+    DocumentType: Document,
+    AttributeT: Attribute,
+    GoldStandardAnnotationType: GoldStandardAnnotation,
+    GoldStandardAnnotatedDocumentType: GoldStandardAnnotatedDocument,
+](ABC):
     """
     Abstract base class to define expected behaviour of an annotationconverter.
 
@@ -85,10 +81,10 @@ class AnnotationConverter(
         self,
     ) -> type[
         ProcessedAnnotationData[
-            AttributeTypeVar,
-            DocumentTypeVar,
-            GoldStandardAnnotationTypeVar,
-            GoldStandardAnnotatedDocumentTypeVar,
+            AttributeT,
+            DocumentType,
+            GoldStandardAnnotationType,
+            GoldStandardAnnotatedDocumentType,
         ]
     ]:
         """Return the class to use when instantiating processed data."""

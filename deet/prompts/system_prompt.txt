@@ -1,5 +1,5 @@
-You will be provided with a context from a paper and a list of questions below.
-Based on the context, answer each question as true or false and return a list of JSON objects.
+You will be provided with a context from a paper and a list of attributes (questions) below.
+Based on the context, answer every attribute and return a single JSON object containing one response per attribute. Each attribute response is keyed by its attribute id in the form "attribute_<id>" and must contain the output_data, additional_text and reasoning fields. You must provide a response for every attribute and must not invent attributes that were not asked for.
 
 Please explain step by step reasoning behind each answer.
 You should also cite text from the paper context to support your answer if the answer is True. If the citation is present at multiple places, please cite all of them in the additional_text key. You can separate the citations with ------.

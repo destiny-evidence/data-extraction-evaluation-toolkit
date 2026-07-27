@@ -8,7 +8,7 @@ from functools import cached_property
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Any, Generic, Literal, Self, TypeVar
+from typing import Any, Literal, Self
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -20,7 +20,6 @@ from deet.data_models.base import (
     AnnotationType,
     Attribute,
     GoldStandardAnnotation,
-    GoldStandardAnnotationTypeVar,
 )
 from deet.exceptions import (
     BadDocumentIdError,
@@ -51,13 +50,17 @@ class ContextType(StrEnum):
 
 class DocumentIDSource(StrEnum):
     """
-    Sources for a given document_id. Can be e.g. eppi_item_id.
+    Sources for a given document_id.
 
-    To be extended if e.g. we start working with
-    non-eppi gold standard references.
+    Priority is given first to EPPI IDs, or IDs that confirm to the EPPI ID format.
+
+    When these do not exist we try strategies that hash information from the document,
+    starting from the external id, and then
+    attempting with other bibliographic information.
     """
 
     EPPI_ITEM_ID = auto()
+    EXTERNAL_ID = auto()
     DOI_AUTHOR_YEAR = auto()
     DOI_ID = auto()
     AUTHOR_YEAR_ID = auto()
@@ -65,15 +68,34 @@ class DocumentIDSource(StrEnum):
 
 
 class DocumentIdentity(BaseModel):
-    """A unified identity for a document, deriveable from multiple sources."""
+    """
+    A unified identity for a document, deriveable from multiple sources.
+
+    `document_id`:
+        always int, the canonical internal id assigned by deet.
+        in current implementation, mirrors eppi item ids.
+    `internal_id`:
+        a symlink to `document_id`.
+    `external_id`:
+        ID inherited verbatim from source citation/gold standard
+        data. this can be string or int, no validation is performed on
+        it.
+
+    """
 
     document_id: int | None = None
     document_id_source: DocumentIDSource | None = None
+    external_id: str | int | None = None
 
     # parsed citation info
     doi: str | None
     first_author: str | None
     year: str | None
+
+    @property
+    def internal_id(self) -> int | None:
+        """Return the internal ID (alias for document_id for backward compatibility)."""
+        return self.document_id
 
     def populate_id(
         self,
@@ -180,13 +202,17 @@ class DocumentIdentity(BaseModel):
             DocumentIDSource.DOI_ID: self._doi_id,
             DocumentIDSource.AUTHOR_YEAR_ID: self._author_year_id,
             DocumentIDSource.DOI_AUTHOR_YEAR: self._doi_author_year_id,
+            DocumentIDSource.EXTERNAL_ID: self._external_id,
             DocumentIDSource.RANDINT: self._random_int_id,
         }
 
         return id_creation_map[id_source]
 
     def _eppi_item_id(self) -> int:
-        """Map an existing item_id (parsed as document_id)."""
+        """
+        Map an existing item_id (parsed as external_id
+        in DocumentIdentity instance).
+        """
         # we're going to assume that our `document_id`, received
         # from parsing eppi-json to EppiDocument is always going
         # to be eppi, otherwise this method should be extended to
@@ -194,14 +220,28 @@ class DocumentIdentity(BaseModel):
         # Either way, it must be a positive integer with a number of digits
         # between MIN_DOCUMENT_ID_DIGITS and MAX_DOCUMENT_ID_DIGITS (inclusive).
         if (
-            self.document_id is not None
-            and isinstance(self.document_id, int)
-            and self.document_id > 0
+            self.external_id is not None
+            and isinstance(self.external_id, int)
+            and self.external_id > 0
         ):
-            digit_count = len(str(abs(self.document_id)))
+            digit_count = len(str(abs(self.external_id)))
             if MIN_DOCUMENT_ID_DIGITS <= digit_count <= MAX_DOCUMENT_ID_DIGITS:
+                # Set external_id to the original document_id for EPPi item IDs
+                if self.document_id is None:
+                    self.document_id = self.external_id
                 return self.document_id
-        bad_doc_id = f"id {self.document_id} is not a valid eppi item_id."
+        bad_doc_id = f"id {self.external_id} is not a valid eppi item_id."
+        raise BadDocumentIdError(bad_doc_id)
+
+    def _external_id(self) -> int:
+        """Create an id by hashing the external ID."""
+        if self.external_id is not None:
+            payload = [str(self.external_id).strip()]
+            return hash_n_strings_to_document_id(payload)
+
+        bad_doc_id = (
+            "Cannot generate ID from EXTERNAL_ID " "source because external_id is None."
+        )
         raise BadDocumentIdError(bad_doc_id)
 
     def _citation_id_hasher(self, target_fields: list[str]) -> int:
@@ -263,7 +303,7 @@ class Document(BaseModel):
     citation: ReferenceFileInput
     context: str | None = None  # new defaults, empty
     context_type: ContextType | None = ContextType.EMPTY
-    document_id: int | None = None
+    document_id: int | str | None = None  # add support for str ids, e.g. uuid
     document_identity: DocumentIdentity | None = None
 
     parsed_document: ParsedOutput | None = None
@@ -355,7 +395,8 @@ class Document(BaseModel):
         """Initialise document_identity field using available metadata."""
         labs_ref = LabsReference(reference=self.citation)  # convert for easy access
         self.document_identity = DocumentIdentity(
-            document_id=self.document_id,
+            document_id=None,
+            external_id=self.document_id,
             doi=labs_ref.doi,
             first_author=labs_ref.first_author,
             year=str(labs_ref.publication_year),
@@ -510,16 +551,14 @@ class Document(BaseModel):
         return cls(**data)
 
 
-DocumentTypeVar = TypeVar("DocumentTypeVar", bound=Document)
-
-
-class GoldStandardAnnotatedDocument(
-    BaseModel, Generic[DocumentTypeVar, GoldStandardAnnotationTypeVar]
-):
+class GoldStandardAnnotatedDocument[
+    DocumentType: Document,
+    GoldStandardAnnotationType: GoldStandardAnnotation,
+](BaseModel):
     """A document with its gold standard annotations."""
 
-    document: DocumentTypeVar
-    annotations: list[GoldStandardAnnotationTypeVar]
+    document: DocumentType
+    annotations: list[GoldStandardAnnotationType]
 
     def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
@@ -539,48 +578,46 @@ class GoldStandardAnnotatedDocument(
         if result is None:
             try:
                 output_data = attribute.output_data_type.missing_annotation_default()
-            except ValueError as err:
-                not_found = (
-                    "Attribute not found in annotations."
-                    " Don't know how to interpret this when attribute is of type "
-                    f"{attribute.output_data_type}"
+                reasoning = (
+                    "No annotation with this attribute found: reverting to default"
                 )
-                raise ValueError(not_found) from err
+            except ValueError:
+                output_data = ""
+                reasoning = (
+                    "No annotation with this attribute found: "
+                    "No default for this attribute type"
+                )
             return GoldStandardAnnotation(
                 attribute=attribute,
                 raw_data=output_data,
+                reasoning=reasoning,
                 annotation_type=AnnotationType.HUMAN,
             )
 
         return result
 
 
-GoldStandardAnnotatedDocumentTypeVar = TypeVar(
-    "GoldStandardAnnotatedDocumentTypeVar", bound=GoldStandardAnnotatedDocument
-)
-
-
-class GoldStandardAnnotatedDocumentList(
-    BaseModel, Generic[GoldStandardAnnotatedDocumentTypeVar]
-):
+class GoldStandardAnnotatedDocumentList[
+    GoldStandardAnnotatedDocumentType: GoldStandardAnnotatedDocument[Any, Any]
+](BaseModel):
     """
-    A list of GoldStandardAnnotatedDocuments (or subclasses thereof).
+    A list of GoldStandardAnnotatedDocuments (or any subclasses thereof).
     This list is indexed to enable easy retrieval by document_id.
     """
 
-    gold_standard_annotations: Sequence[GoldStandardAnnotatedDocumentTypeVar]
+    gold_standard_annotations: Sequence[GoldStandardAnnotatedDocumentType]
 
     @cached_property
-    def annotation_index(self) -> dict[int, GoldStandardAnnotatedDocumentTypeVar]:
+    def annotation_index(self) -> dict[int, GoldStandardAnnotatedDocumentType]:
         """Cached index to enable retrieving annotated documents by id."""
         return {
             doc.document.safe_identity.document_id: doc
             for doc in self.gold_standard_annotations
         }
 
-    def get_by_id(self, document_id: int) -> GoldStandardAnnotatedDocumentTypeVar:
+    def get_by_id(self, document_id: int) -> GoldStandardAnnotatedDocumentType:
         """
-        Get GoldStandardAnnotatedDocument where document.document_identity
+        Get GoldStandardAnnotatedDocuments where document.document_identity
         matches document_identity.
         """
         try:

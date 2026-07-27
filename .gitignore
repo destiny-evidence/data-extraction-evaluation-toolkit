@@ -224,3 +224,4 @@ default_extraction_config.yaml
 pdfs/*
 data-extraction-experiments/*
 *.csv
+!examples/**/*.csv

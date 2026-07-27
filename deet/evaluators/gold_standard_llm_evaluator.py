@@ -16,10 +16,10 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import AttributeTypeVar
+from deet.data_models.base import Attribute
 from deet.data_models.documents import (
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
-    GoldStandardAnnotatedDocumentTypeVar,
 )
 from deet.data_models.evaluation import (
     METRICS,
@@ -121,11 +121,9 @@ class GoldStandardLLMEvaluator:
 
     def __init__(
         self,
-        gold_standard_annotated_documents: Sequence[
-            GoldStandardAnnotatedDocumentTypeVar
-        ],
-        llm_annotated_documents: Sequence[GoldStandardAnnotatedDocumentTypeVar],
-        attributes: Sequence[AttributeTypeVar],
+        gold_standard_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
+        llm_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
+        attributes: Sequence[Attribute],
         extraction_run_id: str,
         custom_metrics: list[str] | None = None,
     ) -> None:
@@ -305,6 +303,7 @@ class GoldStandardLLMEvaluator:
                 f,
                 fieldnames=[
                     "document_id",
+                    "external_id",
                     "document_name",
                     "attribute_id",
                     "attribute_label",
@@ -386,6 +385,7 @@ class GoldStandardLLMEvaluator:
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
+                            "external_id": doc.document.safe_identity.external_id,
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
@@ -398,6 +398,59 @@ class GoldStandardLLMEvaluator:
                             "llm_verbatim_text": llm_verbatim,
                             "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
                             "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
+                            "extraction_run_id": self.extraction_run_id,
+                        }
+                    )
+
+    def export_llm_csv(self, filepath: Path) -> None:
+        """Write the LLM output to csv."""
+        with filepath.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "document_id",
+                    "external_id",
+                    "document_name",
+                    "attribute_id",
+                    "attribute_label",
+                    "llm_extraction",
+                    "llm_reasoning",
+                    "llm_verbatim_text",
+                    "extraction_run_id",
+                ],
+            )
+            writer.writeheader()
+            for (
+                llm_annotated_doc
+            ) in self.llm_annotated_documents.gold_standard_annotations:
+                for attribute in self.attributes:
+                    try:
+                        llm_annotation = llm_annotated_doc.get_attribute_annotation(
+                            attribute
+                        )
+                        llm_extraction = llm_annotation.output_data
+                        llm_reasoning = llm_annotation.reasoning
+                        llm_verbatim = llm_annotation.additional_text
+                    except DuplicateAnnotationError:
+                        llm_extraction = None
+                        llm_reasoning = (
+                            "The LLM produced multiple annotations"
+                            "for this single attribute"
+                        )
+                        llm_verbatim = None
+
+                    document = llm_annotated_doc.document
+
+                    writer.writerow(
+                        {
+                            "document_id": document.safe_identity.document_id,
+                            "external_id": document.safe_identity.external_id,
+                            "document_name": document.name,
+                            "attribute_id": attribute.attribute_id,
+                            "attribute_label": attribute.attribute_label,
+                            "llm_extraction": llm_extraction,
+                            "llm_reasoning": llm_reasoning,
+                            "llm_verbatim_text": llm_verbatim,
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )

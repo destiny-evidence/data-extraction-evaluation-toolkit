@@ -1,7 +1,11 @@
+import json
 from copy import deepcopy
 from pathlib import Path
 
 import pytest
+
+from deet.processors.converter_register import SupportedImportFormat
+from deet.processors.parser import ParsedOutput
 
 
 @pytest.fixture
@@ -20,6 +24,35 @@ def valid_parsed_epub():
 def valid_parsed_html():
     with Path.open("tests/test_files/output/conrad-html-parsed.md") as infile:
         return infile.read()
+
+
+@pytest.fixture
+def mock_check_language(monkeypatch):
+    """Stub the language checker."""
+    monkeypatch.setattr(
+        "deet.processors.parser.check_language",
+        lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
+    )
+
+
+@pytest.fixture
+def mock_pdfminerparser_parse(monkeypatch):
+    """Stub PdfminerParser.parse to avoid actual PDF parsing."""
+
+    def _stub_parse(
+        cls,
+        input_,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,
+    ) -> ParsedOutput:
+        return ParsedOutput(text="dummy pdfminer text", parser_library="pdfminer")
+
+    monkeypatch.setattr(
+        "deet.processors.parser.PdfminerParser.parse",
+        classmethod(_stub_parse),
+    )
 
 
 @pytest.fixture
@@ -126,3 +159,18 @@ def sample_eppi_data_duplicated_annotations(sample_eppi_data):
         ref["Codes"] += ref["Codes"]
 
     return duplicated
+
+
+@pytest.fixture
+def valid_project_data(tmp_path, sample_eppi_data):
+    # Create a real dummy file so Pydantic's FilePath is happy
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps(sample_eppi_data))
+
+    return {
+        "name": "TestProject",
+        "gold_standard_data_path": data_file,
+        "gold_standard_data_format": SupportedImportFormat.EPPI_JSON,
+        "environment_file": "project",
+        "pdf_dir": tmp_path,  # A real directory
+    }
