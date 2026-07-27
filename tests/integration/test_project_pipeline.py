@@ -107,17 +107,22 @@ def test_initialise_project_via_wizard(
             # Alice sees an informative splash screen informing her on how to
             # use the wizard. She presses enter to continue
             virtual_keyboard.send_text("\r")
-            # Alice enters the name of her project name,
-            virtual_keyboard.send_text(f"{project_name}\r")
-            # The path to her dataset
-            virtual_keyboard.send_text(f"{dataset_base_path / 'reports.json'}\r")
-            # She selects the default dataset type option (eppijson)
             time.sleep(0.1)
+            # She selects the default dataset type option (eppijson)
             virtual_keyboard.send_text("\r")
+
+            # Then she enters path to her dataset
+            virtual_keyboard.send_text(f"{dataset_base_path / 'reports.json'}\r")
+            virtual_keyboard.send_text("\r")
+
             # She enters the path to her pdfs
             virtual_keyboard.send_text(f"{dataset_base_path / 'pdfs'}\r")
             virtual_keyboard.send_text("\r")
+
+            # She then sees a splash screen informing her on the collection of API keys
             virtual_keyboard.send_text("\r")
+
+            # She leaves each unchanged
             virtual_keyboard.send_text("\r")
             virtual_keyboard.send_text("\r")
 
