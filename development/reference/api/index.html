@@ -14121,16 +14121,6 @@ This can change if the <code>AttributeType</code> of the <code>attribute</code> 
             </li>
         </ul>
 
-        <p>Validators:</p>
-        <ul>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;handle_output_data_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.base.GoldStandardAnnotation.handle_output_data_input&lt;/code&gt;)" href="#deet.data_models.base.GoldStandardAnnotation.handle_output_data_input">handle_output_data_input</a></code>
-            </li>
-        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
@@ -14331,7 +14321,7 @@ This can change if the <code>AttributeType</code> of the <code>attribute</code> 
             <code class="highlight language-python"><span class="n">handle_output_data_input</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
 </h5>
@@ -20458,16 +20448,6 @@ the extracted information relates to.</p>
             </li>
         </ul>
 
-        <p>Validators:</p>
-        <ul>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;handle_output_data_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiGoldStandardAnnotation.handle_output_data_input&lt;/code&gt;)" href="#deet.data_models.base.GoldStandardAnnotation.handle_output_data_input">handle_output_data_input</a></code>
-            </li>
-        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/eppi.py</code></summary>
@@ -34149,7 +34129,12 @@ customizable prompts.</p>
 <span class="normal">925</span>
 <span class="normal">926</span>
 <span class="normal">927</span>
-<span class="normal">928</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">:</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generalisable module for LLM-based data extraction from documents.</span>
 
@@ -34683,7 +34668,12 @@ customizable prompts.</p>
             <span class="n">max_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">response_content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span>
+
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">response_content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span>
+        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;tool_calls&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">response_content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">arguments</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;raw response: </span><span class="si">{</span><span class="n">response_content</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="n">input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
