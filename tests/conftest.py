@@ -2,6 +2,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import pytest
 from pydantic import SecretStr
@@ -204,6 +205,14 @@ def scrub_response_secrets(response: dict[str, Any]):
 
     if "headers" in response:
         headers = response["headers"]
+        for key, values in headers.items():
+            scrubbed = []
+            for raw in values:
+                scrubbed_v = raw
+                for secret in clean_secrets:
+                    scrubbed_v = scrubbed_v.replace(secret, "DUMMY_SECRET")
+                scrubbed.append(scrubbed_v)
+            headers[key] = scrubbed
         for k in list(headers.keys()):
             if k.lower() == "content-length":
                 actual_len = len(response["body"]["string"])
@@ -227,6 +236,15 @@ def scrub_request_uri(request: Request) -> Request:
     for secret in clean_secrets:
         if secret.lower() in request.uri.lower():
             request.uri = "https://dummy.secret/"
+
+    for key, value in request.headers.items():
+        scrubbed = value
+        for secret in clean_secrets:
+            hostname = urlparse(secret).hostname
+            if hostname:
+                scrubbed = scrubbed.replace(hostname, "DUMMY_SECRET")
+            scrubbed = scrubbed.replace(secret, "DUMMY_SECRET")
+        request.headers[key] = scrubbed
 
     return request
 

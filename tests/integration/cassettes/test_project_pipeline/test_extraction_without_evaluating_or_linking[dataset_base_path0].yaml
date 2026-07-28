@@ -79,7 +79,7 @@ interactions:
       Content-Type:
       - application/json
       Host:
-      - eppireasoning.openai.azure.com
+      - DUMMY_SECRET
       User-Agent:
       - AzureOpenAI/Python 1.109.1
       X-Stainless-Arch:
@@ -106,43 +106,43 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
+      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
         under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
         60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
         ) of plain mepivacaine\",\"additional_text\":null,\"reasoning\":\"The context
-        provides specific information about the study participants, including the
-        total number of patients (sixty), their condition (undergoing ambulatory anterior
-        cruciate ligament repair of the knee), and the breakdown of participants in
-        each group (Group 1 with 29 patients and Group 2 with 31 patients). This information
-        is directly related to the study participants.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
+        provides information about the study participants, specifically mentioning
+        that there were sixty patients involved in the study, with details about their
+        grouping into two groups based on the dosage of mepivacaine they received.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
         context does not provide any specific information regarding the age of the
-        study participants. Therefore, there are no snippets to extract for this attribute.\"}}","name":"json_tool_call"},"id":"call_47jHPIQjkPaIw5nzjgPAk9CS","type":"function"}]}}],"created":1783403503,"id":"chatcmpl-Dyt0Z0nC2z82k8b7SxEU1WSChfZQt","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_965c8b9ecf","usage":{"completion_tokens":210,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":30,"engine_ttlt_ms":1891,"pre_inference_ms":131,"service_tbt_ms":9,"service_ttft_ms":258,"service_ttlt_ms":2106,"total_duration_ms":1984,"user_visible_ttft_ms":127},"prompt_tokens":1249,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1459}}
+        study participants, hence no data can be extracted for this attribute.\"}}","name":"json_tool_call"},"id":"call_S91Tm8XSlzeOEXcCtghJdsXm","type":"function"}]}}],"created":1785266327,"id":"chatcmpl-E6hc7yt5ECl5XY91uJd9Qf73AtvZp","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":179,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":8,"engine_ttft_ms":31,"engine_ttlt_ms":1491,"pre_inference_ms":163,"service_tbt_ms":8,"service_ttft_ms":311,"service_ttlt_ms":1728,"total_duration_ms":1571,"user_visible_ttft_ms":148},"prompt_tokens":1249,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1428}}
 
         '
     headers:
       Content-Length:
-      - '2241'
+      - '2403'
       Content-Type:
       - application/json
       Date:
-      - Tue, 07 Jul 2026 05:51:45 GMT
+      - Tue, 28 Jul 2026 19:18:49 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 046249ff-fb1a-4e6f-b54b-653614a30f7b
+      - a919f180-0f6d-4712-8dee-b1a5eea218c1
       azureai-fe-is-streaming:
       - 'False'
+      azureai-fe-requested-service-tier:
+      - PayGo
+      azureai-fe-requested-zone:
+      - default
       azureml-model-session:
-      - d20260619232122-2d06f3a3
+      - d20260721020908-1ddb2e0e
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -172,7 +172,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 800e3360-8f1b-4cd6-a437-79660b1e5ffb
+      - a919f180-0f6d-4712-8dee-b1a5eea218c1
     status:
       code: 200
       message: OK
@@ -246,7 +246,7 @@ interactions:
       Content-Type:
       - application/json
       Host:
-      - eppireasoning.openai.azure.com
+      - DUMMY_SECRET
       User-Agent:
       - AzureOpenAI/Python 1.109.1
       X-Stainless-Arch:
@@ -273,39 +273,40 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
+      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
         young male students\",\"additional_text\":\"thirty-six young male students\",\"reasoning\":\"The
-        context specifies that the study involved ''thirty-six young male students''
-        as participants, which provides information about the sample size, sex, and
-        age group.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"young\",\"reasoning\":\"The
-        term ''young'' is used to describe the age of the participants, indicating
-        they are likely in their late teens to early twenties, but no specific age
-        range is provided.\"}}","name":"json_tool_call"},"id":"call_e9J4MM4if4tg90YuLvNDJYzD","type":"function"}]}}],"created":1783403506,"id":"chatcmpl-Dyt0cI4GUsKGk81vF5uXsYiDQDsgP","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_965c8b9ecf","usage":{"completion_tokens":115,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":10,"engine_ttft_ms":29,"engine_ttlt_ms":1178,"pre_inference_ms":102,"service_tbt_ms":10,"service_ttft_ms":210,"service_ttlt_ms":1356,"total_duration_ms":1262,"user_visible_ttft_ms":108},"prompt_tokens":1022,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1137}}
+        context explicitly states that the study involved ''thirty-six young male
+        students'' as participants, which provides information about the sample size,
+        sex, and age group.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"young\",\"reasoning\":\"The
+        term ''young'' is used in the context to describe the age of the participants,
+        specifically referring to ''thirty-six young male students''.\"}}","name":"json_tool_call"},"id":"call_QkrXpSxSuMSlqce9WboMMBjs","type":"function"}]}}],"created":1785266329,"id":"chatcmpl-E6hc9zAacl4jKj7g0tke6UWhpZWWP","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":111,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":8,"engine_ttft_ms":27,"engine_ttlt_ms":912,"pre_inference_ms":171,"service_tbt_ms":8,"service_ttft_ms":268,"service_ttlt_ms":1148,"total_duration_ms":985,"user_visible_ttft_ms":97},"prompt_tokens":1022,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1133}}
 
         '
     headers:
       Content-Length:
-      - '1853'
+      - '2136'
       Content-Type:
       - application/json
       Date:
-      - Tue, 07 Jul 2026 05:51:47 GMT
+      - Tue, 28 Jul 2026 19:18:50 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - df589b7d-d181-4ceb-8575-3b66d24a8b64
+      - dfe498b4-4aa5-42b9-94d5-46a31ad29e79
       azureai-fe-is-streaming:
       - 'False'
+      azureai-fe-requested-service-tier:
+      - PayGo
+      azureai-fe-requested-zone:
+      - default
       azureml-model-session:
-      - d20260619232122-2d06f3a3
+      - d20260721020908-1ddb2e0e
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -335,7 +336,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - cfd790e6-8102-4c1f-b283-99baf1164b89
+      - dfe498b4-4aa5-42b9-94d5-46a31ad29e79
     status:
       code: 200
       message: OK

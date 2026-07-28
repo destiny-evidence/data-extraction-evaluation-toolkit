@@ -79,7 +79,7 @@ interactions:
       Content-Type:
       - application/json
       Host:
-      - eppireasoning.openai.azure.com
+      - DUMMY_SECRET
       User-Agent:
       - AzureOpenAI/Python 1.109.1
       X-Stainless-Arch:
@@ -106,41 +106,43 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
+      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
         under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
         60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
         ) of plain mepivacaine\",\"additional_text\":null,\"reasoning\":\"The context
         provides information about the study participants, specifically mentioning
-        that there were sixty patients undergoing surgery, and it details the distribution
+        that there were sixty patients involved in the study, and it details the distribution
         of these patients into two groups based on the doses of mepivacaine they received.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
         context does not provide any specific information regarding the age of the
-        study participants. Therefore, there are no snippets to extract for this attribute.\"}}","name":"json_tool_call"},"id":"call_GfcfExv81ilQqHgQPvBknNLm","type":"function"}]}}],"created":1783403508,"id":"chatcmpl-Dyt0eUiGBtR5OKoUDTgN32RmjKpoY","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_965c8b9ecf","usage":{"completion_tokens":182,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":11,"engine_ttft_ms":33,"engine_ttlt_ms":1973,"pre_inference_ms":93,"service_tbt_ms":11,"service_ttft_ms":204,"service_ttlt_ms":2142,"total_duration_ms":2054,"user_visible_ttft_ms":111},"prompt_tokens":1249,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1431}}
+        study participants. Therefore, there are no snippets to extract for this attribute.\"}}","name":"json_tool_call"},"id":"call_ZeirShD7Erf9AVXqUxV7tpfe","type":"function"}]}}],"created":1785266331,"id":"chatcmpl-E6hcBylcq10Yub985j2CoDdmBveoA","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":184,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":29,"engine_ttlt_ms":1594,"pre_inference_ms":97,"service_tbt_ms":9,"service_ttft_ms":199,"service_ttlt_ms":1759,"total_duration_ms":1670,"user_visible_ttft_ms":102},"prompt_tokens":1249,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1433}}
 
         '
     headers:
       Content-Length:
-      - '2119'
+      - '2430'
       Content-Type:
       - application/json
       Date:
-      - Tue, 07 Jul 2026 05:51:49 GMT
+      - Tue, 28 Jul 2026 19:18:53 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 0da8192a-1b48-4a23-95f0-8ca488cec0f7
+      - c55d5c1e-f63b-46e3-bb1a-df68a0f43bfa
       azureai-fe-is-streaming:
       - 'False'
+      azureai-fe-requested-service-tier:
+      - PayGo
+      azureai-fe-requested-zone:
+      - default
       azureml-model-session:
-      - d20260619232122-2d06f3a3
+      - d20260721020908-1ddb2e0e
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -170,7 +172,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 6ec8c121-0a90-4300-9ea6-421e96a462a5
+      - c55d5c1e-f63b-46e3-bb1a-df68a0f43bfa
     status:
       code: 200
       message: OK
@@ -244,7 +246,7 @@ interactions:
       Content-Type:
       - application/json
       Host:
-      - eppireasoning.openai.azure.com
+      - DUMMY_SECRET
       User-Agent:
       - AzureOpenAI/Python 1.109.1
       X-Stainless-Arch:
@@ -271,38 +273,41 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
+      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
         young male students\",\"additional_text\":\"thirty-six young male students\",\"reasoning\":\"The
         context specifies that the study involved ''thirty-six young male students''
         as participants, which provides information about the sample size, sex, and
         age group.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"young\",\"reasoning\":\"The
-        context describes the participants as ''young male students'', indicating
-        their age group without providing a specific age range.\"}}","name":"json_tool_call"},"id":"call_4RRio1JFeSzFgiXyGsLRDLpT","type":"function"}]}}],"created":1783403511,"id":"chatcmpl-Dyt0h1ZioP3nVSeDAeNannQx7z5hF","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_965c8b9ecf","usage":{"completion_tokens":102,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":58,"engine_ttlt_ms":979,"pre_inference_ms":138,"service_tbt_ms":9,"service_ttft_ms":274,"service_ttlt_ms":1193,"total_duration_ms":1062,"user_visible_ttft_ms":137},"prompt_tokens":1022,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1124}}
+        term ''young'' is used to describe the age of the participants, indicating
+        they are likely in their late teens to early twenties, but no specific age
+        is provided.\"}}","name":"json_tool_call"},"id":"call_LfdWOEodpxBK4RmHB6zhJxDQ","type":"function"}]}}],"created":1785266333,"id":"chatcmpl-E6hcDpOhOW179cAhiqWcZNvwaoHz1","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":114,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":8,"engine_ttft_ms":57,"engine_ttlt_ms":949,"pre_inference_ms":98,"service_tbt_ms":8,"service_ttft_ms":247,"service_ttlt_ms":1133,"total_duration_ms":1045,"user_visible_ttft_ms":149},"prompt_tokens":1022,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1136}}
 
         '
     headers:
       Content-Length:
-      - '1811'
+      - '2153'
       Content-Type:
       - application/json
       Date:
-      - Tue, 07 Jul 2026 05:51:51 GMT
+      - Tue, 28 Jul 2026 19:18:54 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - d53cf73f-7e26-4cf3-aa9c-457f6f40cbcc
+      - d69823c8-f11b-4306-ad6c-a02217dbb436
       azureai-fe-is-streaming:
       - 'False'
+      azureai-fe-requested-service-tier:
+      - PayGo
+      azureai-fe-requested-zone:
+      - default
       azureml-model-session:
-      - d20260619232122-2d06f3a3
+      - d20260721020908-1ddb2e0e
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -332,7 +337,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - f8da8d2f-30fb-468e-a200-690a585cf58b
+      - d69823c8-f11b-4306-ad6c-a02217dbb436
     status:
       code: 200
       message: OK
