@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
+    from deet.data_models.taxonomy import ConceptScheme
 
 import yaml
 from pydantic import (
@@ -99,6 +100,14 @@ class DeetProject(BaseModel):
     ] = Field(None, description="Path to folder containing PDFs")
 
     evaluation_strategy: EvaluationStrategyName = EvaluationStrategyName.NONE
+    vocabulary_path: Path | None = Field(
+        default=None, description="Path to vocabulary file"
+    )
+
+    vocabulary_mapping_path: Path | None = Field(
+        default=None,
+        description="Path to json file mapping vocabulary concepts to column IDs",
+    )
 
     # Project metadata
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -330,6 +339,14 @@ class DeetProject(BaseModel):
         from deet.data_models.evaluation_strategies import STRATEGY_REGISTRY
 
         return STRATEGY_REGISTRY[self.evaluation_strategy](self)
+
+    def load_schemes(self) -> list[ConceptScheme]:
+        """Read the vocabulary attached to the project."""
+        from deet.data_models.taxonomy import load_schemes_from_ttl
+
+        if self.vocabulary_path:
+            return load_schemes_from_ttl(self.vocabulary_path)
+        return []
 
 
 @dataclass(frozen=True)
