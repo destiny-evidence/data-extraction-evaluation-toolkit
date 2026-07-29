@@ -34,6 +34,7 @@ from deet.data_models.documents import (
     Document,
     GoldStandardAnnotatedDocument,
 )
+from deet.data_models.evaluation import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.data_models.extraction import (
     DocumentExtractionResult,
     DocumentParsingStats,
@@ -196,6 +197,19 @@ class DataExtractionConfig(BaseModel):
     )
     include_additional_text: bool = Field(
         default=True, description="Include additional text/citations in output"
+    )
+
+    # Evaluation
+    edit_distance_match_threshold: float = Field(
+        default=DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum normalised Levenshtein similarity (0-1) for a string pair "
+            "to count as a match in edit_distance_match_rate. Omit from the "
+            "config YAML to use the default."
+        ),
+        json_schema_extra={"skip_prompt": True},
     )
 
     @model_validator(mode="after")

@@ -24,6 +24,7 @@ from deet.data_models.documents import (
 from deet.data_models.evaluation import (
     METRICS,
     AttributeMetric,
+    EvaluationMetricSettings,
     MetricFunction,
     check_metric_returns_float,
     get_metrics_for_attribute_type,
@@ -140,18 +141,29 @@ class GoldStandardLLMEvaluator:
     "gold-standard" ground truth data.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         gold_standard_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
         llm_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
         attributes: Sequence[Attribute],
         extraction_run_id: str,
         custom_metrics: list[str] | None = None,
+        metric_settings: EvaluationMetricSettings | None = None,
     ) -> None:
         """
         Initialise GoldStandardLLMEvaluator with a list of ground truth and
         LLM-generated data to compare, along with the attributes you want to
         compare.
+
+        Args:
+            gold_standard_annotated_documents: Human / gold annotations.
+            llm_annotated_documents: LLM annotations to score.
+            attributes: Attributes to evaluate.
+            extraction_run_id: Run identifier written into metric rows.
+            custom_metrics: Optional sklearn metric names to merge in.
+            metric_settings: Thresholds for extraction metrics (e.g. edit
+                distance). Defaults to :class:`EvaluationMetricSettings`.
+
         """
         self.gold_standard_annotated_documents = gold_standard_annotated_documents
         self.llm_annotated_documents = GoldStandardAnnotatedDocumentList(
@@ -159,6 +171,7 @@ class GoldStandardLLMEvaluator:
         )
         self.attributes = attributes
         self.extraction_run_id = extraction_run_id
+        self.metric_settings = metric_settings or EvaluationMetricSettings()
         self.metrics_config: dict[str, MetricFunction] = METRICS
         self.custom_metrics: dict[str, MetricFunction] = {}
         self.calculated_metrics: list[AttributeMetric] = []
@@ -225,7 +238,8 @@ class GoldStandardLLMEvaluator:
                 y_pred.append(llm_val)
 
             applicable_metrics = get_metrics_for_attribute_type(
-                attribute.output_data_type
+                attribute.output_data_type,
+                settings=self.metric_settings,
             )
             combined_metrics = {**applicable_metrics, **self.custom_metrics}
 

@@ -169,7 +169,12 @@ def run_extraction_pipeline(  # noqa: PLR0913
     run_name: str = "",
     *,
     ignore_references: bool = False,
-) -> tuple[ExtractionRunOutput, ProcessedAnnotationData, ExperimentArtefacts]:
+) -> tuple[
+    ExtractionRunOutput,
+    ProcessedAnnotationData,
+    ExperimentArtefacts,
+    DataExtractionConfig,
+]:
     """Run the standard data extraction pipeline from the CLI."""
     pipeline_start = time.perf_counter()
     stage_durations: dict[str, float] = {}
@@ -262,4 +267,4 @@ def run_extraction_pipeline(  # noqa: PLR0913
 
     logger.info(f"Run metadata saved to: {experiment_artefacts.extraction_metadata}")
 
-    return run_output, processed_annotation_data, experiment_artefacts
+    return run_output, processed_annotation_data, experiment_artefacts, config
