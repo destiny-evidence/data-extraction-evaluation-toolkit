@@ -41,7 +41,6 @@ from deet.data_models.extraction import (
     ExtractionRunOutput,
     PerDocumentExtractionStats,
 )
-
 from deet.data_models.ui_schema import UI
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
@@ -49,8 +48,6 @@ from deet.settings import (
     LLMProvider,
     get_settings,
 )
-
-
 from deet.ui.terminal.render import optional_progress
 from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
@@ -397,6 +394,9 @@ class LLMDataExtractor:
         Extract data from all documents.
 
         Loops over documents and extracts data using list of attributes.
+        A document that's missing what it needs for the chosen context_type
+        (e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,
+        not raised.
 
         Args:
             attributes: List of attributes to extract.
