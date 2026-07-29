@@ -29,7 +29,7 @@ jobs:
       - name: get version preview
         id: preview
         run: |
-          CURRENT=$(grep -Po '(?<=version = ")[^"]*' pyproject.toml)
+          CURRENT=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
           NEXT=$(uv run --quiet semantic-release --noop version --print 2>/dev/null | tail -1)
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "next=${NEXT:-no release}" >> $GITHUB_OUTPUT
