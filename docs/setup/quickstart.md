@@ -76,9 +76,13 @@ This is where we will store configuration options and the results of your data e
 
 ### Linking documents to pdfs
 
-If you want to extract data from the full texts of your documents, you will need to edit the file `link_map.csv` created in your project directory by setting up deet, to point each document to the file that contains its pdf.
-On initialising a project, this is pre-filled with plausible mappings, but you should check that these are correct
+If you want to extract data from the full texts of your documents, you will need to edit the file `link_map.csv` created in your project directory by setting up deet, to point each document to the file that contains its pdf. The name of the file should be entered in the `file_path` column.
+
+On initialising a project, this columnn is pre-filled with plausible mappings, but you should check that these are correct
 and add any missing paths yourself.
+
+??? note "External and internal IDs"
+    Note that `deet` uses the `document_id` field internally. Where imported documents have an id that is not compatible, this is preserved in `external_id`, and converted to a compatible `document_id`. Where external IDs are compatible, these fields will be identical.
 
 {{ read_csv('examples/quickstart/link_map.csv') }}
 
@@ -126,9 +130,9 @@ Once you are happy with this file, you can link the documents
 ### Writing and editing prompts
 
 Setting up a project creates a file called `prompts/prompt_definitions.csv` with a row for each of the attributes you can extract from your data.
-Edit this file, creating a prompt in the `prompt` column.
+Edit this file, creating a prompt in the `prompt` column. This can contain any text, including commas.
 Leave the `prompt` column blank for any attribute you do not wish to extract.
-You can also edit the `output_data_type` column (see [deet.data_models.base.AttributeType](../reference/api.md#deet.data_models.base.AttributeType)) if the automatically parsed data type is incorrect.
+You can also edit the `output_data_type` column ([more info](../concepts/data-extraction.md#attributes)) if the automatically parsed data type is incorrect.
 
 {{ read_csv('examples/quickstart/prompts/prompt_definitions.csv') }}
 

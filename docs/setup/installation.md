@@ -270,7 +270,9 @@ pre-commit install
 `deet` reads general settings from a `.env` file within the directory you are running it from.
 Settings will be set to default values if this file does not exist, but if you want to use deet with azure models (default behaviour), you will need to provide a set of credentials.
 
-To do this, open a file called `.env` in the directory you are running `deet`, and add the following lines, replacing the placeholders with your own credentials:
+If you are using the CLI, you will be prompted to enter this information
+
+Otherwise, open a file called `.env` in the directory you are running `deet`, and add the following lines, replacing the placeholders with your own credentials:
 
 ```sh
 AZURE_API_KEY="your-azure-api-key-here"

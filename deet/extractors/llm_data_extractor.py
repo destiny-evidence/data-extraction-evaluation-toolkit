@@ -552,12 +552,6 @@ class LLMDataExtractor:
         elif ctx == ContextType.ABSTRACT_ONLY:
             context = payload
             logger.debug(f"Using abstract context (length: {len(str(context))})")
-        elif ctx == ContextType.RAG_SNIPPETS:
-            rag_not_impl = "rag-snippets context type is not implemented."
-            raise NotImplementedError(rag_not_impl)
-        elif ctx == ContextType.CUSTOM:
-            custom_not_impl = "custom context type is not implemented."
-            raise NotImplementedError(custom_not_impl)
         else:
             other_not_allowed = f"{ctx} context type is not allowed."
             raise ValueError(other_not_allowed)
