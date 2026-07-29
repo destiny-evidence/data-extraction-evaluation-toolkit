@@ -72,7 +72,7 @@ class CSVParserConfig(BaseModel):
     """Configuration Seetings for parsing CSV."""
 
     author_separator: str = ";"
-    auto_assign_reference_fields: Boolean = False
+    auto_assign_reference_fields: Boolean = True
 
 
 class CSVAnnotationConverter(AnnotationConverter):
