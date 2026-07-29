@@ -1,6 +1,13 @@
 exclude: ^tests/integration/datasets/
 
 repos:
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: 91ab4bf57e58b32adf1a122681f6ebe164d081c8 # v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []  # optionally list allowed types: [feat, fix, chore, ...]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.5
     hooks:
@@ -10,6 +17,7 @@ repos:
       - id: ruff-format
         args:
           - --config=pyproject.toml
+
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.43.0
     hooks:
@@ -19,16 +27,19 @@ repos:
           - --dot
           - --ignore
           - "tests/test_files/**/*"
+
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5
     hooks:
       - id: forbid-tabs
+
   - repo: https://github.com/pappasam/toml-sort
     rev: v0.24.3
     hooks:
       - id: toml-sort-fix
         args: ["--check"]
         exclude: '^(uv\.lock)$'
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.1
     hooks:
