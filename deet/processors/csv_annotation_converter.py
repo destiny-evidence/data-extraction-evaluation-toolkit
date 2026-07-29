@@ -421,14 +421,19 @@ class CSVAnnotationConverter(AnnotationConverter):
         """
         reference_dict = self._build_destiny_reference_dict_from_row(mapping, row)
 
-        abstract = (
-            AbstractContentEnhancement(
-                abstract=reference_dict["abstract"],
-                process=AbstractProcessType.UNINVERTED,
-            )
-            if "abstract" in reference_dict
-            else None
-        )
+        abstract = None
+        if "abstract" in reference_dict:
+            if reference_dict["abstract"]:
+                abstract = AbstractContentEnhancement(
+                    abstract=reference_dict["abstract"],
+                    process=AbstractProcessType.UNINVERTED,
+                )
+            else:
+                logger.warning(
+                    f"document_id={row.get('document_id')!r} "
+                    f"name={row.get('name')!r} has a blank abstract; "
+                    "skipping AbstractContentEnhancement for this row."
+                )
 
         reference_dict["authorship"] = (
             self._build_destiny_authorship_list(reference_dict["authorship"])

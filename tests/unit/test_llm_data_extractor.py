@@ -11,13 +11,14 @@ from pydantic import ValidationError
 
 from deet.data_models.base import (
     AnnotationType,
+    Attribute,
+    AttributeType,
     GoldStandardAnnotation,
     LLMInputSchema,
     build_llm_response_model,
 )
-from deet.data_models.documents import ContextType
+from deet.data_models.documents import ContextType, Document
 from deet.data_models.eppi import (
-    AttributeType,
     EppiAttribute,
     EppiAttributeSelectionType,
     EppiDocument,
@@ -28,6 +29,7 @@ from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
     PromptConfig,
 )
+from deet.processors.csv_annotation_converter import CSVAnnotationConverter
 from deet.settings import LLMProvider
 
 
@@ -564,6 +566,59 @@ def test_extract_from_documents(
     assert meta["per_document"][doc_id_str]["input_tokens"] == 100
     assert meta["per_document"][doc_id_str]["output_tokens"] == 42
     assert "total_cost_usd" in meta
+
+
+def test_extract_from_documents_skips_document_missing_abstract(
+    llm_extractor,
+    mock_litellm_completion,
+):
+    """
+    Test that a document with no abstract is skipped (not raised) under
+    ABSTRACT_ONLY context, a warning is logged, and other documents still
+    process normally.
+    """
+    # The dynamic schema requires a response for every selected attribute, so
+    # both ids here must match the keys in mock_litellm_completion's response.
+    attributes = [
+        Attribute(
+            attribute_id=1234,
+            attribute_label="Attribute 1",
+            output_data_type=AttributeType.BOOL,
+        ),
+        Attribute(
+            attribute_id=2345,
+            attribute_label="Attribute 2",
+            output_data_type=AttributeType.BOOL,
+        ),
+    ]
+
+    converter = CSVAnnotationConverter(base_output_dir=None)
+    mapping = {"abstract": "abstract"}
+    doc_with_abstract = Document(
+        name="Has Abstract",
+        document_id=1,
+        citation=converter.build_destiny_reference(
+            {"abstract": "The abstract."}, mapping
+        ),
+    )
+    doc_without_abstract = Document(
+        name="No Abstract",
+        document_id=2,
+        citation=converter.build_destiny_reference({}, mapping={}),
+    )
+
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    run_output = llm_extractor.extract_from_documents(
+        attributes=attributes,
+        documents=[doc_without_abstract, doc_with_abstract],
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert len(run_output.annotated_documents) == 1
+    assert run_output.annotated_documents[0].document.name == "Has Abstract"
+    assert any("No abstract found" in str(m) for m in messages)
 
 
 def test_extract_from_documents_continues_on_error(
