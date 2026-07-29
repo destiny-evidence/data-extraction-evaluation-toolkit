@@ -1278,9 +1278,13 @@ examples show how commands can be run using the underlying library</p>
 </ul>
 </div>
 <h3 id="linking-documents-to-pdfs">Linking documents to pdfs</h3>
-<p>If you want to extract data from the full texts of your documents, you will need to edit the file <code>link_map.csv</code> created in your project directory by setting up deet, to point each document to the file that contains its pdf.
-On initialising a project, this is pre-filled with plausible mappings, but you should check that these are correct
+<p>If you want to extract data from the full texts of your documents, you will need to edit the file <code>link_map.csv</code> created in your project directory by setting up deet, to point each document to the file that contains its pdf. The name of the file should be entered in the <code>file_path</code> column.</p>
+<p>On initialising a project, this columnn is pre-filled with plausible mappings, but you should check that these are correct
 and add any missing paths yourself.</p>
+<details class="note">
+<summary>External and internal IDs</summary>
+<p>Note that <code>deet</code> uses the <code>document_id</code> field internally. Where imported documents have an id that is not compatible, this is preserved in <code>external_id</code>, and converted to a compatible <code>document_id</code>. Where external IDs are compatible, these fields will be identical.</p>
+</details>
 <table>
 <thead>
 <tr>
@@ -1340,9 +1344,9 @@ and add any missing paths yourself.</p>
 <h2 id="extracting-data">Extracting data</h2>
 <h3 id="writing-and-editing-prompts">Writing and editing prompts</h3>
 <p>Setting up a project creates a file called <code>prompts/prompt_definitions.csv</code> with a row for each of the attributes you can extract from your data.
-Edit this file, creating a prompt in the <code>prompt</code> column.
+Edit this file, creating a prompt in the <code>prompt</code> column. This can contain any text, including commas.
 Leave the <code>prompt</code> column blank for any attribute you do not wish to extract.
-You can also edit the <code>output_data_type</code> column (see <a href="../../reference/api/#deet.data_models.base.AttributeType">deet.data_models.base.AttributeType</a>) if the automatically parsed data type is incorrect.</p>
+You can also edit the <code>output_data_type</code> column (<a href="../../concepts/data-extraction/#attributes">more info</a>) if the automatically parsed data type is incorrect.</p>
 <table>
 <thead>
 <tr>
