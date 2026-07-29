@@ -34114,7 +34114,12 @@ customizable prompts.</p>
 <span class="normal">924</span>
 <span class="normal">925</span>
 <span class="normal">926</span>
-<span class="normal">927</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">:</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generalisable module for LLM-based data extraction from documents.</span>
 
@@ -34283,6 +34288,9 @@ customizable prompts.</p>
 <span class="sd">        Extract data from all documents.</span>
 
 <span class="sd">        Loops over documents and extracts data using list of attributes.</span>
+<span class="sd">        A document that&#39;s missing what it needs for the chosen context_type</span>
+<span class="sd">        (e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,</span>
+<span class="sd">        not raised.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            attributes: List of attributes to extract.</span>
@@ -34317,12 +34325,12 @@ customizable prompts.</p>
             <span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">iterable_documents</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing document: </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">ABSTRACT_ONLY</span><span class="p">:</span>
-                    <span class="n">document</span><span class="o">.</span><span class="n">set_abstract_context</span><span class="p">()</span>
-                <span class="k">elif</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">FULL_DOCUMENT</span><span class="p">:</span>
-                    <span class="n">document</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">safe_parsed_document</span><span class="o">.</span><span class="n">text</span>
-
                 <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">ABSTRACT_ONLY</span><span class="p">:</span>
+                        <span class="n">document</span><span class="o">.</span><span class="n">set_abstract_context</span><span class="p">()</span>
+                    <span class="k">elif</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">FULL_DOCUMENT</span><span class="p">:</span>
+                        <span class="n">document</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">safe_parsed_document</span><span class="o">.</span><span class="n">text</span>
+
                     <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_from_document</span><span class="p">(</span>
                         <span class="n">attributes</span><span class="o">=</span><span class="n">attributes</span><span class="p">,</span>
                         <span class="n">filter_attribute_ids</span><span class="o">=</span><span class="n">filter_attribute_ids</span><span class="p">,</span>
@@ -34350,6 +34358,8 @@ customizable prompts.</p>
                     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="n">total_cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">total_cost</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span>
 
+                <span class="k">except</span> <span class="n">NoAbstractError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to process </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Error details&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -35401,7 +35411,10 @@ Required if payload not set.</p>
     <div class="doc doc-contents ">
 
         <p>Extract data from all documents.</p>
-<p>Loops over documents and extracts data using list of attributes.</p>
+<p>Loops over documents and extracts data using list of attributes.
+A document that's missing what it needs for the chosen context_type
+(e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,
+not raised.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -35702,7 +35715,12 @@ keys are document IDs, values are prompt payload (messages).</p>
 <span class="normal">487</span>
 <span class="normal">488</span>
 <span class="normal">489</span>
-<span class="normal">490</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_documents</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_documents</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">attributes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Attribute</span><span class="p">],</span>
     <span class="n">documents</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Document</span><span class="p">],</span>
@@ -35718,6 +35736,9 @@ keys are document IDs, values are prompt payload (messages).</p>
 <span class="sd">    Extract data from all documents.</span>
 
 <span class="sd">    Loops over documents and extracts data using list of attributes.</span>
+<span class="sd">    A document that&#39;s missing what it needs for the chosen context_type</span>
+<span class="sd">    (e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,</span>
+<span class="sd">    not raised.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        attributes: List of attributes to extract.</span>
@@ -35752,12 +35773,12 @@ keys are document IDs, values are prompt payload (messages).</p>
         <span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">iterable_documents</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing document: </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">ABSTRACT_ONLY</span><span class="p">:</span>
-                <span class="n">document</span><span class="o">.</span><span class="n">set_abstract_context</span><span class="p">()</span>
-            <span class="k">elif</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">FULL_DOCUMENT</span><span class="p">:</span>
-                <span class="n">document</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">safe_parsed_document</span><span class="o">.</span><span class="n">text</span>
-
             <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">ABSTRACT_ONLY</span><span class="p">:</span>
+                    <span class="n">document</span><span class="o">.</span><span class="n">set_abstract_context</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">context_type</span> <span class="o">==</span> <span class="n">ContextType</span><span class="o">.</span><span class="n">FULL_DOCUMENT</span><span class="p">:</span>
+                    <span class="n">document</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">safe_parsed_document</span><span class="o">.</span><span class="n">text</span>
+
                 <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_from_document</span><span class="p">(</span>
                     <span class="n">attributes</span><span class="o">=</span><span class="n">attributes</span><span class="p">,</span>
                     <span class="n">filter_attribute_ids</span><span class="o">=</span><span class="n">filter_attribute_ids</span><span class="p">,</span>
@@ -35785,6 +35806,8 @@ keys are document IDs, values are prompt payload (messages).</p>
                 <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">total_cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">total_cost</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span>
 
+            <span class="k">except</span> <span class="n">NoAbstractError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to process </span><span class="si">{</span><span class="n">document</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Error details&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -37997,7 +38020,12 @@ and produces attributes, documents, and annotated document records.</p>
 <span class="normal">683</span>
 <span class="normal">684</span>
 <span class="normal">685</span>
-<span class="normal">686</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CSVAnnotationConverter</span><span class="p">(</span><span class="n">AnnotationConverter</span><span class="p">):</span>
+<span class="normal">686</span>
+<span class="normal">687</span>
+<span class="normal">688</span>
+<span class="normal">689</span>
+<span class="normal">690</span>
+<span class="normal">691</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CSVAnnotationConverter</span><span class="p">(</span><span class="n">AnnotationConverter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to convert raw CSV (e.g. Covidence) annotations</span>
 <span class="sd">    into structured Pydantic models.</span>
@@ -38343,14 +38371,19 @@ and produces attributes, documents, and annotated document records.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">reference_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_destiny_reference_dict_from_row</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
 
-        <span class="n">abstract</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">AbstractContentEnhancement</span><span class="p">(</span>
-                <span class="n">abstract</span><span class="o">=</span><span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">],</span>
-                <span class="n">process</span><span class="o">=</span><span class="n">AbstractProcessType</span><span class="o">.</span><span class="n">UNINVERTED</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="s2">&quot;abstract&quot;</span> <span class="ow">in</span> <span class="n">reference_dict</span>
-            <span class="k">else</span> <span class="kc">None</span>
-        <span class="p">)</span>
+        <span class="n">abstract</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">&quot;abstract&quot;</span> <span class="ow">in</span> <span class="n">reference_dict</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">]:</span>
+                <span class="n">abstract</span> <span class="o">=</span> <span class="n">AbstractContentEnhancement</span><span class="p">(</span>
+                    <span class="n">abstract</span><span class="o">=</span><span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">],</span>
+                    <span class="n">process</span><span class="o">=</span><span class="n">AbstractProcessType</span><span class="o">.</span><span class="n">UNINVERTED</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;document_id=</span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;document_id&#39;</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;name=</span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> has a blank abstract; &quot;</span>
+                    <span class="s2">&quot;skipping AbstractContentEnhancement for this row.&quot;</span>
+                <span class="p">)</span>
 
         <span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;authorship&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_build_destiny_authorship_list</span><span class="p">(</span><span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;authorship&quot;</span><span class="p">])</span>
@@ -38886,12 +38919,7 @@ to each <code>Attribute</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/processors/csv_annotation_converter.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">542</span>
-<span class="normal">543</span>
-<span class="normal">544</span>
-<span class="normal">545</span>
-<span class="normal">546</span>
-<span class="normal">547</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">547</span>
 <span class="normal">548</span>
 <span class="normal">549</span>
 <span class="normal">550</span>
@@ -38908,7 +38936,12 @@ to each <code>Attribute</code>.</p>
 <span class="normal">561</span>
 <span class="normal">562</span>
 <span class="normal">563</span>
-<span class="normal">564</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_attributes</span><span class="p">(</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_attributes</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">attribute_fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
@@ -39084,7 +39117,12 @@ returns a <code>ReferenceFileInput</code>.</p>
 <span class="normal">452</span>
 <span class="normal">453</span>
 <span class="normal">454</span>
-<span class="normal">455</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_destiny_reference</span><span class="p">(</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_destiny_reference</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -39112,14 +39150,19 @@ returns a <code>ReferenceFileInput</code>.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">reference_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_destiny_reference_dict_from_row</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
 
-    <span class="n">abstract</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">AbstractContentEnhancement</span><span class="p">(</span>
-            <span class="n">abstract</span><span class="o">=</span><span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">],</span>
-            <span class="n">process</span><span class="o">=</span><span class="n">AbstractProcessType</span><span class="o">.</span><span class="n">UNINVERTED</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="s2">&quot;abstract&quot;</span> <span class="ow">in</span> <span class="n">reference_dict</span>
-        <span class="k">else</span> <span class="kc">None</span>
-    <span class="p">)</span>
+    <span class="n">abstract</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="s2">&quot;abstract&quot;</span> <span class="ow">in</span> <span class="n">reference_dict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">]:</span>
+            <span class="n">abstract</span> <span class="o">=</span> <span class="n">AbstractContentEnhancement</span><span class="p">(</span>
+                <span class="n">abstract</span><span class="o">=</span><span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">],</span>
+                <span class="n">process</span><span class="o">=</span><span class="n">AbstractProcessType</span><span class="o">.</span><span class="n">UNINVERTED</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;document_id=</span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;document_id&#39;</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;name=</span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> has a blank abstract; &quot;</span>
+                <span class="s2">&quot;skipping AbstractContentEnhancement for this row.&quot;</span>
+            <span class="p">)</span>
 
     <span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;authorship&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_build_destiny_authorship_list</span><span class="p">(</span><span class="n">reference_dict</span><span class="p">[</span><span class="s2">&quot;authorship&quot;</span><span class="p">])</span>
@@ -39269,12 +39312,7 @@ destiny_sdk.enhancements) to CSV column names.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/processors/csv_annotation_converter.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
-<span class="normal">570</span>
-<span class="normal">571</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">571</span>
 <span class="normal">572</span>
 <span class="normal">573</span>
 <span class="normal">574</span>
@@ -39329,7 +39367,12 @@ destiny_sdk.enhancements) to CSV column names.</p>
 <span class="normal">623</span>
 <span class="normal">624</span>
 <span class="normal">625</span>
-<span class="normal">626</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_documents_and_annotations</span><span class="p">(</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_documents_and_annotations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">attributes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Attribute</span><span class="p">],</span>
     <span class="n">reference_fields</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
@@ -39413,12 +39456,7 @@ reference names, and rows.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/processors/csv_annotation_converter.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">462</span>
 <span class="normal">463</span>
 <span class="normal">464</span>
 <span class="normal">465</span>
@@ -39496,7 +39534,12 @@ reference names, and rows.</p>
 <span class="normal">537</span>
 <span class="normal">538</span>
 <span class="normal">539</span>
-<span class="normal">540</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_csv</span><span class="p">(</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_csv</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">attribute_fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -39695,12 +39738,7 @@ different types of fields (metadata, reference information, and attributes).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/processors/csv_annotation_converter.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">628</span>
-<span class="normal">629</span>
-<span class="normal">630</span>
-<span class="normal">631</span>
-<span class="normal">632</span>
-<span class="normal">633</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">633</span>
 <span class="normal">634</span>
 <span class="normal">635</span>
 <span class="normal">636</span>
@@ -39753,7 +39791,12 @@ different types of fields (metadata, reference information, and attributes).</p>
 <span class="normal">683</span>
 <span class="normal">684</span>
 <span class="normal">685</span>
-<span class="normal">686</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_annotation_file</span><span class="p">(</span>
+<span class="normal">686</span>
+<span class="normal">687</span>
+<span class="normal">688</span>
+<span class="normal">689</span>
+<span class="normal">690</span>
+<span class="normal">691</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_annotation_file</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">set_attribute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">AttributeType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
