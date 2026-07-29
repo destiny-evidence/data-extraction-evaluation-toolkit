@@ -1,0 +1,25 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
+      semver-major-days: 7
+      semver-minor-days: 5
+      semver-patch-days: 3
+    groups:
+      minor-patch-updates:
+        update-types: ["minor", "patch"]
+      major-updates:
+        update-types: ["major"]
+      uv-security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "setuptools"
