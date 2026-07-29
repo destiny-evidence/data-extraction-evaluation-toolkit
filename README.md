@@ -51,6 +51,15 @@ Typical pipelines can be run using the CLI app `deet --help`
 If you want to contribute to this project -- awesome, everyone's welcome.
 Please see the [contributing guidelines](CONTRIBUTING.md) for details on how best to contribute.
 
+A few important steps when contributing:
+
+```sh
+pre-commit install
+uv run pre-commit install --hook-type commit-msg
+```
+
+This will force you to use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
+
 ## Tests
 
 Tests are written using `pytest`. You can run the tests locally using
