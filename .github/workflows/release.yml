@@ -11,15 +11,22 @@ jobs:
     permissions:
       contents: write  # needed to push the version bump commit + tag
     steps:
+      - name: Generate app token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ vars.CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0          # full history so PSR can read all commits
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Bump version and tag
         uses: python-semantic-release/python-semantic-release@39dd2052f2ce8282a5d932c31d58a2ca06d2550e # v10.6.1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
           config_file: pyproject.toml
 
       - name: Install uv
