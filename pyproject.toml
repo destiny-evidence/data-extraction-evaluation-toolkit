@@ -162,3 +162,9 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
+
+[tool.uv]
+exclude-dependencies = [
+    "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
+]
+exclude-newer = "P5D"
