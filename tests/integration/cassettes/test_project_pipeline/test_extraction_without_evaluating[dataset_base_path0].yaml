@@ -75,11 +75,11 @@ interactions:
       brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
       the source context and if applicable, divide extracted text snippets with double
       semicolon (;;). Do not extract any text if participant information is not reported.\",
-      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-4o-mini","temperature":0.1,"tool_choice":{"type":"function","function":{"name":"json_tool_call"}},"tools":[{"type":"function","function":{"name":"json_tool_call","parameters":{"$defs":{"LLMSTRINGAnnotationResponse":{"additionalProperties":false,"properties":{"output_data":{"description":"The
+      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-4o-mini","response_format":{"type":"json_schema","json_schema":{"name":"llm_annotation_response","schema":{"$defs":{"LLMSTRINGAnnotationResponse":{"additionalProperties":false,"properties":{"output_data":{"description":"The
       LLM''s annotation for this attribute.","title":"Output Data","type":"string"},"additional_text":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Supporting
       text from document containing the context window where the attribute is found","title":"Additional
       Text"},"reasoning":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Reasoning
-      or explanation for the annotation decision","title":"Reasoning"}},"required":["output_data","additional_text","reasoning"],"title":"LLMSTRINGAnnotationResponse","type":"object"}},"additionalProperties":false,"properties":{"attribute_1":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse","description":"participants"},"attribute_5":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse","description":"participants_Age_text"}},"required":["attribute_1","attribute_5"],"title":"DynamicLLMResponse","type":"object"}}}]}'
+      or explanation for the annotation decision","title":"Reasoning"}},"required":["output_data","additional_text","reasoning"],"title":"LLMSTRINGAnnotationResponse","type":"object"}},"additionalProperties":false,"properties":{"attribute_1":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse","description":"participants"},"attribute_5":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse","description":"participants_Age_text"}},"required":["attribute_1","attribute_5"],"title":"DynamicLLMResponse","type":"object"},"strict":true}},"temperature":0.1}'
     headers:
       Accept:
       - application/json
@@ -88,7 +88,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '7217'
+      - '7179'
       Content-Type:
       - application/json
       Host:
@@ -119,80 +119,34 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
-        patients;; Group 1 ( 29 patients );; Group 2 ( 31 patients );; ambulatory
-        anterior cruciate ligament repair of the knee\",\"additional_text\":\"Sixty
-        patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
-        ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received
-        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The study
-        mentions a total of sixty patients and specifies the number of patients in
-        each group, along with the condition they were undergoing surgery for, which
-        is sufficient to answer the question.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":\"\",\"reasoning\":\"The
-        document does not provide any specific information regarding the age of the
-        study participants.\"}}","name":"json_tool_call"},"id":"call_anJL7FhQPR4wMpuDhsl36tzS","type":"function"}]}}],"created":1785421414,"id":"chatcmpl-E7LxW7o4wPFJSCoxVAHC3x3o5POA2","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":198,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":10,"engine_ttft_ms":43,"engine_ttlt_ms":2017,"pre_inference_ms":123,"service_tbt_ms":10,"service_ttft_ms":274,"service_ttlt_ms":2219,"total_duration_ms":2105,"user_visible_ttft_ms":150},"prompt_tokens":1441,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1408},"total_tokens":1639}}
-
-        '
+      string: "{\n  \"error\": {\n    \"message\": \"Invalid schema for response_format
+        'llm_annotation_response': context=('properties', 'attribute_1'), $ref cannot
+        have keywords {'description'}.\",\n    \"type\": \"invalid_request_error\",\n
+        \   \"param\": \"response_format\",\n    \"code\": null\n  }\n}"
     headers:
       Content-Length:
-      - '2473'
+      - '268'
       Content-Type:
       - application/json
       Date:
-      - Thu, 30 Jul 2026 14:23:36 GMT
+      - Thu, 30 Jul 2026 15:06:23 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 82146561-abd6-4b73-ad55-042b4bbee61a
-      azureai-fe-is-streaming:
-      - 'False'
-      azureai-fe-requested-service-tier:
-      - PayGo
-      azureai-fe-requested-zone:
-      - default
-      azureml-model-session:
-      - d20260721024335-41ad77c6
-      skip-error-remapping:
-      - 'true'
-      x-accel-buffering:
-      - 'no'
+      - 2181172a-4ce8-44de-9731-b4e87cbf1870
       x-content-type-options:
       - nosniff
       x-ms-deployment-name:
       - gpt-4o-mini
-      x-ms-is-spilled-over:
-      - 'false'
       x-ms-rai-invoked:
       - 'true'
       x-ms-region:
       - Sweden Central
-      x-ms-served-model:
-      - gpt-4o-mini-2024-07-18
-      x-ratelimit-abusepenalty-active:
-      - 'False'
-      x-ratelimit-key:
-      - gpt-4o-mini
-      x-ratelimit-limit-requests:
-      - '13900'
-      x-ratelimit-limit-tokens:
-      - '1390000'
-      x-ratelimit-remaining-requests:
-      - '13899'
-      x-ratelimit-remaining-tokens:
-      - '1388559'
-      x-ratelimit-renewalperiod-requests:
-      - '60'
-      x-ratelimit-renewalperiod-tokens:
-      - '60'
-      x-ratelimit-reset-requests:
-      - '0'
-      x-ratelimit-reset-tokens:
-      - '0'
       x-request-id:
-      - 82146561-abd6-4b73-ad55-042b4bbee61a
+      - 2181172a-4ce8-44de-9731-b4e87cbf1870
     status:
-      code: 200
-      message: OK
+      code: 400
+      message: Bad Request
 - request:
     body: "{\"messages\":[{\"role\":\"system\",\"content\":\"You will be provided
       with a context from a paper and a list of attributes (questions) below.\\nBased
@@ -259,11 +213,11 @@ interactions:
       brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
       the source context and if applicable, divide extracted text snippets with double
       semicolon (;;). Do not extract any text if participant information is not reported.\\\",
-      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"temperature\":0.1,\"tool_choice\":{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\"}},\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"json_tool_call\",\"parameters\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
+      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"llm_annotation_response\",\"schema\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
       LLM's annotation for this attribute.\",\"title\":\"Output Data\",\"type\":\"string\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
       text from document containing the context window where the attribute is found\",\"title\":\"Additional
       Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
-      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_1\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"participants\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"participants_Age_text\"}},\"required\":[\"attribute_1\",\"attribute_5\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"}}}]}"
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_1\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"participants\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"participants_Age_text\"}},\"required\":[\"attribute_1\",\"attribute_5\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":0.1}"
     headers:
       Accept:
       - application/json
@@ -272,7 +226,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '6389'
+      - '6351'
       Content-Type:
       - application/json
       Host:
@@ -303,73 +257,32 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
-        young male students\",\"additional_text\":\"\\\"Thirty-six young male students
-        performed 5 min of jogging as a warm-up...\\\"\",\"reasoning\":\"The document
-        specifies the study participants as ''thirty-six young male students'', which
-        includes their sex and sample size.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"\\\"thirty-six
-        young male students\\\"\",\"reasoning\":\"The document describes the participants
-        as ''young'', which indicates their age group.\"}}","name":"json_tool_call"},"id":"call_eZdy3jLApdnEYlPWid7m9yFh","type":"function"}]}}],"created":1785421416,"id":"chatcmpl-E7LxYSp6cBhskLE363TT1j1cE0Y0z","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":105,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":8,"engine_ttft_ms":33,"engine_ttlt_ms":890,"pre_inference_ms":139,"service_tbt_ms":8,"service_ttft_ms":287,"service_ttlt_ms":1105,"total_duration_ms":974,"user_visible_ttft_ms":148},"prompt_tokens":1214,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1319}}
-
-        '
+      string: "{\n  \"error\": {\n    \"message\": \"Invalid schema for response_format
+        'llm_annotation_response': context=('properties', 'attribute_1'), $ref cannot
+        have keywords {'description'}.\",\n    \"type\": \"invalid_request_error\",\n
+        \   \"param\": \"response_format\",\n    \"code\": null\n  }\n}"
     headers:
       Content-Length:
-      - '2119'
+      - '268'
       Content-Type:
       - application/json
       Date:
-      - Thu, 30 Jul 2026 14:23:38 GMT
+      - Thu, 30 Jul 2026 15:06:23 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 170aa1f7-cae0-46a6-a79c-6e7e714a31b6
-      azureai-fe-is-streaming:
-      - 'False'
-      azureai-fe-requested-service-tier:
-      - PayGo
-      azureai-fe-requested-zone:
-      - default
-      azureml-model-session:
-      - d20260721024335-41ad77c6
-      skip-error-remapping:
-      - 'true'
-      x-accel-buffering:
-      - 'no'
+      - 87612535-c40a-4aac-970e-69847662f860
       x-content-type-options:
       - nosniff
       x-ms-deployment-name:
       - gpt-4o-mini
-      x-ms-is-spilled-over:
-      - 'false'
       x-ms-rai-invoked:
       - 'true'
       x-ms-region:
       - Sweden Central
-      x-ms-served-model:
-      - gpt-4o-mini-2024-07-18
-      x-ratelimit-abusepenalty-active:
-      - 'False'
-      x-ratelimit-key:
-      - gpt-4o-mini
-      x-ratelimit-limit-requests:
-      - '13900'
-      x-ratelimit-limit-tokens:
-      - '1390000'
-      x-ratelimit-remaining-requests:
-      - '13899'
-      x-ratelimit-remaining-tokens:
-      - '1388786'
-      x-ratelimit-renewalperiod-requests:
-      - '60'
-      x-ratelimit-renewalperiod-tokens:
-      - '60'
-      x-ratelimit-reset-requests:
-      - '0'
-      x-ratelimit-reset-tokens:
-      - '0'
       x-request-id:
-      - 170aa1f7-cae0-46a6-a79c-6e7e714a31b6
+      - 87612535-c40a-4aac-970e-69847662f860
     status:
-      code: 200
-      message: OK
+      code: 400
+      message: Bad Request
 version: 1
