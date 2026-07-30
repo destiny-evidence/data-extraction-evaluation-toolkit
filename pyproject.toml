@@ -152,6 +152,9 @@ select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
 
+[tool.semantic_release]
+allow_zero_version = true
+
 [tool.setuptools]
 package-data = {"deet.prompts" = ["*.txt"], "deet.ui.terminal.templates" = ["**/*.md"]}
 package-dir = {"" = "."}
