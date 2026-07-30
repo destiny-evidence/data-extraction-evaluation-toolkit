@@ -1,0 +1,40 @@
+# .github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    branches: [main, development]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to push the version bump commit + tag
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0          # full history so PSR can read all commits
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and tag
+        uses: python-semantic-release/python-semantic-release@39dd2052f2ce8282a5d932c31d58a2ca06d2550e # v10.6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          config_file: pyproject.toml
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Regenerate lockfile
+        run: uv lock
+
+      - name: Commit uv.lock if changed
+        run: |
+          if git diff --quiet -- uv.lock; then
+            echo "uv.lock already up to date"
+            exit 0
+          fi
+
+          git add uv.lock
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "chore: sync uv.lock after release [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}

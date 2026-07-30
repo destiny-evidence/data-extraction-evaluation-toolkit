@@ -45,6 +45,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
+    "python-semantic-release>=10.6.1",
     "pyyaml>=6.0.2",
     "rapidfuzz>=3.9.0",
     "scikit-learn>=1.7.1",
@@ -144,6 +145,9 @@ per-file-ignores = {"deet/processors/parser.py" = ["PLC0415"], "deet/utils/asses
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
+
+[tool.semantic_release]
+allow_zero_version = true
 
 [tool.setuptools]
 package-data = {"deet.prompts" = ["*.txt"]}

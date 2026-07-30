@@ -9,6 +9,7 @@ Last updated: NL, 2025-02-19
 - By default, PRs should point to the `development` branch, where they can be stress-tested before getting merged into `main`.
   - However, a lot of PRs will likely point towards other fix/feature branches.
 - PRs will only be merged into `development` once they have been approved by at least one reviewer. This is peer review -- ask your fellow contributors to review your code, it won't happen automatically.
+- We enforce [conventional commit](https://www.conventionalcommits.org/en/v1.0.0/) tags and require you to use pre-commit hooks, installed via `pre-commit install`. These tags will lead to your feature potentially incrementing the version number of `deet`. Please keep this in mind when tagging your commits.
 - In the spirit of atomicity, keep in mind the reviewer's time when putting together your PR. This should reflect both a manageable complexity and length of the new feature.
 - Some people enjoy using AI-assisted coding, and that's cool. But the notion that tools like Cursor, Claude Code, Copilot etc. will __10x__ your software development chops are debateable, at best. For the purpose of contributing to `deet`, please ensure that you've self-reviewed your AI code to the degree that you're 100% sure it's the absolute best it can be before asking for review. Do _not_ throw end-to-end AI code to a human reviewer, as this simply externalises the effort onto the review process.
 - __BEFORE ASKING FOR REVIEW__, please ensure the following:
