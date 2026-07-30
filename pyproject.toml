@@ -148,6 +148,22 @@ pep8-naming.classmethod-decorators = ["classmethod"]
 
 [tool.semantic_release]
 allow_zero_version = true
+build_command = """
+    uv lock --upgrade-package "$PACKAGE_NAME"
+    git add uv.lock
+    uv build
+"""
+tag_format = "v{version}"
+version_toml = ["pyproject.toml:project.version"]
+
+[tool.semantic_release.branches.develop]
+match = "develop"
+prerelease = true
+prerelease_token = "dev"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
 
 [tool.setuptools]
 package-data = {"deet.prompts" = ["*.txt"]}
