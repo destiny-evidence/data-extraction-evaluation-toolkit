@@ -80,20 +80,29 @@ attributes = [
 
 String attributes describe data extraction elements that can be represented as texts. For example, a string attribute could be used to extract the location of a study
 
+!!! Warning "Not fully supported"
+    string attributes are only partially covered by standard evaluation metrics
+
 ### float
 
 Float attributes describe any type of numeric data extraction elements, such as the average age of study participants, or the effect size or standard error.
 
+!!! Warning "Not fully supported"
+    float attributes are only partially covered by standard evaluation metrics
+
 ### integer
 
 Integer attributes describe the subset of numeric data extraction elements that can be represented by whole numbers, and whole numbers only, for example, the number of participants in a trial, or the year in which a trial was carried out.
+
+!!! Warning "Not fully supported"
+    integer attributes are only partially covered by standard evaluation metrics
 
 ### list
 
 Lists describe data extraction elements that have 0, 1, or more elements. For example, the prompt "extract all of the health outcomes described in the study" could be represented as a list
 
 !!! Warning "Not fully supported"
-    List attributes are not reliably parsed from EppiJson, and are not covered by currently implemented standard evaluation metrics
+    List attributes are not covered by currently implemented standard evaluation metrics
 
 ### dict
 

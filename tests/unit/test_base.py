@@ -726,20 +726,6 @@ def test_document_creation() -> None:
     assert doc.context == "This is test content"
 
 
-def test_document_creation_with_list_context() -> None:
-    """Test creating a document with context as string (list joined)."""
-    citation = ReferenceFileInput()
-    context_str = "Paragraph 1\n\nParagraph 2"
-    doc = Document(
-        name="Test Document 2",
-        citation=citation,
-        context=context_str,
-        context_type=ContextType.RAG_SNIPPETS,
-        document_id=2,
-    )
-    assert doc.context == context_str
-
-
 def test_gold_standard_annotation_creation_from_dict() -> None:
     """Test creating a gold standard annotation from dictionary data."""
     # This mimics how annotations are created from JSON data

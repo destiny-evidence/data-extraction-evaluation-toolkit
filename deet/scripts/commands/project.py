@@ -25,6 +25,8 @@ from deet.scripts.project_utils import (
 from deet.scripts.typer_context import project_required
 from deet.settings import LogLevel
 from deet.ui import fail_with_message, notify
+from deet.ui.terminal import console, render_template
+from deet.ui.terminal.components import info_panel
 from deet.utils.text import slugify
 
 app = typer.Typer(help="Commands to create and configure deet projects.")
@@ -202,6 +204,17 @@ def link(typer_context: typer.Context) -> None:
             / f"{linked_document.safe_identity.document_id}.json"
         )
         linked_document.save(file_path)
+
+    # TODO: Nice message explaining what happened
+    console.print(
+        info_panel(
+            render_template(
+                "project/linked",
+                linked_documents=linked_documents,
+                documents=processed_annotation_data.documents,
+            )
+        )
+    )
 
 
 @app.command()

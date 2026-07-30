@@ -13,7 +13,7 @@ APP_HELP = flow("""
     run `deet project --help` for information on commands to create and configure
     a project.
 
-    run `deet run --help` for information on commands to extract data
+    run `deet experiments --help` for information on commands to extract data
 
     Prefix any command with --verbose to see complete log output.
 

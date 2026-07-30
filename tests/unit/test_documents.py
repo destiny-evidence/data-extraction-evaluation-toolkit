@@ -523,7 +523,7 @@ def test_document_creation_minimal():
     )
     assert doc.name == "Minimal Document"
     assert doc.context is None
-    assert doc.context_type == ContextType.EMPTY
+    assert doc.context_type is None
     assert doc.document_id is None
     assert doc.is_final is False
     assert doc.is_linked is False
@@ -656,7 +656,7 @@ def test_document_is_final_requires_good_context_type():
             name="Test Document",
             citation=citation,
             context="some context",
-            context_type=ContextType.EMPTY,
+            context_type=None,
             is_final=True,
             document_identity=DocumentIdentity(
                 doi="10.1000/test",

@@ -42,7 +42,7 @@ from deet.data_models.extraction import (
     PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
-from deet.exceptions import LitellmModelNotMappedError
+from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
     LLMProvider,
@@ -394,6 +394,9 @@ class LLMDataExtractor:
         Extract data from all documents.
 
         Loops over documents and extracts data using list of attributes.
+        A document that's missing what it needs for the chosen context_type
+        (e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,
+        not raised.
 
         Args:
             attributes: List of attributes to extract.
@@ -428,12 +431,12 @@ class LLMDataExtractor:
             for document in iterable_documents:
                 logger.info(f"Processing document: {document.name}")
 
-                if context_type == ContextType.ABSTRACT_ONLY:
-                    document.set_abstract_context()
-                elif context_type == ContextType.FULL_DOCUMENT:
-                    document.context = document.safe_parsed_document.text
-
                 try:
+                    if context_type == ContextType.ABSTRACT_ONLY:
+                        document.set_abstract_context()
+                    elif context_type == ContextType.FULL_DOCUMENT:
+                        document.context = document.safe_parsed_document.text
+
                     result = self.extract_from_document(
                         attributes=attributes,
                         filter_attribute_ids=filter_attribute_ids,
@@ -461,6 +464,8 @@ class LLMDataExtractor:
                     if result.total_cost_usd is not None:
                         total_cost = (total_cost or 0.0) + result.total_cost_usd
 
+                except NoAbstractError as e:
+                    logger.warning(f"Skipping {document.name}: {e}")
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to process {document.name}: {e}")
                     logger.debug("Error details", exc_info=True)
@@ -552,12 +557,6 @@ class LLMDataExtractor:
         elif ctx == ContextType.ABSTRACT_ONLY:
             context = payload
             logger.debug(f"Using abstract context (length: {len(str(context))})")
-        elif ctx == ContextType.RAG_SNIPPETS:
-            rag_not_impl = "rag-snippets context type is not implemented."
-            raise NotImplementedError(rag_not_impl)
-        elif ctx == ContextType.CUSTOM:
-            custom_not_impl = "custom context type is not implemented."
-            raise NotImplementedError(custom_not_impl)
         else:
             other_not_allowed = f"{ctx} context type is not allowed."
             raise ValueError(other_not_allowed)
@@ -759,7 +758,12 @@ class LLMDataExtractor:
             max_tokens=self.config.max_tokens,
         )
 
-        response_content = response.choices[0].message.content
+        msg = response.choices[0].message
+
+        if getattr(msg, "content", None) is not None:
+            response_content = msg.content
+        elif getattr(msg, "tool_calls", None):
+            response_content = msg.tool_calls[0].function.arguments
         logger.debug(f"raw response: {response_content}")
 
         input_tokens = 0
