@@ -60,26 +60,25 @@ def parse_eppi_citation_text(raw_text: str) -> ParsedEppiCitation:
 
 
 def parse_eppi_citations_from_details(
-    details: list[EppiItemAttributeFullTextDetails] | None,
+    details: list[EppiItemAttributeFullTextDetails],
 ) -> list[ParsedEppiCitation]:
     """
     Parse each EPPI full-text detail entry independently.
 
     Args:
-        details: List of :class:`EppiItemAttributeFullTextDetails`, or ``None``.
+        details: List of :class:`EppiItemAttributeFullTextDetails` (use ``[]`` when
+            absent).
 
     Returns:
         One :class:`ParsedEppiCitation` per detail with a non-empty ``text``.
-        Empty or ``None`` input yields ``[]``.
+        Empty input yields ``[]``.
 
     """
-    if not details:
-        return []
     parsed: list[ParsedEppiCitation] = []
     for detail in details:
         text = detail.text
-        if text is not None and str(text).strip():
-            parsed.append(parse_eppi_citation_text(str(text)))
+        if text is not None and text.strip():
+            parsed.append(parse_eppi_citation_text(text))
     return parsed
 
 

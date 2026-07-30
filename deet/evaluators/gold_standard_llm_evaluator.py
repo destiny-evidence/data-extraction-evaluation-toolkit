@@ -16,7 +16,7 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, GoldStandardAnnotation
 from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
@@ -123,14 +123,16 @@ def _eppi_full_text_details_colon_separated(annotation: object) -> str:
     return ": ".join(parts)
 
 
-def _citation_fields_from_annotation(annotation: object) -> tuple[str, str]:
+def _citation_fields_from_annotation(
+    annotation: GoldStandardAnnotation,
+) -> tuple[str, str]:
     """
     Parse EPPI citation markup into ``(citation_page, citation_highlight_text)``.
 
     Non-EPPI annotations (no ``item_attribute_full_text_details``) yield empty
     strings. Multiple detail entries are joined with ``": "``.
     """
-    details = getattr(annotation, "item_attribute_full_text_details", None)
+    details = getattr(annotation, "item_attribute_full_text_details", None) or []
     return format_parsed_citations(parse_eppi_citations_from_details(details))
 
 
