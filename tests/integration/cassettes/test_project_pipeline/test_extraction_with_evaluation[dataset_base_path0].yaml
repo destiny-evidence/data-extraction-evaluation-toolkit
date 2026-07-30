@@ -6,39 +6,52 @@ interactions:
       per attribute. Each attribute response is keyed by its attribute id in the form
       \"attribute_<id>\" and must contain the output_data, additional_text and reasoning
       fields. You must provide a response for every attribute and must not invent
-      attributes that were not asked for.\n\nPlease explain step by step reasoning
-      behind each answer.\nYou should also cite text from the paper context to support
-      your answer if the answer is True. If the citation is present at multiple places,
-      please cite all of them in the additional_text key. You can separate the citations
-      with ------.\n\nIMPORTANT: Be careful to distinguish between the current paper''s
-      findings and references to previous literature. When the text refers to other
-      studies (indicated by citation markers like reference numbers [1], author names
-      and years (Smith et al., 2020), etc.), do not use these statements as evidence
-      for the current paper''s attributes. Only use statements that directly describe
-      the current paper''s methodology.\n\n\nPaper text is provided inside the JSON
-      under the \"context\" key.\n\nInput JSON:\n{input_json}\n"},{"role":"user","content":"{\"context\":
-      \"The anesthetic and recovery profile of two doses ( 60 and 80 mg ) of plain
-      mepivacaine for ambulatory spinal anesthesia . UNLABELLED Reports of transient
-      neurological symptoms with the use of subarachnoid lidocaine has generated interest
-      in alternate local anesthetics of intermediate duration , such as mepivacaine
-      . This prospective randomized , double-blinded , dose-response study examined
-      the anesthetic and recovery profiles of 60- and 80-mg doses of preservative-free
-      plain mepivacaine for ambulatory spinal anesthesia . Sixty patients undergoing
-      ambulatory anterior cruciate ligament repair of the knee under spinal anesthesia
-      were randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5
-      % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
-      ) of plain mepivacaine . All patients received a combined spinal-epidural anesthetic
-      technique . The epidural catheter was used only in the event the surgery outlasted
-      the duration of surgical anesthesia with subarachnoid mepivacaine . Epidural
-      supplementation was administered in three patients ( 12 % ) in Group 1 and one
-      patient ( 3 % ) in Group 2 when the sensory block regressed to L-1 with surgery
-      expected to last longer than 15 min . The cephalad dermatome level of the block
-      and degree of motor block was comparable in the two groups . Times to two-segment
-      and T-10 regression were comparable in the two groups ( 112 +/- 26 min in Group
-      1 versus 122 +/- 28 min in Group 2 ) . Time to L-1 regression was significantly
-      longer in Group 2 ( 146 +/- 28 min in Group 1 versus 159 +/- 19 min in Group
-      2 ) . All of the ambulatory milestones were significantly faster in Group 1
-      . Side effects , such as hypotension and emesis were negligible , severe bradycardia
+      attributes that were not asked for.\n\nYou are a very meticulous data extraction
+      assistant, and you are extracting different types of data from academic papers.\n\nYou
+      will be given:\n- an academic document, provided as a markdown-formatted file\n-
+      a list of questions or attributes for which answers are requested.\n- for each
+      question, an expected output type.\n\nYour task is to extract information strictly
+      from the provided document.\n\nFor each question, produce a structured response
+      containing the following fields:\n\nAnswer: A concise, direct answer to the
+      question. The answer may be:\n\n- A Boolean (`true` or `false`) for BOOL questions.\n-
+      A short string or text span extracted or paraphrased from the document for STRING
+      questions.\n- A whole number for INTEGER questions.\n- A decimal number for
+      FLOAT questions.\n- A list of values for LIST questions.\n- A dictionary/object
+      with key-value pairs for DICT questions.\n\nReasoning: A clear explanation on
+      how the answer was derived from the document''s content.\nAdditional_text: A
+      verbatim excerpt from the document that directly supports the answer.\n\nExtraction
+      Rules\n- Use only the content of the provided document\n- Do not speculate,
+      infer unstated information, or rely on domain knowledge\n- The Answer must conform
+      exactly to the output type specified by the attribute.\n- The Additional_text
+      must be exact quotations from the document and should be minimal but sufficient
+      to justify the answer. If multiple passages are relevant, include the single
+      most direct citation\n- If the document does not contain sufficient information
+      to answer the question:\n     explain in Reasoning why the information is missing\n     leave
+      Additional_text blank\n\nOutput Format:\n-Provide one response per question,
+      preserving the original question order\n-Return results in json format\n\nInput
+      JSON:\n{input_json}\n"},{"role":"user","content":"{\"context\": \"The anesthetic
+      and recovery profile of two doses ( 60 and 80 mg ) of plain mepivacaine for
+      ambulatory spinal anesthesia . UNLABELLED Reports of transient neurological
+      symptoms with the use of subarachnoid lidocaine has generated interest in alternate
+      local anesthetics of intermediate duration , such as mepivacaine . This prospective
+      randomized , double-blinded , dose-response study examined the anesthetic and
+      recovery profiles of 60- and 80-mg doses of preservative-free plain mepivacaine
+      for ambulatory spinal anesthesia . Sixty patients undergoing ambulatory anterior
+      cruciate ligament repair of the knee under spinal anesthesia were randomized
+      into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5 % ( 60-mg dose
+      ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose ) of plain mepivacaine
+      . All patients received a combined spinal-epidural anesthetic technique . The
+      epidural catheter was used only in the event the surgery outlasted the duration
+      of surgical anesthesia with subarachnoid mepivacaine . Epidural supplementation
+      was administered in three patients ( 12 % ) in Group 1 and one patient ( 3 %
+      ) in Group 2 when the sensory block regressed to L-1 with surgery expected to
+      last longer than 15 min . The cephalad dermatome level of the block and degree
+      of motor block was comparable in the two groups . Times to two-segment and T-10
+      regression were comparable in the two groups ( 112 +/- 26 min in Group 1 versus
+      122 +/- 28 min in Group 2 ) . Time to L-1 regression was significantly longer
+      in Group 2 ( 146 +/- 28 min in Group 1 versus 159 +/- 19 min in Group 2 ) .
+      All of the ambulatory milestones were significantly faster in Group 1 . Side
+      effects , such as hypotension and emesis were negligible , severe bradycardia
       and urinary retention did not occur , and none of the patients in the two groups
       reported transient neurological symptoms over 24 h. In conclusion , plain mepivacaine
       in a 60- or 80-mg dose is a suitable local anesthetic choice for ambulatory
@@ -75,7 +88,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '6195'
+      - '7217'
       Content-Type:
       - application/json
       Host:
@@ -107,28 +120,30 @@ interactions:
   response:
     body:
       string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"Sixty
+        patients;; Group 1 ( 29 patients );; Group 2 ( 31 patients );; ambulatory
+        anterior cruciate ligament repair of the knee\",\"additional_text\":\"Sixty
         patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia;; Group 1 ( 29 patients ) received 4 mL of 1.5 % (
-        60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
-        ) of plain mepivacaine\",\"additional_text\":null,\"reasoning\":\"The context
-        provides information about the study participants, specifically mentioning
-        that there were sixty patients involved in the study, and it details the distribution
-        of these patients into two groups based on the doses of mepivacaine they received.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":null,\"reasoning\":\"The
-        context does not provide any specific information regarding the age of the
-        study participants. Therefore, there are no snippets to extract for this attribute.\"}}","name":"json_tool_call"},"id":"call_ZeirShD7Erf9AVXqUxV7tpfe","type":"function"}]}}],"created":1785266331,"id":"chatcmpl-E6hcBylcq10Yub985j2CoDdmBveoA","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":184,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":29,"engine_ttlt_ms":1594,"pre_inference_ms":97,"service_tbt_ms":9,"service_ttft_ms":199,"service_ttlt_ms":1759,"total_duration_ms":1670,"user_visible_ttft_ms":102},"prompt_tokens":1249,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1433}}
+        under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
+        ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received
+        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The study
+        mentions a total of sixty patients and specifies the number of patients in
+        each group, along with the condition they were undergoing surgery for, which
+        is sufficient to describe the study participants.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":\"\",\"reasoning\":\"The
+        document does not provide any specific information regarding the age of the
+        study participants.\"}}","name":"json_tool_call"},"id":"call_H7H0YkX6tXXIwdpHGAYeYUG4","type":"function"}]}}],"created":1785421447,"id":"chatcmpl-E7Ly3EbKqFGXIbTDHe3hCeV7Q930g","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":199,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":11,"engine_ttft_ms":38,"engine_ttlt_ms":2199,"pre_inference_ms":146,"service_tbt_ms":11,"service_ttft_ms":282,"service_ttlt_ms":2436,"total_duration_ms":2301,"user_visible_ttft_ms":136},"prompt_tokens":1441,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1408},"total_tokens":1640}}
 
         '
     headers:
       Content-Length:
-      - '2430'
+      - '2485'
       Content-Type:
       - application/json
       Date:
-      - Tue, 28 Jul 2026 19:18:53 GMT
+      - Thu, 30 Jul 2026 14:24:10 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - c55d5c1e-f63b-46e3-bb1a-df68a0f43bfa
+      - d75dd211-783e-40c0-ba2b-3ef83985479c
       azureai-fe-is-streaming:
       - 'False'
       azureai-fe-requested-service-tier:
@@ -136,13 +151,15 @@ interactions:
       azureai-fe-requested-zone:
       - default
       azureml-model-session:
-      - d20260721020908-1ddb2e0e
+      - d20260721024335-41ad77c6
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
+      x-ms-deployment-name:
+      - gpt-4o-mini
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -162,7 +179,7 @@ interactions:
       x-ratelimit-remaining-requests:
       - '13899'
       x-ratelimit-remaining-tokens:
-      - '1388751'
+      - '1388559'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -172,7 +189,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - c55d5c1e-f63b-46e3-bb1a-df68a0f43bfa
+      - d75dd211-783e-40c0-ba2b-3ef83985479c
     status:
       code: 200
       message: OK
@@ -183,17 +200,30 @@ interactions:
       one response per attribute. Each attribute response is keyed by its attribute
       id in the form \\\"attribute_<id>\\\" and must contain the output_data, additional_text
       and reasoning fields. You must provide a response for every attribute and must
-      not invent attributes that were not asked for.\\n\\nPlease explain step by step
-      reasoning behind each answer.\\nYou should also cite text from the paper context
-      to support your answer if the answer is True. If the citation is present at
-      multiple places, please cite all of them in the additional_text key. You can
-      separate the citations with ------.\\n\\nIMPORTANT: Be careful to distinguish
-      between the current paper's findings and references to previous literature.
-      When the text refers to other studies (indicated by citation markers like reference
-      numbers [1], author names and years (Smith et al., 2020), etc.), do not use
-      these statements as evidence for the current paper's attributes. Only use statements
-      that directly describe the current paper's methodology.\\n\\n\\nPaper text is
-      provided inside the JSON under the \\\"context\\\" key.\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
+      not invent attributes that were not asked for.\\n\\nYou are a very meticulous
+      data extraction assistant, and you are extracting different types of data from
+      academic papers.\\n\\nYou will be given:\\n- an academic document, provided
+      as a markdown-formatted file\\n- a list of questions or attributes for which
+      answers are requested.\\n- for each question, an expected output type.\\n\\nYour
+      task is to extract information strictly from the provided document.\\n\\nFor
+      each question, produce a structured response containing the following fields:\\n\\nAnswer:
+      A concise, direct answer to the question. The answer may be:\\n\\n- A Boolean
+      (`true` or `false`) for BOOL questions.\\n- A short string or text span extracted
+      or paraphrased from the document for STRING questions.\\n- A whole number for
+      INTEGER questions.\\n- A decimal number for FLOAT questions.\\n- A list of values
+      for LIST questions.\\n- A dictionary/object with key-value pairs for DICT questions.\\n\\nReasoning:
+      A clear explanation on how the answer was derived from the document's content.\\nAdditional_text:
+      A verbatim excerpt from the document that directly supports the answer.\\n\\nExtraction
+      Rules\\n- Use only the content of the provided document\\n- Do not speculate,
+      infer unstated information, or rely on domain knowledge\\n- The Answer must
+      conform exactly to the output type specified by the attribute.\\n- The Additional_text
+      must be exact quotations from the document and should be minimal but sufficient
+      to justify the answer. If multiple passages are relevant, include the single
+      most direct citation\\n- If the document does not contain sufficient information
+      to answer the question:\\n     explain in Reasoning why the information is missing\\n
+      \    leave Additional_text blank\\n\\nOutput Format:\\n-Provide one response
+      per question, preserving the original question order\\n-Return results in json
+      format\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
       \\\"Acute effects of static active or dynamic active stretching on eccentric-exercise-induced
       hamstring muscle damage . OBJECTIVES To examine whether an acute bout of active
       or dynamic hamstring-stretching exercises would reduce the amount of muscle
@@ -242,7 +272,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '5367'
+      - '6389'
       Content-Type:
       - application/json
       Host:
@@ -274,26 +304,27 @@ interactions:
   response:
     body:
       string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":null,"refusal":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"attribute_1\":{\"output_data\":\"thirty-six
-        young male students\",\"additional_text\":\"thirty-six young male students\",\"reasoning\":\"The
-        context specifies that the study involved ''thirty-six young male students''
-        as participants, which provides information about the sample size, sex, and
-        age group.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"young\",\"reasoning\":\"The
-        term ''young'' is used to describe the age of the participants, indicating
-        they are likely in their late teens to early twenties, but no specific age
-        is provided.\"}}","name":"json_tool_call"},"id":"call_LfdWOEodpxBK4RmHB6zhJxDQ","type":"function"}]}}],"created":1785266333,"id":"chatcmpl-E6hcDpOhOW179cAhiqWcZNvwaoHz1","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":114,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":8,"engine_ttft_ms":57,"engine_ttlt_ms":949,"pre_inference_ms":98,"service_tbt_ms":8,"service_ttft_ms":247,"service_ttlt_ms":1133,"total_duration_ms":1045,"user_visible_ttft_ms":149},"prompt_tokens":1022,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":1136}}
+        young male students\",\"additional_text\":\"Thirty-six young male students
+        performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups\",\"reasoning\":\"The
+        document specifies the participants as ''thirty-six young male students'',
+        which includes their sex and sample size, but does not provide specific age
+        or health conditions.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"thirty-six
+        young male students\",\"reasoning\":\"The document describes the participants
+        as ''young male students'', indicating their age group, but does not provide
+        a specific age.\"}}","name":"json_tool_call"},"id":"call_suikCP1vScblrqygqeFYL2AM","type":"function"}]}}],"created":1785421450,"id":"chatcmpl-E7Ly6CcgCHUkEhCqnuxTxNFdXalqk","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":128,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":11,"engine_ttft_ms":39,"engine_ttlt_ms":1426,"pre_inference_ms":120,"service_tbt_ms":11,"service_ttft_ms":250,"service_ttlt_ms":1641,"total_duration_ms":1524,"user_visible_ttft_ms":130},"prompt_tokens":1214,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1342}}
 
         '
     headers:
       Content-Length:
-      - '2153'
+      - '2236'
       Content-Type:
       - application/json
       Date:
-      - Tue, 28 Jul 2026 19:18:54 GMT
+      - Thu, 30 Jul 2026 14:24:12 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - d69823c8-f11b-4306-ad6c-a02217dbb436
+      - 81b958aa-fdd5-4da3-8944-ce0ee9a69aed
       azureai-fe-is-streaming:
       - 'False'
       azureai-fe-requested-service-tier:
@@ -301,13 +332,15 @@ interactions:
       azureai-fe-requested-zone:
       - default
       azureml-model-session:
-      - d20260721020908-1ddb2e0e
+      - d20260721024335-41ad77c6
       skip-error-remapping:
       - 'true'
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
+      x-ms-deployment-name:
+      - gpt-4o-mini
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -327,7 +360,7 @@ interactions:
       x-ratelimit-remaining-requests:
       - '13899'
       x-ratelimit-remaining-tokens:
-      - '1388978'
+      - '1388786'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -337,7 +370,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - d69823c8-f11b-4306-ad6c-a02217dbb436
+      - 81b958aa-fdd5-4da3-8944-ce0ee9a69aed
     status:
       code: 200
       message: OK

@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Thread
 
 import pytest
+import yaml
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
@@ -25,7 +26,10 @@ def runner():
     return CliRunner()
 
 
-INTEGRATION_DATASETS = [Path(__file__).parent / "datasets/ebmnlp_with_metadata"]
+INTEGRATION_DATASETS = [
+    Path(__file__).parent / "datasets/ebmnlp_with_metadata",
+    Path(__file__).parent / "datasets/alzped",
+]
 
 
 @pytest.fixture(scope="module")
@@ -62,13 +66,22 @@ def initialised_project_workspace(tmp_project_workspace, dataset_base_path):
     )
     project.setup()
 
+    # Configure extraction to handle long documents
+    config_path = project.config_path
+    if config_path.exists():
+        with config_path.open() as f:
+            config = yaml.safe_load(f)
+        config["truncate_on_overflow"] = True
+        with config_path.open("w") as f:
+            yaml.dump(config, f)
+
     try:
         yield project_dir
     finally:
         os.chdir(previous_cwd)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def virtual_keyboard():
     with (
         create_pipe_input() as pipe_input,
