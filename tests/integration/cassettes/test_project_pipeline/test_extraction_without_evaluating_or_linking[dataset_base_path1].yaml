@@ -823,13 +823,7 @@ interactions:
       LLM's annotation for this attribute.\",\"title\":\"Output Data\",\"type\":\"string\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
       text from document containing the context window where the attribute is found\",\"title\":\"Additional
       Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
-      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_2\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Species\"},\"attribute_4\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Model\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Strain\"},\"attribute_7\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Therapeutic
-      Target\"},\"attribute_8\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Therapeutic
-      Agent\"},\"attribute_41\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Behavioral\"},\"attribute_33\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Biochemical\"},\"attribute_34\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Biomarker\"},\"attribute_42\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Cell
-      Biology\"},\"attribute_53\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Chemistry\"},\"attribute_56\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Electron
-      Microscopy\"},\"attribute_46\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Electrophysiology\"},\"attribute_35\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Histopathology\"},\"attribute_57\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Imaging\"},\"attribute_36\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Immunochemistry\"},\"attribute_49\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Immunology\"},\"attribute_43\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Microscopy\"},\"attribute_44\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Motor
-      Function\"},\"attribute_45\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Omics\"},\"attribute_37\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Pharmacodynamics\"},\"attribute_48\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Pharmacokinetics\"},\"attribute_50\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Pharmacology\"},\"attribute_51\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Physiology\"},\"attribute_58\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Protein
-      Structures\"},\"attribute_38\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Spectroscopy\"},\"attribute_39\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\",\"description\":\"Toxicology\"}},\"required\":[\"attribute_2\",\"attribute_4\",\"attribute_5\",\"attribute_7\",\"attribute_8\",\"attribute_41\",\"attribute_33\",\"attribute_34\",\"attribute_42\",\"attribute_53\",\"attribute_56\",\"attribute_46\",\"attribute_35\",\"attribute_57\",\"attribute_36\",\"attribute_49\",\"attribute_43\",\"attribute_44\",\"attribute_45\",\"attribute_37\",\"attribute_48\",\"attribute_50\",\"attribute_51\",\"attribute_58\",\"attribute_38\",\"attribute_39\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":0.1}"
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_2\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_4\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_7\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_8\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_41\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_33\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_34\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_42\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_53\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_56\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_46\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_35\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_57\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_36\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_49\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_43\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_44\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_45\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_37\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_48\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_50\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_51\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_58\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_38\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_39\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"}},\"required\":[\"attribute_2\",\"attribute_4\",\"attribute_5\",\"attribute_7\",\"attribute_8\",\"attribute_41\",\"attribute_33\",\"attribute_34\",\"attribute_42\",\"attribute_53\",\"attribute_56\",\"attribute_46\",\"attribute_35\",\"attribute_57\",\"attribute_36\",\"attribute_49\",\"attribute_43\",\"attribute_44\",\"attribute_45\",\"attribute_37\",\"attribute_48\",\"attribute_50\",\"attribute_51\",\"attribute_58\",\"attribute_38\",\"attribute_39\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":0.1}"
     headers:
       Accept:
       - application/json
@@ -838,7 +832,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '71285'
+      - '70534'
       Content-Type:
       - application/json
       Host:
@@ -869,32 +863,149 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: "{\n  \"error\": {\n    \"message\": \"Invalid schema for response_format
-        'llm_annotation_response': context=('properties', 'attribute_2'), $ref cannot
-        have keywords {'description'}.\",\n    \"type\": \"invalid_request_error\",\n
-        \   \"param\": \"response_format\",\n    \"code\": null\n  }\n}"
+      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\n
+        \ \\\"attribute_2\\\": {\\n    \\\"output_data\\\": \\\"Tg2576\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document mentions the use of Tg2576
+        mice as the primary animal model in the experiments conducted. No other species
+        are specified in the context provided.\\\"\\n  },\\n  \\\"attribute_4\\\":
+        {\\n    \\\"output_data\\\": \\\"Tg2576 APP mice\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document specifically refers to
+        Tg2576 APP mice as the animal model used in the experiments, indicating that
+        this is the only model evaluated.\\\"\\n  },\\n  \\\"attribute_5\\\": {\\n
+        \   \\\"output_data\\\": \\\"Tg2576\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The strain mentioned in the document is Tg2576,
+        which is a specific transgenic mouse model used for studying Alzheimer's disease.\\\"\\n
+        \ },\\n  \\\"attribute_7\\\": {\\n    \\\"output_data\\\": \\\"A\u03B242\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The therapeutic
+        intervention evaluated in the experiment targets A\u03B242 levels, as indicated
+        by the focus on R-flurbiprofen's ability to lower A\u03B242.\\\"\\n  },\\n
+        \ \\\"attribute_8\\\": {\\n    \\\"output_data\\\": \\\"R-flurbiprofen\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The only
+        therapeutic intervention evaluated in the experiments is R-flurbiprofen, as
+        detailed throughout the document.\\\"\\n  },\\n  \\\"attribute_41\\\": {\\n
+        \   \\\"output_data\\\": \\\"spatial learning; memory function\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The outcomes measured in the experiment
+        that quantify behavioral changes include assessments of spatial learning and
+        memory function, particularly through the Morris water maze.\\\"\\n  },\\n
+        \ \\\"attribute_33\\\": {\\n    \\\"output_data\\\": \\\"A\u03B2 levels\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document
+        discusses measuring A\u03B2 levels as a molecular outcome, specifically focusing
+        on A\u03B240 and A\u03B242.\\\"\\n  },\\n  \\\"attribute_34\\\": {\\n    \\\"output_data\\\":
+        \\\"A\u03B2 plaque burden\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document mentions assessing A\u03B2 plaque
+        burden as a biomarker outcome, indicating its relevance to the study.\\\"\\n
+        \ },\\n  \\\"attribute_42\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not specify any cell
+        biology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_53\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not mention any specific cell
+        chemistry outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_56\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not provide information on any
+        electron microscopy outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_46\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not mention any electrophysiology
+        outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_35\\\":
+        {\\n    \\\"output_data\\\": \\\"A\u03B2 plaque burden\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document discusses measuring A\u03B2
+        plaque burden as a histopathology outcome, indicating its significance in
+        the study.\\\"\\n  },\\n  \\\"attribute_57\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not specify any imaging outcomes measured in the experiment.\\\"\\n
+        \ },\\n  \\\"attribute_36\\\": {\\n    \\\"output_data\\\": \\\"A\u03B2 plaques\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document
+        mentions the measurement of A\u03B2 plaques through immunohistochemistry as
+        part of the experimental outcomes.\\\"\\n  },\\n  \\\"attribute_49\\\": {\\n
+        \   \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not provide information on any
+        immunology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_43\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not mention any microscopy outcomes
+        measured in the experiment.\\\"\\n  },\\n  \\\"attribute_44\\\": {\\n    \\\"output_data\\\":
+        \\\"swimming speed\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document discusses measuring swimming speed as a motor function outcome
+        in the behavioral assessments.\\\"\\n  },\\n  \\\"attribute_45\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not specify any omics outcomes measured in the experiment.\\\"\\n
+        \ },\\n  \\\"attribute_37\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not provide information
+        on any pharmacodynamics outcomes measured in the experiment.\\\"\\n  },\\n
+        \ \\\"attribute_48\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not mention any pharmacokinetics
+        or ADME outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_50\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not provide information on any
+        immunology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_51\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not specify any physiology outcomes
+        measured in the experiment.\\\"\\n  },\\n  \\\"attribute_58\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not mention any protein structures outcomes measured
+        in the experiment.\\\"\\n  },\\n  \\\"attribute_38\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not provide information on any spectroscopy outcomes
+        measured in the experiment.\\\"\\n  },\\n  \\\"attribute_39\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not mention any toxicology outcomes measured in the
+        experiment.\\\"\\n  }\\n}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1785424080,\"id\":\"chatcmpl-E7MeWmGpR7Fwn46qG80hMoLm1mELO\",\"model\":\"gpt-4o-mini-2024-07-18\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"service_tier\":\"default\",\"system_fingerprint\":\"fp_27599ce29d\",\"usage\":{\"completion_tokens\":1249,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":0,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":10,\"engine_ttft_ms\":45,\"engine_ttlt_ms\":13153,\"pre_inference_ms\":135,\"service_tbt_ms\":10,\"service_ttft_ms\":269,\"service_ttlt_ms\":13373,\"total_duration_ms\":13247,\"user_visible_ttft_ms\":134},\"prompt_tokens\":17203,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":17152},\"total_tokens\":18452}}\n"
     headers:
       Content-Length:
-      - '268'
+      - '7371'
       Content-Type:
       - application/json
       Date:
-      - Thu, 30 Jul 2026 15:06:25 GMT
+      - Thu, 30 Jul 2026 15:08:13 GMT
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 38f436ea-5706-417a-abe9-2eee76d7d98c
+      - f6a7977b-d859-4a9d-95cb-2d6434361e32
+      azureai-fe-is-streaming:
+      - 'False'
+      azureai-fe-requested-service-tier:
+      - PayGo
+      azureai-fe-requested-zone:
+      - default
+      azureml-model-session:
+      - d20260721024335-41ad77c6
+      skip-error-remapping:
+      - 'true'
+      x-accel-buffering:
+      - 'no'
       x-content-type-options:
       - nosniff
       x-ms-deployment-name:
       - gpt-4o-mini
+      x-ms-is-spilled-over:
+      - 'false'
       x-ms-rai-invoked:
       - 'true'
       x-ms-region:
       - Sweden Central
+      x-ms-served-model:
+      - gpt-4o-mini-2024-07-18
+      x-ratelimit-abusepenalty-active:
+      - 'False'
+      x-ratelimit-key:
+      - gpt-4o-mini
+      x-ratelimit-limit-requests:
+      - '13900'
+      x-ratelimit-limit-tokens:
+      - '1390000'
+      x-ratelimit-remaining-requests:
+      - '13899'
+      x-ratelimit-remaining-tokens:
+      - '1372797'
+      x-ratelimit-renewalperiod-requests:
+      - '60'
+      x-ratelimit-renewalperiod-tokens:
+      - '60'
+      x-ratelimit-reset-requests:
+      - '0'
+      x-ratelimit-reset-tokens:
+      - '0'
       x-request-id:
-      - 38f436ea-5706-417a-abe9-2eee76d7d98c
+      - f6a7977b-d859-4a9d-95cb-2d6434361e32
     status:
-      code: 400
-      message: Bad Request
+      code: 200
+      message: OK
 version: 1
