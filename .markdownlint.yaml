@@ -3,4 +3,5 @@
 MD013: false #  line-length
 ignore:
   - "tests/test_files/**/*"
+  - "CHANGELOG.md"
 MD046: false # code block style (need both styles if tabs are to work)
