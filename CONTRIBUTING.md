@@ -1,6 +1,6 @@
 # How to contribute to `deet`
 
-Last updated: NL, 2025-02-19
+Last updated: HM, 2026-07-31
 
 ## Generally applicable guidelines
 
@@ -47,3 +47,48 @@ In general, we're always looking for people to help out and add more features, e
 ## Do you want to add/modify documentation?
 
 Documentation is really important. It's usually something developers don't prioritise. If you see some documentation that's missing, wrong our out of date, follow the [bug-fixing flow](#have-you-written-a-patch-that-fixes-a-bug) for adding your documentation.
+
+## Branch and versioning flows
+
+### Working on a feature
+
+```bash
+git checkout -b feat/my-feature    # branch from main or development
+# make changes
+git commit -m "feat: add my feature"    # hook validates the message format
+git push origin feat/my-feature
+# open a pr to development or main
+```
+
+### PR merged into development
+
+CI runs python-semantic-release on the merged commit history and:
+
+- determines the version bump from commit prefixes (`fix:` -> patch, `feat:` -> minor, etc.)
+- writes the pre-release version to `pyproject.toml` (e.g. `0.2.0.dev1`)
+- commits that change as `chore(release): 0.2.0.dev1 [skip ci]` and pushes it
+- creates git tag `v0.2.0.dev1`
+
+subsequent merges to development increment the dev counter: `0.2.0.dev2`, `0.2.0.dev3`, and so on.
+
+### PR merged into main
+
+CI runs python-semantic-release and:
+
+- strips the pre-release suffix to produce the canonical version (e.g. `0.2.0`)
+- writes it to `pyproject.toml`
+- creates git tag `v0.2.0`
+- creates a github release and updates `CHANGELOG.md`
+
+canonical versions only exist on `main`.
+
+## Checking the version
+
+Check pyproject.toml directly.
+
+## notes
+
+- Use `uv run semantic-release version --noop` to preview what a release would do locally. Never run it without `--noop`.
+- Adding the `[skip ci]` tag in actions workflows prevents the workflow from triggering itself in a loop.
+- If a merge contains only `chore:`, `docs:`, or `test:` commits, no version bump or release is created.
+- Do not create or move git tags manually. let CI own them entirely.
