@@ -22,8 +22,7 @@ repos:
       - id: markdownlint-fix
         args:
           - --dot
-          - --ignore
-          - "tests/test_files/**/*"
+          - --config=.markdownlint.yaml
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5

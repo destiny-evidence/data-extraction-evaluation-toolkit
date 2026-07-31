@@ -11,30 +11,27 @@ jobs:
     permissions:
       contents: write  # needed to push the version bump commit + tag
     steps:
+      - name: Generate app token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ vars.CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0          # full history so PSR can read all commits
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Bump version and tag
-        uses: python-semantic-release/python-semantic-release@39dd2052f2ce8282a5d932c31d58a2ca06d2550e # v10.6.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          config_file: pyproject.toml
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.0"
 
-      - name: Regenerate lockfile
-        run: uv lock
+      - name: Install semantic-release
+        run: uv tool install python-semantic-release==10.6.1
 
-      - name: Commit uv.lock if changed
-        run: |
-          if git diff --quiet -- uv.lock; then
-            echo "uv.lock already up to date"
-            exit 0
-          fi
-
-          git add uv.lock
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "chore: sync uv.lock after release [skip ci]"
-          git push origin HEAD:${GITHUB_REF_NAME}
+      - name: Bump version and tag
+        run: semantic-release -c pyproject.toml version
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
