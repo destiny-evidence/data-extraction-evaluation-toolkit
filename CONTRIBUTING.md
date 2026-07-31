@@ -50,6 +50,8 @@ Documentation is really important. It's usually something developers don't prior
 
 ## Branch and versioning flows
 
+We list some typical flows for contributing to `deet` below. Note that conventional commits are now enforced via pre-commit hooks, so please ensure you have them installed before committing.
+
 ### Working on a feature
 
 ```bash
@@ -69,7 +71,7 @@ CI runs python-semantic-release on the merged commit history and:
 - commits that change as `chore(release): 0.2.0.dev1 [skip ci]` and pushes it
 - creates git tag `v0.2.0.dev1`
 
-subsequent merges to development increment the dev counter: `0.2.0.dev2`, `0.2.0.dev3`, and so on.
+Subsequent merges to development increment the dev counter: `0.2.0.dev2`, `0.2.0.dev3`, and so on.
 
 ### PR merged into main
 
@@ -80,15 +82,15 @@ CI runs python-semantic-release and:
 - creates git tag `v0.2.0`
 - creates a github release and updates `CHANGELOG.md`
 
-canonical versions only exist on `main`.
+Canonical versions only exist on `main`.
 
-## Checking the version
+### Checking the version
 
 Check pyproject.toml directly.
 
-## notes
+### Notes
 
 - Use `uv run semantic-release version --noop` to preview what a release would do locally. Never run it without `--noop`.
 - Adding the `[skip ci]` tag in actions workflows prevents the workflow from triggering itself in a loop.
 - If a merge contains only `chore:`, `docs:`, or `test:` commits, no version bump or release is created.
-- Do not create or move git tags manually. let CI own them entirely.
+- Do not create or move git tags manually; let CI own them entirely.
