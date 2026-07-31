@@ -60,6 +60,17 @@ uv run pre-commit install --hook-type commit-msg
 
 This will force you to use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## Commit message format
+
+All commits must use [**conventional commits**](conventionalcommits.org). The pre-commit hook will reject any commit that doesn't.
+
+| prefix | example | version effect |
+|---|---|---|
+| `fix:` | `fix: handle null input` | patch: `0.1.0 -> 0.1.1` |
+| `feat:` | `feat: add login page` | minor: `0.1.0 -> 0.2.0` |
+| `feat!:` or `BREAKING CHANGE:` footer | `feat!: remove legacy api` | major: `0.1.0 -> 1.0.0` |
+| `chore:`, `docs:`, `ci:`, `test:` | `chore: update deps` | no bump |
+
 ## Tests
 
 Tests are written using `pytest`. You can run the tests locally using
