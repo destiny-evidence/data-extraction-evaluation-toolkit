@@ -15566,7 +15566,7 @@ Ollama accept as valid (unlike an <code>Any</code>-typed field).</p>
     <span class="k">for</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="n">attributes</span><span class="p">:</span>
         <span class="n">response_fields</span><span class="p">[</span><span class="n">attribute_response_key</span><span class="p">(</span><span class="n">attribute</span><span class="o">.</span><span class="n">attribute_id</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">attribute</span><span class="o">.</span><span class="n">output_data_type</span><span class="o">.</span><span class="n">llm_annotation_response_model</span><span class="p">(),</span>
-            <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">attribute</span><span class="o">.</span><span class="n">attribute_label</span><span class="p">),</span>
+            <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">create_model</span><span class="p">(</span>
