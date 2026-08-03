@@ -16,7 +16,7 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, GoldStandardAnnotation
 from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
@@ -29,6 +29,11 @@ from deet.data_models.evaluation import (
     get_metrics_for_attribute_type,
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
+from deet.processors.eppi_citation_parser import (
+    format_parsed_citations,
+    parse_eppi_citations_from_details,
+)
+from deet.utils.text_normalisation import normalize_string_for_match
 
 # Default for ``short_snippet_max_len``: snippets shorter than this (in characters)
 # use stricter matching—digit-boundary checks for all-numeric snippets, else
@@ -67,8 +72,13 @@ def _verbatim_fuzzy_match_pct(
         Float in ``[0.0, 100.0]``, or ``0.0`` if either input is empty.
 
     """
-    normalized_snippet = (snippet_text or "").strip()
-    normalized_context = (document_context or "").strip()
+    # Preserve case for grounding: PDF context and snippets should match as written.
+    normalized_snippet = normalize_string_for_match(
+        snippet_text or "", case_insensitive=False
+    )
+    normalized_context = normalize_string_for_match(
+        document_context or "", case_insensitive=False
+    )
     if not normalized_snippet or not normalized_context:
         return 0.0
     # Short all-numeric snippet: require a standalone number, not a substring of digits.
@@ -111,6 +121,19 @@ def _eppi_full_text_details_colon_separated(annotation: object) -> str:
         if text is not None and str(text).strip():
             parts.append(str(text).strip())
     return ": ".join(parts)
+
+
+def _citation_fields_from_annotation(
+    annotation: GoldStandardAnnotation,
+) -> tuple[str, str]:
+    """
+    Parse EPPI citation markup into ``(citation_page, citation_highlight_text)``.
+
+    Non-EPPI annotations (no ``item_attribute_full_text_details``) yield empty
+    strings. Multiple detail entries are joined with ``": "``.
+    """
+    details = getattr(annotation, "item_attribute_full_text_details", None) or []
+    return format_parsed_citations(parse_eppi_citations_from_details(details))
 
 
 class GoldStandardLLMEvaluator:
@@ -285,6 +308,9 @@ class GoldStandardLLMEvaluator:
         - ``attribute_presence``: Whether the gold annotation is present.
         - ``human_additional_text`` / ``item_attribute_full_text_details``: Taken from
           the eppi json file when present; empty when absent.
+        - ``citation_page`` / ``citation_highlight_text``: Parsed from raw EPPI
+          citation markup (``Page N:`` / ``[¬s]...[¬e]``); multiple fragments joined
+          with ``": "``. Empty when markup is absent.
         - ``human_extraction``: Actual ground truth to be extracted.
         - ``human_verbatim_fuzzy_match_pct``: Grounding of ``human_additional_text``
           against the LLM annotated document's ``context``.
@@ -310,6 +336,8 @@ class GoldStandardLLMEvaluator:
                     "attribute_presence",
                     "human_additional_text",
                     "item_attribute_full_text_details",
+                    "citation_page",
+                    "citation_highlight_text",
                     "human_extraction",
                     "llm_extraction",
                     "llm_reasoning",
@@ -349,9 +377,14 @@ class GoldStandardLLMEvaluator:
                         item_attr_full: str = _eppi_full_text_details_colon_separated(
                             gold_real
                         )
+                        citation_page, citation_highlight = (
+                            _citation_fields_from_annotation(gold_real)
+                        )
                     else:
                         human_additional_text = ""
                         item_attr_full = ""
+                        citation_page = ""
+                        citation_highlight = ""
                     present = gold_real is not None
                     human_fuzzy = _verbatim_fuzzy_match_pct(
                         human_additional_text, context
@@ -392,6 +425,8 @@ class GoldStandardLLMEvaluator:
                             "attribute_presence": str(present),
                             "human_additional_text": human_additional_text,
                             "item_attribute_full_text_details": item_attr_full,
+                            "citation_page": citation_page,
+                            "citation_highlight_text": citation_highlight,
                             "human_extraction": human_ann.output_data,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
