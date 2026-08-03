@@ -50,8 +50,8 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
 | Attribute type | Default metrics |
 |----------------|-----------------|
 | **BOOL** | `accuracy`, `precision`, `recall`, `f1_score`, `n_labels` |
-| **STRING** | `accuracy`, and (when registered) `edit_distance_match_rate` |
-| **INTEGER** / **FLOAT** | `accuracy`, and (when registered) `mean_absolute_error`, `mean_absolute_percentage_error` |
+| **STRING** | `accuracy`, `edit_distance_match_rate` |
+| **INTEGER** / **FLOAT** | `accuracy`, `mean_absolute_error`, `mean_absolute_percentage_error` |
 | **LIST** / **DICT** | No default metrics yet |
 
 - **`accuracy`**: fraction of exact matches between gold and LLM `output_data`.
@@ -66,12 +66,6 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
   they do not replace it. Pairs with `None` LLM predictions are dropped for
   these regression-style metrics. MAPE skips pairs where gold is zero and logs
   a warning.
-
-!!! note "Related work"
-    Additional STRING / INTEGER / FLOAT metrics (`edit_distance_match_rate`,
-    MAE, MAPE) and the config threshold are part of the evaluation-metrics
-    track. Until that lands on your branch, STRING / INTEGER / FLOAT runs
-    still emit `accuracy` only.
 
 You can also pass extra sklearn metric names with
 `--custom-evaluation-metrics` on `deet experiments evaluate`.

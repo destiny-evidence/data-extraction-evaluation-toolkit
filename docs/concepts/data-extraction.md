@@ -80,25 +80,23 @@ attributes = [
 
 String attributes describe data extraction elements that can be represented as texts. For example, a string attribute could be used to extract the location of a study.
 
-Default evaluation uses exact-match `accuracy` on string `output_data`. Near-match
-metrics such as edit-distance match rate may also be available depending on your
-DEET version; see [Evaluation](evaluation.md#metrics-by-attribute-type).
+Default evaluation uses exact-match `accuracy` on string `output_data`, plus
+`edit_distance_match_rate` for near matches; see
+[Evaluation](evaluation.md#metrics-by-attribute-type).
 
 ### float
 
 Float attributes describe any type of numeric data extraction elements, such as the average age of study participants, or the effect size or standard error.
 
-Default evaluation uses exact-match `accuracy`. Magnitude-of-error metrics
-(MAE / MAPE) may also be available depending on your DEET version; see
-[Evaluation](evaluation.md#metrics-by-attribute-type).
+Default evaluation uses exact-match `accuracy`, plus magnitude-of-error metrics
+(MAE / MAPE); see [Evaluation](evaluation.md#metrics-by-attribute-type).
 
 ### integer
 
 Integer attributes describe the subset of numeric data extraction elements that can be represented by whole numbers, and whole numbers only, for example, the number of participants in a trial, or the year in which a trial was carried out.
 
-As with floats, default evaluation uses exact-match `accuracy`, with optional
-MAE / MAPE depending on your DEET version; see
-[Evaluation](evaluation.md#metrics-by-attribute-type).
+As with floats, default evaluation uses exact-match `accuracy`, plus MAE / MAPE;
+see [Evaluation](evaluation.md#metrics-by-attribute-type).
 
 ### list
 
