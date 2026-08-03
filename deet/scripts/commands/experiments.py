@@ -2,9 +2,12 @@
 """CLI sub-commands for running data extraction experiments (and evaluating them)."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
+
+if TYPE_CHECKING:
+    from deet.data_models.project import DeetProject
 
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.scripts.typer_context import project_required
@@ -88,9 +91,11 @@ def evaluate(  # noqa: PLR0913
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
+    deet_project: DeetProject = typer_context.obj.project
+
     run_output, processed_annotation_data, experiment_artefacts = (
         run_extraction_pipeline(
-            typer_context=typer_context,
+            deet_project=deet_project,
             prompt_csv_path=prompt_csv_path,
             config_path=config_path,
             prompt_population=prompt_population,
@@ -137,9 +142,11 @@ def predict(  # noqa: PLR0913
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
+    deet_project: DeetProject = typer_context.obj.project
+
     (run_output, processed_annotation_data, experiment_artefacts) = (
         run_extraction_pipeline(
-            typer_context=typer_context,
+            deet_project=deet_project,
             prompt_csv_path=prompt_csv_path,
             config_path=config_path,
             prompt_population=prompt_population,
@@ -155,3 +162,23 @@ def predict(  # noqa: PLR0913
         extraction_run_id=experiment_artefacts.run_id,
     )
     evaluator.export_llm_csv(experiment_artefacts.llm_annotation_csv)
+
+
+@app.command()
+@project_required
+def splits(
+    typer_context: typer.Context,
+    action: Annotated[
+        str | None,
+        typer.Option("--action", "-a", help="add-dev | validate"),
+    ] = None,
+    size: Annotated[
+        int | None,
+        typer.Option("--size", "-s", help="Documents to sample (bypasses prompt)."),
+    ] = None,
+) -> None:
+    """Manage evaluation splits for this project."""
+    deet_project: DeetProject = typer_context.obj.project
+    deet_project.load_evaluation_strategy().run_splits_wizard(
+        project=deet_project, action=action, size=size
+    )
