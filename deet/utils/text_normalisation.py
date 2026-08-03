@@ -5,8 +5,8 @@ from typing import Any
 
 # Residual EPPI highlight markers that may remain after parsing.
 _EPPI_MARKUP_PATTERN = re.compile(r"\[¬[se]\]")
-# Leading/trailing quote characters (straight and curly).
-_SURROUNDING_QUOTES = frozenset("\"'`\u201c\u201d\u2018\u2019")
+# Leading/trailing quote characters (straight and curly) for ``str.strip``.
+_SURROUNDING_QUOTES = "\"'`\u201c\u201d\u2018\u2019"
 
 
 def normalize_whitespace(text: str) -> str:
@@ -41,12 +41,8 @@ def clean_extracted_text(text: str) -> str:
 
     """
     cleaned = _EPPI_MARKUP_PATTERN.sub("", text)
-    cleaned = normalize_whitespace(cleaned)
-    while cleaned and cleaned[0] in _SURROUNDING_QUOTES:
-        cleaned = cleaned[1:]
-    while cleaned and cleaned[-1] in _SURROUNDING_QUOTES:
-        cleaned = cleaned[:-1]
-    return normalize_whitespace(cleaned)
+    cleaned = normalize_whitespace(cleaned).strip(_SURROUNDING_QUOTES)
+    return cleaned.strip()
 
 
 def normalize_string_for_match(text: str, *, case_insensitive: bool = True) -> str:

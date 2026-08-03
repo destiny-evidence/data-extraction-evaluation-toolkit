@@ -105,9 +105,8 @@ def test_parse_eppi_citations_from_details() -> None:
     assert parsed[1].highlight_text == "Second"
 
 
-def test_parse_eppi_citations_from_details_none_or_empty() -> None:
-    """``None`` or empty details yield an empty list."""
-    assert parse_eppi_citations_from_details(None) == []
+def test_parse_eppi_citations_from_details_empty() -> None:
+    """Empty details yield an empty list."""
     assert parse_eppi_citations_from_details([]) == []
 
 

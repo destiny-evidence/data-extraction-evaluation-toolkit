@@ -625,7 +625,7 @@ def build_llm_response_model(
     for attribute in attributes:
         response_fields[attribute_response_key(attribute.attribute_id)] = (
             attribute.output_data_type.llm_annotation_response_model(),
-            Field(..., description=attribute.attribute_label),
+            Field(...),
         )
 
     return create_model(
