@@ -41,7 +41,7 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
 |--------|---------|
 | `attribute_id` | Attribute identifier |
 | `attribute_label` | Human-readable attribute name |
-| `value` | Metric score, or empty if the metric could not be computed (e.g. incompatible `None` predictions for classification metrics) |
+| `value` | Metric score, or empty if the metric could not be computed (including when any LLM prediction is missing or invalid — same failure behaviour across metric types) |
 | `extraction_run_id` | Run folder / run id |
 | `metric_name` | Name of the metric (see below) |
 
@@ -62,10 +62,12 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
   similarity is at least a configurable threshold (default `0.90`). Threshold
   can be set as `edit_distance_match_threshold` in the extraction config YAML.
 - **`mean_absolute_error` / `mean_absolute_percentage_error`**: magnitude of
-  numeric error on coerced float values. These complement exact-match accuracy;
-  they do not replace it. Pairs with `None` LLM predictions are dropped for
-  these regression-style metrics. MAPE skips pairs where gold is zero and logs
-  a warning.
+  numeric error. These complement exact-match accuracy; they do not replace it.
+  Missing or invalid LLM predictions (e.g. failed document extraction or
+  duplicate annotations → `None`) cause the metric to fail for that attribute,
+  same as binary metrics — the CSV `value` is left empty rather than scoring
+  only the successful subset. MAPE is undefined when a gold value is zero
+  (sklearn behaviour); that also leaves `value` empty.
 
 You can also pass extra sklearn metric names with
 `--custom-evaluation-metrics` on `deet experiments evaluate`.
