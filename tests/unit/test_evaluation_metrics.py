@@ -1,33 +1,18 @@
 """Unit tests for extraction evaluation metrics."""
 
 import pytest
-from loguru import logger
-
-from deet.data_models.base import AttributeType
-from deet.data_models.evaluation import (
-    EvaluationMetricSettings,
-    edit_distance_match_rate,
-    filter_valid_pairs,
-    get_metrics_for_attribute_type,
+from sklearn.metrics import (  # type:ignore[import-untyped]
     mean_absolute_error,
     mean_absolute_percentage_error,
 )
+
+from deet.data_models.base import AttributeType
+from deet.evaluators.metrics import (
+    EvaluationMetricSettings,
+    edit_distance_match_rate,
+    get_metrics_for_attribute_type,
+)
 from deet.extractors.llm_data_extractor import DataExtractionConfig
-
-
-def test_filter_valid_pairs_drops_none_predictions() -> None:
-    """None predictions are removed while keeping gold/pred alignment."""
-    y_true = ["a", "b", "c", "d"]
-    y_pred = ["a", None, "c", None]
-    filtered_true, filtered_pred = filter_valid_pairs(y_true, y_pred)
-    assert filtered_true == ["a", "c"]
-    assert filtered_pred == ["a", "c"]
-
-
-def test_filter_valid_pairs_rejects_length_mismatch() -> None:
-    """Mismatched list lengths raise ValueError."""
-    with pytest.raises(ValueError, match="same length"):
-        filter_valid_pairs([1, 2], [1])
 
 
 def test_edit_distance_match_rate_near_match_above_threshold() -> None:
@@ -59,10 +44,21 @@ def test_edit_distance_match_rate_uses_normalisation() -> None:
     assert rate == 1.0
 
 
-def test_edit_distance_match_rate_filters_none_and_empty() -> None:
-    """None predictions are dropped; all-None yields 0.0."""
-    assert edit_distance_match_rate(["a", "b"], ["a", None]) == 1.0
-    assert edit_distance_match_rate(["a"], [None]) == 0.0
+def test_edit_distance_match_rate_rejects_none_predictions() -> None:
+    """None predictions raise, consistent with binary-metric failure behaviour."""
+    with pytest.raises(TypeError, match="None predictions"):
+        edit_distance_match_rate(["a", "b"], ["a", None])
+
+
+def test_edit_distance_match_rate_rejects_length_mismatch() -> None:
+    """Mismatched list lengths raise ValueError."""
+    with pytest.raises(ValueError, match="same length"):
+        edit_distance_match_rate(["a", "b"], ["a"])
+
+
+def test_edit_distance_match_rate_empty_lists() -> None:
+    """Empty aligned lists yield 0.0."""
+    assert edit_distance_match_rate([], []) == 0.0
 
 
 def test_mean_absolute_error_rounding_vs_hallucination() -> None:
@@ -82,31 +78,12 @@ def test_mean_absolute_percentage_error_rounding_vs_hallucination() -> None:
     assert hallucination_mape == pytest.approx(0.99)
 
 
-def test_mean_absolute_percentage_error_skips_zero_gold() -> None:
-    """Zero-gold pairs are skipped with a warning; remaining pairs are scored."""
-    messages: list[str] = []
-    logger_id = logger.add(messages.append, level="WARNING")
-    try:
-        mape = mean_absolute_percentage_error([0.0, 100.0], [5.0, 110.0])
-    finally:
-        logger.remove(logger_id)
-
-    assert mape == pytest.approx(0.10)
-    assert any("skipped 1 pair(s) with zero gold value" in m for m in messages)
-
-
-def test_mean_absolute_percentage_error_all_zero_gold_raises() -> None:
-    """MAPE raises when every gold value is zero after filtering."""
-    with pytest.raises(ValueError, match="No valid pairs for MAPE"):
-        mean_absolute_percentage_error([0.0, 0.0], [1.0, 2.0])
-
-
-def test_numeric_metrics_filter_none_predictions() -> None:
-    """None predictions are excluded from MAE/MAPE denominators."""
-    assert mean_absolute_error([10.0, 20.0], [12.0, None]) == pytest.approx(2.0)
-    assert mean_absolute_percentage_error([10.0, 20.0], [12.0, None]) == pytest.approx(
-        0.2
-    )
+def test_numeric_metrics_reject_none_predictions() -> None:
+    """None predictions are not accepted by sklearn MAE/MAPE."""
+    with pytest.raises((TypeError, ValueError)):
+        mean_absolute_error([10.0, 20.0], [12.0, None])
+    with pytest.raises((TypeError, ValueError)):
+        mean_absolute_percentage_error([10.0, 20.0], [12.0, None])
 
 
 def test_get_metrics_for_attribute_type_registers_new_metrics() -> None:
@@ -120,6 +97,11 @@ def test_get_metrics_for_attribute_type_registers_new_metrics() -> None:
         assert "accuracy" in numeric_metrics
         assert "mean_absolute_error" in numeric_metrics
         assert "mean_absolute_percentage_error" in numeric_metrics
+        assert numeric_metrics["mean_absolute_error"] is mean_absolute_error
+        assert (
+            numeric_metrics["mean_absolute_percentage_error"]
+            is mean_absolute_percentage_error
+        )
 
 
 def test_get_metrics_for_attribute_type_respects_threshold_settings() -> None:

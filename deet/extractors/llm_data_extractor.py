@@ -34,7 +34,6 @@ from deet.data_models.documents import (
     Document,
     GoldStandardAnnotatedDocument,
 )
-from deet.data_models.evaluation import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.data_models.extraction import (
     DocumentExtractionResult,
     DocumentParsingStats,
@@ -43,6 +42,7 @@ from deet.data_models.extraction import (
     PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
+from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,

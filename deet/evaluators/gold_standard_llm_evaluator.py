@@ -21,9 +21,9 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
 )
-from deet.data_models.evaluation import (
+from deet.data_models.evaluation import AttributeMetric
+from deet.evaluators.metrics import (
     METRICS,
-    AttributeMetric,
     EvaluationMetricSettings,
     MetricFunction,
     check_metric_returns_float,

@@ -85,8 +85,8 @@ def evaluate(  # noqa: PLR0913
     documents in your dataset. Evaluate by comparing the results to the gold
     standard data.
     """
-    from deet.data_models.evaluation import EvaluationMetricSettings
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+    from deet.evaluators.metrics import EvaluationMetricSettings
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
     run_output, processed_annotation_data, experiment_artefacts, config = (
