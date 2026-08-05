@@ -25,11 +25,13 @@ from deet.data_models.documents import (
 )
 from deet.data_models.extraction import (
     DocumentExtractionResult,
+    DocumentParsingStats,
     ExtractionRunMetadata,
     ExtractionRunOutput,
+    PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
-from deet.exceptions import LitellmModelNotMappedError
+from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
     LLMProvider,
@@ -175,6 +177,15 @@ class DataExtractionConfig(BaseModel):
         default_factory=PromptConfig, description="Prompt configuration"
     )
 
+    dynamic_json_schema: bool = Field(
+        default=True,
+        description=(
+            "If True, produce dynamic json schema with a key for each attribute"
+            " and where each attribute response is typed (marginally more expensive but"
+            " may be more likely to produce valid output)."
+        ),
+    )
+
     # Output
     include_reasoning: bool = Field(
         default=True, description="Include reasoning in output"
@@ -259,6 +270,7 @@ class BaseDataExtractor(ABC):
         output_file: Path | None = None,
         context_type: ContextType | None = None,
         prompt_outfile: Path | None = None,
+        document_parsing: dict[str, DocumentParsingStats] | None = None,
         *,
         show_progress: bool = False,
     ) -> ExtractionRunOutput:
@@ -266,6 +278,9 @@ class BaseDataExtractor(ABC):
         Extract data from all documents.
 
         Loops over documents and extracts data using list of attributes.
+        A document that's missing what it needs for the chosen context_type
+        (e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,
+        not raised.
 
         Args:
             attributes: List of attributes to extract.
@@ -275,6 +290,7 @@ class BaseDataExtractor(ABC):
             context_type: Override config context type; if None, use config default.
             prompt_outfile: Optional path to write a single JSON object:
                 keys are document IDs, values are prompt payload (messages).
+            document_parsing: Optional per-document parsing stats from preparation.
             show_progress: Whether to show a progress bar.
 
         Returns:
@@ -284,10 +300,11 @@ class BaseDataExtractor(ABC):
         if context_type is None:
             context_type = self.config.default_context_type
 
+        parsing_by_doc = document_parsing or {}
         prompt_payloads: dict[str, Any] = {}
-        per_doc_tokens: dict[str, dict[str, int]] = {}
+        per_document: dict[str, PerDocumentExtractionStats] = {}
 
-        annotated_docs: list[GoldStandardAnnotatedDocument] = []
+        llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
         total_input_tokens = 0
         total_output_tokens = 0
         total_cost: float | None = None
@@ -298,12 +315,12 @@ class BaseDataExtractor(ABC):
             for document in iterable_documents:
                 logger.info(f"Processing document: {document.name}")
 
-                if context_type == ContextType.ABSTRACT_ONLY:
-                    document.set_abstract_context()
-                elif context_type == ContextType.FULL_DOCUMENT:
-                    document.context = document.safe_parsed_document.text
-
                 try:
+                    if context_type == ContextType.ABSTRACT_ONLY:
+                        document.set_abstract_context()
+                    elif context_type == ContextType.FULL_DOCUMENT:
+                        document.context = document.safe_parsed_document.text
+
                     result = self.extract_from_document(
                         attributes=attributes,
                         filter_attribute_ids=filter_attribute_ids,
@@ -311,22 +328,28 @@ class BaseDataExtractor(ABC):
                         context_type=context_type,
                     )
 
-                    annotated_docs.append(
+                    llm_annotated_docs.append(
                         GoldStandardAnnotatedDocument(
                             document=document, annotations=result.annotations
                         )
                     )
                     doc_id_str = str(document.safe_identity.document_id)
                     prompt_payloads[doc_id_str] = result.messages
-                    per_doc_tokens[doc_id_str] = {
-                        "input_tokens": result.input_tokens,
-                        "output_tokens": result.output_tokens,
-                    }
+                    parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
+                    per_document[doc_id_str] = PerDocumentExtractionStats(
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        parsing_seconds=parsing.parsing_seconds,
+                        parsing_skipped=parsing.parsing_skipped,
+                        llm_call_seconds=result.llm_call_seconds,
+                    )
                     total_input_tokens += result.input_tokens
                     total_output_tokens += result.output_tokens
                     if result.total_cost_usd is not None:
                         total_cost = (total_cost or 0.0) + result.total_cost_usd
 
+                except NoAbstractError as e:
+                    logger.warning(f"Skipping {document.name}: {e}")
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to process {document.name}: {e}")
                     logger.debug("Error details", exc_info=True)
@@ -336,10 +359,10 @@ class BaseDataExtractor(ABC):
             total_input_tokens=total_input_tokens,
             total_output_tokens=total_output_tokens,
             total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
-            per_document_tokens=per_doc_tokens,
+            per_document=per_document,
         )
         run_output = ExtractionRunOutput(
-            annotated_documents=annotated_docs,
+            annotated_documents=llm_annotated_docs,
             metadata=run_metadata,
         )
 
