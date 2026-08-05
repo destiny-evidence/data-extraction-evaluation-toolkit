@@ -7,6 +7,9 @@ from loguru import logger
 
 from deet.data_models.base import (
     Attribute,
+    BaseLLMResponse,
+    LLMResponseSchema,
+    build_llm_response_model,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -102,6 +105,13 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
         total_input_tokens = 0
         total_output_tokens = 0
 
+        response_model: type[BaseLLMResponse]
+
+        if self.config.dynamic_json_schema:
+            response_model = build_llm_response_model(selected_attributes)
+        else:
+            response_model = LLMResponseSchema
+
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
             leaves = scheme.roots
@@ -115,13 +125,15 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     payload=context, attributes=level_attributes
                 )
                 llm_response, messages, output_tokens, input_tokens = self._call_llm(
-                    prompt=prompt
+                    prompt=prompt, response_model=response_model
                 )
                 all_messages.extend(messages)
                 total_input_tokens += input_tokens
                 total_output_tokens += output_tokens
                 annotations = self._parse_llm_response(
-                    response_content=llm_response, attributes=level_attributes
+                    response_content=llm_response,
+                    attributes=level_attributes,
+                    response_model=response_model,
                 )
                 all_annotations.extend(annotations)
                 present_attribute_ids = {

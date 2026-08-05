@@ -1,15 +1,22 @@
 """Tests for deet/extractors/cli_helpers.py."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml  # type:ignore[import-untyped]
 
 from deet.data_models.documents import ContextType, Document
+from deet.data_models.extraction import (
+    ExtractionRunMetadata,
+    ExtractionRunOutput,
+    PerDocumentExtractionStats,
+)
 from deet.extractors.cli_helpers import (
     init_extraction_run,
     load_config_from_typer_context,
     prepare_documents,
+    run_extraction_pipeline,
 )
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 
@@ -137,13 +144,72 @@ def test_init_extraction_run(tmp_path):
     assert log_path == experiment_artefacts.base_dir / "deet.log"
 
 
+def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
+    """run_extraction_pipeline should persist run metadata (cost/tokens) to disk."""
+    exp_dir = tmp_path / "experiments"
+
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+    mock_project.pdf_dir = tmp_path / "pdfs"
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = []
+    mock_project.process_data.return_value = mock_processed_data
+
+    mock_typer_context = MagicMock()
+    mock_typer_context.obj.project = mock_project
+
+    run_metadata = ExtractionRunMetadata(
+        model="gpt-4o-mini",
+        total_input_tokens=100,
+        total_output_tokens=50,
+        total_cost_usd=0.0123,
+        per_document={
+            "doc-1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+        },
+    )
+    run_output = ExtractionRunOutput(annotated_documents=[], metadata=run_metadata)
+
+    with (
+        patch(
+            "deet.extractors.cli_helpers.load_config_from_typer_context",
+            return_value=config,
+        ),
+        patch("deet.extractors.cli_helpers.get_data_extractor") as mock_get_extractor,
+        patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
+    ):
+        mock_extractor = MagicMock()
+        mock_extractor.config = config
+        mock_extractor.extract_from_documents.return_value = run_output
+        mock_get_extractor.return_value = mock_extractor
+
+        result_output, _, experiment_artefacts = run_extraction_pipeline(
+            typer_context=mock_typer_context,
+            prompt_population=None,
+            prompt_csv_path=None,
+        )
+
+    assert result_output is run_output
+
+    metadata_path = experiment_artefacts.extraction_metadata
+    assert metadata_path.name == "extraction_metadata.json"
+    assert metadata_path.exists()
+
+    written = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert written["model"] == "gpt-4o-mini"
+    assert written["total_input_tokens"] == 100
+    assert written["total_output_tokens"] == 50
+    assert written["total_cost_usd"] == 0.0123
+
+
 def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_path):
     """Return just the documents when context type is abstract only."""
     config.default_context_type = ContextType.ABSTRACT_ONLY
     linked_doc_path = tmp_path / "linked_documents"
     pdf_dir = tmp_path / "pdfs"
 
-    result = prepare_documents(
+    documents, parsing_stats = prepare_documents(
         documents=mock_documents,
         config=config,
         linked_document_path=linked_doc_path,
@@ -151,7 +217,8 @@ def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_pat
         link_map_path=None,
     )
 
-    assert result == mock_documents
+    assert documents == mock_documents
+    assert parsing_stats == {}
 
 
 def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
@@ -166,10 +233,13 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     (linked_doc_path / "doc1.json").write_text("{}")
     (linked_doc_path / "doc2.json").write_text("{}")
 
-    mock_loaded_doc = MagicMock(spec=Document)
+    mock_doc_1 = MagicMock(spec=Document)
+    mock_doc_1.safe_identity.document_id = 1
+    mock_doc_2 = MagicMock(spec=Document)
+    mock_doc_2.safe_identity.document_id = 2
 
-    with patch.object(Document, "load", return_value=mock_loaded_doc) as mock_load:
-        result = prepare_documents(
+    with patch.object(Document, "load", side_effect=[mock_doc_1, mock_doc_2]):
+        documents, parsing_stats = prepare_documents(
             documents=[],
             config=config,
             linked_document_path=linked_doc_path,
@@ -177,8 +247,10 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
             link_map_path=None,
         )
 
-    assert len(result) == 2
-    assert mock_load.call_count == 2
+    assert len(documents) == 2
+    assert len(parsing_stats) == 2
+    assert all(stats.parsing_skipped for stats in parsing_stats.values())
+    assert all(stats.parsing_seconds is None for stats in parsing_stats.values())
 
 
 def test_prepare_documents_unsupported_context_type(config, tmp_path, mock_documents):

@@ -2,6 +2,10 @@
 
 Project root: `{{project.root}}`
 
+{% if new_directory!="." %}
+Change into this directory by running `cd {{new_directory}}`
+{% endif %}
+
 ### Next steps
 
 1. **Define your prompts:** open your prompt definition file,
@@ -30,5 +34,5 @@ If you prefer to skip the wizard, edit the config file `{{project.config_path}}`
 and pass this as a command line argument
 
 ```sh
-deet run --config-path {{project.config_path}} extract
+deet experiments evaluate --config-path {{project.config_path}} extract
 ```

@@ -24,7 +24,7 @@ def mock_pdf_dir(tmp_path, mock_pdfminerparser_parse, mock_check_language):
 
 
 def test_create_documents_from_directory(mock_pdf_dir):
-    documents = create_documents_from_directory(mock_pdf_dir)
+    documents, _parsing_stats = create_documents_from_directory(mock_pdf_dir)
 
     assert len(documents) == 3
     doc_names = {doc.name for doc in documents}

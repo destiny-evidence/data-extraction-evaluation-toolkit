@@ -8,7 +8,7 @@ from functools import cached_property
 from io import BytesIO
 from pathlib import Path
 from random import randint
-from typing import Any, Generic, Literal, Self, TypeVar
+from typing import Any, Literal, Self
 
 from destiny_sdk.labs.references import LabsReference
 from destiny_sdk.references import ReferenceFileInput
@@ -20,7 +20,6 @@ from deet.data_models.base import (
     AnnotationType,
     Attribute,
     GoldStandardAnnotation,
-    GoldStandardAnnotationTypeVar,
 )
 from deet.exceptions import (
     BadDocumentIdError,
@@ -42,11 +41,11 @@ from deet.utils.identifier_utils import (
 class ContextType(StrEnum):
     """Types of context that can be provided to the LLM."""
 
-    EMPTY = auto()
+    # TODO: implement EMPTY = auto()
     FULL_DOCUMENT = auto()
     ABSTRACT_ONLY = auto()
-    RAG_SNIPPETS = auto()
-    CUSTOM = auto()
+    # TODO: RAG_SNIPPETS = auto()
+    # TODO: CUSTOM = auto()
 
 
 class DocumentIDSource(StrEnum):
@@ -303,7 +302,7 @@ class Document(BaseModel):
     name: str
     citation: ReferenceFileInput
     context: str | None = None  # new defaults, empty
-    context_type: ContextType | None = ContextType.EMPTY
+    context_type: ContextType | None = None
     document_id: int | str | None = None  # add support for str ids, e.g. uuid
     document_identity: DocumentIdentity | None = None
 
@@ -373,10 +372,8 @@ class Document(BaseModel):
             if self.context is None:
                 no_context_err = base_err_msg + "`context` is empty."
                 raise ValueError(no_context_err)
-            if self.context_type is None or self.context_type == ContextType.EMPTY:
-                bad_context_type_err = (
-                    base_err_msg + "`context_type` musnt be None or EMPTY."
-                )
+            if self.context_type is None:
+                bad_context_type_err = base_err_msg + "`context_type` musnt be None."
                 raise ValueError(bad_context_type_err)
             if self.document_identity is None:
                 no_doc_id_err = (
@@ -552,16 +549,14 @@ class Document(BaseModel):
         return cls(**data)
 
 
-DocumentTypeVar = TypeVar("DocumentTypeVar", bound=Document)
-
-
-class GoldStandardAnnotatedDocument(
-    BaseModel, Generic[DocumentTypeVar, GoldStandardAnnotationTypeVar]
-):
+class GoldStandardAnnotatedDocument[
+    DocumentType: Document,
+    GoldStandardAnnotationType: GoldStandardAnnotation,
+](BaseModel):
     """A document with its gold standard annotations."""
 
-    document: DocumentTypeVar
-    annotations: list[GoldStandardAnnotationTypeVar]
+    document: DocumentType
+    annotations: list[GoldStandardAnnotationType]
 
     def get_attribute_annotation(self, attribute: Attribute) -> GoldStandardAnnotation:
         """Get the value of the annotation of the corresponding attribute."""
@@ -600,32 +595,27 @@ class GoldStandardAnnotatedDocument(
         return result
 
 
-GoldStandardAnnotatedDocumentTypeVar = TypeVar(
-    "GoldStandardAnnotatedDocumentTypeVar", bound=GoldStandardAnnotatedDocument
-)
-
-
-class GoldStandardAnnotatedDocumentList(
-    BaseModel, Generic[GoldStandardAnnotatedDocumentTypeVar]
-):
+class GoldStandardAnnotatedDocumentList[
+    GoldStandardAnnotatedDocumentType: GoldStandardAnnotatedDocument[Any, Any]
+](BaseModel):
     """
-    A list of GoldStandardAnnotatedDocuments (or subclasses thereof).
+    A list of GoldStandardAnnotatedDocuments (or any subclasses thereof).
     This list is indexed to enable easy retrieval by document_id.
     """
 
-    gold_standard_annotations: Sequence[GoldStandardAnnotatedDocumentTypeVar]
+    gold_standard_annotations: Sequence[GoldStandardAnnotatedDocumentType]
 
     @cached_property
-    def annotation_index(self) -> dict[int, GoldStandardAnnotatedDocumentTypeVar]:
+    def annotation_index(self) -> dict[int, GoldStandardAnnotatedDocumentType]:
         """Cached index to enable retrieving annotated documents by id."""
         return {
             doc.document.safe_identity.document_id: doc
             for doc in self.gold_standard_annotations
         }
 
-    def get_by_id(self, document_id: int) -> GoldStandardAnnotatedDocumentTypeVar:
+    def get_by_id(self, document_id: int) -> GoldStandardAnnotatedDocumentType:
         """
-        Get GoldStandardAnnotatedDocument where document.document_identity
+        Get GoldStandardAnnotatedDocuments where document.document_identity
         matches document_identity.
         """
         try:
