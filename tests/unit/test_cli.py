@@ -527,6 +527,11 @@ def test_extract_happy_path(tmp_path):
     mock_extractor.extract_from_documents.assert_called_once()
     mock_evaluator.evaluate_llm_annotations.assert_called_once()
     mock_evaluator.write_metrics_to_csv.assert_called_once()
+    evaluator_kwargs = mock_evaluator_cls.call_args.kwargs
+    assert (
+        evaluator_kwargs["metric_settings"].edit_distance_match_threshold
+        == fake_config.edit_distance_match_threshold
+    )
     mock_evaluator.export_llm_comparison.assert_called_once()
     mock_evaluator.display_metrics.assert_called_once()
 

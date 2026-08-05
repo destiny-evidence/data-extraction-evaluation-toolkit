@@ -17,11 +17,15 @@ to reproduce it, as experiment artefacts. These are defined in
 [`deet.data_models.project.ExperimentArtefacts`](../reference/api.md#deet.data_models.project.ExperimentArtefacts),
 and comprise
 
-- The exact prompts used in the experiment (`ExperimentArtefacts.prompts_snapshot`)
-- All configurable options (such as the model, the temperature setting, etc.) (`ExperimentArtefacts.config_snapshot`)
-- A csv containing metrics for each attribute and each document (see [evaluation](evaluation.md)) (`ExperimentArtefacts.metrics`)
-- A csv showing the gold-standard and llm-generated data extraction results for each document and attribute side by side (`ExperimentArtefacts.comparison`)
-- The annotated documents (containing the data extracted by the LLM) (`ExperimentArtefacts.llm_annotations`)
+- The exact prompts used in the experiment (`ExperimentArtefacts.prompts_snapshot` → `prompts_used.csv`)
+- All configurable options (such as the model, the temperature setting, etc.) (`ExperimentArtefacts.config_snapshot` → `config.yaml`)
+- A csv of per-attribute evaluation metrics (`ExperimentArtefacts.metrics` → `metrics.csv`)
+- A csv showing the gold-standard and llm-generated data extraction results for each document and attribute side by side (`ExperimentArtefacts.comparison` → `goldstandard_llm_comparison.csv`)
+- The annotated documents containing the data extracted by the LLM (`ExperimentArtefacts.llm_annotations` → `llm_annotations.json`)
+- Run cost, token, and timing metadata (`ExperimentArtefacts.extraction_metadata` → `extraction_metadata.json`)
+
+Column-level descriptions of the metrics and comparison CSVs, and notes on the
+other files, are in [Evaluation](evaluation.md#output-artefacts).
 
 ## Comparing experiments
 
