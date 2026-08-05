@@ -402,6 +402,7 @@ def _load_runtime_config(config_path: Path) -> dict[str, Any]:
 
     required_keys = {
         "study_type",
+        "llm_model",
         "input_paths",
         "output_parent_dir",
         "max_tokens",
@@ -493,10 +494,8 @@ def run_dynamic_extraction_from_csv_schema(
     output_parent_dir.mkdir(parents=True, exist_ok=True)
 
     load_dotenv()
-    model = os.environ.get("LLM_MODEL")
-    if not model:
-        raise OSError("LLM_MODEL is not set. Add your Azure deployment name to .env.")
-    configure_lm(model, int(config["max_tokens"]), cache=bool(config["dspy_cache"]))
+    model_suffix = config["llm_model"].rsplit("/", 1)[-1]
+    configure_lm(config["llm_model"], int(config["max_tokens"]), cache=bool(config["dspy_cache"]))
 
     context = load_study_context(input_paths)
 
@@ -508,6 +507,7 @@ def run_dynamic_extraction_from_csv_schema(
 
     study_name = Path(input_paths[0]).stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = f"_{model_suffix}" if model_suffix else ""
     csv_dir = output_parent_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
 
@@ -541,18 +541,18 @@ def run_dynamic_extraction_from_csv_schema(
         "other_outcomes": other_rows,
     }
 
-    json_path = output_parent_dir / f"{study_name}_{timestamp}.json"
+    json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
     json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
 
     if sc_schema:
         _write_dict_rows_to_csv(
-            csv_dir / f"study_{timestamp}.csv",
+            csv_dir / f"study_{timestamp}{suffix}.csv",
             [item["attribute"] for item in sc_schema],
             [study_row],
         )
     if iv_schema:
         _write_dict_rows_to_csv(
-            csv_dir / f"interventions_{timestamp}.csv",
+            csv_dir / f"interventions_{timestamp}{suffix}.csv",
             [item["attribute"] for item in iv_schema],
             intervention_rows,
         )
@@ -566,7 +566,7 @@ def run_dynamic_extraction_from_csv_schema(
     combined_outcomes = dichot_rows + cont_rows + other_rows
     if outcome_fieldnames:
         _write_dict_rows_to_csv(
-            csv_dir / f"outcomes_{timestamp}.csv",
+            csv_dir / f"outcomes_{timestamp}{suffix}.csv",
             outcome_fieldnames,
             combined_outcomes,
         )

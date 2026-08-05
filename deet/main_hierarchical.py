@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -27,6 +26,7 @@ CONSOLE_SINK_ID: int | None = None
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
 EXAMPLE_CONFIG_JSON = """{
     \"study_type\": \"RCT\",
+    \"llm_model\": \"azure/gpt-5.2\",
     \"max_tokens\": 30000,
     \"dspy_cache\": false,
     \"input_paths\": [
@@ -74,6 +74,7 @@ def load_config(config_path: Path) -> dict[str, Any]:
 
     required_keys = {
         "study_type",
+        "llm_model",
         "input_paths",
         "output_parent_dir",
         "max_tokens",
@@ -86,6 +87,9 @@ def load_config(config_path: Path) -> dict[str, Any]:
 
     if not isinstance(config["study_type"], str):
         raise TypeError("Config key 'study_type' must be a string.")
+
+    if not isinstance(config["llm_model"], str):
+        raise TypeError("Config key 'llm_model' must be a string.")
 
     if not isinstance(config["input_paths"], list) or not all(
         isinstance(item, str) for item in config["input_paths"]
@@ -156,26 +160,28 @@ def save_data(
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
+    model_suffix: str = "",
 ) -> None:
     """Persist extracted study payload to JSON and CSV outputs."""
     output_dir = Path(output_parent_dir)
 
     study_name = Path(input_paths[0]).stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = f"_{model_suffix}" if model_suffix else ""
 
     output_data = json.dumps(study.model_dump(), indent=2)
     logger.info("=== Extracted Study Data ===")
     logger.info(output_data)
 
-    output_path = output_dir / f"{study_name}_{timestamp}.json"
+    output_path = output_dir / f"{study_name}_{timestamp}{suffix}.json"
     output_path.write_text(output_data, encoding="utf-8")
     logger.info(f"JSON saved to {output_path}")
 
     match study_type:
         case "CochraneRCT":
-            export_cochrane_csv(study, study_name, output_dir, timestamp)
+            export_cochrane_csv(study, study_name, output_dir, timestamp, model_suffix)
         case _:
-            export_csv(study, study_name, output_dir, timestamp)
+            export_csv(study, study_name, output_dir, timestamp, model_suffix)
 
 
 def main() -> None:
@@ -211,11 +217,9 @@ def main() -> None:
         config
     )  # I want to validate in and output paths and create output folder if needed BEFORE the extraction, to avoid running the LLM and then losing data due to unnecessary path/permission issues.
 
-    load_dotenv()  # ideally this bit could/should also be defined in the custom config, but am taking it from the normal DEET .env for now
-    model = os.environ.get("LLM_MODEL")
-    if not model:
-        raise OSError("LLM_MODEL is not set. Add your Azure deployment name to .env.")
-    configure_lm(model, config["max_tokens"], cache=config["dspy_cache"])
+    load_dotenv()
+    model_suffix = config["llm_model"].rsplit("/", 1)[-1]
+    configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
 
     context = read_concatenade_mds(input_paths)  # get text from the md inputs
     study = extract(context=context, study_type=config["study_type"])  # do extraction
@@ -224,6 +228,7 @@ def main() -> None:
         input_paths=input_paths,
         output_parent_dir=output_parent_dir,
         study_type=config["study_type"],
+        model_suffix=model_suffix,
     )  # does what it says (I hope :) )
 
 

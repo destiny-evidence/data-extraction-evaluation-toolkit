@@ -56,6 +56,7 @@ def export_csv(
     study_name: str,
     predictions_dir: Path,
     timestamp: str,
+    model_suffix: str = "",
 ) -> None:
     """
         NOTE: This function probably needs to become part of the RCT pipeline
@@ -71,16 +72,17 @@ def export_csv(
     """
     csv_dir = predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
 
     # --- study.csv ---
-    study_path = csv_dir / f"study_{timestamp}.csv"
+    study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
     with study_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=Study.csv_fieldnames())
         writer.writeheader()
         writer.writerow(study.to_csv_row())
 
     # --- interventions.csv ---
-    interventions_path = csv_dir / f"interventions_{timestamp}.csv"
+    interventions_path = csv_dir / f"interventions_{timestamp}{suffix}.csv"
     with interventions_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=Intervention.csv_fieldnames())
         writer.writeheader()
@@ -88,7 +90,7 @@ def export_csv(
             writer.writerow(arm.to_csv_row())
 
     # --- outcomes.csv ---
-    outcomes_path = csv_dir / f"outcomes_{timestamp}.csv"
+    outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
     with outcomes_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f, fieldnames=Study.outcome_csv_fieldnames(), extrasaction="ignore"
@@ -109,6 +111,7 @@ def export_cochrane_csv(
     study_name: str,
     predictions_dir: Path,
     timestamp: str,
+    model_suffix: str = "",
 ) -> None:
     """
     Write three timestamped CSV files for a Cochrane RCT extraction into
@@ -119,13 +122,14 @@ def export_cochrane_csv(
     """
     csv_dir = predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
 
     # Use the LLM-extracted study identifier (STD-author-year) for all CSV rows.
     # Fall back to the input file stem if it was not extracted.
     study_id = (study.study_characteristics.study or "").strip() or study_name
 
     # --- study.csv ---
-    study_path = csv_dir / f"study_{timestamp}.csv"
+    study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
     with study_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=CochraneStudy.csv_fieldnames())
         writer.writeheader()
@@ -133,7 +137,7 @@ def export_cochrane_csv(
 
     # --- interventions.csv ---
     # Prepend the "Study" column so every intervention row carries the study ID.
-    interventions_path = csv_dir / f"interventions_{timestamp}.csv"
+    interventions_path = csv_dir / f"interventions_{timestamp}{suffix}.csv"
     iv_fieldnames = ["Study"] + CochraneIntervention.csv_fieldnames()
     with interventions_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=iv_fieldnames, restval="")
@@ -143,7 +147,7 @@ def export_cochrane_csv(
 
     # --- outcomes.csv ---
     # Each outcome object holds data for both arms and produces two rows.
-    outcomes_path = csv_dir / f"outcomes_{timestamp}.csv"
+    outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
     with outcomes_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
