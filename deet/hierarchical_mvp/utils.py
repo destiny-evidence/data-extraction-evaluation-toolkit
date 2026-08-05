@@ -5,11 +5,13 @@ import os
 from pathlib import Path
 
 import dspy
+
 from deet.logger import logger
 
-from .RCTmodel import Intervention, Study
 from .CochraneRCTmodel import Intervention as CochraneIntervention
 from .CochraneRCTmodel import Study as CochraneStudy
+from .PrognosticModel import HazardRatioOutcome, PrognosticFactor, PrognosticStudy
+from .RCTmodel import Intervention, Study
 
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
@@ -59,16 +61,16 @@ def export_csv(
     model_suffix: str = "",
 ) -> None:
     """
-        NOTE: This function probably needs to become part of the RCT pipeline
-        and be called as such from the instance itself, and further downstream
-        study types need to have their own export function so that we can properly use
-        the input parameter and the switch statement to create Study and handle
-        it well regardless of the actual study type.
-        
-        Write three timestamped CSV files into predictions/<study_name>/:
-            - study_<timestamp>.csv
-            - interventions_<timestamp>.csv
-            - outcomes_<timestamp>.csv
+    NOTE: This function probably needs to become part of the RCT pipeline
+    and be called as such from the instance itself, and further downstream
+    study types need to have their own export function so that we can properly use
+    the input parameter and the switch statement to create Study and handle
+    it well regardless of the actual study type.
+
+    Write three timestamped CSV files into predictions/<study_name>/:
+        - study_<timestamp>.csv
+        - interventions_<timestamp>.csv
+        - outcomes_<timestamp>.csv
     """
     csv_dir = predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
@@ -161,3 +163,50 @@ def export_cochrane_csv(
                 writer.writerow(row)
 
     logger.info(f"Cochrane CSV files saved to {csv_dir}/")
+
+
+def export_prognostic_csv(
+    study: PrognosticStudy,
+    study_name: str,
+    predictions_dir: Path,
+    timestamp: str,
+    model_suffix: str = "",
+) -> None:
+    """Write three timestamped CSV files for a prognostic study extraction into
+    predictions/<study_name>/:
+        - study_<timestamp>.csv
+        - prognostic_factors_<timestamp>.csv
+        - outcomes_<timestamp>.csv
+    """
+    csv_dir = predictions_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
+
+    # --- study.csv ---
+    study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
+    with study_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=PrognosticStudy.csv_fieldnames())
+        writer.writeheader()
+        writer.writerow(study.to_csv_row())
+
+    # --- prognostic_factors.csv ---
+    factors_path = csv_dir / f"prognostic_factors_{timestamp}{suffix}.csv"
+    with factors_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=PrognosticFactor.csv_fieldnames())
+        writer.writeheader()
+        for factor in study.prognostic_factors:
+            writer.writerow(factor.to_csv_row())
+
+    # --- outcomes.csv ---
+    outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
+    with outcomes_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=PrognosticStudy.outcome_csv_fieldnames(),
+            extrasaction="ignore",
+        )
+        writer.writeheader()
+        for outcome in study.hazard_ratio_outcomes + study.other_prognostic_outcomes:
+            writer.writerow(outcome.to_csv_row())
+
+    logger.info(f"Prognostic CSV files saved to {csv_dir}/")

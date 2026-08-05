@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-from datetime import datetime
 import json
-import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -14,20 +13,36 @@ import dspy
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
-from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
+from deet.hierarchical_mvp import PrognosticModel as prognostic_models
+from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.utils import configure_lm, load_study_context
 from deet.logger import logger
 
 DEFAULT_PROMPT_CSV_FILENAME = "hierarchical_prompts.csv"
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
 TARGET_DYNAMIC_CLASSES = {
+    # RCT classes
     "Continuous_Outcome",
     "Dichotomous_Outcome",
     "Intervention",
     "Other_Outcome",
     "Study",
     "Study_Characteristics",
+    # PrognosticStudy classes
+    "HazardRatioOutcome",
+    "OtherPrognosticOutcome",
+    "PrognosticFactor",
+    "PrognosticStudy",
+    "PrognosticStudy_Characteristics",
+}
+
+PROGNOSTIC_DYNAMIC_CLASSES = {
+    "HazardRatioOutcome",
+    "OtherPrognosticOutcome",
+    "PrognosticFactor",
+    "PrognosticStudy",
+    "PrognosticStudy_Characteristics",
 }
 
 
@@ -89,6 +104,35 @@ def build_cochrane_hierarchical_prompt_rows() -> list[dict[str, str]]:
     return rows
 
 
+def build_prognostic_hierarchical_prompt_rows() -> list[dict[str, str]]:
+    """Build prompt rows from classes defined in PrognosticModel."""
+    rows: list[dict[str, str]] = []
+
+    for _, cls in prognostic_models.__dict__.items():
+        if not isinstance(cls, type):
+            continue
+        if cls.__module__ != prognostic_models.__name__:
+            continue
+        if not issubclass(cls, BaseModel):
+            continue
+
+        for field_name, field_info in cls.model_fields.items():
+            description = field_info.description or ""
+            annotation = field_info.annotation
+            datatype = getattr(annotation, "__name__", str(annotation))
+
+            rows.append(
+                {
+                    "class": cls.__name__,
+                    "attribute": field_name,
+                    "prompt": description,
+                    "datatype": datatype,
+                }
+            )
+
+    return rows
+
+
 def write_hierarchical_prompts_csv(
     study_type: str = "RCT",
     csv_outpath: str | Path | None = None,
@@ -99,9 +143,11 @@ def write_hierarchical_prompts_csv(
             rows = build_hierarchical_prompt_rows()
         case "CochraneRCT":
             rows = build_cochrane_hierarchical_prompt_rows()
+        case "PrognosticStudy":
+            rows = build_prognostic_hierarchical_prompt_rows()
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy"
             )
 
     if csv_outpath is None:
@@ -296,7 +342,9 @@ def _build_dynamic_rct_pipeline(
         },
         {
             "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
-            "interventions": dspy.InputField(desc="Interventions identified in step 1."),
+            "interventions": dspy.InputField(
+                desc="Interventions identified in step 1."
+            ),
             "dichotomous_outcomes": dspy.OutputField(
                 desc="All dichotomous outcomes reported in the study."
             ),
@@ -307,7 +355,7 @@ def _build_dynamic_rct_pipeline(
             "extract ALL dichotomous (binary event) outcome data reported in the text.\n\n"
             "For EVERY dichotomous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
             "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
-            "If a value is not reported, use the string \"NR\"."
+            'If a value is not reported, use the string "NR".'
         ),
     )
 
@@ -320,7 +368,9 @@ def _build_dynamic_rct_pipeline(
         },
         {
             "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
-            "interventions": dspy.InputField(desc="Interventions identified in step 1."),
+            "interventions": dspy.InputField(
+                desc="Interventions identified in step 1."
+            ),
             "continuous_outcomes": dspy.OutputField(
                 desc="All continuous outcomes reported in the study."
             ),
@@ -331,7 +381,7 @@ def _build_dynamic_rct_pipeline(
             "extract ALL continuous outcome data (mean ± SD) reported in the text.\n\n"
             "For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
             "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
-            "If a value is not reported, use the string \"NR\"."
+            'If a value is not reported, use the string "NR".'
         ),
     )
 
@@ -344,7 +394,9 @@ def _build_dynamic_rct_pipeline(
         },
         {
             "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
-            "interventions": dspy.InputField(desc="Interventions identified in step 1."),
+            "interventions": dspy.InputField(
+                desc="Interventions identified in step 1."
+            ),
             "flexible_outcomes": dspy.OutputField(
                 desc="All non-dichotomous, non-continuous outcomes."
             ),
@@ -355,7 +407,7 @@ def _build_dynamic_rct_pipeline(
             "extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text.\n\n"
             "For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
             "Report values exactly as they appear in the source — do not calculate or impute.\n"
-            "If a value is not reported, use the string \"NR\"."
+            'If a value is not reported, use the string "NR".'
         ),
     )
 
@@ -421,7 +473,7 @@ def _serialize_value(value: Any) -> Any:
         return ""
     if isinstance(value, BaseModel):
         if hasattr(value, "value"):
-            return getattr(value, "value")
+            return value.value
         value_dump = value.model_dump()
         if len(value_dump) == 1:
             return _serialize_value(next(iter(value_dump.values())))
@@ -464,6 +516,163 @@ def _write_dict_rows_to_csv(
             writer.writerow(normalized)
 
 
+def _ensure_prognostic_runtime_models(
+    schema: dict[str, list[dict[str, str]]],
+    dynamic_models: dict[str, type[BaseModel]],
+) -> dict[str, type[BaseModel]]:
+    runtime_models: dict[str, type[BaseModel]] = {}
+
+    for class_name in PROGNOSTIC_DYNAMIC_CLASSES:
+        model_cls = dynamic_models.get(class_name)
+        if model_cls is not None:
+            runtime_models[class_name] = model_cls
+            continue
+
+        fallback = getattr(prognostic_models, class_name, None)
+        if isinstance(fallback, type) and issubclass(fallback, BaseModel):
+            runtime_models[class_name] = fallback
+        else:
+            raise ValueError(
+                f"Class '{class_name}' is required by the pipeline but is missing."
+            )
+
+    if "PrognosticStudy" in schema:
+        runtime_models["PrognosticStudy"] = create_model(
+            "DynamicPrognosticStudy",
+            __base__=BaseModel,
+            study_characteristics=(
+                runtime_models["PrognosticStudy_Characteristics"],
+                Field(description="Study-level metadata."),
+            ),
+            prognostic_factors=(
+                list[runtime_models["PrognosticFactor"]],
+                Field(description="Prognostic factors examined in the study."),
+            ),
+            hazard_ratio_outcomes=(
+                list[runtime_models["HazardRatioOutcome"]],
+                Field(default_factory=list, description="Hazard ratio outcomes."),
+            ),
+            other_prognostic_outcomes=(
+                list[runtime_models["OtherPrognosticOutcome"]],
+                Field(default_factory=list, description="Other prognostic outcomes."),
+            ),
+        )
+
+    return runtime_models
+
+
+def _build_dynamic_prognostic_pipeline(
+    runtime_models: dict[str, type[BaseModel]],
+) -> type[dspy.Module]:
+    extract_study_info_sig = _build_dynamic_signature(
+        "DynamicExtractPrognosticStudyInfo",
+        {
+            "context": str,
+            "study_characteristics": runtime_models["PrognosticStudy_Characteristics"],
+            "prognostic_factors": list[runtime_models["PrognosticFactor"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one prognostic study."),
+            "study_characteristics": dspy.OutputField(
+                desc="Study-level metadata and characteristics."
+            ),
+            "prognostic_factors": dspy.OutputField(
+                desc="All prognostic factors examined in the study."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given plain text (converted from PDFs to markdown) from one or more documents\n"
+            "that all describe the SAME prognostic study, extract all study-level\n"
+            "metadata and characteristics, and identify every distinct prognostic factor examined.\n\n"
+            "Report only information that is explicitly stated in the context."
+        ),
+    )
+
+    extract_hazard_ratio_sig = _build_dynamic_signature(
+        "DynamicExtractHazardRatioOutcomes",
+        {
+            "context": str,
+            "prognostic_factors": list[runtime_models["PrognosticFactor"]],
+            "hazard_ratio_outcomes": list[runtime_models["HazardRatioOutcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one prognostic study."),
+            "prognostic_factors": dspy.InputField(
+                desc="Prognostic factors identified in step 1."
+            ),
+            "hazard_ratio_outcomes": dspy.OutputField(
+                desc="All outcomes reported as hazard ratios."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same prognostic study context and the already-identified prognostic factors,\n"
+            "extract ALL outcomes reported as hazard ratios.\n\n"
+            "For EVERY hazard ratio outcome found, attempt to extract all attributes in the schema.\n\n"
+            "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
+            "If a value is not reported, use the string \"NR\"."
+        ),
+    )
+
+    extract_other_sig = _build_dynamic_signature(
+        "DynamicExtractOtherPrognosticOutcomes",
+        {
+            "context": str,
+            "prognostic_factors": list[runtime_models["PrognosticFactor"]],
+            "other_prognostic_outcomes": list[runtime_models["OtherPrognosticOutcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one prognostic study."),
+            "prognostic_factors": dspy.InputField(
+                desc="Prognostic factors identified in step 1."
+            ),
+            "other_prognostic_outcomes": dspy.OutputField(
+                desc="All non-hazard-ratio prognostic outcomes."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same prognostic study context and the already-identified prognostic factors,\n"
+            "extract ALL outcomes NOT reported as hazard ratios (e.g. response rates, means, medians,\n"
+            "odds ratios, percentages).\n\n"
+            "For EVERY other prognostic outcome found, attempt to extract all attributes in the schema.\n\n"
+            "Report values exactly as they appear in the source — do not calculate or impute.\n"
+            "If a value is not reported, use the string \"NR\"."
+        ),
+    )
+
+    study_model = runtime_models["PrognosticStudy"]
+
+    class DynamicPrognosticExtractionPipeline(dspy.Module):
+        """Dynamic runtime variant of prognostic study extraction pipeline."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.extract_study_info = dspy.Predict(extract_study_info_sig)
+            self.extract_hazard_ratio = dspy.Predict(extract_hazard_ratio_sig)
+            self.extract_other = dspy.Predict(extract_other_sig)
+
+        def forward(self, context: str) -> BaseModel:
+            study_pred = self.extract_study_info(context=context)
+            hr_pred = self.extract_hazard_ratio(
+                context=context,
+                prognostic_factors=study_pred.prognostic_factors,
+            )
+            other_pred = self.extract_other(
+                context=context,
+                prognostic_factors=study_pred.prognostic_factors,
+            )
+            return study_model(
+                study_characteristics=study_pred.study_characteristics,
+                prognostic_factors=study_pred.prognostic_factors,
+                hazard_ratio_outcomes=hr_pred.hazard_ratio_outcomes,
+                other_prognostic_outcomes=other_pred.other_prognostic_outcomes,
+            )
+
+    return DynamicPrognosticExtractionPipeline
+
+
 def run_dynamic_extraction_from_csv_schema(
     csv_path: str | Path,
     config_path: str | Path | None = None,
@@ -495,14 +704,23 @@ def run_dynamic_extraction_from_csv_schema(
 
     load_dotenv()
     model_suffix = config["llm_model"].rsplit("/", 1)[-1]
-    configure_lm(config["llm_model"], int(config["max_tokens"]), cache=bool(config["dspy_cache"]))
+    configure_lm(
+        config["llm_model"], int(config["max_tokens"]), cache=bool(config["dspy_cache"])
+    )
 
     context = load_study_context(input_paths)
 
     schema = _load_prompt_schema(schema_path)
     dynamic_models = _build_dynamic_models_from_schema(schema)
-    runtime_models = _ensure_runtime_models(schema, dynamic_models)
-    dynamic_pipeline_cls = _build_dynamic_rct_pipeline(runtime_models)
+
+    study_type = config["study_type"]
+    if study_type == "PrognosticStudy":
+        runtime_models = _ensure_prognostic_runtime_models(schema, dynamic_models)
+        dynamic_pipeline_cls = _build_dynamic_prognostic_pipeline(runtime_models)
+    else:
+        runtime_models = _ensure_runtime_models(schema, dynamic_models)
+        dynamic_pipeline_cls = _build_dynamic_rct_pipeline(runtime_models)
+
     study = dynamic_pipeline_cls()(context=context)
 
     study_name = Path(input_paths[0]).stem
@@ -511,67 +729,126 @@ def run_dynamic_extraction_from_csv_schema(
     csv_dir = output_parent_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
 
-    sc_schema = schema.get("Study_Characteristics", [])
-    iv_schema = schema.get("Intervention", [])
-    do_schema = schema.get("Dichotomous_Outcome", [])
-    co_schema = schema.get("Continuous_Outcome", [])
-    oo_schema = schema.get("Other_Outcome", [])
+    if study_type == "PrognosticStudy":
+        sc_schema = schema.get("PrognosticStudy_Characteristics", [])
+        pf_schema = schema.get("PrognosticFactor", [])
+        hr_schema = schema.get("HazardRatioOutcome", [])
+        op_schema = schema.get("OtherPrognosticOutcome", [])
 
-    study_row = _project_instance_to_schema(study.study_characteristics, sc_schema)
-    intervention_rows = [
-        _project_instance_to_schema(item, iv_schema) for item in study.interventions
-    ]
-    dichot_rows = [
-        _project_instance_to_schema(item, do_schema)
-        for item in study.dichotomous_outcomes
-    ]
-    cont_rows = [
-        _project_instance_to_schema(item, co_schema)
-        for item in study.continuous_outcomes
-    ]
-    other_rows = [
-        _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
-    ]
+        study_row = _project_instance_to_schema(study.study_characteristics, sc_schema)
+        pf_rows = [
+            _project_instance_to_schema(item, pf_schema)
+            for item in study.prognostic_factors
+        ]
+        hr_rows = [
+            _project_instance_to_schema(item, hr_schema)
+            for item in study.hazard_ratio_outcomes
+        ]
+        op_rows = [
+            _project_instance_to_schema(item, op_schema)
+            for item in study.other_prognostic_outcomes
+        ]
 
-    dynamic_payload = {
-        "study_characteristics": study_row,
-        "interventions": intervention_rows,
-        "dichotomous_outcomes": dichot_rows,
-        "continuous_outcomes": cont_rows,
-        "other_outcomes": other_rows,
-    }
+        dynamic_payload = {
+            "study_characteristics": study_row,
+            "prognostic_factors": pf_rows,
+            "hazard_ratio_outcomes": hr_rows,
+            "other_prognostic_outcomes": op_rows,
+        }
 
-    json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-    json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+        json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+        json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
 
-    if sc_schema:
-        _write_dict_rows_to_csv(
-            csv_dir / f"study_{timestamp}{suffix}.csv",
-            [item["attribute"] for item in sc_schema],
-            [study_row],
-        )
-    if iv_schema:
-        _write_dict_rows_to_csv(
-            csv_dir / f"interventions_{timestamp}{suffix}.csv",
-            [item["attribute"] for item in iv_schema],
-            intervention_rows,
-        )
+        if sc_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"study_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in sc_schema],
+                [study_row],
+            )
+        if pf_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"prognostic_factors_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in pf_schema],
+                pf_rows,
+            )
 
-    outcome_fieldnames: list[str] = []
-    for group in (do_schema, co_schema, oo_schema):
-        for item in group:
-            attr = item["attribute"]
-            if attr not in outcome_fieldnames:
-                outcome_fieldnames.append(attr)
-    combined_outcomes = dichot_rows + cont_rows + other_rows
-    if outcome_fieldnames:
-        _write_dict_rows_to_csv(
-            csv_dir / f"outcomes_{timestamp}{suffix}.csv",
-            outcome_fieldnames,
-            combined_outcomes,
-        )
+        outcome_fieldnames: list[str] = []
+        for group in (hr_schema, op_schema):
+            for item in group:
+                attr = item["attribute"]
+                if attr not in outcome_fieldnames:
+                    outcome_fieldnames.append(attr)
+        combined_outcomes = hr_rows + op_rows
+        if outcome_fieldnames:
+            _write_dict_rows_to_csv(
+                csv_dir / f"outcomes_{timestamp}{suffix}.csv",
+                outcome_fieldnames,
+                combined_outcomes,
+            )
+    else:
+        sc_schema = schema.get("Study_Characteristics", [])
+        iv_schema = schema.get("Intervention", [])
+        do_schema = schema.get("Dichotomous_Outcome", [])
+        co_schema = schema.get("Continuous_Outcome", [])
+        oo_schema = schema.get("Other_Outcome", [])
 
-    logger.info(f"Dynamic hierarchical extraction complete. Outputs saved to {output_parent_dir}")
+        study_row = _project_instance_to_schema(study.study_characteristics, sc_schema)
+        intervention_rows = [
+            _project_instance_to_schema(item, iv_schema) for item in study.interventions
+        ]
+        dichot_rows = [
+            _project_instance_to_schema(item, do_schema)
+            for item in study.dichotomous_outcomes
+        ]
+        cont_rows = [
+            _project_instance_to_schema(item, co_schema)
+            for item in study.continuous_outcomes
+        ]
+        other_rows = [
+            _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
+        ]
+
+        dynamic_payload = {
+            "study_characteristics": study_row,
+            "interventions": intervention_rows,
+            "dichotomous_outcomes": dichot_rows,
+            "continuous_outcomes": cont_rows,
+            "other_outcomes": other_rows,
+        }
+
+        json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+        json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+
+        if sc_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"study_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in sc_schema],
+                [study_row],
+            )
+        if iv_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"interventions_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in iv_schema],
+                intervention_rows,
+            )
+
+        outcome_fieldnames = []
+        for group in (do_schema, co_schema, oo_schema):
+            for item in group:
+                attr = item["attribute"]
+                if attr not in outcome_fieldnames:
+                    outcome_fieldnames.append(attr)
+        combined_outcomes = dichot_rows + cont_rows + other_rows
+        if outcome_fieldnames:
+            _write_dict_rows_to_csv(
+                csv_dir / f"outcomes_{timestamp}{suffix}.csv",
+                outcome_fieldnames,
+                combined_outcomes,
+            )
+
+    logger.info(
+        f"Dynamic hierarchical extraction complete. Outputs saved to {output_parent_dir}"
+    )
     return json_path
 
 
@@ -589,7 +866,7 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
     write_parser.add_argument(
         "--study-type",
         default="RCT",
-        help="Study type used for prompt CSV generation. Currently supports: RCT.",
+        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy.",
     )
     write_parser.add_argument(
         "--csv-outpath",
@@ -617,6 +894,7 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
         default=DEFAULT_CONFIG_FILENAME,
         help=(
             "Path to JSON config with study_type, input_paths, output_parent_dir, "
+            "Path to JSON config with study_type, llm_model, input_paths, output_parent_dir, "
             "max_tokens, and dspy_cache. Defaults to hierarchical_config.json."
         ),
     )

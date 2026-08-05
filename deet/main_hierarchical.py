@@ -3,18 +3,26 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
 
 from deet.hierarchical_mvp.CochraneRCTextraction import CochraneRCTExtractionPipeline
+from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
+from deet.hierarchical_mvp.PrognosticModel import PrognosticStudy
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTmodel import Study
-from deet.hierarchical_mvp.utils import configure_lm, export_cochrane_csv, export_csv, load_study_context
+from deet.hierarchical_mvp.utils import (
+    configure_lm,
+    export_cochrane_csv,
+    export_csv,
+    export_prognostic_csv,
+    load_study_context,
+)
 from deet.logger import logger
 
 # ---------------------------------------------------------------------------
@@ -139,7 +147,7 @@ def validate_create_paths(config: dict[str, Any]) -> tuple[list[str], str]:
     return input_paths, str(output_dir)
 
 
-def extract(context: str, study_type: str) -> Study:
+def extract(context: str, study_type: str) -> Study | PrognosticStudy:
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
     match study_type:
@@ -149,14 +157,17 @@ def extract(context: str, study_type: str) -> Study:
         case "CochraneRCT":
             pipeline = CochraneRCTExtractionPipeline()
             return pipeline(context=context)
+        case "PrognosticStudy":
+            pipeline = PrognosticExtractionPipeline()
+            return pipeline(context=context)
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy"
             )
 
 
 def save_data(
-    study: Study,
+    study: Study | PrognosticStudy,
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
@@ -180,6 +191,8 @@ def save_data(
     match study_type:
         case "CochraneRCT":
             export_cochrane_csv(study, study_name, output_dir, timestamp, model_suffix)
+        case "PrognosticStudy":
+            export_prognostic_csv(study, study_name, output_dir, timestamp, model_suffix)
         case _:
             export_csv(study, study_name, output_dir, timestamp, model_suffix)
 
@@ -203,7 +216,9 @@ def main() -> None:
             "Place a config file at this location or provide a path explicitly, "
             "for example: python deet/main_hierarchical.py <path-to-config.json>"
         )
-        logger.info(f"Default expected filename in current directory: {DEFAULT_CONFIG_FILENAME}")
+        logger.info(
+            f"Default expected filename in current directory: {DEFAULT_CONFIG_FILENAME}"
+        )
         logger.info("Example config content:")
         logger.info(EXAMPLE_CONFIG_JSON)
         raise SystemExit(1) from exc
