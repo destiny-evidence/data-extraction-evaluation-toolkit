@@ -3,7 +3,7 @@
 import csv
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Generic, Literal
+from typing import Any, Generic, Literal, cast
 
 from loguru import logger
 from pydantic import BaseModel
@@ -28,6 +28,7 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiRawData,
 )
+from deet.extractors.base_extractor import DataExtractionConfig
 from deet.processors.linker import DocumentReferenceLinker
 
 
@@ -225,6 +226,7 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
         self,
         method: CustomPromptPopulationMethod,
         filepath: Path | None = None,
+        config: DataExtractionConfig | None = None,
         **kwargs,
     ) -> None:
         """
@@ -245,6 +247,27 @@ class ProcessedAttributeData(BaseModel, Generic[AttributeTypeVar]):
                 missing_filepath = "please specify a filepath!"
                 raise FileNotFoundError(missing_filepath)
             self._import_prompts_csv_file(filepath=filepath, **kwargs)
+        elif method == CustomPromptPopulationMethod.TAXONOMY:
+            from deet.data_models.taxonomy import load_schemes_from_ttl
+
+            if not config or config.vocabulary_path is None:
+                raise ValueError
+            schemes = load_schemes_from_ttl(config.vocabulary_path)
+            mapped_schemes = [
+                scheme.map_concepts(
+                    mapping_file=config.vocabulary_mapping_path,
+                    attributes=self.attributes,
+                )
+                for scheme in schemes
+            ]
+            attributes = []
+            for scheme in mapped_schemes:
+                for concept in scheme.concepts.values():
+                    concept.attribute.prompt = concept.definition
+                    concept.attribute.output_data_type = AttributeType.BOOL
+                    # concept.attribute.attribute_label = concept.pref_label
+                    attributes.append(concept.attribute)
+            self.attributes = cast("list[AttributeTypeVar]", attributes)
         else:
             not_impl = f"method {method} is not implemented. use cli or file."
             raise NotImplementedError(not_impl)
@@ -417,6 +440,7 @@ class ProcessedEppiAnnotationData(
         self,
         method: CustomPromptPopulationMethod,
         filepath: Path | None = None,
+        config: DataExtractionConfig | None = None,
         **kwargs: Any,  # noqa: ANN401
     ) -> None:
         """

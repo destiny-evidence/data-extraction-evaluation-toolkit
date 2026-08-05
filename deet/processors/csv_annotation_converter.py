@@ -105,7 +105,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             attribute_mapping_filename: Filename for attribute ID to label mapping
 
         """
-        self.config = config or CSVParserConfig()
+        self.config = config or CSVParserConfig(auto_assign_reference_fields=True)
         # If no directory given, write everything relative to current working directory
         if base_output_dir is None:
             logger.debug(

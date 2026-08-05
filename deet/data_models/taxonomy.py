@@ -9,13 +9,13 @@ of a nested set of concepts in concept schemes.
 TODO: Extend to cover classes and properties.
 """
 
+from collections.abc import Sequence
 from pathlib import Path
 
-from loguru import logger
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, TypeAdapter
 from rdflib import SKOS, Graph, URIRef
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, AttributeType
 from deet.utils._vendor.taxonomy_builder.rdf_parser import (
     analyze_graph,
     detect_format,
@@ -70,7 +70,20 @@ class Concept(BaseModel):
                 (str(s) for s in g.objects(concept_uri, SKOS.scopeNote)),
                 None,
             ),
-            broader=[str(b) for b in g.objects(concept_uri, SKOS.broader)],
+            broader=[
+                get_identifier_from_uri(URIRef(str(b)))
+                for b in g.objects(concept_uri, SKOS.broader)
+            ],
+        )
+
+    def create_synthetic_attribute(self) -> Attribute:
+        """Create a synthetic attribute from the concept."""
+        synthetic_id = -(abs(hash(self.identifier)) % 1000000 + 1)
+        return Attribute(
+            prompt=self.definition,
+            output_data_type=AttributeType.BOOL,
+            attribute_id=synthetic_id,
+            attribute_label=self.pref_label,
         )
 
 
@@ -110,12 +123,12 @@ class ConceptScheme[C: Concept](BaseModel):
         default_factory=dict, description="Concepts keyed by uri."
     )
 
-    def get_concept(self, concept_id: str) -> Concept | None:
+    def get_concept(self, concept_id: str) -> C | None:
         """Return the concept with ``concept_id``, or None if absent."""
         return self.concepts.get(concept_id)
 
     @property
-    def roots(self) -> list[Concept]:
+    def roots(self) -> list[C]:
         """Return the concepts at the root of the scheme."""
         return [c for uid in self.top_concepts if (c := self.get_concept(uid))]
 
@@ -127,13 +140,10 @@ class ConceptScheme[C: Concept](BaseModel):
                 index.setdefault(parent_id, []).append(concept_id)
         return index
 
-    def narrower(self, concept_id: str) -> list[str]:
+    def narrower(self, concept_id: str) -> list[C]:
         """Return the direct child (narrower) concept ids of ``concept_id``."""
-        return self._narrower_index().get(concept_id, [])
-
-    def children_of(self, concept_id: str) -> list[str]:
-        """Alias of :meth:`narrower` that reads naturally at call sites."""
-        return self.narrower(concept_id)
+        narrower_ids = self._narrower_index().get(concept_id, [])
+        return [c for concept_id in narrower_ids if (c := self.get_concept(concept_id))]
 
     @classmethod
     def from_graph(
@@ -155,7 +165,7 @@ class ConceptScheme[C: Concept](BaseModel):
         )
 
     def map_concepts(
-        self, mapping_file: Path | None, attributes: list[Attribute]
+        self, mapping_file: Path | None, attributes: Sequence[Attribute]
     ) -> "MappedConceptScheme":
         """
         Map this scheme's concepts to attributes via a mapping file.
@@ -171,33 +181,23 @@ class ConceptScheme[C: Concept](BaseModel):
         mapping = TypeAdapter(list[ConceptMappingRow]).validate_json(
             mapping_file.read_bytes()
         )
-        mapping_dict = {row.attribute_name: row.concept_id for row in mapping}
+        attr_by_label = {attr.attribute_label: attr for attr in attributes}
+        mapping_dict = {
+            row.concept_id: attr_by_label.get(row.attribute_name) for row in mapping
+        }
         mapped_concepts: list[MappedConcept] = []
-        for attribute in attributes:
-            concept_id = mapping_dict.get(attribute.attribute_label)
-            if concept_id is None:
-                logger.warning(
-                    f"Attribute {attribute.attribute_label} not in mapping file."
-                )
-                continue
-            concept = self.get_concept(concept_id)
-            if concept:
-                mapped_concepts.append(
-                    MappedConcept(**concept.model_dump(), attribute=attribute)
-                )
-            else:
-                logger.warning(
-                    f"Attribute {attribute.attribute_label}"
-                    f" maps to concept {concept_id},"
-                    " but concept is not contained in parsed vocabulary."
-                )
+        for concept_id, concept in self.concepts.items():
+            attr = mapping_dict.get(concept_id) or concept.create_synthetic_attribute()
+            mapped_concepts.append(
+                MappedConcept(**concept.model_dump(), attribute=attr)
+            )
 
         return MappedConceptScheme(
             title=self.title,
             description=self.description,
             uri=self.uri,
             top_concepts=[c.identifier for c in mapped_concepts if not c.broader],
-            concepts={c.uri: c for c in mapped_concepts},
+            concepts={c.identifier: c for c in mapped_concepts},
         )
 
 
@@ -207,7 +207,7 @@ class MappedConceptScheme(ConceptScheme[MappedConcept]):
     concepts: dict[str, MappedConcept] = Field(default_factory=dict)
 
 
-def load_schemes_from_ttl(path: Path) -> list[ConceptScheme]:
+def load_schemes_from_ttl(path: Path) -> list[ConceptScheme[Concept]]:
     """Load a list of concept schemes from a ttl file."""
     g = parse_rdf(path.read_bytes(), detect_format(str(path)))
     result = analyze_graph(g)
