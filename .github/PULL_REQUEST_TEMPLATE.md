@@ -25,7 +25,7 @@ Before requesting review, I confirm that:
 - [ ] Changes are well-documented both in the code (docstrings) and the repo (e.g. readme.md if applicable)
 - [ ] I have self-reviewed my code (especially if AI-assisted elements are in here). This means no unnecessary comments, refactoring overly verbose AI code, etc. etc.
 - [ ] PR is pointing to the `development` branch (or appropriate feature branch) rather than `main` branch.
-- [ ] I have used at leats one [conventional commit](https://www.conventionalcommits.org/en/v1.0.0/) tag to indicate which [semantic version](https://semver.org/) bump I'm going for.
+- [ ] I have used at least one [conventional commit](https://www.conventionalcommits.org/en/v1.0.0/) tag to indicate which [semantic version](https://semver.org/) bump I'm going for.
 
 ## Testing
 <!-- Describe how you tested your changes, interactively and formally. -->
