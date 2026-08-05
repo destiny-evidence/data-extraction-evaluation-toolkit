@@ -65,7 +65,7 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
   numeric error. These complement exact-match accuracy; they do not replace it.
   Missing or invalid LLM predictions (e.g. failed document extraction or
   duplicate annotations → `None`) cause the metric to fail for that attribute,
-  same as binary metrics — the CSV `value` is left empty rather than scoring
+  as with binary metrics — the CSV `value` is left empty rather than scoring
   only the successful subset. MAPE is undefined when a gold value is zero
   (sklearn behaviour); that also leaves `value` empty.
 
