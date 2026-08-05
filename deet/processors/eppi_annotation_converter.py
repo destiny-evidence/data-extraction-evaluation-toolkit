@@ -523,6 +523,7 @@ class EppiAnnotationConverter(AnnotationConverter):
             # Create or retrieve document using ItemId as unique identifier
             if item_id not in documents_by_item_id:
                 document = EppiDocument.model_validate(reference)
+                document.init_document_identity()
                 documents_by_item_id[item_id] = document
             else:
                 document = documents_by_item_id[item_id]

@@ -3,9 +3,13 @@
 from enum import StrEnum, auto
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
+from dotenv import set_key
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from deet.data_models.ui_schema import UI
 
 
 class Runtime(StrEnum):
@@ -25,6 +29,18 @@ class LLMProvider(StrEnum):
     OLLAMA = auto()
 
 
+class LogLevel(StrEnum):
+    """Supported log levels for logging."""
+
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    SUCCESS = "SUCCESS"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
 # Fallback max input context (tokens) when litellm cannot resolve the model.
 # Used by ``DataExtractionConfig`` when ``max_context_tokens`` is inferred and
 # ``get_model_max_tokens`` returns None. Single source of truth (do not duplicate
@@ -41,61 +57,60 @@ class DataExtractionSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     # General
-    log_level: str = Field(default="DEBUG", description="log level for the app logger.")
+    log_level: LogLevel = Field(
+        default=LogLevel.DEBUG,
+        description="log level for the app logger.",
+        json_schema_extra={"skip_prompt": True},
+    )
 
     runtime: Runtime = Field(
         default=Runtime.LOCAL,
         description="Runtime environment.",
-    )
-
-    llm_provider: LLMProvider = Field(
-        default=LLMProvider.AZURE, description="LLM Provider"
-    )
-
-    # LLM configuration
-    llm_model: str = Field(
-        default="gpt-4o-mini",
-        description="LLM model identifier used for completions.",
-    )
-    llm_temperature: float = Field(
-        default=0.1,
-        description="Sampling temperature for the LLM.",
-        ge=0.0,
-    )
-    llm_max_tokens: int | None = Field(
-        default=None,
-        description=(
-            "Maximum number of tokens to generate (None means provider default)."
-        ),
-    )
-    llm_max_context_tokens: int | None = Field(
-        default=None,
-        description=(
-            "Maximum input context length in tokens (system + attributes + "
-            "document). None = infer from model (litellm registry), else "
-            f"{DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK} via "
-            "DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK. Override to manage costs."
-        ),
+        json_schema_extra={"skip_prompt": True},
     )
 
     # Provider credentials / settings (secrets redacted)
-    azure_api_key: SecretStr | None = Field(
+    azure_api_key: Annotated[
+        SecretStr | None, UI(help="Press enter to leave this unchanged")
+    ] = Field(
         default=None,
         description="Azure OpenAI API key if using Azure provider.",
     )
-    azure_api_base: SecretStr | None = Field(
-        default=None, description="Base URL for azure openAI."
-    )
+    azure_api_base: Annotated[
+        SecretStr | None, UI(help="Press enter to leave this unchanged")
+    ] = Field(default=None, description="Base URL for azure openAI.")
 
     # disk cache folder
     base_disk_cache_dir: Path = Field(
         default=(Path.home() / ".deet_cache"),
         description="the base directory for disk-based caches.",
+        json_schema_extra={"skip_prompt": True},
     )
+
+    def dump_to_env(self, target_path: Path = Path(".env")) -> None:
+        """Serialise settings object to a .env file."""
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if not target_path.exists():
+            target_path.touch()
+
+        for field_name in type(self).model_fields:
+            value = getattr(self, field_name)
+            if value is not None:
+                if isinstance(value, SecretStr):
+                    str_value = value.get_secret_value()
+                else:
+                    str_value = str(value)
+
+                set_key(
+                    str(target_path), field_name.upper(), str_value, quote_mode="always"
+                )
 
 
 @lru_cache(maxsize=1)

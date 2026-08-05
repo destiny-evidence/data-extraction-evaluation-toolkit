@@ -16,19 +16,25 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import AttributeTypeVar
+from deet.data_models.base import Attribute, GoldStandardAnnotation
 from deet.data_models.documents import (
+    GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
-    GoldStandardAnnotatedDocumentTypeVar,
 )
-from deet.data_models.evaluation import (
+from deet.data_models.evaluation import AttributeMetric
+from deet.evaluators.metrics import (
     METRICS,
-    AttributeMetric,
+    EvaluationMetricSettings,
     MetricFunction,
     check_metric_returns_float,
     get_metrics_for_attribute_type,
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
+from deet.processors.eppi_citation_parser import (
+    format_parsed_citations,
+    parse_eppi_citations_from_details,
+)
+from deet.utils.text_normalisation import normalize_string_for_match
 
 # Default for ``short_snippet_max_len``: snippets shorter than this (in characters)
 # use stricter matching—digit-boundary checks for all-numeric snippets, else
@@ -67,8 +73,13 @@ def _verbatim_fuzzy_match_pct(
         Float in ``[0.0, 100.0]``, or ``0.0`` if either input is empty.
 
     """
-    normalized_snippet = (snippet_text or "").strip()
-    normalized_context = (document_context or "").strip()
+    # Preserve case for grounding: PDF context and snippets should match as written.
+    normalized_snippet = normalize_string_for_match(
+        snippet_text or "", case_insensitive=False
+    )
+    normalized_context = normalize_string_for_match(
+        document_context or "", case_insensitive=False
+    )
     if not normalized_snippet or not normalized_context:
         return 0.0
     # Short all-numeric snippet: require a standalone number, not a substring of digits.
@@ -113,26 +124,48 @@ def _eppi_full_text_details_colon_separated(annotation: object) -> str:
     return ": ".join(parts)
 
 
+def _citation_fields_from_annotation(
+    annotation: GoldStandardAnnotation,
+) -> tuple[str, str]:
+    """
+    Parse EPPI citation markup into ``(citation_page, citation_highlight_text)``.
+
+    Non-EPPI annotations (no ``item_attribute_full_text_details``) yield empty
+    strings. Multiple detail entries are joined with ``": "``.
+    """
+    details = getattr(annotation, "item_attribute_full_text_details", None) or []
+    return format_parsed_citations(parse_eppi_citations_from_details(details))
+
+
 class GoldStandardLLMEvaluator:
     """
     A class to manage the evaluation of LLM-extracted data against
     "gold-standard" ground truth data.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
-        gold_standard_annotated_documents: Sequence[
-            GoldStandardAnnotatedDocumentTypeVar
-        ],
-        llm_annotated_documents: Sequence[GoldStandardAnnotatedDocumentTypeVar],
-        attributes: Sequence[AttributeTypeVar],
+        gold_standard_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
+        llm_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
+        attributes: Sequence[Attribute],
         extraction_run_id: str,
         custom_metrics: list[str] | None = None,
+        metric_settings: EvaluationMetricSettings | None = None,
     ) -> None:
         """
         Initialise GoldStandardLLMEvaluator with a list of ground truth and
         LLM-generated data to compare, along with the attributes you want to
         compare.
+
+        Args:
+            gold_standard_annotated_documents: Human / gold annotations.
+            llm_annotated_documents: LLM annotations to score.
+            attributes: Attributes to evaluate.
+            extraction_run_id: Run identifier written into metric rows.
+            custom_metrics: Optional sklearn metric names to merge in.
+            metric_settings: Thresholds for extraction metrics (e.g. edit
+                distance). Defaults to :class:`EvaluationMetricSettings`.
+
         """
         self.gold_standard_annotated_documents = gold_standard_annotated_documents
         self.llm_annotated_documents = GoldStandardAnnotatedDocumentList(
@@ -140,6 +173,7 @@ class GoldStandardLLMEvaluator:
         )
         self.attributes = attributes
         self.extraction_run_id = extraction_run_id
+        self.metric_settings = metric_settings or EvaluationMetricSettings()
         self.metrics_config: dict[str, MetricFunction] = METRICS
         self.custom_metrics: dict[str, MetricFunction] = {}
         self.calculated_metrics: list[AttributeMetric] = []
@@ -206,7 +240,8 @@ class GoldStandardLLMEvaluator:
                 y_pred.append(llm_val)
 
             applicable_metrics = get_metrics_for_attribute_type(
-                attribute.output_data_type
+                attribute.output_data_type,
+                settings=self.metric_settings,
             )
             combined_metrics = {**applicable_metrics, **self.custom_metrics}
 
@@ -287,6 +322,9 @@ class GoldStandardLLMEvaluator:
         - ``attribute_presence``: Whether the gold annotation is present.
         - ``human_additional_text`` / ``item_attribute_full_text_details``: Taken from
           the eppi json file when present; empty when absent.
+        - ``citation_page`` / ``citation_highlight_text``: Parsed from raw EPPI
+          citation markup (``Page N:`` / ``[¬s]...[¬e]``); multiple fragments joined
+          with ``": "``. Empty when markup is absent.
         - ``human_extraction``: Actual ground truth to be extracted.
         - ``human_verbatim_fuzzy_match_pct``: Grounding of ``human_additional_text``
           against the LLM annotated document's ``context``.
@@ -305,12 +343,15 @@ class GoldStandardLLMEvaluator:
                 f,
                 fieldnames=[
                     "document_id",
+                    "external_id",
                     "document_name",
                     "attribute_id",
                     "attribute_label",
                     "attribute_presence",
                     "human_additional_text",
                     "item_attribute_full_text_details",
+                    "citation_page",
+                    "citation_highlight_text",
                     "human_extraction",
                     "llm_extraction",
                     "llm_reasoning",
@@ -350,9 +391,14 @@ class GoldStandardLLMEvaluator:
                         item_attr_full: str = _eppi_full_text_details_colon_separated(
                             gold_real
                         )
+                        citation_page, citation_highlight = (
+                            _citation_fields_from_annotation(gold_real)
+                        )
                     else:
                         human_additional_text = ""
                         item_attr_full = ""
+                        citation_page = ""
+                        citation_highlight = ""
                     present = gold_real is not None
                     human_fuzzy = _verbatim_fuzzy_match_pct(
                         human_additional_text, context
@@ -386,18 +432,74 @@ class GoldStandardLLMEvaluator:
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
+                            "external_id": doc.document.safe_identity.external_id,
                             "document_name": doc.document.name,
                             "attribute_id": attribute.attribute_id,
                             "attribute_label": attribute.attribute_label,
                             "attribute_presence": str(present),
                             "human_additional_text": human_additional_text,
                             "item_attribute_full_text_details": item_attr_full,
+                            "citation_page": citation_page,
+                            "citation_highlight_text": citation_highlight,
                             "human_extraction": human_ann.output_data,
                             "llm_extraction": llm_extraction,
                             "llm_reasoning": llm_reasoning,
                             "llm_verbatim_text": llm_verbatim,
                             "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
                             "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
+                            "extraction_run_id": self.extraction_run_id,
+                        }
+                    )
+
+    def export_llm_csv(self, filepath: Path) -> None:
+        """Write the LLM output to csv."""
+        with filepath.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "document_id",
+                    "external_id",
+                    "document_name",
+                    "attribute_id",
+                    "attribute_label",
+                    "llm_extraction",
+                    "llm_reasoning",
+                    "llm_verbatim_text",
+                    "extraction_run_id",
+                ],
+            )
+            writer.writeheader()
+            for (
+                llm_annotated_doc
+            ) in self.llm_annotated_documents.gold_standard_annotations:
+                for attribute in self.attributes:
+                    try:
+                        llm_annotation = llm_annotated_doc.get_attribute_annotation(
+                            attribute
+                        )
+                        llm_extraction = llm_annotation.output_data
+                        llm_reasoning = llm_annotation.reasoning
+                        llm_verbatim = llm_annotation.additional_text
+                    except DuplicateAnnotationError:
+                        llm_extraction = None
+                        llm_reasoning = (
+                            "The LLM produced multiple annotations"
+                            "for this single attribute"
+                        )
+                        llm_verbatim = None
+
+                    document = llm_annotated_doc.document
+
+                    writer.writerow(
+                        {
+                            "document_id": document.safe_identity.document_id,
+                            "external_id": document.safe_identity.external_id,
+                            "document_name": document.name,
+                            "attribute_id": attribute.attribute_id,
+                            "attribute_label": attribute.attribute_label,
+                            "llm_extraction": llm_extraction,
+                            "llm_reasoning": llm_reasoning,
+                            "llm_verbatim_text": llm_verbatim,
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )
