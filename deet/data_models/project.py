@@ -23,7 +23,6 @@ if TYPE_CHECKING:
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
-    from deet.data_models.taxonomy import ConceptScheme
 
 import yaml
 from pydantic import (
@@ -339,14 +338,6 @@ class DeetProject(BaseModel):
         from deet.data_models.evaluation_strategies import STRATEGY_REGISTRY
 
         return STRATEGY_REGISTRY[self.evaluation_strategy](self)
-
-    def load_schemes(self) -> list[ConceptScheme]:
-        """Read the vocabulary attached to the project."""
-        from deet.data_models.taxonomy import load_schemes_from_ttl
-
-        if self.vocabulary_path:
-            return load_schemes_from_ttl(self.vocabulary_path)
-        return []
 
 
 @dataclass(frozen=True)

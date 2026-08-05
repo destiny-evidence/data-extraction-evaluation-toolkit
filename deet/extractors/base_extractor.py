@@ -96,6 +96,7 @@ class ExtractionMethod(StrEnum):
     LLM = auto()
     KEYWORD = auto()
     SEMANTIC = auto()
+    HIERARCHICAL_TOP_DOWN = auto()
 
 
 class DataExtractionConfig(BaseModel):
@@ -220,6 +221,15 @@ class DataExtractionConfig(BaseModel):
             "config YAML to use the default."
         ),
         json_schema_extra={"skip_prompt": True},
+    )
+
+    vocabulary_path: Path | None = Field(
+        default=None, description="Path to vocabulary file"
+    )
+
+    vocabulary_mapping_path: Path | None = Field(
+        default=None,
+        description="Path to json file mapping vocabulary concepts to column IDs",
     )
 
     @model_validator(mode="after")
