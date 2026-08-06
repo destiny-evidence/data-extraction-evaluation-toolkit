@@ -181,9 +181,17 @@ class ConceptScheme[C: Concept](BaseModel):
         mapping = TypeAdapter(list[ConceptMappingRow]).validate_json(
             mapping_file.read_bytes()
         )
+        attr_by_concept_id = {
+            concept_id: attr for attr in attributes if (concept_id := attr.concept_id)
+        }
         attr_by_label = {attr.attribute_label: attr for attr in attributes}
         mapping_dict = {
-            row.concept_id: attr_by_label.get(row.attribute_name) for row in mapping
+            row.concept_id: attr
+            for row in mapping
+            if (
+                attr := attr_by_concept_id.get(row.concept_id)
+                or attr_by_label.get(row.attribute_name)
+            )
         }
         mapped_concepts: list[MappedConcept] = []
         for concept_id, concept in self.concepts.items():
