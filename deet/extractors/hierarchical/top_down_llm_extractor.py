@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import cast
 
 from loguru import logger
+from rich.pretty import pretty_repr
 
 from deet.data_models.base import (
     Attribute,
@@ -105,13 +106,6 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
         total_input_tokens = 0
         total_output_tokens = 0
 
-        response_model: type[BaseLLMResponse]
-
-        if self.config.dynamic_json_schema:
-            response_model = build_llm_response_model(selected_attributes)
-        else:
-            response_model = LLMResponseSchema
-
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
             leaves = scheme.roots
@@ -124,6 +118,13 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                 prompt = self._generate_user_message_json(
                     payload=context, attributes=level_attributes
                 )
+
+                response_model: type[BaseLLMResponse]
+
+                if self.config.dynamic_json_schema:
+                    response_model = build_llm_response_model(level_attributes)
+                else:
+                    response_model = LLMResponseSchema
                 llm_response, messages, output_tokens, input_tokens = self._call_llm(
                     prompt=prompt, response_model=response_model
                 )
@@ -135,9 +136,13 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     attributes=level_attributes,
                     response_model=response_model,
                 )
+                logger.debug(
+                    "Model returned the following annotations:\n{}",
+                    pretty_repr(annotations),
+                )
                 all_annotations.extend(annotations)
                 present_attribute_ids = {
-                    ann.attribute.attribute_id for ann in annotations
+                    ann.attribute.attribute_id for ann in annotations if ann.output_data
                 }
                 leaves = [
                     child
@@ -145,6 +150,13 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     if concept.attribute.attribute_id in present_attribute_ids
                     for child in scheme.narrower(concept.identifier)
                 ]
+                logger.info(
+                    (
+                        "Based on the output above,"
+                        " the following child attributes will be prompted for:\n{}"
+                    ),
+                    pretty_repr(leaves),
+                )
                 level += 1
 
         return DocumentExtractionResult(
