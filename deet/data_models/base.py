@@ -142,6 +142,11 @@ class Attribute(BaseModel):
     attribute_id: int  # unique identifier for the attribute
     attribute_label: str  # human-readable way of identifying the attribute
 
+    concept_id: str | None = Field(
+        default=None,
+        description="ID of the concept this atttribute maps to in a vocabulary",
+    )
+
     def write_to_csv(self, filepath: Path, mode: Literal["a", "w"] = "a") -> None:
         """
         Write an attribute as a line to a csv file - fields represent columns.

@@ -221,6 +221,44 @@ class ProcessedAttributeData[AttributeT: Attribute](BaseModel):
             retain_only_csv_attributes=retain_only_csv_attributes,
         )
 
+    def _populate_prompts_from_taxonomy(
+        self, config: DataExtractionConfig | None
+    ) -> None:
+        """Populate prompts from a taxonomy."""
+        from deet.data_models.taxonomy import load_schemes_from_ttl
+
+        if not config:
+            config_required = (
+                "DataExtractionConfig Required for prompt population with taxonomy"
+            )
+            raise ValueError(config_required)
+        if not config.vocabulary_path:
+            no_vocab = "Config must provide a path to a vocabulary"
+            raise ValueError(no_vocab)
+        if not config.vocabulary_path.exists():
+            vocab_path_invalid = (
+                f"vocabulary path {config.vocabulary_path} doesn't exist"
+            )
+            raise ValueError(vocab_path_invalid)
+        schemes = load_schemes_from_ttl(config.vocabulary_path)
+        mapped_schemes = [
+            scheme.map_concepts(
+                mapping_file=config.vocabulary_mapping_path,
+                attributes=self.attributes,
+            )
+            for scheme in schemes
+        ]
+        attributes = []
+        for scheme in mapped_schemes:
+            for concept in scheme.concepts.values():
+                concept.attribute.prompt = concept.definition
+                concept.attribute.output_data_type = AttributeType.BOOL
+                if not concept.attribute.concept_id:
+                    concept.attribute.concept_id = concept.identifier
+                    concept.attribute.attribute_label = concept.pref_label
+                attributes.append(concept.attribute)
+        self.attributes = cast("list[AttributeT]", attributes)
+
     def populate_custom_prompts(
         self,
         method: CustomPromptPopulationMethod,
@@ -247,26 +285,7 @@ class ProcessedAttributeData[AttributeT: Attribute](BaseModel):
                 raise FileNotFoundError(missing_filepath)
             self._import_prompts_csv_file(filepath=filepath, **kwargs)
         elif method == CustomPromptPopulationMethod.TAXONOMY:
-            from deet.data_models.taxonomy import load_schemes_from_ttl
-
-            if not config or config.vocabulary_path is None:
-                raise ValueError
-            schemes = load_schemes_from_ttl(config.vocabulary_path)
-            mapped_schemes = [
-                scheme.map_concepts(
-                    mapping_file=config.vocabulary_mapping_path,
-                    attributes=self.attributes,
-                )
-                for scheme in schemes
-            ]
-            attributes = []
-            for scheme in mapped_schemes:
-                for concept in scheme.concepts.values():
-                    concept.attribute.prompt = concept.definition
-                    concept.attribute.output_data_type = AttributeType.BOOL
-                    # concept.attribute.attribute_label = concept.pref_label
-                    attributes.append(concept.attribute)
-            self.attributes = cast("list[AttributeT]", attributes)
+            self._populate_prompts_from_taxonomy(config=config)
         else:
             not_impl = f"method {method} is not implemented. use cli or file."
             raise NotImplementedError(not_impl)
