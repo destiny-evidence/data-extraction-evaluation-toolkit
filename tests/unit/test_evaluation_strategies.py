@@ -203,7 +203,7 @@ def test_act_on_validation_accept_finalises_test_and_runs_pipeline(tmp_path):
         patch("deet.extractors.cli_helpers.evaluate_extraction_pipeline"),
     ):
         mock_inquirer.select.return_value.execute.return_value = "accept"
-        mock_run.return_value = (MagicMock(), MagicMock(), MagicMock())
+        mock_run.return_value = (MagicMock(), MagicMock(), MagicMock(), MagicMock())
         strategy._act_on_validation(
             deet_project=mock_project, project_doc_ids=[1, 2, 3, 4, 5]
         )

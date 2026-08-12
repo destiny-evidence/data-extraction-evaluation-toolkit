@@ -259,10 +259,9 @@ def test_extraction_without_evaluating(
 
     # She finds the directory for the experiment she just carried out
     experiment_run_dir = run_dirs[0]
-    run_id = experiment_run_dir.name
 
     # And makes sure it contains all the experiment artefacts she would expect
-    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir, run_id=run_id)
+    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir)
 
     assert artefacts.config_snapshot.exists()
     assert artefacts.prompts_snapshot.exists()
@@ -318,10 +317,9 @@ def test_extraction_without_evaluating_or_linking(
 
     # She finds the directory for the experiment she just carried out
     experiment_run_dir = run_dirs[0]
-    run_id = experiment_run_dir.name
 
     # And makes sure it contains all the experiment artefacts she would expect
-    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir, run_id=run_id)
+    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir)
 
     assert artefacts.config_snapshot.exists()
     assert artefacts.prompts_snapshot.exists()
@@ -372,10 +370,9 @@ def test_extraction_with_evaluation(
 
     # She finds the directory for the experiment she just carried out
     experiment_run_dir = run_dirs[0]
-    run_id = experiment_run_dir.name
 
     # And makes sure it contains all the experiment artefacts she would expect
-    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir, run_id=run_id)
+    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir)
 
     assert artefacts.config_snapshot.exists()
     assert artefacts.prompts_snapshot.exists()
