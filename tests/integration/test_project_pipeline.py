@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
 
 import pytest
 import yaml
@@ -92,7 +92,7 @@ def initialised_project_workspace(
         os.chdir(previous_cwd)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def virtual_keyboard():
     with (
         create_pipe_input() as pipe_input,
@@ -121,8 +121,10 @@ def test_initialise_project_via_wizard(
     project_dir.mkdir(parents=True)
     os.chdir(project_dir)
 
-    time_limit = 20
+    time_limit = 10
     did_time_out = False
+
+    done = Event()
 
     def user_journey():
         """Replicate the keyboard strokes Alice will make when using the CLI."""
@@ -152,9 +154,9 @@ def test_initialise_project_via_wizard(
 
             # If things haven't finished at the end of the time limit,
             # Alice exits the wizard.
-            time.sleep(time_limit)
-            did_time_out = True
-            virtual_keyboard.send_text("\x03")
+            if not done.wait(time_limit):
+                did_time_out = True
+                virtual_keyboard.send_text("\x03")
         except OSError:
             # Safely caught when the main thread finishes successfully
             # and tears down the keyboard pipes early.
@@ -167,7 +169,11 @@ def test_initialise_project_via_wizard(
         # Run natively on the main thread so CliRunner can attach to streams properly
         result = runner.invoke(app, ["project", "init"])
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0, (
+            f"exit={result.exit_code} did_time_out={did_time_out}\n"
+            f"exception={result.exception!r}\n"
+            f"--- wizard stdout ---\n{result.output}"
+        )
         deet_project = DeetProject.load()
         assert deet_project.name == project_name
 
@@ -177,7 +183,8 @@ def test_initialise_project_via_wizard(
         assert len(processed_data.annotated_documents) > 0
 
     finally:
-        # Fixed: Pass your tracked path variable back to recover process state
+        done.set()
+        typer_thread.join(timeout=5)
         os.chdir(original_cwd)
 
 
