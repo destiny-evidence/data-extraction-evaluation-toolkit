@@ -159,7 +159,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             " using these documents"
         )
 
-        run_output, processed_annotation_data, experiment_artefacts = (
+        run_output, processed_annotation_data, experiment_artefacts, _config = (
             run_extraction_pipeline(
                 deet_project=deet_project,
                 prompt_csv_path=selected_experiment.prompts_snapshot,
@@ -223,7 +223,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
 
             self.splits.dump_to_json(deet_project.evaluation_splits_path)
 
-            run_output, processed_annotation_data, experiment_artefacts = (
+            run_output, processed_annotation_data, experiment_artefacts, _config = (
                 run_extraction_pipeline(
                     deet_project=deet_project,
                     prompt_csv_path=selected_experiment.prompts_snapshot,

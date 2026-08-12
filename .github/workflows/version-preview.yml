@@ -1,0 +1,64 @@
+# .github/workflows/version-preview.yml
+name: version preview
+
+on:
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+         fetch-depth: 0
+         ref: ${{ github.base_ref }}   # checkout main or develop, not the feature branch
+
+      - name: configure git identity
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+
+      - name: merge pr commits for preview
+        run: git merge --no-ff origin/${{ github.head_ref }} --no-edit
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: get version preview
+        id: preview
+        run: |
+          CURRENT=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
+          NEXT=$(uv run --quiet semantic-release --noop version --print 2>/dev/null | tail -1)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "next=${NEXT:-no release}" >> $GITHUB_OUTPUT
+
+      - name: post comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+            script: |
+                const current = '${{ steps.preview.outputs.current }}';
+                const next = '${{ steps.preview.outputs.next }}';
+                const body = `**version preview**\n\n| | |\n|---|---|\n| current | \`${current}\` |\n| next | \`${next}\` |`;
+                const comments = await github.rest.issues.listComments({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                });
+                const existing = comments.data.find(c => c.body.startsWith('**version preview**'));
+                if (existing) {
+                    await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: existing.id,
+                    body: body
+                    });
+                } else {
+                    await github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: body
+                    });
+                }

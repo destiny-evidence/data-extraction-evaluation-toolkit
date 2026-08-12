@@ -153,7 +153,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         mock_extractor.config = config
         mock_extractor.extract_from_documents.return_value = run_output
 
-        result_output, _, experiment_artefacts = run_extraction_pipeline(
+        result_output, _, experiment_artefacts, _config = run_extraction_pipeline(
             deet_project=mock_project,
             prompt_population=None,
             prompt_csv_path=None,

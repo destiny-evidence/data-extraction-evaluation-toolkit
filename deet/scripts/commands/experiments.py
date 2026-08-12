@@ -89,11 +89,12 @@ def evaluate(  # noqa: PLR0913
     standard data.
     """
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+    from deet.evaluators.metrics import EvaluationMetricSettings
     from deet.extractors.cli_helpers import run_extraction_pipeline
 
     deet_project: DeetProject = typer_context.obj.project
 
-    run_output, processed_annotation_data, experiment_artefacts = (
+    run_output, processed_annotation_data, experiment_artefacts, config = (
         run_extraction_pipeline(
             deet_project=deet_project,
             prompt_csv_path=prompt_csv_path,
@@ -109,6 +110,9 @@ def evaluate(  # noqa: PLR0913
         attributes=processed_annotation_data.attributes,
         custom_metrics=custom_evaluation_metrics,
         extraction_run_id=experiment_artefacts.run_id,
+        metric_settings=EvaluationMetricSettings(
+            edit_distance_match_threshold=config.edit_distance_match_threshold,
+        ),
     )
     evaluator.evaluate_llm_annotations()
     evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
@@ -144,7 +148,7 @@ def predict(  # noqa: PLR0913
 
     deet_project: DeetProject = typer_context.obj.project
 
-    (run_output, processed_annotation_data, experiment_artefacts) = (
+    (run_output, processed_annotation_data, experiment_artefacts, _config) = (
         run_extraction_pipeline(
             deet_project=deet_project,
             prompt_csv_path=prompt_csv_path,
