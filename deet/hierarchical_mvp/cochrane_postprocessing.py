@@ -21,6 +21,7 @@ import csv
 import json
 from pathlib import Path
 
+from deet.hierarchical_mvp.utils import _open_csv_for_write
 from deet.logger import logger
 
 # ---------------------------------------------------------------------------
@@ -218,7 +219,7 @@ def postprocess_cochrane_outcomes(
     output_csv = Path(output_csv)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
-    with output_csv.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(output_csv) as f:
         writer = csv.DictWriter(
             f,
             fieldnames=OUTPUT_FIELDNAMES,

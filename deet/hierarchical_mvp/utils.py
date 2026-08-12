@@ -10,8 +10,22 @@ from deet.logger import logger
 
 from .CochraneRCTmodel import Intervention as CochraneIntervention
 from .CochraneRCTmodel import Study as CochraneStudy
+from .ObesityRCTmodel import Intervention as ObesityIntervention
+from .ObesityRCTmodel import Study as ObesityStudy
 from .PrognosticModel import HazardRatioOutcome, PrognosticFactor, PrognosticStudy
 from .RCTmodel import Intervention, Study
+
+# Excel on Windows misreads plain "utf-8" CSVs (special chars like bullet/en-dash
+# turn into mojibake, e.g. "â€¢") unless a byte-order mark is present.
+EXCEL_CSV_ENCODING = "utf-8-sig"
+
+
+def _open_csv_for_write(path: Path):
+    """Open a CSV file for writing using an Excel-friendly encoding, falling back to plain UTF-8."""
+    try:
+        return path.open("w", newline="", encoding=EXCEL_CSV_ENCODING)
+    except LookupError:
+        return path.open("w", newline="", encoding="utf-8")
 
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
@@ -78,14 +92,14 @@ def export_csv(
 
     # --- study.csv ---
     study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
-    with study_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(study_path) as f:
         writer = csv.DictWriter(f, fieldnames=Study.csv_fieldnames())
         writer.writeheader()
         writer.writerow(study.to_csv_row())
 
     # --- interventions.csv ---
     interventions_path = csv_dir / f"interventions_{timestamp}{suffix}.csv"
-    with interventions_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(interventions_path) as f:
         writer = csv.DictWriter(f, fieldnames=Intervention.csv_fieldnames())
         writer.writeheader()
         for arm in study.interventions:
@@ -93,9 +107,59 @@ def export_csv(
 
     # --- outcomes.csv ---
     outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
-    with outcomes_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(outcomes_path) as f:
         writer = csv.DictWriter(
             f, fieldnames=Study.outcome_csv_fieldnames(), extrasaction="ignore"
+        )
+        writer.writeheader()
+        for outcome in (
+            study.dichotomous_outcomes
+            + study.continuous_outcomes
+            + study.other_outcomes
+        ):
+            writer.writerow(outcome.to_csv_row())
+
+    logger.info(f"CSV files saved to {csv_dir}/")
+
+
+def export_obesity_csv(
+    study: ObesityStudy,
+    study_name: str,
+    predictions_dir: Path,
+    timestamp: str,
+    model_suffix: str = "",
+) -> None:
+    """
+    Write three timestamped CSV files for an Obesity RCT extraction into
+    predictions/<study_name>/:
+        - study_<timestamp>.csv
+        - interventions_<timestamp>.csv
+        - outcomes_<timestamp>.csv
+    """
+    csv_dir = predictions_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
+
+    # --- study.csv ---
+    study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
+    with _open_csv_for_write(study_path) as f:
+        writer = csv.DictWriter(f, fieldnames=ObesityStudy.csv_fieldnames())
+        writer.writeheader()
+        writer.writerow(study.to_csv_row())
+
+    # --- interventions.csv ---
+    interventions_path = csv_dir / f"interventions_{timestamp}{suffix}.csv"
+    with _open_csv_for_write(interventions_path) as f:
+        writer = csv.DictWriter(f, fieldnames=ObesityIntervention.csv_fieldnames())
+        writer.writeheader()
+        for arm in study.interventions:
+            writer.writerow(arm.to_csv_row())
+
+    # --- outcomes.csv ---
+    outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
+    with _open_csv_for_write(outcomes_path) as f:
+        writer = csv.DictWriter(
+            f, fieldnames=ObesityStudy.outcome_csv_fieldnames(), extrasaction="ignore"
         )
         writer.writeheader()
         for outcome in (
@@ -132,7 +196,7 @@ def export_cochrane_csv(
 
     # --- study.csv ---
     study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
-    with study_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(study_path) as f:
         writer = csv.DictWriter(f, fieldnames=CochraneStudy.csv_fieldnames())
         writer.writeheader()
         writer.writerow(study.to_csv_row())
@@ -141,7 +205,7 @@ def export_cochrane_csv(
     # Prepend the "Study" column so every intervention row carries the study ID.
     interventions_path = csv_dir / f"interventions_{timestamp}{suffix}.csv"
     iv_fieldnames = ["Study"] + CochraneIntervention.csv_fieldnames()
-    with interventions_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(interventions_path) as f:
         writer = csv.DictWriter(f, fieldnames=iv_fieldnames, restval="")
         writer.writeheader()
         for arm in study.interventions:
@@ -150,7 +214,7 @@ def export_cochrane_csv(
     # --- outcomes.csv ---
     # Each outcome object holds data for both arms and produces two rows.
     outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
-    with outcomes_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(outcomes_path) as f:
         writer = csv.DictWriter(
             f,
             fieldnames=CochraneStudy.outcome_csv_fieldnames(),
@@ -184,14 +248,14 @@ def export_prognostic_csv(
 
     # --- study.csv ---
     study_path = csv_dir / f"study_{timestamp}{suffix}.csv"
-    with study_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(study_path) as f:
         writer = csv.DictWriter(f, fieldnames=PrognosticStudy.csv_fieldnames())
         writer.writeheader()
         writer.writerow(study.to_csv_row())
 
     # --- prognostic_factors.csv ---
     factors_path = csv_dir / f"prognostic_factors_{timestamp}{suffix}.csv"
-    with factors_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(factors_path) as f:
         writer = csv.DictWriter(f, fieldnames=PrognosticFactor.csv_fieldnames())
         writer.writeheader()
         for factor in study.prognostic_factors:
@@ -199,7 +263,7 @@ def export_prognostic_csv(
 
     # --- outcomes.csv ---
     outcomes_path = csv_dir / f"outcomes_{timestamp}{suffix}.csv"
-    with outcomes_path.open("w", newline="", encoding="utf-8") as f:
+    with _open_csv_for_write(outcomes_path) as f:
         writer = csv.DictWriter(
             f,
             fieldnames=PrognosticStudy.outcome_csv_fieldnames(),

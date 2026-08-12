@@ -14,9 +14,14 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
 from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
+from deet.hierarchical_mvp import ObesityRCTmodel as obesity_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
-from deet.hierarchical_mvp.utils import configure_lm, load_study_context
+from deet.hierarchical_mvp.utils import (
+    _open_csv_for_write,
+    configure_lm,
+    load_study_context,
+)
 from deet.logger import logger
 
 DEFAULT_PROMPT_CSV_FILENAME = "hierarchical_prompts.csv"
@@ -133,6 +138,35 @@ def build_prognostic_hierarchical_prompt_rows() -> list[dict[str, str]]:
     return rows
 
 
+def build_obesity_hierarchical_prompt_rows() -> list[dict[str, str]]:
+    """Build prompt rows from classes defined in ObesityRCT models."""
+    rows: list[dict[str, str]] = []
+
+    for _, cls in obesity_models.__dict__.items():
+        if not isinstance(cls, type):
+            continue
+        if cls.__module__ != obesity_models.__name__:
+            continue
+        if not issubclass(cls, BaseModel):
+            continue
+
+        for field_name, field_info in cls.model_fields.items():
+            description = field_info.description or ""
+            annotation = field_info.annotation
+            datatype = getattr(annotation, "__name__", str(annotation))
+
+            rows.append(
+                {
+                    "class": cls.__name__,
+                    "attribute": field_name,
+                    "prompt": description,
+                    "datatype": datatype,
+                }
+            )
+
+    return rows
+
+
 def write_hierarchical_prompts_csv(
     study_type: str = "RCT",
     csv_outpath: str | Path | None = None,
@@ -145,9 +179,11 @@ def write_hierarchical_prompts_csv(
             rows = build_cochrane_hierarchical_prompt_rows()
         case "PrognosticStudy":
             rows = build_prognostic_hierarchical_prompt_rows()
+        case "ObesityRCT":
+            rows = build_obesity_hierarchical_prompt_rows()
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT"
             )
 
     if csv_outpath is None:
@@ -158,7 +194,7 @@ def write_hierarchical_prompts_csv(
             output_csv_path = Path.cwd() / output_csv_path
 
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_csv_path.open("w", newline="", encoding="utf-8") as csvfile:
+    with _open_csv_for_write(output_csv_path) as csvfile:
         writer = csv.DictWriter(
             csvfile,
             fieldnames=["class", "attribute", "prompt", "datatype"],
@@ -501,7 +537,7 @@ def _write_dict_rows_to_csv(
     fieldnames: list[str],
     rows: list[dict[str, Any]],
 ) -> None:
-    with output_path.open("w", newline="", encoding="utf-8") as csvfile:
+    with _open_csv_for_write(output_path) as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         for row in rows:
@@ -866,7 +902,7 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
     write_parser.add_argument(
         "--study-type",
         default="RCT",
-        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy.",
+        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy, ObesityRCT.",
     )
     write_parser.add_argument(
         "--csv-outpath",

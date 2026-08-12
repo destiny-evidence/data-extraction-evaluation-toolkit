@@ -12,6 +12,8 @@ from typing import Any
 from dotenv import load_dotenv
 
 from deet.hierarchical_mvp.CochraneRCTextraction import CochraneRCTExtractionPipeline
+from deet.hierarchical_mvp.ObesityRCTextraction import ObesityRCTExtractionPipeline
+from deet.hierarchical_mvp.ObesityRCTmodel import Study as ObesityStudy
 from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
 from deet.hierarchical_mvp.PrognosticModel import PrognosticStudy
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
@@ -20,6 +22,7 @@ from deet.hierarchical_mvp.utils import (
     configure_lm,
     export_cochrane_csv,
     export_csv,
+    export_obesity_csv,
     export_prognostic_csv,
     load_study_context,
 )
@@ -147,7 +150,7 @@ def validate_create_paths(config: dict[str, Any]) -> tuple[list[str], str]:
     return input_paths, str(output_dir)
 
 
-def extract(context: str, study_type: str) -> Study | PrognosticStudy:
+def extract(context: str, study_type: str) -> Study | PrognosticStudy | ObesityStudy:
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
     match study_type:
@@ -160,14 +163,17 @@ def extract(context: str, study_type: str) -> Study | PrognosticStudy:
         case "PrognosticStudy":
             pipeline = PrognosticExtractionPipeline()
             return pipeline(context=context)
+        case "ObesityRCT":
+            pipeline = ObesityRCTExtractionPipeline()
+            return pipeline(context=context)
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT"
             )
 
 
 def save_data(
-    study: Study | PrognosticStudy,
+    study: Study | PrognosticStudy | ObesityStudy,
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
@@ -193,6 +199,8 @@ def save_data(
             export_cochrane_csv(study, study_name, output_dir, timestamp, model_suffix)
         case "PrognosticStudy":
             export_prognostic_csv(study, study_name, output_dir, timestamp, model_suffix)
+        case "ObesityRCT":
+            export_obesity_csv(study, study_name, output_dir, timestamp, model_suffix)
         case _:
             export_csv(study, study_name, output_dir, timestamp, model_suffix)
 
