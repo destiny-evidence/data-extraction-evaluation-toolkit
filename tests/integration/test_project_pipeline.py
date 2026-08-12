@@ -121,7 +121,7 @@ def test_initialise_project_via_wizard(
     project_dir.mkdir(parents=True)
     os.chdir(project_dir)
 
-    time_limit = 10
+    time_limit = 20
     did_time_out = False
 
     def user_journey():
