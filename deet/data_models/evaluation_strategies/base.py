@@ -23,51 +23,59 @@ class BaseEvaluationStage(StrEnum):
     """Defines the stages of an evaluation strategy."""
 
 
-class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
-    """Base class defining methods of an evaluation strategy."""
-
-    name: EvaluationStrategyName
-
-    def __init__(self, project: DeetProject) -> None:
-        """initialise and set splits."""
-        self._project = project
-        self.splits = self._load_splits(project)
-
-    @abstractmethod
-    def _load_splits(self, project: DeetProject) -> SplitsT:
-        """Return the splits object for this strategy and project."""
-
-    def get_active_ids(self, project: DeetProject) -> list[int]:
-        """Return IDs to run the pipeline on."""
-        return self.splits.active_ids
-
-    def snapshot(self, artefacts: ExperimentArtefacts) -> None:
-        """Persist stategy state alongside an experiment run."""
-        self.splits.dump_to_json(artefacts.evaluation_splits_snapshot)
-
-    @abstractmethod
-    def run_splits_wizard(
-        self,
-        project: DeetProject,
-        *,
-        action: str | None = None,
-        size: int | None = None,
-        experiment: str | None = None,
-    ) -> None:
-        """Manage the interactive splits workflow."""
-
-
 class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
-    """Base object for persisting how document IDs are used for an experiment."""
+    """
+    Base object for persisting how document IDs are used for an experiment.
+
+    An evaluation strategy divides a project's documents into stages
+    (e.g. dev, validation, and test). This model stores that partition,
+    alongside the stage the experiment is currently in, and serialises to/from
+    JSON.
+
+    Subclasses define the concrete shape and must:
+    - declare one model field per stage
+    - bind ``StageT`` to the strategy's stage enum
+    - set the ``_STAGE_FIELD_NAMES`` class var mapping each stage in the enum
+        to its model field
+
+    This contract is enforced on definition, and ensures that generic methods
+    can be defined here for DRYness.
+    """
 
     _STAGE_FIELD_NAMES: ClassVar[dict[BaseEvaluationStage, str]]
 
-    def __init_subclass__(cls, **kwargs) -> None:
-        """Check whether subclasses have defined _STAGE_FIELD_NAMES."""
-        if "_STAGE_FIELD_NAMES" not in cls.__dict__:
-            missing_names = f"{cls.__name__} must define _STAGE_FIELD_NAMES"
-            raise TypeError(missing_names)
-        super().__init_subclass__(**kwargs)
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs) -> None:
+        """Validate whether a subclass honours contract defined by this base class."""
+        super().__pydantic_init_subclass__(**kwargs)
+
+        if not hasattr(cls, "_STAGE_FIELD_NAMES"):
+            undeclared = f"{cls.__name__} must define _STAGE_FIELD_NAMES"
+            raise TypeError(undeclared)
+
+        undefined = [
+            field
+            for field in cls._STAGE_FIELD_NAMES.values()
+            if field not in cls.model_fields
+        ]
+        if undefined:
+            bad_fields = (
+                f"{cls.__name__}._STAGE_FIELD_NAMES maps to undefined"
+                f" model fields(s): {undefined}"
+            )
+            raise TypeError(bad_fields)
+
+        stage_enum = cls.model_fields["current_stage"].annotation
+        if isinstance(stage_enum, type) and issubclass(stage_enum, BaseEvaluationStage):
+            mapped = set(cls._STAGE_FIELD_NAMES)
+            expected: set[BaseEvaluationStage] = set(stage_enum)
+            if mapped != expected:
+                mismatch = (
+                    f"{cls.__name__}._STAGE_FIELD_NAMES keys must match "
+                    f"{stage_enum.__name__} exactly; "
+                    f"missing={expected - mapped}, unexpected={mapped - expected}"
+                )
+                raise TypeError(mismatch)
 
     current_stage: StageT
 
@@ -115,3 +123,37 @@ class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
     def active_ids(self) -> list[int]:
         """Return the current active ids, based on the current stage."""
         return self._get_list_for_stage(self.current_stage)
+
+
+class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
+    """Base class defining methods of an evaluation strategy."""
+
+    name: EvaluationStrategyName
+
+    def __init__(self, project: DeetProject) -> None:
+        """Initialise and set splits."""
+        self._project = project
+        self.splits = self._load_splits(project)
+
+    @abstractmethod
+    def _load_splits(self, project: DeetProject) -> SplitsT:
+        """Return the splits object for this strategy and project."""
+
+    def get_active_ids(self, project: DeetProject) -> list[int]:
+        """Return IDs to run the pipeline on."""
+        return self.splits.active_ids
+
+    def snapshot(self, artefacts: ExperimentArtefacts) -> None:
+        """Persist stategy state alongside an experiment run."""
+        self.splits.dump_to_json(artefacts.evaluation_splits_snapshot)
+
+    @abstractmethod
+    def run_splits_wizard(
+        self,
+        project: DeetProject,
+        *,
+        action: str | None = None,
+        size: int | None = None,
+        experiment: str | None = None,
+    ) -> None:
+        """Manage the interactive splits workflow."""
