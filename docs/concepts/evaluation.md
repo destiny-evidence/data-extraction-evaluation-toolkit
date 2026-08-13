@@ -9,7 +9,7 @@ under `data-extraction-experiments/<run_id>/`.
 Artefact paths are defined by
 [`deet.data_models.project.ExperimentArtefacts`](../reference/api.md#deet.data_models.project.ExperimentArtefacts).
 Metric registries live in
-[`deet.data_models.evaluation`](../reference/api.md#deet.data_models.evaluation).
+[`deet.evaluators.metrics`](../reference/api.md#deet.evaluators.metrics).
 
 ## What is compared
 
@@ -29,29 +29,32 @@ Those parallel lists are scored with the metrics registered for the attribute's
 
 Each successful `deet experiments evaluate` run creates a new folder and writes
 the files below. `deet experiments predict` extracts without scoring, so it
-does not write `metrics.csv` or `goldstandard_llm_comparison.csv`.
+does not write `metrics.csv`, `metrics.json`, or `goldstandard_llm_comparison.csv`.
 
 ### `metrics.csv`
 
-One row per attribute × metric. Produced by
+Wide metrics table (one row per attribute, metric names as columns). Produced by
 [`GoldStandardLLMEvaluator.write_metrics_to_csv`](../reference/api.md#deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator.write_metrics_to_csv)
 via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.AttributeMetric).
 
 | Column | Meaning |
 |--------|---------|
+| `extraction_run_id` | Run folder / run id |
 | `attribute_id` | Attribute identifier |
 | `attribute_label` | Human-readable attribute name |
-| `value` | Metric score, or empty if the metric could not be computed (including when any LLM prediction is missing or invalid — same failure behaviour across metric types) |
-| `extraction_run_id` | Run folder / run id |
-| `metric_name` | Name of the metric (see below) |
+| `attribute_type` | Output type (`BOOL`, `STRING`, `INTEGER`, `FLOAT`, etc.) |
+| `n_gold_instances` | Number of document-attribute instances scored for this attribute |
+| `n_good_source_instances` | Number of instances where the gold value is found in parsed `context` (STRING/INTEGER/FLOAT only) |
+| `n_good_citation_instances` | Number of instances where the gold value is found in citation text (`additional_text` and/or `item_attribute_full_text_details`) (STRING/INTEGER/FLOAT only) |
+| metric columns (e.g. `accuracy`, `precision`, `mean_absolute_error`) | Score value, or empty if not applicable / not computable |
 
 #### Metrics by attribute type
 
 | Attribute type | Default metrics |
 |----------------|-----------------|
 | **BOOL** | `accuracy`, `precision`, `recall`, `f1_score`, `n_labels` |
-| **STRING** | `accuracy`, `edit_distance_match_rate` |
-| **INTEGER** / **FLOAT** | `accuracy`, `mean_absolute_error`, `mean_absolute_percentage_error` |
+| **STRING** | `accuracy`, `edit_distance_match_rate`, plus stratified variants `*_given_good_source` and `*_given_bad_source` |
+| **INTEGER** / **FLOAT** | `accuracy`, `mean_absolute_error`, `mean_absolute_percentage_error`, plus stratified variants `*_given_good_source` and `*_given_bad_source` |
 | **LIST** / **DICT** | No default metrics yet |
 
 - **`accuracy`**: fraction of exact matches between gold and LLM `output_data`.
@@ -65,12 +68,47 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
   numeric error. These complement exact-match accuracy; they do not replace it.
   Missing or invalid LLM predictions (e.g. failed document extraction or
   duplicate annotations → `None`) cause the metric to fail for that attribute,
-  as with binary metrics — the CSV `value` is left empty rather than scoring
+  as with binary metrics — the CSV cell is left empty rather than scoring
   only the successful subset. MAPE is undefined when a gold value is zero
-  (sklearn behaviour); that also leaves `value` empty.
+  (sklearn behaviour); that also leaves the cell empty.
+
+For STRING / INTEGER / FLOAT, metrics are exported in three views:
+
+- **Unconditional** (all scored instances), e.g. `accuracy`
+- **Given good source** (`gold value in context`), e.g. `accuracy_given_good_source`
+- **Given bad source** (`gold value not in context`), e.g. `accuracy_given_bad_source`
+
+When a stratified subset is empty (for example every instance is good-source, so
+there are no bad-source rows), those `*_given_*` cells are left **empty**. A `0`
+would look like a real score of zero rather than “not computed”.
 
 You can also pass extra sklearn metric names with
 `--custom-evaluation-metrics` on `deet experiments evaluate`.
+
+### `metrics.json`
+
+Machine-readable metric export with the same values as `metrics.csv`, grouped by
+attribute. Produced by
+[`GoldStandardLLMEvaluator.write_metrics_to_json`](../reference/api.md#deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator.write_metrics_to_json).
+
+Top-level fields:
+
+- `extraction_run_id`
+- `format_version`
+- `attributes` (list)
+
+The file is serialised and de-serialised by
+[`RunMetricsReport`](../reference/api.md#deet.data_models.evaluation.RunMetricsReport)
+(one [`AttributeMetricsReport`](../reference/api.md#deet.data_models.evaluation.AttributeMetricsReport)
+per attribute). `attribute_type` reuses
+[`AttributeType`](../reference/api.md#deet.data_models.base.AttributeType).
+Inapplicable keys are omitted (not written as `null`).
+
+Each attribute object includes:
+
+- `attribute_id`, `attribute_label`, `attribute_type`
+- `counts` (e.g. `n_gold_instances`, `n_good_source_instances`)
+- `metrics` (e.g. `accuracy`, `accuracy_given_good_source`, etc.)
 
 ### `goldstandard_llm_comparison.csv`
 
@@ -131,6 +169,27 @@ text used for extraction. Empty snippets score `0.00`. `human_additional_text`
 comes from the gold annotation's supporting / verbatim text (often from EPPI);
 `llm_verbatim_text` is the model's corresponding support text.
 
+#### Source-fidelity and match status fields
+
+| Column | Meaning |
+|--------|---------|
+| `gold_value_in_citation` | `True` / `False` for STRING/INTEGER/FLOAT: whether the gold value is found in citation text (`additional_text` and/or `item_attribute_full_text_details`) |
+| `gold_value_in_context` | `True` / `False` for STRING/INTEGER/FLOAT: whether the gold value is found in parsed `context` (what the LLM read) |
+| `match_status` | Row-level outcome label for STRING/INTEGER/FLOAT (see below) |
+
+`match_status` values:
+
+| Value | Meaning |
+|-------|---------|
+| `exact_match` | LLM `output_data` equals gold `output_data` |
+| `near_match` | STRING only: not exact, but normalised Levenshtein similarity is at least the edit-distance threshold (default `0.90`) |
+| `missing_prediction` | No usable LLM value (`None`) |
+| `extraction_error_bad_source` | Mismatch, and gold was **not** found in parsed context |
+| `extraction_error_good_source` | Mismatch, and gold **was** found in parsed context |
+
+BOOL rows leave these fields empty (source-fidelity checks are out of scope for
+bool values).
+
 ### `llm_annotations.json`
 
 Full structured LLM output for the run: annotated documents (including
@@ -178,8 +237,10 @@ documents or metric warnings).
    attributes scored well.
 2. Open **`goldstandard_llm_comparison.csv`** for mismatches: compare
    `human_extraction` vs `llm_extraction`, check <term: attribute presence>,
-   and inspect citations / verbatim fuzzy scores when diagnosing grounding.
-3. Use **`llm_annotations.json`** and **`extraction_metadata.json`** for full
+   <term: match status>, citation/context source-fidelity flags, and verbatim
+   fuzzy scores.
+3. Use **`metrics.json`** when consuming metrics programmatically.
+4. Use **`llm_annotations.json`** and **`extraction_metadata.json`** for full
    model payloads and cost/timing.
 
 For how artefacts fit into the wider experiment workflow, see

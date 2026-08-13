@@ -302,6 +302,11 @@ class ExperimentArtefacts:
         return self.base_dir / "metrics.csv"
 
     @property
+    def metrics_json(self) -> Path:
+        """Return location of experiment metrics JSON."""
+        return self.base_dir / "metrics.json"
+
+    @property
     def comparison(self) -> Path:
         """Return location of csv comparing goldstandard to llm extractions."""
         return self.base_dir / "goldstandard_llm_comparison.csv"

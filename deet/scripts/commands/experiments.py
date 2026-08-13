@@ -111,6 +111,7 @@ def evaluate(  # noqa: PLR0913
     )
     evaluator.evaluate_llm_annotations()
     evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
+    evaluator.write_metrics_to_json(experiment_artefacts.metrics_json)
     evaluator.export_llm_comparison(experiment_artefacts.comparison)
     evaluator.display_metrics()
 
