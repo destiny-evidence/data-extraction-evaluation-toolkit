@@ -1,7 +1,5 @@
 """Helpers for source-fidelity checks and row-level match status."""
 
-from __future__ import annotations
-
 import re
 
 from rapidfuzz.distance import Levenshtein
