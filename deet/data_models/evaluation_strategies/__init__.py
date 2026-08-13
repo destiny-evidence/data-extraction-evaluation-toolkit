@@ -1,4 +1,9 @@
-"""Data models for evaluation strategies, inheriting from base."""
+"""
+Public interfact for evaluation strategies.
+
+Exports the base class and concrete strategy implementations,
+maintains the strategy registry that maps strategy names to their constructors.
+"""
 
 from collections.abc import Callable
 from typing import TYPE_CHECKING

@@ -1,4 +1,18 @@
-"""Base ABC for evaluation strategies and splits objects."""
+"""
+Evaluation strategy framework: dividing documents between stages for evaluation.
+
+This module defines base classes for managing how documents are partitioned across
+evaluation stages. This module provides three abstractions:
+
+- `BaseEvaluationStage`: An enum of the concrete stages for a strategy.
+- `BaseSplits`: A Pydantic model persisting the partition of documents
+  across stages and the current stage of an experiment.
+- `BaseEvaluationStrategy`: The orchestrator, managing splits and providing
+  interactive and programmatic interfaces for moving documents between stages.
+
+Concrete strategies implement these abstractions and are registered
+in the package `__init__.py`.
+"""
 
 from __future__ import annotations  # Makes all type annotations lazy strings
 
@@ -20,7 +34,11 @@ if TYPE_CHECKING:
 
 
 class BaseEvaluationStage(StrEnum):
-    """Defines the stages of an evaluation strategy."""
+    """
+    Defines the stages of an evaluation strategy.
+
+    Each of these stages is mapped to a list of IDs in the splits model below.
+    """
 
 
 class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
@@ -34,8 +52,8 @@ class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
 
     Subclasses define the concrete shape and must:
     - declare one model field per stage
-    - bind ``StageT`` to the strategy's stage enum
-    - set the ``_STAGE_FIELD_NAMES`` class var mapping each stage in the enum
+    - bind `StageT` to the strategy's stage enum
+    - set the `_STAGE_FIELD_NAMES` class var mapping each stage in the enum
         to its model field
 
     This contract is enforced on definition, and ensures that generic methods
@@ -126,7 +144,19 @@ class BaseSplits[StageT: BaseEvaluationStage](BaseModel):
 
 
 class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
-    """Base class defining methods of an evaluation strategy."""
+    """
+    Orchestrate how a project's documents are divided into evaluation stages.
+
+    An evaluation strategy defines stages (via a `BaseEvaluationStage` enum)
+    and how to move documents through them.
+
+    When `deet.extractors.cli_helpers.run_extraction_pipeline` is called, it
+    filters documents down to those that are assigned to the current stage.
+
+    Each subclass implements its own methods for managing splits, but each
+    must implement a `run_splits_wizard` method, which is called when a user
+    runs `deet experiments splits`.
+    """
 
     name: EvaluationStrategyName
 
@@ -137,14 +167,14 @@ class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
 
     @abstractmethod
     def _load_splits(self, project: DeetProject) -> SplitsT:
-        """Return the splits object for this strategy and project."""
+        """Load or init the splits model for this strategy and project."""
 
     def get_active_ids(self, project: DeetProject) -> list[int]:
-        """Return IDs to run the pipeline on."""
+        """Return the document IDs in the current stage to run the pipeline on."""
         return self.splits.active_ids
 
     def snapshot(self, artefacts: ExperimentArtefacts) -> None:
-        """Persist stategy state alongside an experiment run."""
+        """Persist stategy state with an experiment run's artefacts."""
         self.splits.dump_to_json(artefacts.evaluation_splits_snapshot)
 
     @abstractmethod
@@ -156,4 +186,25 @@ class BaseEvaluationStrategy[SplitsT: BaseSplits](ABC):
         size: int | None = None,
         experiment: str | None = None,
     ) -> None:
-        """Manage the interactive splits workflow."""
+        """
+        Run the interactive workflow for moving documents between stages.
+
+        By default (``action=None``), presents an interactive prompt listing the
+        actions available in the current stage and strategy, and the user selects
+        one. Optionally, ``--action`` can be passed to skip the prompt (for
+        scripted use). Unknown or stage-inappropriate actions raise an error rather
+        than silently failing.
+
+        Further details (e.g. how many documents to move) are prompted for
+        interactively if not provided (``size``, ``experiment``). Subclasses
+        implement the concrete stage transitions and validation logic.
+
+        Note:
+            The valid actions depend on both the strategy and the current stage,
+            which are only known at runtime. Static CLI subcommands would
+            misleadingly list all actions in ``--help`` regardless of whether they
+            apply to the project's configured strategy and current stage. Instead,
+            the action is discovered interactively (the prompt shows what's valid
+            *now*) or specified as an unconstrained string for scripted use.
+
+        """
