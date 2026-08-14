@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from deet.data_models.enums import EvaluationStrategyName
-from deet.data_models.evaluation_strategies import _STRATEGY_REGISTRY
+from deet.data_models.evaluation_strategies import STRATEGY_REGISTRY
 from deet.data_models.evaluation_strategies.dev_val_test import (
     DevValTestEvaluationStage,
     DevValTestEvaluationStrategy,
@@ -16,7 +16,7 @@ from deet.data_models.evaluation_strategies.null import NullEvaluationStrategy
 
 
 def test_strategy_registry_covers_all_strategy_names():
-    assert set(_STRATEGY_REGISTRY.keys()) == set(EvaluationStrategyName)
+    assert set(STRATEGY_REGISTRY.keys()) == set(EvaluationStrategyName)
 
 
 def test_null_strategy_get_active_ids_returns_all_doc_ids():

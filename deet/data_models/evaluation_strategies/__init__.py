@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from deet.data_models.project import DeetProject
 
 
-_STRATEGY_REGISTRY: dict[
+STRATEGY_REGISTRY: dict[
     EvaluationStrategyName,
     Callable[["DeetProject"], BaseEvaluationStrategy],
 ] = {

@@ -250,7 +250,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             evaluate_extraction_pipeline,
             run_extraction_pipeline,
         )
-        from deet.ui import fail_with_message, notify
 
         try:
             n_added = self.splits.add_to_stage(
@@ -311,7 +310,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
 
     def accept_validation(self, project_doc_ids: list[int]) -> None:
         """Accept the results of validation run and do final evaluation of test set."""
-        from deet.data_models.project import ExperimentArtefacts
         from deet.extractors.cli_helpers import (
             evaluate_extraction_pipeline,
             run_extraction_pipeline,

@@ -327,9 +327,9 @@ class DeetProject(BaseModel):
         self,
     ) -> BaseEvaluationStrategy[BaseSplits]:
         """Load split state."""
-        from deet.data_models.evaluation_strategies import _STRATEGY_REGISTRY
+        from deet.data_models.evaluation_strategies import STRATEGY_REGISTRY
 
-        return _STRATEGY_REGISTRY[self.evaluation_strategy](self)
+        return STRATEGY_REGISTRY[self.evaluation_strategy](self)
 
 
 @dataclass(frozen=True)
