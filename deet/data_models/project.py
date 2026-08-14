@@ -123,6 +123,23 @@ class DeetProject(BaseModel):
         return self.root / "data-extraction-experiments"
 
     @property
+    def completed_experiments(self) -> list[ExperimentArtefacts]:
+        """Return all completed experiments."""
+        return sorted(
+            (
+                exp
+                for exp in (
+                    ExperimentArtefacts(base_dir=path)
+                    for path in self.experiments_dir.iterdir()
+                    if path.is_dir()
+                )
+                if exp.is_complete
+            ),
+            key=lambda exp: exp.run_id,
+            reverse=True,
+        )
+
+    @property
     def prompt_csv_path(self) -> Path:
         """Return path to prompt definition file."""
         return self.root / "prompts" / "prompt_definitions.csv"

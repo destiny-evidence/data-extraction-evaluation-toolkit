@@ -52,7 +52,7 @@ def test_dev_val_test_splits_round_trips(tmp_path):
     path = tmp_path / "splits.json"
     splits.dump_to_json(path)
 
-    assert DevValTestSplits.load(path) == splits
+    assert DevValTestSplits.load_or_init(path) == splits
 
 
 def test_run_splits_wizard_add_dev_dispatches_correctly(tmp_path):
@@ -126,7 +126,7 @@ def test_act_on_validation_reject_returns_to_development(tmp_path):
             deet_project=mock_project, project_doc_ids=[1, 2, 3, 4]
         )
 
-    reloaded = DevValTestSplits.load(splits_path)
+    reloaded = DevValTestSplits.load_or_init(splits_path)
     assert reloaded.current_stage == DevValTestEvaluationStage.DEVELOPMENT
     assert set(reloaded.development_ids) == {1, 2, 3, 4}
     assert reloaded.validation_ids == []
@@ -141,9 +141,11 @@ def test_add_dev_samples_and_persists(tmp_path):
     mock_project.evaluation_splits_path = splits_path
 
     strategy = DevValTestEvaluationStrategy(mock_project)
-    strategy._add_dev(size=2, project=mock_project, project_doc_ids=[1, 2, 3, 4, 5])
+    strategy.add_to_development(
+        size=2, project=mock_project, project_doc_ids=[1, 2, 3, 4, 5]
+    )
 
-    reloaded = DevValTestSplits.load(splits_path)
+    reloaded = DevValTestSplits.load_or_init(splits_path)
     assert len(reloaded.development_ids) == 2
     assert all(d in [1, 2, 3, 4, 5] for d in reloaded.development_ids)
 
@@ -208,7 +210,7 @@ def test_act_on_validation_accept_finalises_test_and_runs_pipeline(tmp_path):
             deet_project=mock_project, project_doc_ids=[1, 2, 3, 4, 5]
         )
 
-    reloaded = DevValTestSplits.load(splits_path)
+    reloaded = DevValTestSplits.load_or_init(splits_path)
     assert reloaded.current_stage == DevValTestEvaluationStage.TEST
     assert reloaded.test_ids == [5]
     mock_run.assert_called_once()
