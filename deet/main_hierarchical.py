@@ -11,6 +11,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from deet.hierarchical_mvp.AnimalRCTextraction import AnimalRCTExtractionPipeline
+from deet.hierarchical_mvp.AnimalRCTmodel import Study as AnimalStudy
 from deet.hierarchical_mvp.CochraneRCTextraction import CochraneRCTExtractionPipeline
 from deet.hierarchical_mvp.ObesityRCTextraction import ObesityRCTExtractionPipeline
 from deet.hierarchical_mvp.ObesityRCTmodel import Study as ObesityStudy
@@ -20,6 +22,7 @@ from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTmodel import Study
 from deet.hierarchical_mvp.utils import (
     configure_lm,
+    export_animal_csv,
     export_cochrane_csv,
     export_csv,
     export_obesity_csv,
@@ -43,7 +46,10 @@ EXAMPLE_CONFIG_JSON = """{
     \"input_paths\": [
         \"misc/hierarchical_mvp/input/mira_rct/main.md\"
     ],
-    \"output_parent_dir\": \"misc/hierarchical_mvp/output/mira_rct\"
+    \"output_parent_dir\": \"misc/hierarchical_mvp/output/mira_rct\",
+    \"export_csv\": true,
+    \"export_xlsx\": false,
+    \"export_json\": false
 }"""
 
 
@@ -61,7 +67,11 @@ def parse_args() -> argparse.Namespace:
         "config_path",
         nargs="?",
         default=DEFAULT_CONFIG_FILENAME,
-        help="Path to JSON config with study_type, input_paths, output_parent_dir, max_tokens, and dspy_cache.",
+        help=(
+            "Path to JSON config with study_type, input_paths, output_parent_dir, "
+            "max_tokens, and dspy_cache. Optionally set export_csv (default true), "
+            "export_xlsx, and export_json (both default false) to control outputs."
+        ),
     )
     return parser.parse_args()
 
@@ -124,6 +134,14 @@ def load_config(config_path: Path) -> dict[str, Any]:
     if not isinstance(config["dspy_cache"], bool):
         raise TypeError("Config key 'dspy_cache' must be a boolean.")
 
+    # Optional output-format toggles: default to CSV-only when none are given.
+    config.setdefault("export_csv", True)
+    config.setdefault("export_xlsx", False)
+    config.setdefault("export_json", False)
+    for export_key in ("export_csv", "export_xlsx", "export_json"):
+        if not isinstance(config[export_key], bool):
+            raise TypeError(f"Config key '{export_key}' must be a boolean.")
+
     return config
 
 
@@ -150,7 +168,9 @@ def validate_create_paths(config: dict[str, Any]) -> tuple[list[str], str]:
     return input_paths, str(output_dir)
 
 
-def extract(context: str, study_type: str) -> Study | PrognosticStudy | ObesityStudy:
+def extract(
+    context: str, study_type: str
+) -> Study | PrognosticStudy | ObesityStudy | AnimalStudy:
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
     match study_type:
@@ -166,43 +186,95 @@ def extract(context: str, study_type: str) -> Study | PrognosticStudy | ObesityS
         case "ObesityRCT":
             pipeline = ObesityRCTExtractionPipeline()
             return pipeline(context=context)
+        case "AnimalRCT":
+            pipeline = AnimalRCTExtractionPipeline()
+            return pipeline(context=context)
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT"
             )
 
 
 def save_data(
-    study: Study | PrognosticStudy | ObesityStudy,
+    study: Study | PrognosticStudy | ObesityStudy | AnimalStudy,
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
     model_suffix: str = "",
+    export_csv_files: bool = True,
+    export_xlsx_file: bool = False,
+    export_json_file: bool = False,
 ) -> None:
-    """Persist extracted study payload to JSON and CSV outputs."""
+    """Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested."""
     output_dir = Path(output_parent_dir)
 
     study_name = Path(input_paths[0]).stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     suffix = f"_{model_suffix}" if model_suffix else ""
 
-    output_data = json.dumps(study.model_dump(), indent=2)
-    logger.info("=== Extracted Study Data ===")
-    logger.info(output_data)
+    if export_json_file:
+        output_data = json.dumps(study.model_dump(), indent=2)
+        logger.info("=== Extracted Study Data ===")
+        logger.info(output_data)
 
-    output_path = output_dir / f"{study_name}_{timestamp}{suffix}.json"
-    output_path.write_text(output_data, encoding="utf-8")
-    logger.info(f"JSON saved to {output_path}")
+        output_path = output_dir / f"{study_name}_{timestamp}{suffix}.json"
+        output_path.write_text(output_data, encoding="utf-8")
+        logger.info(f"JSON saved to {output_path}")
+
+    if not (export_csv_files or export_xlsx_file):
+        return
 
     match study_type:
         case "CochraneRCT":
-            export_cochrane_csv(study, study_name, output_dir, timestamp, model_suffix)
+            export_cochrane_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+            )
         case "PrognosticStudy":
-            export_prognostic_csv(study, study_name, output_dir, timestamp, model_suffix)
+            export_prognostic_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+            )
         case "ObesityRCT":
-            export_obesity_csv(study, study_name, output_dir, timestamp, model_suffix)
+            export_obesity_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+            )
+        case "AnimalRCT":
+            export_animal_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+            )
         case _:
-            export_csv(study, study_name, output_dir, timestamp, model_suffix)
+            export_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+            )
 
 
 def main() -> None:
@@ -252,6 +324,9 @@ def main() -> None:
         output_parent_dir=output_parent_dir,
         study_type=config["study_type"],
         model_suffix=model_suffix,
+        export_csv_files=config["export_csv"],
+        export_xlsx_file=config["export_xlsx"],
+        export_json_file=config["export_json"],
     )  # does what it says (I hope :) )
 
 

@@ -332,7 +332,7 @@ class Other_Outcome(BaseModel):
         description="What was the unit of measurement for this outcome? Leave blank if not reported."
     )
     scales_upper_and_lower_limits: str = Field(
-        description="For this outcome, on the smethod it was measured, indicate whether high or low score is good. Leave blank if not reported."
+        description="For this outcome, on the method it was measured, indicate whether high or low score is good. Leave blank if not reported."
     )
     is_outcome_tool_validated: str = Field(
         description="Is the method used to measure this outcome validated, and what evidence is available? Leave blank if not reported."

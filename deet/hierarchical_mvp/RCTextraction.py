@@ -103,7 +103,7 @@ class ExtractOtherOutcomes(dspy.Signature):
     You are a systematic review assistant.
 
     Given the same RCT context and the already-identified intervention groups,
-    extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text.
+    extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text. Do not re-extract a dichotomous or continuous outcome unless you can identify new data for it that wasn't extracted in the previous steps.
 
     For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -117,6 +117,15 @@ class ExtractOtherOutcomes(dspy.Signature):
     interventions: list[Intervention] = dspy.InputField(
         desc="The intervention groups already identified for this trial"
     )
+
+    dichotomous_outcomes: list[Dichotomous_Outcome] = dspy.InputField(
+        desc=("All already extracted data related to dichotomous outcomes reported in the study.")
+    )
+
+    continuous_outcomes: list[Continuous_Outcome] = dspy.InputField(
+        desc=("All already extracted data related to continuous outcomes reported in the study.")
+    )   
+
     flexible_outcomes: list[Other_Outcome] = dspy.OutputField(
         desc=("All data related to every 'other type' outcomes reported in the study.")
     )
@@ -163,6 +172,8 @@ class RCTExtractionPipeline(dspy.Module):
         other_pred = self.extract_other(
             context=context,
             interventions=study_pred.interventions,
+            dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+            continuous_outcomes=cont_pred.continuous_outcomes,
         )
 
         return Study(

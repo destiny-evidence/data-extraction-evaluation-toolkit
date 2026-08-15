@@ -13,6 +13,7 @@ import dspy
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
+from deet.hierarchical_mvp import AnimalRCTmodel as animal_models
 from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
 from deet.hierarchical_mvp import ObesityRCTmodel as obesity_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
@@ -167,6 +168,35 @@ def build_obesity_hierarchical_prompt_rows() -> list[dict[str, str]]:
     return rows
 
 
+def build_animal_hierarchical_prompt_rows() -> list[dict[str, str]]:
+    """Build prompt rows from classes defined in AnimalRCT models."""
+    rows: list[dict[str, str]] = []
+
+    for _, cls in animal_models.__dict__.items():
+        if not isinstance(cls, type):
+            continue
+        if cls.__module__ != animal_models.__name__:
+            continue
+        if not issubclass(cls, BaseModel):
+            continue
+
+        for field_name, field_info in cls.model_fields.items():
+            description = field_info.description or ""
+            annotation = field_info.annotation
+            datatype = getattr(annotation, "__name__", str(annotation))
+
+            rows.append(
+                {
+                    "class": cls.__name__,
+                    "attribute": field_name,
+                    "prompt": description,
+                    "datatype": datatype,
+                }
+            )
+
+    return rows
+
+
 def write_hierarchical_prompts_csv(
     study_type: str = "RCT",
     csv_outpath: str | Path | None = None,
@@ -181,9 +211,11 @@ def write_hierarchical_prompts_csv(
             rows = build_prognostic_hierarchical_prompt_rows()
         case "ObesityRCT":
             rows = build_obesity_hierarchical_prompt_rows()
+        case "AnimalRCT":
+            rows = build_animal_hierarchical_prompt_rows()
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT"
             )
 
     if csv_outpath is None:
@@ -426,12 +458,20 @@ def _build_dynamic_rct_pipeline(
         {
             "context": str,
             "interventions": list[runtime_models["Intervention"]],
+            "dichotomous_outcomes": list[runtime_models["Dichotomous_Outcome"]],
+            "continuous_outcomes": list[runtime_models["Continuous_Outcome"]],
             "flexible_outcomes": list[runtime_models["Other_Outcome"]],
         },
         {
             "context": dspy.InputField(desc="Concatenated markdown text for one RCT."),
             "interventions": dspy.InputField(
                 desc="Interventions identified in step 1."
+            ),
+            "dichotomous_outcomes": dspy.InputField(
+                desc="All already extracted data related to dichotomous outcomes reported in the study."
+            ),
+            "continuous_outcomes": dspy.InputField(
+                desc="All already extracted data related to continuous outcomes reported in the study."
             ),
             "flexible_outcomes": dspy.OutputField(
                 desc="All non-dichotomous, non-continuous outcomes."
@@ -440,7 +480,9 @@ def _build_dynamic_rct_pipeline(
         (
             "You are a systematic review assistant.\n\n"
             "Given the same RCT context and the already-identified intervention groups,\n"
-            "extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text.\n\n"
+            "extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text. "
+            "Do not re-extract a dichotomous or continuous outcome unless you can identify new data "
+            "for it that wasn't extracted in the previous steps.\n\n"
             "For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
             "Report values exactly as they appear in the source — do not calculate or impute.\n"
             'If a value is not reported, use the string "NR".'
@@ -472,6 +514,8 @@ def _build_dynamic_rct_pipeline(
             other_pred = self.extract_other(
                 context=context,
                 interventions=study_pred.interventions,
+                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+                continuous_outcomes=cont_pred.continuous_outcomes,
             )
 
             return study_model(
@@ -902,7 +946,7 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
     write_parser.add_argument(
         "--study-type",
         default="RCT",
-        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy, ObesityRCT.",
+        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT.",
     )
     write_parser.add_argument(
         "--csv-outpath",
