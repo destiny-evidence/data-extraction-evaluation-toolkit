@@ -66,21 +66,42 @@ def test_run_splits_wizard_add_dev_dispatches_correctly(tmp_path):
 
     strategy = DevValTestEvaluationStrategy(mock_project)
 
-    with (
-        patch.object(strategy, "_add_dev") as mock_add_dev,
-        patch.object(strategy, "_validate_run") as mock_validate_run,
-    ):
+    with patch.object(strategy, "add_to_development") as mock_add_dev:
         strategy.run_splits_wizard(
             project=mock_project,
             action="add-dev",
             size=2,
         )
 
-    mock_add_dev.assert_called_once_with(2, mock_project, [1, 2, 3, 4, 5])
-    mock_validate_run.assert_not_called()
+    mock_add_dev.assert_called_once_with([1, 2, 3, 4, 5], 2)
 
 
-def test_run_splits_wizard_validation_stage_dispatches_to_act_on_validation(tmp_path):
+def test_run_splits_wizard_invalid_action_raises(tmp_path):
+    splits = DevValTestSplits(development_ids=[1, 2])
+    splits_path = tmp_path / "splits.json"
+    splits.dump_to_json(splits_path)
+
+    mock_project = MagicMock()
+    mock_project.evaluation_splits_path = splits_path
+    mock_project.get_all_doc_ids.return_value = [1, 2, 3, 4, 5]
+
+    strategy = DevValTestEvaluationStrategy(mock_project)
+
+    with (
+        patch(
+            "deet.data_models.evaluation_strategies.dev_val_test.fail_with_message",
+            side_effect=SystemExit,
+        ),
+        pytest.raises(SystemExit),
+    ):
+        strategy.run_splits_wizard(
+            project=mock_project,
+            action="invalid-action",
+            size=2,
+        )
+
+
+def test_run_splits_wizard_validation_stage_dispatches_to_accept_validation(tmp_path):
     splits = DevValTestSplits(
         current_stage=DevValTestEvaluationStage.VALIDATION,
         development_ids=[1, 2],
@@ -95,7 +116,7 @@ def test_run_splits_wizard_validation_stage_dispatches_to_act_on_validation(tmp_
 
     strategy = DevValTestEvaluationStrategy(mock_project)
 
-    with patch.object(strategy, "_act_on_validation") as mock_act:
+    with patch.object(strategy, "accept_validation") as mock_act:
         strategy.run_splits_wizard(
             project=mock_project,
             action="accept",
@@ -104,7 +125,7 @@ def test_run_splits_wizard_validation_stage_dispatches_to_act_on_validation(tmp_
     mock_act.assert_called_once()
 
 
-def test_act_on_validation_reject_returns_to_development(tmp_path):
+def test_run_splits_wizard_reject_returns_to_development(tmp_path):
     splits = DevValTestSplits(
         current_stage=DevValTestEvaluationStage.VALIDATION,
         development_ids=[1, 2],
@@ -120,11 +141,7 @@ def test_act_on_validation_reject_returns_to_development(tmp_path):
 
     strategy = DevValTestEvaluationStrategy(mock_project)
 
-    with patch("InquirerPy.inquirer") as mock_inquirer:
-        mock_inquirer.select.return_value.execute.return_value = "reject"
-        strategy._act_on_validation(
-            deet_project=mock_project, project_doc_ids=[1, 2, 3, 4]
-        )
+    strategy.reject_validation()
 
     reloaded = DevValTestSplits.load_or_init(splits_path)
     assert reloaded.current_stage == DevValTestEvaluationStage.DEVELOPMENT
@@ -141,44 +158,14 @@ def test_add_dev_samples_and_persists(tmp_path):
     mock_project.evaluation_splits_path = splits_path
 
     strategy = DevValTestEvaluationStrategy(mock_project)
-    strategy.add_to_development(
-        size=2, project=mock_project, project_doc_ids=[1, 2, 3, 4, 5]
-    )
+    strategy.add_to_development(size=2, project_doc_ids=[1, 2, 3, 4, 5])
 
     reloaded = DevValTestSplits.load_or_init(splits_path)
     assert len(reloaded.development_ids) == 2
     assert all(d in [1, 2, 3, 4, 5] for d in reloaded.development_ids)
 
 
-def test_act_on_validation_accept_fails_without_validation_run_id(tmp_path):
-    splits = DevValTestSplits(
-        current_stage=DevValTestEvaluationStage.VALIDATION,
-        development_ids=[1, 2],
-        validation_ids=[3, 4],
-        validation_run_id=None,
-    )
-    splits_path = tmp_path / "splits.json"
-    splits.dump_to_json(splits_path)
-
-    mock_project = MagicMock()
-    mock_project.evaluation_splits_path = splits_path
-
-    strategy = DevValTestEvaluationStrategy(mock_project)
-
-    with (
-        patch("InquirerPy.inquirer") as mock_inquirer,
-        patch("deet.ui.fail_with_message", side_effect=SystemExit) as mock_fail,
-    ):
-        mock_inquirer.select.return_value.execute.return_value = "accept"
-        with pytest.raises(SystemExit):
-            strategy._act_on_validation(
-                deet_project=mock_project, project_doc_ids=[1, 2, 3, 4, 5]
-            )
-
-    assert "validation run" in mock_fail.call_args[0][0].lower()
-
-
-def test_act_on_validation_accept_finalises_test_and_runs_pipeline(tmp_path):
+def test_accept_validation_finalises_test_and_runs_pipeline(tmp_path):
     splits = DevValTestSplits(
         current_stage=DevValTestEvaluationStage.VALIDATION,
         development_ids=[1, 2],
@@ -200,15 +187,11 @@ def test_act_on_validation_accept_finalises_test_and_runs_pipeline(tmp_path):
     strategy = DevValTestEvaluationStrategy(mock_project)
 
     with (
-        patch("InquirerPy.inquirer") as mock_inquirer,
         patch("deet.extractors.cli_helpers.run_extraction_pipeline") as mock_run,
         patch("deet.extractors.cli_helpers.evaluate_extraction_pipeline"),
     ):
-        mock_inquirer.select.return_value.execute.return_value = "accept"
         mock_run.return_value = (MagicMock(), MagicMock(), MagicMock(), MagicMock())
-        strategy._act_on_validation(
-            deet_project=mock_project, project_doc_ids=[1, 2, 3, 4, 5]
-        )
+        strategy.accept_validation(project_doc_ids=[1, 2, 3, 4, 5])
 
     reloaded = DevValTestSplits.load_or_init(splits_path)
     assert reloaded.current_stage == DevValTestEvaluationStage.TEST
@@ -232,14 +215,12 @@ def test_run_splits_wizard_test_stage_notifies_and_exits(tmp_path):
     strategy = DevValTestEvaluationStrategy(mock_project)
 
     with (
-        patch.object(strategy, "_act_on_validation") as mock_act,
         patch(
             "deet.data_models.evaluation_strategies.dev_val_test.notify"
         ) as mock_notify,
     ):
         strategy.run_splits_wizard(project=mock_project)
 
-    mock_act.assert_not_called()
     assert mock_notify.call_count == 2  # status summary + completion message
 
 

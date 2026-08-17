@@ -85,26 +85,6 @@ class DevValTestSplits(BaseSplits):
             )
             return cls()
 
-    def finalise_test(self, project_doc_ids: Collection[int]) -> None:
-        """Add all remaining docs to test."""
-        unassigned = self.get_unassigned_ids(project_doc_ids)
-
-        if len(unassigned) == 0:
-            none_remaining = (
-                "No unassigned documents left for testing."
-                " Add more documents to the project to continue."
-            )
-            raise SplitsValidationError(none_remaining)
-
-        self.test_ids = unassigned
-        self.current_stage = DevValTestEvaluationStage.TEST
-
-    def reject_validation(self) -> None:
-        """Merge validation IDs into development and continue developing."""
-        self.development_ids.extend(self.validation_ids)
-        self.validation_ids = []
-        self.current_stage = DevValTestEvaluationStage.DEVELOPMENT
-
 
 class EvaluationDecisionSpec(TypedDict):
     """Definition of the shape of choices presented to user, and how to act on them."""
@@ -148,7 +128,7 @@ STAGE_ACTIONS: dict[DevValTestEvaluationStage, list[EvaluationDecisionSpec]] = {
             "execute": lambda strategy,
             _project_ids,
             _size,
-            _experiment: strategy.splits.reject_validation(),
+            _experiment: strategy.reject_validation(),
         },
     ],
 }
@@ -317,7 +297,7 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         from deet.ui import fail_with_message
 
         try:
-            self.splits.finalise_test(project_doc_ids)
+            self.finalise_test(project_doc_ids)
         except SplitsValidationError as e:
             fail_with_message(str(e))
 
@@ -327,8 +307,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             base_dir=self._project.experiments_dir / self.splits.validation_run_id
         )
 
-        self.splits.dump_to_json(self._project.evaluation_splits_path)
-
         run_output, processed_annotation_data, experiment_artefacts, _config = (
             run_extraction_pipeline(
                 deet_project=self._project,
@@ -337,11 +315,49 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
                 run_name="FINAL_TEST",
             )
         )
+        self.snapshot(experiment_artefacts)
         evaluate_extraction_pipeline(
             processed_annotation_data=processed_annotation_data,
             run_output=run_output,
             experiment_artefacts=experiment_artefacts,
         )
+
+    def finalise_test(self, project_doc_ids: Collection[int]) -> None:
+        """Add all remaining docs to test."""
+        unassigned = self.splits.get_unassigned_ids(project_doc_ids)
+
+        if len(unassigned) == 0:
+            none_remaining = (
+                "No unassigned documents left for testing."
+                " Add more documents to the project to continue."
+            )
+            raise SplitsValidationError(none_remaining)
+
+        self.splits.test_ids = unassigned
+        self.splits.current_stage = DevValTestEvaluationStage.TEST
+        self.splits.dump_to_json(self._project.evaluation_splits_path)
+
+    def reject_validation(self) -> None:
+        """Merge validation IDs into development and continue developing."""
+        self.splits.development_ids.extend(self.splits.validation_ids)
+        self.splits.validation_ids = []
+        self.splits.current_stage = DevValTestEvaluationStage.DEVELOPMENT
+        self.splits.dump_to_json(self._project.evaluation_splits_path)
+
+    def _get_action_for_stage(
+        self,
+        choices: list[EvaluationDecisionSpec],
+        stage: DevValTestEvaluationStage,
+        action: str | None = None,
+    ) -> EvaluationDecisionSpec:
+        """Get an action spec, validating it exists for this stage."""
+        from deet.ui.terminal.prompts import select_from_list
+
+        try:
+            return select_from_list(choices, item_key="name", selected_value=action)
+        except KeyError:
+            valid = [c["name"] for c in choices]
+            fail_with_message(f"Action '{action}' not valid. Choose from: {valid}")
 
     def run_splits_wizard(
         self,
@@ -352,8 +368,6 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         experiment: str | None = None,
     ) -> None:
         """Run the splits wizard."""
-        from deet.ui.terminal.prompts import select_from_list
-
         project_doc_ids = project.get_all_doc_ids()
         unassigned = self.splits.get_unassigned_ids(project_doc_ids)
 
@@ -371,15 +385,17 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
             if self.splits.development_ids:
                 choices.append(ADD_TO_DEVELOPMENT)
 
-            selected_action = select_from_list(choices, item_key="name")
+            selected_action = self._get_action_for_stage(
+                choices, self.splits.current_stage, action
+            )
             selected_action["execute"](self, project_doc_ids, size, experiment)
 
         if self.splits.current_stage == DevValTestEvaluationStage.VALIDATION:
             choices = STAGE_ACTIONS[DevValTestEvaluationStage.VALIDATION]
-            selected_action = select_from_list(choices, item_key="name")
+            selected_action = self._get_action_for_stage(
+                choices, self.splits.current_stage, action
+            )
             selected_action["execute"](self, project_doc_ids, size, experiment)
 
         elif self.splits.current_stage == DevValTestEvaluationStage.TEST:
             notify("Test is complete. No further action available")
-
-        self.splits.dump_to_json(self._project.evaluation_splits_path)
