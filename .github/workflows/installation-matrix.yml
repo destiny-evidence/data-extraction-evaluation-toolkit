@@ -1,0 +1,81 @@
+name: Installation Matrix Tests
+
+on:
+  push:
+    branches:
+      - main
+      - development
+      - v0.3.0-dev
+  pull_request:
+    branches:
+      - main
+      - development
+      - v0.3.0-dev
+
+permissions:
+  contents: read
+
+jobs:
+  installation-scenarios:
+    name: "${{ matrix.scenario }} on ${{ matrix.os }} (Python ${{ matrix.python-version }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12.11", "3.13", "3.14"]
+        scenario: [tool-install, develop-sync, package-dependency]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+        with:
+          version: "0.12.0"
+
+      - name: Restore uv cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.os == 'Windows' && format('{0}\.uv-cache', runner.temp) || '/tmp/.uv-cache' }}
+          key: uv-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            uv-${{ matrix.os }}-${{ matrix.python-version }}
+            uv-${{ matrix.os }}
+
+      - name: Install pandoc (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Install pandoc (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pandoc
+
+      - name: Install pandoc (Windows)
+        if: runner.os == 'Windows'
+        run: choco install pandoc -y
+        continue-on-error: true
+
+      - name: "Test: uv tool install"
+        if: matrix.scenario == 'tool-install'
+        env:
+          PYTHONUTF8: "1" # fix encoding issues relating to GH windows runner using an outdated terminal
+        run: |
+          uv tool install --python ${{ matrix.python-version }} --no-build --no-binary-package data-extraction-evaluation-toolkit .
+          deet --help
+
+      - name: "Test: uv sync (development)"
+        if: matrix.scenario == 'develop-sync'
+        run: |
+          uv sync --locked --all-extras --no-build --no-binary-package data-extraction-evaluation-toolkit
+          uv run deet --help
+          uv run python -c "import deet; print('Import OK')"
+
+      - name: "Test: uv add (as dependency)"
+        if: matrix.scenario == 'package-dependency'
+        run: |
+          cd ${{ runner.temp }}
+          mkdir test-consumer && cd test-consumer
+          uv init --name test-consumer --no-readme  --python ${{ matrix.python-version }}
+          uv add ${{ github.workspace }} --no-build --no-binary-package data-extraction-evaluation-toolkit --no-binary-package test-consumer
+          uv run python -c "import deet; print('Import OK')"
