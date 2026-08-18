@@ -6,52 +6,142 @@ The Data Extraction and Evaluation Toolkit (DEET) is a suite of tools, data mode
 
 ## .env when using hierarchical extraction
 
-The following information is expected. The top bit is for the non-hierarchical deet, while thebottom bit is new. 
+The following information is expected:
 
-
+```
 AZURE_API_KEY=yourkeyhere
-AZURE_API_BASE=https://eppireasoning.openai.azure.com/
-AZURE_API_VERSION=2024-02-15-preview
-AZURE_DEPLOYMENT=gpt-4o-mini
+AZURE_API_BASE=https://yourprojecthere.openai.azure.com/
+```
 
-LLM_MODEL=azure/gpt-5.2
+You can also use an Anthropic endpoint, using the following syntax:
+
+```
+AZURE_API_KEY=yourkeyhere
+AZURE_API_BASE=https://yourprojecthere.services.ai.azure.com/anthropic
+```
+
+## Implemented Study Types
+
+The pre-defined hierarchical extraction pipeline (`deet/main_hierarchical.py`) supports the following values for `study_type` in its config files:
+
+- `RCT`
+- `CochraneRCT`
+- `PrognosticStudy`
+- `ObesityRCT`
+- `AnimalRCT`
 
 ## Hierarchical RCT extraction (pre-defined schema)
 
-DEET includes an experimental hierarchical extraction workflow that uses a pre-defined schema for RCT so far. This workflow is config-driven and reads one or more markdown inputs, runs the hierarchical extraction pipeline, and writes structured outputs.
+DEET includes an experimental hierarchical extraction workflow that uses pre-defined schemas for the study types mentioned above. This workflow is config-driven and reads one or more markdown inputs, runs the hierarchical extraction pipeline, and writes structured outputs.
 
-The CLI in `deet/main_hierarchical.py` has three subcommands: `parse_pdfs`, `predict_single_study`, and `predict_batch`.
+The CLI of `deet/main_hierarchical.py` has three subcommands: `parse_pdfs`, `predict_single_study`, and `predict_batch`. There are two equivalent ways to run each of them:
+
+- **Terminal / CLI**: run as a module with `python -m` from the repository root (with your venv activated).
+- **Python script**: paste the snippet into a `.py` file, or use `main_hierarchical_demo.py` in the repository root, which contains a runnable version of every command below with editable config dicts.
+
+Both columns below do exactly the same thing, so pick whichever fits your workflow.
 
 ### Converting source documents to markdown
 
 `parse_pdfs` converts every supported, non-markdown file directly inside a folder (non-recursive) into a sibling `.md` file, using the parsers defined in `deet/processors/parser.py` (pdf, epub, html, xml). If a `.md` file with the target name already exists, that file is skipped. Parse failures are logged and skipped so the rest of the folder is still processed.
 
+Note: pandoc is required for non-PDF files. 
+
+<table>
+<tr><th>Terminal (CLI)</th><th>Python script</th></tr>
+<tr>
+<td valign="top" markdown="1">
+
 ~~~sh
-python deet/main_hierarchical.py parse_pdfs misc/hierarchical_mvp/input/mira_rct
+python -m deet.main_hierarchical parse_pdfs "misc\hierarchical_mvp\input\batch_pdfs"
 ~~~
+
+</td>
+<td valign="top" markdown="1">
+
+~~~python
+from deet.main_hierarchical import run_parse_pdfs, setup_console_logging
+
+setup_console_logging()
+run_parse_pdfs("misc/hierarchical_mvp/input/batch_pdfs")
+~~~
+
+</td>
+</tr>
+</table>
 
 ### Predicting a single study
 
-Example hierarchical_config.json:
+Example `demo_single_config.json`:
 
 ~~~json
 {
 	"study_type": "RCT",
-	"max_tokens": 30000,
+	"llm_model": "anthropic/claude-sonnet-4-5",
+	"max_tokens": 60000,
 	"dspy_cache": false,
 	"input_paths": [
-		"misc/input/mira_rct/main.md"
+		"misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"
 	],
-	"output_parent_dir": "misc/output/mira_rct"
+	"output_parent_dir": "misc/hierarchical_mvp/output/mira_rct",
+	"export_csv": false,
+	"export_xlsx": true,
+	"export_json": false
 }
 ~~~
 
-You just need to edit the in/output paths and increase max_tokens if needed.
+You just need to edit the in/output paths and increase max_tokens if needed. If you have chosen a `AZURE_API_BASE` for Anthropic, you can use any deployed Anthropic model as `"llm_model"` parameter. 
+
+Example Anthropic model parameters for this file are: `"anthropic/claude-sonnet-4-5"`, `"anthropic/claude-opus-5"`
+
+If you have given the OpenAI API Base:
+Example OpenAI models for this file are: `"azure/gpt-5.6-terra"`, `"azure/gpt-5.6-luna"`
+
 Run from the repository root:
 
+<table>
+<tr><th>Terminal (CLI)</th><th>Python script</th></tr>
+<tr>
+<td valign="top" markdown="1">
+
+Save the JSON above to `misc/hierarchical_mvp/configs/demo_single_config.json`, then:
+
 ~~~sh
-python deet/main_hierarchical.py predict_single_study misc/input/hierarchical_config.json
+python -m deet.main_hierarchical predict_single_study "misc\hierarchical_mvp\configs\demo_single_config.json"
 ~~~
+
+</td>
+<td valign="top" markdown="1">
+
+~~~python
+import json
+from pathlib import Path
+
+from deet.main_hierarchical import run_predict_single_study, setup_console_logging
+
+setup_console_logging()
+
+single_study_config = {
+	"study_type": "RCT",
+	"llm_model": "anthropic/claude-sonnet-4-5",
+	"max_tokens": 60000,
+	"dspy_cache": False,
+	"input_paths": ["misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"],
+	"output_parent_dir": "misc/hierarchical_mvp/output/mira_rct",
+	"export_csv": False,
+	"export_xlsx": True,
+	"export_json": False,
+}
+
+config_path = Path("misc/hierarchical_mvp/configs/demo_single_config.json")
+config_path.write_text(json.dumps(single_study_config, indent=2), encoding="utf-8")
+
+run_predict_single_study(str(config_path))
+~~~
+
+</td>
+</tr>
+</table>
 
 Output summary:
 
@@ -69,17 +159,60 @@ Output summary:
 ~~~json
 {
 	"study_type": "RCT",
-	"llm_model": "azure/gpt-5.2",
-	"max_tokens": 30000,
+	"llm_model": "anthropic/claude-sonnet-4-5",
+	"max_tokens": 60000,
 	"dspy_cache": false,
-	"input_folder": "misc/hierarchical_mvp/input/ailbhe",
-	"output_parent_dir": "misc/hierarchical_mvp/output/ailbhe"
+	"input_folder": "misc/hierarchical_mvp/input/batch_pdfs",
+	"output_parent_dir": "misc/hierarchical_mvp/output/batch_demo",
+	"export_csv": false,
+	"export_xlsx": true,
+	"export_json": false
 }
 ~~~
 
+<table>
+<tr><th>Terminal (CLI)</th><th>Python script</th></tr>
+<tr>
+<td valign="top" markdown="1">
+
+Save the JSON above to `misc/hierarchical_mvp/configs/demo_batch_config.json`, then:
+
 ~~~sh
-python deet/main_hierarchical.py predict_batch misc/input/batch_config.json
+python -m deet.main_hierarchical predict_batch "misc\hierarchical_mvp\configs\demo_batch_config.json"
 ~~~
+
+</td>
+<td valign="top" markdown="1">
+
+~~~python
+import json
+from pathlib import Path
+
+from deet.main_hierarchical import run_predict_batch, setup_console_logging
+
+setup_console_logging()
+
+batch_config = {
+	"study_type": "RCT",
+	"llm_model": "anthropic/claude-sonnet-4-5",
+	"max_tokens": 60000,
+	"dspy_cache": False,
+	"input_folder": "misc/hierarchical_mvp/input/batch_pdfs",
+	"output_parent_dir": "misc/hierarchical_mvp/output/batch_demo",
+	"export_csv": False,
+	"export_xlsx": True,
+	"export_json": False,
+}
+
+config_path = Path("misc/hierarchical_mvp/configs/demo_batch_config.json")
+config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
+
+run_predict_batch(str(config_path))
+~~~
+
+</td>
+</tr>
+</table>
 
 Unlike `predict_single_study`, outputs are written directly into `output_parent_dir` (no per-study subfolder), with the source markdown filename embedded in each output filename, for example: `misc/hierarchical_mvp/input/ailbhe/Abdullah_2005.md` produces `study_Abdullah_2005_YYYYMMDD_HHMMSS_<model>.xlsx` (and equivalently named `.csv`/`.json` files) in `output_parent_dir`. If processing one file fails, it is logged and the batch continues with the remaining files.
 
@@ -99,10 +232,10 @@ This generates a CSV with columns class, attribute, prompt, and datatype. You ca
 
 Step 2: run dynamic extraction using both the config file and the prompt CSV.
 
-You can use the python script custom_hierarchical_demo.py from the root folder and hard-code paths, or use the following method below:
+You can use the python script `custom_hierarchical_demo.py` from the root folder and hard-code paths, or use the following method below:
 
 ~~~sh
-python -m deet.custom_hierarchical predict_single_study hierarchical_prompts.csv hierarchical_config.json
+python -m deet.custom_hierarchical predict_single_study "misc\hierarchical_mvp\configs\hierarchical_prompts.csv" "misc\hierarchical_mvp\configs\demo_single_config.json"
 ~~~
 
 How it works:
@@ -114,7 +247,7 @@ How it works:
 To run the same dynamic schema across every markdown file in a folder, use `predict_batch` with a `batch_config.json` (same shape as above, but `input_paths` replaced by `input_folder`):
 
 ~~~sh
-python -m deet.custom_hierarchical predict_batch hierarchical_prompts.csv batch_config.json
+python -m deet.custom_hierarchical predict_batch "misc\hierarchical_mvp\configs\hierarchical_prompts.csv" "misc\hierarchical_mvp\configs\demo_batch_config.json"
 ~~~
 
 As with `main_hierarchical.py`'s `predict_batch`, outputs are written directly into `output_parent_dir` with the source markdown filename embedded in each output filename.
