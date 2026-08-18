@@ -27,15 +27,15 @@ jobs:
         scenario: [tool-install, develop-sync, package-dependency]
     steps:
       - name: Checkout source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.12.0"
 
       - name: Restore uv cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.os == 'Windows' && format('{0}\.uv-cache', runner.temp) || '/tmp/.uv-cache' }}
           key: uv-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
@@ -67,7 +67,7 @@ jobs:
       - name: "Test: uv sync (development)"
         if: matrix.scenario == 'develop-sync'
         run: |
-          uv sync --locked --all-extras --no-build --no-binary-package data-extraction-evaluation-toolkit
+          uv sync --locked --all-extras --all-groups --no-build --no-binary-package data-extraction-evaluation-toolkit
           uv run deet --help
           uv run python -c "import deet; print('Import OK')"
 
