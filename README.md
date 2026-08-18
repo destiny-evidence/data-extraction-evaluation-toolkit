@@ -20,6 +20,18 @@ LLM_MODEL=azure/gpt-5.2
 
 DEET includes an experimental hierarchical extraction workflow that uses a pre-defined schema for RCT so far. This workflow is config-driven and reads one or more markdown inputs, runs the hierarchical extraction pipeline, and writes structured outputs.
 
+The CLI in `deet/main_hierarchical.py` has three subcommands: `parse_pdfs`, `predict_single_study`, and `predict_batch`.
+
+### Converting source documents to markdown
+
+`parse_pdfs` converts every supported, non-markdown file directly inside a folder (non-recursive) into a sibling `.md` file, using the parsers defined in `deet/processors/parser.py` (pdf, epub, html, xml). If a `.md` file with the target name already exists, that file is skipped. Parse failures are logged and skipped so the rest of the folder is still processed.
+
+~~~sh
+python deet/main_hierarchical.py parse_pdfs misc/hierarchical_mvp/input/mira_rct
+~~~
+
+### Predicting a single study
+
 Example hierarchical_config.json:
 
 ~~~json
@@ -38,7 +50,7 @@ You just need to edit the in/output paths and increase max_tokens if needed.
 Run from the repository root:
 
 ~~~sh
-python deet/main_hierarchical.py misc/input/hierarchical_config.json
+python deet/main_hierarchical.py predict_single_study misc/input/hierarchical_config.json
 ~~~
 
 Output summary:
@@ -49,6 +61,27 @@ Output summary:
 	- interventions_YYYYMMDD_HHMMSS.csv
 	- outcomes_YYYYMMDD_HHMMSS.csv
 - The JSON and CSV outputs contain study characteristics, intervention arms, and extracted outcomes.
+
+### Predicting a batch of studies
+
+`predict_batch` runs the same extraction pipeline for every markdown file found directly inside `input_folder` (non-recursive), treating each file as its own study. It uses a `batch_config.json` built exactly like `hierarchical_config.json`, except `input_paths` is replaced with a single `input_folder` path:
+
+~~~json
+{
+	"study_type": "RCT",
+	"llm_model": "azure/gpt-5.2",
+	"max_tokens": 30000,
+	"dspy_cache": false,
+	"input_folder": "misc/hierarchical_mvp/input/ailbhe",
+	"output_parent_dir": "misc/hierarchical_mvp/output/ailbhe"
+}
+~~~
+
+~~~sh
+python deet/main_hierarchical.py predict_batch misc/input/batch_config.json
+~~~
+
+Unlike `predict_single_study`, outputs are written directly into `output_parent_dir` (no per-study subfolder), with the source markdown filename embedded in each output filename, for example: `misc/hierarchical_mvp/input/ailbhe/Abdullah_2005.md` produces `study_Abdullah_2005_YYYYMMDD_HHMMSS_<model>.xlsx` (and equivalently named `.csv`/`.json` files) in `output_parent_dir`. If processing one file fails, it is logged and the batch continues with the remaining files.
 
 ## Customisable hierarchical RCT extraction (dynamic)
 
@@ -62,12 +95,14 @@ python -m deet.custom_hierarchical write_hierarchical_prompts_csv --study-type R
 
 This generates a CSV with columns class, attribute, prompt, and datatype. You can review and edit prompts in this file before extraction.
 
+`deet/custom_hierarchical.py` also exposes `parse_pdfs`, `predict_single_study`, and `predict_batch` subcommands, mirroring `main_hierarchical.py` but taking the prompt CSV as an additional argument.
+
 Step 2: run dynamic extraction using both the config file and the prompt CSV.
 
 You can use the python script custom_hierarchical_demo.py from the root folder and hard-code paths, or use the following method below:
 
 ~~~sh
-python -m deet.custom_hierarchical custom_extract hierarchical_prompts.csv hierarchical_config.json
+python -m deet.custom_hierarchical predict_single_study hierarchical_prompts.csv hierarchical_config.json
 ~~~
 
 How it works:
@@ -75,6 +110,16 @@ How it works:
 - The JSON config controls study_type, input_paths, output_parent_dir, max_tokens, and dspy_cache.
 - The prompt CSV controls the runtime schema and field-level prompts used to build dynamic Pydantic models.
 - Output files are written to output_parent_dir as timestamped JSON plus CSV outputs for study, interventions, and outcomes.
+
+To run the same dynamic schema across every markdown file in a folder, use `predict_batch` with a `batch_config.json` (same shape as above, but `input_paths` replaced by `input_folder`):
+
+~~~sh
+python -m deet.custom_hierarchical predict_batch hierarchical_prompts.csv batch_config.json
+~~~
+
+As with `main_hierarchical.py`'s `predict_batch`, outputs are written directly into `output_parent_dir` with the source markdown filename embedded in each output filename.
+
+
 
 ## tl, dr
 

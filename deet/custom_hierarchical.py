@@ -24,9 +24,11 @@ from deet.hierarchical_mvp.utils import (
     load_study_context,
 )
 from deet.logger import logger
+from deet.processors.parser import parse_folder_to_markdown
 
 DEFAULT_PROMPT_CSV_FILENAME = "hierarchical_prompts.csv"
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
+DEFAULT_BATCH_CONFIG_FILENAME = "batch_config.json"
 TARGET_DYNAMIC_CLASSES = {
     # RCT classes
     "Continuous_Outcome",
@@ -548,6 +550,26 @@ def _load_runtime_config(config_path: Path) -> dict[str, Any]:
     return config
 
 
+def _load_runtime_batch_config(config_path: Path) -> dict[str, Any]:
+    """Load batch config: same shape as `_load_runtime_config` but with `input_folder`."""
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+
+    required_keys = {
+        "study_type",
+        "llm_model",
+        "input_folder",
+        "output_parent_dir",
+        "max_tokens",
+        "dspy_cache",
+    }
+    missing = required_keys.difference(config)
+    if missing:
+        missing_sorted = ", ".join(sorted(missing))
+        raise ValueError(f"Config file is missing required key(s): {missing_sorted}")
+
+    return config
+
+
 def _serialize_value(value: Any) -> Any:
     if value is None:
         return ""
@@ -753,60 +775,40 @@ def _build_dynamic_prognostic_pipeline(
     return DynamicPrognosticExtractionPipeline
 
 
-def run_dynamic_extraction_from_csv_schema(
-    csv_path: str | Path,
-    config_path: str | Path | None = None,
-) -> Path:
-    """Run extraction with runtime dynamic DSPy models/signatures from CSV schema."""
-    schema_path = Path(csv_path)
-    if not schema_path.is_absolute():
-        schema_path = Path.cwd() / schema_path
-    if not schema_path.exists():
-        raise FileNotFoundError(f"CSV schema not found: {schema_path}")
-
-    if config_path is None:
-        cfg_path = Path.cwd() / DEFAULT_CONFIG_FILENAME
-    else:
-        cfg_path = Path(config_path)
-        if not cfg_path.is_absolute():
-            cfg_path = Path.cwd() / cfg_path
-
-    config = _load_runtime_config(cfg_path)
-
-    input_paths = [str(Path(path)) for path in config["input_paths"]]
-    missing_inputs = [path for path in input_paths if not Path(path).is_file()]
-    if missing_inputs:
-        missing = ", ".join(missing_inputs)
-        raise FileNotFoundError(f"Input file(s) not found: {missing}")
-
-    output_parent_dir = Path(config["output_parent_dir"])
-    output_parent_dir.mkdir(parents=True, exist_ok=True)
-
-    load_dotenv()
-    model_suffix = config["llm_model"].rsplit("/", 1)[-1]
-    configure_lm(
-        config["llm_model"], int(config["max_tokens"]), cache=bool(config["dspy_cache"])
-    )
-
-    context = load_study_context(input_paths)
-
-    schema = _load_prompt_schema(schema_path)
+def _build_dynamic_pipeline_for_study_type(
+    study_type: str,
+    schema: dict[str, list[dict[str, str]]],
+) -> type[dspy.Module]:
+    """Build the dynamic DSPy pipeline class for a study type from a loaded CSV schema."""
     dynamic_models = _build_dynamic_models_from_schema(schema)
 
-    study_type = config["study_type"]
     if study_type == "PrognosticStudy":
         runtime_models = _ensure_prognostic_runtime_models(schema, dynamic_models)
-        dynamic_pipeline_cls = _build_dynamic_prognostic_pipeline(runtime_models)
-    else:
-        runtime_models = _ensure_runtime_models(schema, dynamic_models)
-        dynamic_pipeline_cls = _build_dynamic_rct_pipeline(runtime_models)
+        return _build_dynamic_prognostic_pipeline(runtime_models)
 
-    study = dynamic_pipeline_cls()(context=context)
+    runtime_models = _ensure_runtime_models(schema, dynamic_models)
+    return _build_dynamic_rct_pipeline(runtime_models)
 
-    study_name = Path(input_paths[0]).stem
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    suffix = f"_{model_suffix}" if model_suffix else ""
-    csv_dir = output_parent_dir / study_name
+
+def _write_dynamic_study_outputs(
+    study: Any,
+    schema: dict[str, list[dict[str, str]]],
+    study_type: str,
+    output_parent_dir: Path,
+    study_name: str,
+    timestamp: str,
+    suffix: str,
+    *,
+    flat_output: bool = False,
+) -> Path:
+    """Write dynamic extraction outputs (JSON + CSV) for one study.
+
+    When `flat_output` is True (used by the batch command), CSV files are written
+    directly into `output_parent_dir` with `study_name` embedded in each filename,
+    instead of nested under `output_parent_dir/<study_name>/`.
+    """
+    name_infix = f"_{study_name}" if flat_output else ""
+    csv_dir = output_parent_dir if flat_output else output_parent_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
 
     if study_type == "PrognosticStudy":
@@ -841,13 +843,13 @@ def run_dynamic_extraction_from_csv_schema(
 
         if sc_schema:
             _write_dict_rows_to_csv(
-                csv_dir / f"study_{timestamp}{suffix}.csv",
+                csv_dir / f"study{name_infix}_{timestamp}{suffix}.csv",
                 [item["attribute"] for item in sc_schema],
                 [study_row],
             )
         if pf_schema:
             _write_dict_rows_to_csv(
-                csv_dir / f"prognostic_factors_{timestamp}{suffix}.csv",
+                csv_dir / f"prognostic_factors{name_infix}_{timestamp}{suffix}.csv",
                 [item["attribute"] for item in pf_schema],
                 pf_rows,
             )
@@ -861,7 +863,7 @@ def run_dynamic_extraction_from_csv_schema(
         combined_outcomes = hr_rows + op_rows
         if outcome_fieldnames:
             _write_dict_rows_to_csv(
-                csv_dir / f"outcomes_{timestamp}{suffix}.csv",
+                csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
                 outcome_fieldnames,
                 combined_outcomes,
             )
@@ -901,13 +903,13 @@ def run_dynamic_extraction_from_csv_schema(
 
         if sc_schema:
             _write_dict_rows_to_csv(
-                csv_dir / f"study_{timestamp}{suffix}.csv",
+                csv_dir / f"study{name_infix}_{timestamp}{suffix}.csv",
                 [item["attribute"] for item in sc_schema],
                 [study_row],
             )
         if iv_schema:
             _write_dict_rows_to_csv(
-                csv_dir / f"interventions_{timestamp}{suffix}.csv",
+                csv_dir / f"interventions{name_infix}_{timestamp}{suffix}.csv",
                 [item["attribute"] for item in iv_schema],
                 intervention_rows,
             )
@@ -921,15 +923,152 @@ def run_dynamic_extraction_from_csv_schema(
         combined_outcomes = dichot_rows + cont_rows + other_rows
         if outcome_fieldnames:
             _write_dict_rows_to_csv(
-                csv_dir / f"outcomes_{timestamp}{suffix}.csv",
+                csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
                 outcome_fieldnames,
                 combined_outcomes,
             )
+
+    return json_path
+
+
+def run_dynamic_extraction_from_csv_schema(
+    csv_path: str | Path,
+    config_path: str | Path | None = None,
+) -> Path:
+    """Run extraction with runtime dynamic DSPy models/signatures from CSV schema."""
+    schema_path = Path(csv_path)
+    if not schema_path.is_absolute():
+        schema_path = Path.cwd() / schema_path
+    if not schema_path.exists():
+        raise FileNotFoundError(f"CSV schema not found: {schema_path}")
+
+    if config_path is None:
+        cfg_path = Path.cwd() / DEFAULT_CONFIG_FILENAME
+    else:
+        cfg_path = Path(config_path)
+        if not cfg_path.is_absolute():
+            cfg_path = Path.cwd() / cfg_path
+
+    config = _load_runtime_config(cfg_path)
+
+    input_paths = [str(Path(path)) for path in config["input_paths"]]
+    missing_inputs = [path for path in input_paths if not Path(path).is_file()]
+    if missing_inputs:
+        missing = ", ".join(missing_inputs)
+        raise FileNotFoundError(f"Input file(s) not found: {missing}")
+
+    output_parent_dir = Path(config["output_parent_dir"])
+    output_parent_dir.mkdir(parents=True, exist_ok=True)
+
+    load_dotenv()
+    model_suffix = config["llm_model"].rsplit("/", 1)[-1]
+    configure_lm(
+        config["llm_model"], int(config["max_tokens"]), cache=bool(config["dspy_cache"])
+    )
+
+    context = load_study_context(input_paths)
+
+    schema = _load_prompt_schema(schema_path)
+    study_type = config["study_type"]
+    dynamic_pipeline_cls = _build_dynamic_pipeline_for_study_type(study_type, schema)
+
+    study = dynamic_pipeline_cls()(context=context)
+
+    study_name = Path(input_paths[0]).stem
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = f"_{model_suffix}" if model_suffix else ""
+
+    json_path = _write_dynamic_study_outputs(
+        study,
+        schema,
+        study_type,
+        output_parent_dir,
+        study_name,
+        timestamp,
+        suffix,
+    )
 
     logger.info(
         f"Dynamic hierarchical extraction complete. Outputs saved to {output_parent_dir}"
     )
     return json_path
+
+
+def run_dynamic_batch_extraction_from_csv_schema(
+    csv_path: str | Path,
+    batch_config_path: str | Path | None = None,
+) -> list[Path]:
+    """Run dynamic CSV-schema extraction for every markdown file in a batch config's input_folder."""
+    schema_path = Path(csv_path)
+    if not schema_path.is_absolute():
+        schema_path = Path.cwd() / schema_path
+    if not schema_path.exists():
+        raise FileNotFoundError(f"CSV schema not found: {schema_path}")
+
+    if batch_config_path is None:
+        cfg_path = Path.cwd() / DEFAULT_BATCH_CONFIG_FILENAME
+    else:
+        cfg_path = Path(batch_config_path)
+        if not cfg_path.is_absolute():
+            cfg_path = Path.cwd() / cfg_path
+
+    config = _load_runtime_batch_config(cfg_path)
+
+    input_folder = Path(config["input_folder"])
+    if not input_folder.is_dir():
+        raise NotADirectoryError(f"Input folder not found: {input_folder}")
+
+    output_parent_dir = Path(config["output_parent_dir"])
+    output_parent_dir.mkdir(parents=True, exist_ok=True)
+
+    md_paths = sorted(
+        p for p in input_folder.iterdir() if p.is_file() and p.suffix.lower() == ".md"
+    )
+    if not md_paths:
+        logger.warning(f"No markdown files found directly in {input_folder}.")
+        return []
+
+    load_dotenv()
+    model_suffix = config["llm_model"].rsplit("/", 1)[-1]
+    configure_lm(
+        config["llm_model"], int(config["max_tokens"]), cache=bool(config["dspy_cache"])
+    )
+
+    schema = _load_prompt_schema(schema_path)
+    study_type = config["study_type"]
+    dynamic_pipeline_cls = _build_dynamic_pipeline_for_study_type(study_type, schema)
+
+    logger.info(f"Found {len(md_paths)} markdown file(s) to process in {input_folder}.")
+    json_paths: list[Path] = []
+    for md_path in md_paths:
+        logger.info(f"--- Processing {md_path.name} ---")
+        try:
+            context = load_study_context([str(md_path)])
+            study = dynamic_pipeline_cls()(context=context)
+
+            study_name = md_path.stem
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            suffix = f"_{model_suffix}" if model_suffix else ""
+
+            json_path = _write_dynamic_study_outputs(
+                study,
+                schema,
+                study_type,
+                output_parent_dir,
+                study_name,
+                timestamp,
+                suffix,
+                flat_output=True,
+            )
+            json_paths.append(json_path)
+        except Exception:
+            logger.exception(f"Failed to process {md_path.name}, continuing with remaining files.")
+            continue
+
+    logger.info(
+        f"Dynamic batch extraction complete. Outputs saved to {output_parent_dir}"
+    )
+    return json_paths
 
 
 def parse_custom_hierarchical_args() -> argparse.Namespace:
@@ -957,25 +1096,57 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
         ),
     )
 
-    extract_parser = subparsers.add_parser(
-        "custom_extract",
+    parse_pdfs_parser = subparsers.add_parser(
+        "parse_pdfs",
+        help="Convert every supported file directly inside a folder to markdown.",
+    )
+    parse_pdfs_parser.add_argument(
+        "input_folder",
+        help="Path to a folder of files to convert (non-recursive).",
+    )
+
+    single_parser = subparsers.add_parser(
+        "predict_single_study",
         help=(
-            "Run dynamic extraction from a CSV schema and JSON config. "
+            "Run dynamic extraction from a CSV schema and JSON config for one study. "
             "Mimics main_hierarchical config input with one additional CSV argument."
         ),
     )
-    extract_parser.add_argument(
+    single_parser.add_argument(
         "csv_path",
         help="Path to CSV schema used to build runtime dynamic models.",
     )
-    extract_parser.add_argument(
+    single_parser.add_argument(
         "config_path",
         nargs="?",
         default=DEFAULT_CONFIG_FILENAME,
         help=(
-            "Path to JSON config with study_type, input_paths, output_parent_dir, "
-            "Path to JSON config with study_type, llm_model, input_paths, output_parent_dir, "
-            "max_tokens, and dspy_cache. Defaults to hierarchical_config.json."
+            "Path to JSON config with study_type, llm_model, input_paths, "
+            "output_parent_dir, max_tokens, and dspy_cache. Defaults to "
+            "hierarchical_config.json."
+        ),
+    )
+
+    batch_parser = subparsers.add_parser(
+        "predict_batch",
+        help=(
+            "Run dynamic extraction from a CSV schema for every markdown file in a "
+            "batch config's input_folder."
+        ),
+    )
+    batch_parser.add_argument(
+        "csv_path",
+        help="Path to CSV schema used to build runtime dynamic models.",
+    )
+    batch_parser.add_argument(
+        "batch_config_path",
+        nargs="?",
+        default=DEFAULT_BATCH_CONFIG_FILENAME,
+        help=(
+            "Path to JSON config with study_type, llm_model, input_folder, "
+            "output_parent_dir, max_tokens, and dspy_cache. Same shape as the "
+            "single-study config, but 'input_paths' is replaced with a single "
+            "'input_folder' path. Defaults to batch_config.json."
         ),
     )
 
@@ -993,12 +1164,22 @@ def main() -> None:
                 csv_outpath=args.csv_outpath,
             )
             print(output_path)
-        case "custom_extract":
+        case "parse_pdfs":
+            created = parse_folder_to_markdown(Path(args.input_folder))
+            print(f"Created {len(created)} markdown file(s).")
+        case "predict_single_study":
             output_path = run_dynamic_extraction_from_csv_schema(
                 csv_path=args.csv_path,
                 config_path=args.config_path,
             )
             print(output_path)
+        case "predict_batch":
+            output_paths = run_dynamic_batch_extraction_from_csv_schema(
+                csv_path=args.csv_path,
+                batch_config_path=args.batch_config_path,
+            )
+            for output_path in output_paths:
+                print(output_path)
         case _:
             raise ValueError(f"Unsupported command '{args.command}'.")
 

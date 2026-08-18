@@ -45,11 +45,17 @@ def _write_tables(
     suffix: str,
     write_csv: bool = True,
     write_xlsx: bool = False,
+    study_name: str | None = None,
 ) -> None:
-    """Write named tables as individual CSV files and/or as sheets in one xlsx workbook."""
+    """Write named tables as individual CSV files and/or as sheets in one xlsx workbook.
+
+    When `study_name` is given, it is inserted into every output filename (used for
+    flat/batch output layouts where files aren't nested under a per-study directory).
+    """
+    name_infix = f"_{study_name}" if study_name else ""
     if write_csv:
         for name, (fieldnames, rows) in tables.items():
-            path = csv_dir / f"{name}_{timestamp}{suffix}.csv"
+            path = csv_dir / f"{name}{name_infix}_{timestamp}{suffix}.csv"
             with _open_csv_for_write(path) as f:
                 writer = csv.DictWriter(
                     f, fieldnames=fieldnames, extrasaction="ignore", restval=""
@@ -78,7 +84,7 @@ def _write_tables(
                     name="TableStyleMedium2", showRowStripes=True
                 )
                 sheet.add_table(excel_table)
-        xlsx_path = csv_dir / f"study_{timestamp}{suffix}.xlsx"
+        xlsx_path = csv_dir / f"study{name_infix}_{timestamp}{suffix}.xlsx"
         workbook.save(xlsx_path)
         logger.info(f"XLSX workbook saved to {xlsx_path}")
 
@@ -130,6 +136,7 @@ def export_csv(
     model_suffix: str = "",
     write_csv: bool = True,
     write_xlsx: bool = False,
+    flat_output: bool = False,
 ) -> None:
     """
     NOTE: This function probably needs to become part of the RCT pipeline
@@ -139,9 +146,11 @@ def export_csv(
     it well regardless of the actual study type.
 
     Write three tables (study, interventions, outcomes) as timestamped CSV
-    files and/or as sheets of a single xlsx workbook into predictions/<study_name>/.
+    files and/or as sheets of a single xlsx workbook into predictions/<study_name>/,
+    or directly into `predictions_dir` (with `study_name` in each filename) when
+    `flat_output` is True.
     """
-    csv_dir = predictions_dir / study_name
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{model_suffix}" if model_suffix else ""
 
@@ -163,7 +172,15 @@ def export_csv(
             ],
         ),
     }
-    _write_tables(tables, csv_dir, timestamp, suffix, write_csv, write_xlsx)
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
 
 
 def export_obesity_csv(
@@ -174,13 +191,15 @@ def export_obesity_csv(
     model_suffix: str = "",
     write_csv: bool = True,
     write_xlsx: bool = False,
+    flat_output: bool = False,
 ) -> None:
     """
     Write three tables (study, interventions, outcomes) for an Obesity RCT
     extraction as timestamped CSV files and/or as sheets of a single xlsx
-    workbook into predictions/<study_name>/.
+    workbook into predictions/<study_name>/, or directly into `predictions_dir`
+    (with `study_name` in each filename) when `flat_output` is True.
     """
-    csv_dir = predictions_dir / study_name
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{model_suffix}" if model_suffix else ""
 
@@ -202,7 +221,15 @@ def export_obesity_csv(
             ],
         ),
     }
-    _write_tables(tables, csv_dir, timestamp, suffix, write_csv, write_xlsx)
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
 
 
 def export_animal_csv(
@@ -213,13 +240,16 @@ def export_animal_csv(
     model_suffix: str = "",
     write_csv: bool = True,
     write_xlsx: bool = False,
+    flat_output: bool = False,
 ) -> None:
     """
     Write four tables (study, induction_interventions, assessment_interventions,
     outcomes) for an Animal RCT extraction as timestamped CSV files and/or as
-    sheets of a single xlsx workbook into predictions/<study_name>/.
+    sheets of a single xlsx workbook into predictions/<study_name>/, or directly
+    into `predictions_dir` (with `study_name` in each filename) when `flat_output`
+    is True.
     """
-    csv_dir = predictions_dir / study_name
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{model_suffix}" if model_suffix else ""
 
@@ -245,7 +275,15 @@ def export_animal_csv(
             ],
         ),
     }
-    _write_tables(tables, csv_dir, timestamp, suffix, write_csv, write_xlsx)
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
 
 
 def export_cochrane_csv(
@@ -256,13 +294,15 @@ def export_cochrane_csv(
     model_suffix: str = "",
     write_csv: bool = True,
     write_xlsx: bool = False,
+    flat_output: bool = False,
 ) -> None:
     """
     Write three tables (study, interventions, outcomes) for a Cochrane RCT
     extraction as timestamped CSV files and/or as sheets of a single xlsx
-    workbook into predictions/<study_name>/.
+    workbook into predictions/<study_name>/, or directly into `predictions_dir`
+    (with `study_name` in each filename) when `flat_output` is True.
     """
-    csv_dir = predictions_dir / study_name
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{model_suffix}" if model_suffix else ""
 
@@ -286,7 +326,15 @@ def export_cochrane_csv(
         "interventions": (iv_fieldnames, interventions_rows),
         "outcomes": (CochraneStudy.outcome_csv_fieldnames(), outcomes_rows),
     }
-    _write_tables(tables, csv_dir, timestamp, suffix, write_csv, write_xlsx)
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
 
 
 def export_prognostic_csv(
@@ -297,12 +345,15 @@ def export_prognostic_csv(
     model_suffix: str = "",
     write_csv: bool = True,
     write_xlsx: bool = False,
+    flat_output: bool = False,
 ) -> None:
     """Write three tables (study, prognostic_factors, outcomes) for a
     prognostic study extraction as timestamped CSV files and/or as sheets of
-    a single xlsx workbook into predictions/<study_name>/.
+    a single xlsx workbook into predictions/<study_name>/, or directly into
+    `predictions_dir` (with `study_name` in each filename) when `flat_output`
+    is True.
     """
-    csv_dir = predictions_dir / study_name
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{model_suffix}" if model_suffix else ""
 
@@ -322,4 +373,12 @@ def export_prognostic_csv(
             ],
         ),
     }
-    _write_tables(tables, csv_dir, timestamp, suffix, write_csv, write_xlsx)
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )

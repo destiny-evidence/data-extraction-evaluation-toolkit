@@ -572,3 +572,58 @@ class DocumentParser:
                 for img_name, img in images.items():
                     img_out = dir_base / (filename_base + "_" + img_name)
                     img.save(img_out, ext)
+
+
+def parse_folder_to_markdown(
+    input_folder: str | PathLike,
+    document_parser: DocumentParser | None = None,
+) -> list[Path]:
+    """
+    Convert every supported, non-markdown file directly inside a folder to markdown.
+
+    Iterates the top-level contents of `input_folder` only (not recursive). For each
+    file whose extension has a parser registered in `DocumentParser` (e.g. pdf, epub,
+    html, xml), a sibling `.md` file is written using that file's stem, unless a `.md`
+    file with that name already exists in the folder. Files that already fail to parse
+    are logged and skipped so the rest of the folder can still be processed.
+
+    Args:
+        input_folder (str | PathLike): Folder to scan (non-recursive).
+        document_parser (DocumentParser | None): Parser instance to use. Defaults to a
+            new `DocumentParser()` with the default parser registry.
+
+    Returns:
+        list[Path]: Paths of markdown files newly created by this call.
+
+    """
+    folder = Path(input_folder)
+    if not folder.is_dir():
+        raise NotADirectoryError(f"Input folder not found: {folder}")
+
+    parser = document_parser if document_parser is not None else DocumentParser()
+    created: list[Path] = []
+
+    for file_path in sorted(folder.iterdir()):
+        if not file_path.is_file() or file_path.suffix.lower() == ".md":
+            continue
+
+        extension = file_path.suffix.lower().lstrip(".")
+        if extension not in parser.parsers:
+            logger.debug(f"Skipping unsupported file type: {file_path.name}")
+            continue
+
+        md_path = file_path.with_suffix(".md")
+        if md_path.exists():
+            logger.info(f"Markdown already exists, skipping: {md_path.name}")
+            continue
+
+        try:
+            parser(input_=file_path, out_path=md_path)
+        except Exception as exc:  # noqa: BLE001 - keep processing remaining files.
+            logger.error(f"Failed to parse {file_path.name}: {exc}")
+            continue
+
+        logger.info(f"Parsed {file_path.name} -> {md_path.name}")
+        created.append(md_path)
+
+    return created
