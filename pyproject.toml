@@ -38,7 +38,7 @@ dependencies = [
     "diskcache>=5.6.3",
     "inquirerpy>=0.3.4",
     "jinja2>=3.1.6",
-    "litellm>=1.77.4",
+    "litellm>=1.96.2",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",
@@ -61,7 +61,7 @@ dependencies = [
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
-requires-python = ">=3.12.11"
+requires-python = ">=3.12.11,<3.14"
 version = "0.2.2"
 
 [project.scripts]
@@ -188,3 +188,5 @@ exclude-dependencies = [
     "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
 ]
 exclude-newer = "P5D"
+no-binary-package = ["data-extraction-evaluation-toolkit"]
+no-build = true
