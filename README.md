@@ -50,13 +50,13 @@ Both columns below do exactly the same thing, so pick whichever fits your workfl
 
 Note: pandoc is required for non-PDF files. 
 
-**Terminal (CLI)**
+#### Option 1)  **Terminal (CLI)**
 
 ~~~sh
 python -m deet.main_hierarchical parse_pdfs "misc\hierarchical_mvp\input\batch_pdfs"
 ~~~
 
-**Python script**
+#### Option 2)  **Python script**
 
 ~~~python
 from deet.main_hierarchical import run_parse_pdfs, setup_console_logging
@@ -94,7 +94,7 @@ Example OpenAI models for this file are: `"azure/gpt-5.6-terra"`, `"azure/gpt-5.
 
 Run from the repository root:
 
-**Terminal (CLI)**
+#### Option 1)  **Terminal (CLI)**
 
 Save the JSON above to `misc/hierarchical_mvp/configs/demo_single_config.json`, then:
 
@@ -102,7 +102,7 @@ Save the JSON above to `misc/hierarchical_mvp/configs/demo_single_config.json`, 
 python -m deet.main_hierarchical predict_single_study "misc\hierarchical_mvp\configs\demo_single_config.json"
 ~~~
 
-**Python script**
+#### Option 2)  **Python script**
 
 ~~~python
 import json
@@ -159,7 +159,7 @@ Output summary:
 ~~~
 
 
-**Terminal (CLI)**
+#### Option 1)  **Terminal (CLI)**
 
 Save the JSON above to `misc/hierarchical_mvp/configs/demo_batch_config.json`, then:
 
@@ -167,7 +167,7 @@ Save the JSON above to `misc/hierarchical_mvp/configs/demo_batch_config.json`, t
 python -m deet.main_hierarchical predict_batch "misc\hierarchical_mvp\configs\demo_batch_config.json"
 ~~~
 
-**Python script**
+#### Option 2)  **Python script**
 
 ~~~python
 import json
@@ -199,9 +199,9 @@ Unlike `predict_single_study`, outputs are written directly into `output_parent_
 
 ## Customisable hierarchical RCT extraction (dynamic)
 
-This section describes an experimental dynamic hierarchical RCT workflow where the extraction schema is built from a prompt CSV at runtime. This has not been 100% tested and is a more rough draft, but it does work to edit/add extracted variables within Study, Intervention, and Outcome classes.
+This section describes an experimental dynamic hierarchical RCT workflow where the extraction schema is built from a prompt CSV at runtime. This has not been 100% tested and is a more rough draft, but it does work to edit/add extraction fields within classes in an existing study type schema.
 
-Step 1: create the prompt CSV from the current RCT model schema. This is a useful first step because it gives the user something to edit and play with. Note: '--study-type RCT' is an optional parameter, right now everything defaults to RCT anyway, but the parameter will be useful once DTA/other types are implemented. 
+Step 1: create the prompt CSV from the current RCT model schema. This is a useful first step because it gives the user something to edit and play with. Note: '--study-type RCT' is an optional parameter and default, but you can use any of the existing study_type values to export the csv. 
 
 ~~~sh
 python -m deet.custom_hierarchical write_hierarchical_prompts_csv --study-type RCT
@@ -223,7 +223,7 @@ How it works:
 
 - The JSON config controls study_type, input_paths, output_parent_dir, max_tokens, and dspy_cache.
 - The prompt CSV controls the runtime schema and field-level prompts used to build dynamic Pydantic models.
-- Output files are written to output_parent_dir as timestamped JSON plus CSV outputs for study, interventions, and outcomes.
+- Output files are written to output_parent_dir as timestamped outputs for study, interventions, and outcomes.
 
 To run the same dynamic schema across every markdown file in a folder, use `predict_batch` with a `batch_config.json` (same shape as above, but `input_paths` replaced by `input_folder`):
 
