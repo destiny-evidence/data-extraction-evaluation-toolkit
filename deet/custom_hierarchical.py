@@ -21,6 +21,7 @@ from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.utils import (
     _open_csv_for_write,
+    _write_tables,
     configure_lm,
     load_study_context,
 )
@@ -289,8 +290,35 @@ def write_hierarchical_prompts_csv(
     return output_csv_path
 
 
-def _resolve_dtype(datatype: str) -> Any:
+def _resolve_dtype(
+    datatype: str,
+    schema: dict[str, list[dict[str, str]]] | None = None,
+    nested_cache: dict[str, type[BaseModel]] | None = None,
+) -> Any:
     normalized = datatype.strip().lower()
+
+    # If the datatype names another class that itself has rows in the CSV schema
+    # (e.g. a nested/enum-like class like InterventionType), build it dynamically
+    # from those rows so edits to its field prompts take effect, instead of always
+    # falling back to a hardcoded/static class or a plain str.
+    if schema is not None and nested_cache is not None:
+        for class_name in schema:
+            if class_name.lower() != normalized:
+                continue
+            if class_name not in nested_cache:
+                definitions: dict[str, tuple[Any, Field]] = {}
+                for field_def in schema[class_name]:
+                    inner_dtype = _resolve_dtype(field_def["datatype"], schema, nested_cache)
+                    definitions[field_def["attribute"]] = (
+                        inner_dtype,
+                        Field(default="", description=field_def["prompt"]),
+                    )
+                nested_cache[class_name] = create_model(
+                    f"Dynamic{class_name}",
+                    __base__=BaseModel,
+                    **definitions,
+                )
+            return nested_cache[class_name]
 
     # The prompt CSV can represent nested Pydantic model types using either
     # bare names (OutcomeTypes), prefixed names (models.OutcomeTypes), or
@@ -343,6 +371,7 @@ def _build_dynamic_models_from_schema(
     schema: dict[str, list[dict[str, str]]],
 ) -> dict[str, type[BaseModel]]:
     dynamic_models: dict[str, type[BaseModel]] = {}
+    nested_cache: dict[str, type[BaseModel]] = {}
 
     for class_name, fields in schema.items():
         if class_name not in TARGET_DYNAMIC_CLASSES:
@@ -350,7 +379,7 @@ def _build_dynamic_models_from_schema(
 
         definitions: dict[str, tuple[Any, Field]] = {}
         for field_def in fields:
-            dtype = _resolve_dtype(field_def["datatype"])
+            dtype = _resolve_dtype(field_def["datatype"], schema, nested_cache)
             description = field_def["prompt"]
             definitions[field_def["attribute"]] = (
                 dtype,
@@ -580,6 +609,16 @@ def _build_dynamic_rct_pipeline(
     return DynamicRCTExtractionPipeline
 
 
+def _validate_export_flags(config: dict[str, Any]) -> None:
+    """Default and validate export_csv/export_xlsx/export_json, mirroring main_hierarchical.py."""
+    config.setdefault("export_csv", True)
+    config.setdefault("export_xlsx", False)
+    config.setdefault("export_json", False)
+    for export_key in ("export_csv", "export_xlsx", "export_json"):
+        if not isinstance(config[export_key], bool):
+            raise TypeError(f"Config key '{export_key}' must be a boolean.")
+
+
 def _load_runtime_config(config_path: Path) -> dict[str, Any]:
     config = json.loads(config_path.read_text(encoding="utf-8"))
 
@@ -595,6 +634,8 @@ def _load_runtime_config(config_path: Path) -> dict[str, Any]:
     if missing:
         missing_sorted = ", ".join(sorted(missing))
         raise ValueError(f"Config file is missing required key(s): {missing_sorted}")
+
+    _validate_export_flags(config)
 
     return config
 
@@ -615,6 +656,8 @@ def _load_runtime_batch_config(config_path: Path) -> dict[str, Any]:
     if missing:
         missing_sorted = ", ".join(sorted(missing))
         raise ValueError(f"Config file is missing required key(s): {missing_sorted}")
+
+    _validate_export_flags(config)
 
     return config
 
@@ -647,24 +690,32 @@ def _project_instance_to_schema(
     return payload
 
 
-def _write_dict_rows_to_csv(
-    output_path: Path,
-    fieldnames: list[str],
-    rows: list[dict[str, Any]],
-) -> None:
-    with _open_csv_for_write(output_path) as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        for row in rows:
-            normalized = {
-                key: (
-                    json.dumps(value, ensure_ascii=False)
-                    if isinstance(value, (dict, list))
-                    else value
-                )
-                for key, value in row.items()
-            }
-            writer.writerow(normalized)
+def _flatten_row_for_export(row: dict[str, Any]) -> dict[str, Any]:
+    """Expand nested dict values into their own columns; JSON-encode lists.
+
+    Ensures no study_type ever writes a dict into a single CSV/XLSX cell.
+    """
+    flattened: dict[str, Any] = {}
+    for key, value in row.items():
+        if isinstance(value, dict):
+            for sub_key, sub_value in value.items():
+                column = sub_key if sub_key not in flattened else f"{key}_{sub_key}"
+                flattened[column] = sub_value
+        elif isinstance(value, list):
+            flattened[key] = json.dumps(value, ensure_ascii=False)
+        else:
+            flattened[key] = value
+    return flattened
+
+
+def _fieldnames_union(rows: list[dict[str, Any]]) -> list[str]:
+    """Ordered union of keys across rows, capturing per-row flattened dict columns."""
+    fieldnames: list[str] = []
+    for row in rows:
+        for key in row:
+            if key not in fieldnames:
+                fieldnames.append(key)
+    return fieldnames
 
 
 def _ensure_prognostic_runtime_models(
@@ -974,17 +1025,22 @@ def _write_dynamic_study_outputs(
     timestamp: str,
     suffix: str,
     *,
+    export_csv_files: bool = True,
+    export_xlsx_file: bool = False,
+    export_json_file: bool = False,
     flat_output: bool = False,
 ) -> Path:
-    """Write dynamic extraction outputs (JSON + CSV) for one study.
+    """Write dynamic extraction outputs (JSON/CSV/XLSX) for one study, honoring export flags.
 
-    When `flat_output` is True (used by the batch command), CSV files are written
+    When `flat_output` is True (used by the batch command), CSV/XLSX files are written
     directly into `output_parent_dir` with `study_name` embedded in each filename,
     instead of nested under `output_parent_dir/<study_name>/`.
     """
-    name_infix = f"_{study_name}" if flat_output else ""
     csv_dir = output_parent_dir if flat_output else output_parent_dir / study_name
-    csv_dir.mkdir(parents=True, exist_ok=True)
+
+    # Falls back to output_parent_dir when export_json_file is False, so callers
+    # always get a valid path back regardless of which export flags are set.
+    output_path = output_parent_dir
 
     if study_type == "PrognosticStudy":
         sc_schema = schema.get("PrognosticStudy_Characteristics", [])
@@ -1006,42 +1062,59 @@ def _write_dynamic_study_outputs(
             for item in study.other_prognostic_outcomes
         ]
 
-        dynamic_payload = {
-            "study_characteristics": study_row,
-            "prognostic_factors": pf_rows,
-            "hazard_ratio_outcomes": hr_rows,
-            "other_prognostic_outcomes": op_rows,
-        }
+        if export_json_file:
+            dynamic_payload = {
+                "study_characteristics": study_row,
+                "prognostic_factors": pf_rows,
+                "hazard_ratio_outcomes": hr_rows,
+                "other_prognostic_outcomes": op_rows,
+            }
+            output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
 
-        json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-        json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+        if export_csv_files or export_xlsx_file:
+            raw_outcome_fieldnames: list[str] = []
+            for group in (hr_schema, op_schema):
+                for item in group:
+                    attr = item["attribute"]
+                    if attr not in raw_outcome_fieldnames:
+                        raw_outcome_fieldnames.append(attr)
+            # Tag each outcome row with its subtype so it survives into a single
+            # combined "outcomes" table, mirroring main_hierarchical.py's output.
+            combined_outcomes = [
+                _flatten_row_for_export({"outcome_type": "hazard_ratio", **row})
+                for row in hr_rows
+            ] + [_flatten_row_for_export({"outcome_type": "other", **row}) for row in op_rows]
 
-        if sc_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"study{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in sc_schema],
-                [study_row],
-            )
-        if pf_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"prognostic_factors{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in pf_schema],
-                pf_rows,
-            )
+            flat_study_row = _flatten_row_for_export(study_row)
+            flat_pf_rows = [_flatten_row_for_export(row) for row in pf_rows]
 
-        outcome_fieldnames: list[str] = []
-        for group in (hr_schema, op_schema):
-            for item in group:
-                attr = item["attribute"]
-                if attr not in outcome_fieldnames:
-                    outcome_fieldnames.append(attr)
-        combined_outcomes = hr_rows + op_rows
-        if outcome_fieldnames:
-            _write_dict_rows_to_csv(
-                csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
-                outcome_fieldnames,
-                combined_outcomes,
-            )
+            tables: dict[str, tuple[list[str], list[dict[str, Any]]]] = {}
+            if sc_schema:
+                tables["study"] = (list(flat_study_row.keys()), [flat_study_row])
+            if pf_schema:
+                fieldnames = _fieldnames_union(flat_pf_rows) or [
+                    item["attribute"] for item in pf_schema
+                ]
+                tables["prognostic_factors"] = (fieldnames, flat_pf_rows)
+            if raw_outcome_fieldnames:
+                fieldnames = _fieldnames_union(combined_outcomes) or [
+                    "outcome_type",
+                    *raw_outcome_fieldnames,
+                ]
+                tables["outcomes"] = (fieldnames, combined_outcomes)
+
+            if tables:
+                csv_dir.mkdir(parents=True, exist_ok=True)
+                _write_tables(
+                    tables,
+                    csv_dir,
+                    timestamp,
+                    suffix,
+                    write_csv=export_csv_files,
+                    write_xlsx=export_xlsx_file,
+                    study_name=study_name if flat_output else None,
+                )
     elif study_type == "ClimateCarbonPricing":
         sc_schema = schema.get("Study_Characteristics", [])
         iv_schema = schema.get("Intervention", [])
@@ -1056,33 +1129,49 @@ def _write_dynamic_study_outputs(
             for item in study.effect_outcomes
         ]
 
-        dynamic_payload = {
-            "study_characteristics": study_row,
-            "interventions": intervention_rows,
-            "effect_outcomes": effect_outcome_rows,
-        }
+        if export_json_file:
+            dynamic_payload = {
+                "study_characteristics": study_row,
+                "interventions": intervention_rows,
+                "effect_outcomes": effect_outcome_rows,
+            }
+            output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
 
-        json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-        json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+        if export_csv_files or export_xlsx_file:
+            # Only one outcome subtype exists for this study shape, so no
+            # outcome_type column is added (unlike RCT-style/Prognostic-style).
+            flat_study_row = _flatten_row_for_export(study_row)
+            flat_intervention_rows = [_flatten_row_for_export(row) for row in intervention_rows]
+            flat_effect_outcome_rows = [
+                _flatten_row_for_export(row) for row in effect_outcome_rows
+            ]
 
-        if sc_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"study{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in sc_schema],
-                [study_row],
-            )
-        if iv_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"interventions{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in iv_schema],
-                intervention_rows,
-            )
-        if eo_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in eo_schema],
-                effect_outcome_rows,
-            )
+            tables = {}
+            if sc_schema:
+                tables["study"] = (list(flat_study_row.keys()), [flat_study_row])
+            if iv_schema:
+                fieldnames = _fieldnames_union(flat_intervention_rows) or [
+                    item["attribute"] for item in iv_schema
+                ]
+                tables["interventions"] = (fieldnames, flat_intervention_rows)
+            if eo_schema:
+                fieldnames = _fieldnames_union(flat_effect_outcome_rows) or [
+                    item["attribute"] for item in eo_schema
+                ]
+                tables["outcomes"] = (fieldnames, flat_effect_outcome_rows)
+
+            if tables:
+                csv_dir.mkdir(parents=True, exist_ok=True)
+                _write_tables(
+                    tables,
+                    csv_dir,
+                    timestamp,
+                    suffix,
+                    write_csv=export_csv_files,
+                    write_xlsx=export_xlsx_file,
+                    study_name=study_name if flat_output else None,
+                )
     else:
         sc_schema = schema.get("Study_Characteristics", [])
         iv_schema = schema.get("Intervention", [])
@@ -1106,45 +1195,70 @@ def _write_dynamic_study_outputs(
             _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
         ]
 
-        dynamic_payload = {
-            "study_characteristics": study_row,
-            "interventions": intervention_rows,
-            "dichotomous_outcomes": dichot_rows,
-            "continuous_outcomes": cont_rows,
-            "other_outcomes": other_rows,
-        }
+        if export_json_file:
+            dynamic_payload = {
+                "study_characteristics": study_row,
+                "interventions": intervention_rows,
+                "dichotomous_outcomes": dichot_rows,
+                "continuous_outcomes": cont_rows,
+                "other_outcomes": other_rows,
+            }
+            output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
 
-        json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-        json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
-
-        if sc_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"study{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in sc_schema],
-                [study_row],
-            )
-        if iv_schema:
-            _write_dict_rows_to_csv(
-                csv_dir / f"interventions{name_infix}_{timestamp}{suffix}.csv",
-                [item["attribute"] for item in iv_schema],
-                intervention_rows,
-            )
-
-        outcome_fieldnames = []
-        for group in (do_schema, co_schema, oo_schema):
-            for item in group:
-                attr = item["attribute"]
-                if attr not in outcome_fieldnames:
-                    outcome_fieldnames.append(attr)
-        combined_outcomes = dichot_rows + cont_rows + other_rows
-        if outcome_fieldnames:
-            _write_dict_rows_to_csv(
-                csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
-                outcome_fieldnames,
-                combined_outcomes,
+        if export_csv_files or export_xlsx_file:
+            raw_outcome_fieldnames = []
+            for group in (do_schema, co_schema, oo_schema):
+                for item in group:
+                    attr = item["attribute"]
+                    if attr not in raw_outcome_fieldnames:
+                        raw_outcome_fieldnames.append(attr)
+            combined_outcomes = (
+                [
+                    _flatten_row_for_export({"outcome_type": "dichotomous", **row})
+                    for row in dichot_rows
+                ]
+                + [
+                    _flatten_row_for_export({"outcome_type": "continuous", **row})
+                    for row in cont_rows
+                ]
+                + [
+                    _flatten_row_for_export({"outcome_type": "other", **row})
+                    for row in other_rows
+                ]
             )
 
-    return json_path
+            flat_study_row = _flatten_row_for_export(study_row)
+            flat_intervention_rows = [_flatten_row_for_export(row) for row in intervention_rows]
+
+            tables = {}
+            if sc_schema:
+                tables["study"] = (list(flat_study_row.keys()), [flat_study_row])
+            if iv_schema:
+                fieldnames = _fieldnames_union(flat_intervention_rows) or [
+                    item["attribute"] for item in iv_schema
+                ]
+                tables["interventions"] = (fieldnames, flat_intervention_rows)
+            if raw_outcome_fieldnames:
+                fieldnames = _fieldnames_union(combined_outcomes) or [
+                    "outcome_type",
+                    *raw_outcome_fieldnames,
+                ]
+                tables["outcomes"] = (fieldnames, combined_outcomes)
+
+            if tables:
+                csv_dir.mkdir(parents=True, exist_ok=True)
+                _write_tables(
+                    tables,
+                    csv_dir,
+                    timestamp,
+                    suffix,
+                    write_csv=export_csv_files,
+                    write_xlsx=export_xlsx_file,
+                    study_name=study_name if flat_output else None,
+                )
+
+    return output_path
 
 
 def run_dynamic_extraction_from_csv_schema(
@@ -1202,6 +1316,9 @@ def run_dynamic_extraction_from_csv_schema(
         study_name,
         timestamp,
         suffix,
+        export_csv_files=config["export_csv"],
+        export_xlsx_file=config["export_xlsx"],
+        export_json_file=config["export_json"],
     )
 
     logger.info(
@@ -1274,6 +1391,9 @@ def run_dynamic_batch_extraction_from_csv_schema(
                 study_name,
                 timestamp,
                 suffix,
+                export_csv_files=config["export_csv"],
+                export_xlsx_file=config["export_xlsx"],
+                export_json_file=config["export_json"],
                 flat_output=True,
             )
             json_paths.append(json_path)
