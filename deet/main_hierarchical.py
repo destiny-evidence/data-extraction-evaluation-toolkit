@@ -13,6 +13,12 @@ from dotenv import load_dotenv
 
 from deet.hierarchical_mvp.AnimalRCTextraction import AnimalRCTExtractionPipeline
 from deet.hierarchical_mvp.AnimalRCTmodel import Study as AnimalStudy
+from deet.hierarchical_mvp.ClimateCarbonPricingextraction import (
+    ClimateCarbonPricingExtractionPipeline,
+)
+from deet.hierarchical_mvp.ClimateCarbonPricingmodel import (
+    Study as ClimateCarbonPricingStudy,
+)
 from deet.hierarchical_mvp.CochraneRCTextraction import CochraneRCTExtractionPipeline
 from deet.hierarchical_mvp.ObesityRCTextraction import ObesityRCTExtractionPipeline
 from deet.hierarchical_mvp.ObesityRCTmodel import Study as ObesityStudy
@@ -23,6 +29,7 @@ from deet.hierarchical_mvp.RCTmodel import Study
 from deet.hierarchical_mvp.utils import (
     configure_lm,
     export_animal_csv,
+    export_climate_carbon_pricing_csv,
     export_cochrane_csv,
     export_csv,
     export_obesity_csv,
@@ -257,7 +264,7 @@ def validate_create_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
 
 def extract(
     context: str, study_type: str
-) -> Study | PrognosticStudy | ObesityStudy | AnimalStudy:
+) -> Study | PrognosticStudy | ObesityStudy | AnimalStudy | ClimateCarbonPricingStudy:
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
     match study_type:
@@ -276,14 +283,17 @@ def extract(
         case "AnimalRCT":
             pipeline = AnimalRCTExtractionPipeline()
             return pipeline(context=context)
+        case "ClimateCarbonPricing":
+            pipeline = ClimateCarbonPricingExtractionPipeline()
+            return pipeline(context=context)
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing"
             )
 
 
 def save_data(
-    study: Study | PrognosticStudy | ObesityStudy | AnimalStudy,
+    study: Study | PrognosticStudy | ObesityStudy | AnimalStudy | ClimateCarbonPricingStudy,
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
@@ -353,6 +363,17 @@ def save_data(
             )
         case "AnimalRCT":
             export_animal_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+                flat_output=flat_output,
+            )
+        case "ClimateCarbonPricing":
+            export_climate_carbon_pricing_csv(
                 study,
                 study_name,
                 output_dir,

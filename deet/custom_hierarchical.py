@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
 from deet.hierarchical_mvp import AnimalRCTmodel as animal_models
+from deet.hierarchical_mvp import ClimateCarbonPricingmodel as climate_carbon_pricing_models
 from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
 from deet.hierarchical_mvp import ObesityRCTmodel as obesity_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
@@ -29,20 +30,21 @@ from deet.processors.parser import parse_folder_to_markdown
 DEFAULT_PROMPT_CSV_FILENAME = "hierarchical_prompts.csv"
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
 DEFAULT_BATCH_CONFIG_FILENAME = "batch_config.json"
-TARGET_DYNAMIC_CLASSES = {
-    # RCT classes
+
+# Each study "shape" (RCT-style/Prognostic-style/ClimateCarbonPricing-style/...) declares
+# its own set of class names required to build its dynamic runtime pipeline. Class names
+# ARE allowed to overlap across shapes (e.g. "Study", "Intervention") because a single CSV
+# schema only ever describes one study type at a time, so each shape's resolver only ever
+# looks at its own set below — never the global union. When adding a new study type/shape,
+# add its own <SHAPE>_DYNAMIC_CLASSES set here and it will automatically be included in
+# TARGET_DYNAMIC_CLASSES.
+RCT_DYNAMIC_CLASSES = {
     "Continuous_Outcome",
     "Dichotomous_Outcome",
     "Intervention",
     "Other_Outcome",
     "Study",
     "Study_Characteristics",
-    # PrognosticStudy classes
-    "HazardRatioOutcome",
-    "OtherPrognosticOutcome",
-    "PrognosticFactor",
-    "PrognosticStudy",
-    "PrognosticStudy_Characteristics",
 }
 
 PROGNOSTIC_DYNAMIC_CLASSES = {
@@ -52,6 +54,22 @@ PROGNOSTIC_DYNAMIC_CLASSES = {
     "PrognosticStudy",
     "PrognosticStudy_Characteristics",
 }
+
+CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES = {
+    "Study_Characteristics",
+    "Intervention",
+    "Effect_Outcome",
+    "Study",
+}
+
+# Union of every shape's class names — used ONLY to decide which schema classes are
+# eligible for dynamic-model generation (see `_build_dynamic_models_from_schema`). This is
+# safe to keep as a flat union because that function silently skips any schema class not in
+# this set; it never raises when a shape-specific class is absent, unlike the per-shape
+# `_ensure_<shape>_runtime_models` resolvers, which MUST use their own dedicated set.
+TARGET_DYNAMIC_CLASSES = (
+    RCT_DYNAMIC_CLASSES | PROGNOSTIC_DYNAMIC_CLASSES | CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES
+)
 
 
 def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
@@ -199,6 +217,35 @@ def build_animal_hierarchical_prompt_rows() -> list[dict[str, str]]:
     return rows
 
 
+def build_climate_carbon_pricing_hierarchical_prompt_rows() -> list[dict[str, str]]:
+    """Build prompt rows from classes defined in ClimateCarbonPricing models."""
+    rows: list[dict[str, str]] = []
+
+    for _, cls in climate_carbon_pricing_models.__dict__.items():
+        if not isinstance(cls, type):
+            continue
+        if cls.__module__ != climate_carbon_pricing_models.__name__:
+            continue
+        if not issubclass(cls, BaseModel):
+            continue
+
+        for field_name, field_info in cls.model_fields.items():
+            description = field_info.description or ""
+            annotation = field_info.annotation
+            datatype = getattr(annotation, "__name__", str(annotation))
+
+            rows.append(
+                {
+                    "class": cls.__name__,
+                    "attribute": field_name,
+                    "prompt": description,
+                    "datatype": datatype,
+                }
+            )
+
+    return rows
+
+
 def write_hierarchical_prompts_csv(
     study_type: str = "RCT",
     csv_outpath: str | Path | None = None,
@@ -215,9 +262,11 @@ def write_hierarchical_prompts_csv(
             rows = build_obesity_hierarchical_prompt_rows()
         case "AnimalRCT":
             rows = build_animal_hierarchical_prompt_rows()
+        case "ClimateCarbonPricing":
+            rows = build_climate_carbon_pricing_hierarchical_prompt_rows()
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing"
             )
 
     if csv_outpath is None:
@@ -265,7 +314,7 @@ def _resolve_dtype(datatype: str) -> Any:
 def _load_prompt_schema(csv_path: Path) -> dict[str, list[dict[str, str]]]:
     schema: dict[str, list[dict[str, str]]] = {}
 
-    with csv_path.open("r", newline="", encoding="utf-8") as csvfile:
+    with csv_path.open("r", newline="", encoding="utf-8-sig") as csvfile:
         reader = csv.DictReader(csvfile)
         required = {"class", "attribute", "prompt", "datatype"}
         missing = required.difference(reader.fieldnames or [])
@@ -317,13 +366,13 @@ def _build_dynamic_models_from_schema(
     return dynamic_models
 
 
-def _ensure_runtime_models(
+def _ensure_rct_runtime_models(
     schema: dict[str, list[dict[str, str]]],
     dynamic_models: dict[str, type[BaseModel]],
 ) -> dict[str, type[BaseModel]]:
     runtime_models: dict[str, type[BaseModel]] = {}
 
-    for class_name in TARGET_DYNAMIC_CLASSES:
+    for class_name in RCT_DYNAMIC_CLASSES:
         model_cls = dynamic_models.get(class_name)
         if model_cls is not None:
             runtime_models[class_name] = model_cls
@@ -775,6 +824,128 @@ def _build_dynamic_prognostic_pipeline(
     return DynamicPrognosticExtractionPipeline
 
 
+def _ensure_climate_carbon_pricing_runtime_models(
+    schema: dict[str, list[dict[str, str]]],
+    dynamic_models: dict[str, type[BaseModel]],
+) -> dict[str, type[BaseModel]]:
+    runtime_models: dict[str, type[BaseModel]] = {}
+
+    for class_name in CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES:
+        model_cls = dynamic_models.get(class_name)
+        if model_cls is not None:
+            runtime_models[class_name] = model_cls
+            continue
+
+        fallback = getattr(climate_carbon_pricing_models, class_name, None)
+        if isinstance(fallback, type) and issubclass(fallback, BaseModel):
+            runtime_models[class_name] = fallback
+        else:
+            raise ValueError(
+                f"Class '{class_name}' is required by the pipeline but is missing."
+            )
+
+    if "Study" in schema:
+        runtime_models["Study"] = create_model(
+            "DynamicClimateCarbonPricingStudy",
+            __base__=BaseModel,
+            study_characteristics=(
+                runtime_models["Study_Characteristics"],
+                Field(description="Study-level metadata."),
+            ),
+            interventions=(
+                list[runtime_models["Intervention"]],
+                Field(description="Carbon pricing interventions identified in the study."),
+            ),
+            effect_outcomes=(
+                list[runtime_models["Effect_Outcome"]],
+                Field(default_factory=list, description="Effect/outcome data."),
+            ),
+        )
+
+    return runtime_models
+
+
+def _build_dynamic_climate_carbon_pricing_pipeline(
+    runtime_models: dict[str, type[BaseModel]],
+) -> type[dspy.Module]:
+    extract_study_info_sig = _build_dynamic_signature(
+        "DynamicExtractClimateCarbonPricingStudyInfo",
+        {
+            "context": str,
+            "study_characteristics": runtime_models["Study_Characteristics"],
+            "interventions": list[runtime_models["Intervention"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one carbon pricing study."),
+            "study_characteristics": dspy.OutputField(
+                desc="Study-level metadata and characteristics."
+            ),
+            "interventions": dspy.OutputField(
+                desc="All carbon pricing interventions identified in the study."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given plain text (converted from PDFs to markdown) from one or more documents\n"
+            "that all describe the SAME study on carbon pricing, extract all study-level\n"
+            "metadata and characteristics, and identify every distinct carbon pricing\n"
+            "intervention analysed.\n\n"
+            "Report only information that is explicitly stated in the context."
+        ),
+    )
+
+    extract_effect_outcomes_sig = _build_dynamic_signature(
+        "DynamicExtractEffectOutcomes",
+        {
+            "context": str,
+            "interventions": list[runtime_models["Intervention"]],
+            "effect_outcomes": list[runtime_models["Effect_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one carbon pricing study."),
+            "interventions": dspy.InputField(
+                desc="Carbon pricing interventions identified in step 1."
+            ),
+            "effect_outcomes": dspy.OutputField(
+                desc="All effect/outcome data reported in the study."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same carbon pricing study context and the already-identified\n"
+            "interventions, extract ALL effect/outcome data reported in the text describing\n"
+            "the estimated effect of carbon pricing on emissions.\n\n"
+            "For EVERY effect outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
+            'If a value is not reported, use the string "NR".'
+        ),
+    )
+
+    study_model = runtime_models["Study"]
+
+    class DynamicClimateCarbonPricingExtractionPipeline(dspy.Module):
+        """Dynamic runtime variant of ClimateCarbonPricing extraction pipeline."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.extract_study_info = dspy.Predict(extract_study_info_sig)
+            self.extract_effect_outcomes = dspy.Predict(extract_effect_outcomes_sig)
+
+        def forward(self, context: str) -> BaseModel:
+            study_pred = self.extract_study_info(context=context)
+            effect_pred = self.extract_effect_outcomes(
+                context=context,
+                interventions=study_pred.interventions,
+            )
+            return study_model(
+                study_characteristics=study_pred.study_characteristics,
+                interventions=study_pred.interventions,
+                effect_outcomes=effect_pred.effect_outcomes,
+            )
+
+    return DynamicClimateCarbonPricingExtractionPipeline
+
+
 def _build_dynamic_pipeline_for_study_type(
     study_type: str,
     schema: dict[str, list[dict[str, str]]],
@@ -786,7 +957,11 @@ def _build_dynamic_pipeline_for_study_type(
         runtime_models = _ensure_prognostic_runtime_models(schema, dynamic_models)
         return _build_dynamic_prognostic_pipeline(runtime_models)
 
-    runtime_models = _ensure_runtime_models(schema, dynamic_models)
+    if study_type == "ClimateCarbonPricing":
+        runtime_models = _ensure_climate_carbon_pricing_runtime_models(schema, dynamic_models)
+        return _build_dynamic_climate_carbon_pricing_pipeline(runtime_models)
+
+    runtime_models = _ensure_rct_runtime_models(schema, dynamic_models)
     return _build_dynamic_rct_pipeline(runtime_models)
 
 
@@ -866,6 +1041,47 @@ def _write_dynamic_study_outputs(
                 csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
                 outcome_fieldnames,
                 combined_outcomes,
+            )
+    elif study_type == "ClimateCarbonPricing":
+        sc_schema = schema.get("Study_Characteristics", [])
+        iv_schema = schema.get("Intervention", [])
+        eo_schema = schema.get("Effect_Outcome", [])
+
+        study_row = _project_instance_to_schema(study.study_characteristics, sc_schema)
+        intervention_rows = [
+            _project_instance_to_schema(item, iv_schema) for item in study.interventions
+        ]
+        effect_outcome_rows = [
+            _project_instance_to_schema(item, eo_schema)
+            for item in study.effect_outcomes
+        ]
+
+        dynamic_payload = {
+            "study_characteristics": study_row,
+            "interventions": intervention_rows,
+            "effect_outcomes": effect_outcome_rows,
+        }
+
+        json_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+        json_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+
+        if sc_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"study{name_infix}_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in sc_schema],
+                [study_row],
+            )
+        if iv_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"interventions{name_infix}_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in iv_schema],
+                intervention_rows,
+            )
+        if eo_schema:
+            _write_dict_rows_to_csv(
+                csv_dir / f"outcomes{name_infix}_{timestamp}{suffix}.csv",
+                [item["attribute"] for item in eo_schema],
+                effect_outcome_rows,
             )
     else:
         sc_schema = schema.get("Study_Characteristics", [])
@@ -1085,7 +1301,7 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
     write_parser.add_argument(
         "--study-type",
         default="RCT",
-        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT.",
+        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing.",
     )
     write_parser.add_argument(
         "--csv-outpath",

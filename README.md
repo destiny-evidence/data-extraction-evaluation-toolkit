@@ -29,6 +29,9 @@ The pre-defined hierarchical extraction pipeline (`deet/main_hierarchical.py`) s
 - `PrognosticStudy`
 - `ObesityRCT`
 - `AnimalRCT`
+- `ClimateCarbonPricing`
+
+The dynamic, CSV-schema-driven pipeline (`deet/custom_hierarchical.py`) supports the same values. `PrognosticStudy` and `ClimateCarbonPricing` each have their own dedicated dynamic pipeline; every other value (e.g. `RCT`, `CochraneRCT`, `ObesityRCT`, `AnimalRCT`) is treated as RCT-style extraction.
 
 ## Hierarchical RCT extraction (pre-defined schema)
 

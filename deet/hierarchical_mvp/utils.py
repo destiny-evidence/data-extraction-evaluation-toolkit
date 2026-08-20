@@ -14,6 +14,9 @@ from deet.logger import logger
 from .AnimalRCTmodel import AssessmentIntervention as AnimalAssessmentIntervention
 from .AnimalRCTmodel import InductionIntervention as AnimalInductionIntervention
 from .AnimalRCTmodel import Study as AnimalStudy
+from .ClimateCarbonPricingmodel import Effect_Outcome as ClimateCarbonPricingEffectOutcome
+from .ClimateCarbonPricingmodel import Intervention as ClimateCarbonPricingIntervention
+from .ClimateCarbonPricingmodel import Study as ClimateCarbonPricingStudy
 from .CochraneRCTmodel import Intervention as CochraneIntervention
 from .CochraneRCTmodel import Study as CochraneStudy
 from .ObesityRCTmodel import Intervention as ObesityIntervention
@@ -325,6 +328,51 @@ def export_cochrane_csv(
         "study": (CochraneStudy.csv_fieldnames(), [study.to_csv_row()]),
         "interventions": (iv_fieldnames, interventions_rows),
         "outcomes": (CochraneStudy.outcome_csv_fieldnames(), outcomes_rows),
+    }
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
+
+
+def export_climate_carbon_pricing_csv(
+    study: ClimateCarbonPricingStudy,
+    study_name: str,
+    predictions_dir: Path,
+    timestamp: str,
+    model_suffix: str = "",
+    write_csv: bool = True,
+    write_xlsx: bool = False,
+    flat_output: bool = False,
+) -> None:
+    """
+    Write three tables (study, interventions, outcomes) for a ClimateCarbonPricing
+    extraction as timestamped CSV files and/or as sheets of a single xlsx workbook
+    into predictions/<study_name>/, or directly into `predictions_dir` (with
+    `study_name` in each filename) when `flat_output` is True.
+    """
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
+
+    tables = {
+        "study": (
+            ClimateCarbonPricingStudy.csv_fieldnames(),
+            [study.to_csv_row()],
+        ),
+        "interventions": (
+            ClimateCarbonPricingIntervention.csv_fieldnames(),
+            [arm.to_csv_row() for arm in study.interventions],
+        ),
+        "outcomes": (
+            ClimateCarbonPricingStudy.outcome_csv_fieldnames(),
+            [outcome.to_csv_row() for outcome in study.effect_outcomes],
+        ),
     }
     _write_tables(
         tables,
