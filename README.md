@@ -197,11 +197,11 @@ run_predict_batch(str(config_path))
 
 Unlike `predict_single_study`, outputs are written directly into `output_parent_dir` (no per-study subfolder), with the source markdown filename embedded in each output filename, for example: `misc/hierarchical_mvp/input/projectX/Abdullah_2005.md` produces `study_Abdullah_2005_YYYYMMDD_HHMMSS_<model>.xlsx` (and equivalently named `.csv`/`.json` files) in `output_parent_dir`. If processing one file fails, it is logged and the batch continues with the remaining files.
 
-## Customisable hierarchical RCT extraction (dynamic)
+## Customisable hierarchical study extraction (dynamic)
 
-This section describes an experimental dynamic hierarchical RCT workflow where the extraction schema is built from a prompt CSV at runtime. This has not been 100% tested and is a more rough draft, but it does work to edit/add extraction fields within classes in an existing study type schema.
+This section describes an experimental dynamic hierarchical extraction workflow where the extraction schema is built from a prompt CSV at runtime. This has not been 100% tested and is a more rough draft, but it does work to edit/add extraction fields within classes in an existing study type schema.
 
-Step 1: create the prompt CSV from the current RCT model schema. This is a useful first step because it gives the user something to edit and play with. Note: '--study-type RCT' is an optional parameter and default, but you can use any of the existing study_type values to export the csv. 
+Step 1: create the prompt CSV from a specified model schema. This is a useful first step because it gives the user something to edit and play with. Note: `--study-type RCT` is an optional parameter and default, but you can use any of the existing study_type values to export the csv, e.g. `--study-type ClimateCarbonPricing`. 
 
 ~~~sh
 python -m deet.custom_hierarchical write_hierarchical_prompts_csv --study-type RCT
