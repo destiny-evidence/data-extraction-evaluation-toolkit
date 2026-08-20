@@ -63,13 +63,26 @@ CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES = {
     "Study",
 }
 
+ANIMAL_DYNAMIC_CLASSES = {
+    "AssessmentIntervention",
+    "Continuous_Outcome",
+    "Dichotomous_Outcome",
+    "InductionIntervention",
+    "Other_Outcome",
+    "Study",
+    "Study_Characteristics",
+}
+
 # Union of every shape's class names — used ONLY to decide which schema classes are
 # eligible for dynamic-model generation (see `_build_dynamic_models_from_schema`). This is
 # safe to keep as a flat union because that function silently skips any schema class not in
 # this set; it never raises when a shape-specific class is absent, unlike the per-shape
 # `_ensure_<shape>_runtime_models` resolvers, which MUST use their own dedicated set.
 TARGET_DYNAMIC_CLASSES = (
-    RCT_DYNAMIC_CLASSES | PROGNOSTIC_DYNAMIC_CLASSES | CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES
+    RCT_DYNAMIC_CLASSES
+    | PROGNOSTIC_DYNAMIC_CLASSES
+    | CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES
+    | ANIMAL_DYNAMIC_CLASSES
 )
 
 
@@ -609,6 +622,242 @@ def _build_dynamic_rct_pipeline(
     return DynamicRCTExtractionPipeline
 
 
+def _ensure_animal_runtime_models(
+    schema: dict[str, list[dict[str, str]]],
+    dynamic_models: dict[str, type[BaseModel]],
+) -> dict[str, type[BaseModel]]:
+    runtime_models: dict[str, type[BaseModel]] = {}
+
+    for class_name in ANIMAL_DYNAMIC_CLASSES:
+        model_cls = dynamic_models.get(class_name)
+        if model_cls is not None:
+            runtime_models[class_name] = model_cls
+            continue
+
+        fallback = getattr(animal_models, class_name, None)
+        if isinstance(fallback, type) and issubclass(fallback, BaseModel):
+            runtime_models[class_name] = fallback
+        else:
+            raise ValueError(
+                f"Class '{class_name}' is required by the pipeline but is missing."
+            )
+
+    if "Study" in schema:
+        runtime_models["Study"] = create_model(
+            "DynamicAnimalStudy",
+            __base__=BaseModel,
+            study_characteristics=(
+                runtime_models["Study_Characteristics"],
+                Field(description="Study-level metadata."),
+            ),
+            induction_interventions=(
+                list[runtime_models["InductionIntervention"]],
+                Field(description="Induction intervention subpopulations in the trial."),
+            ),
+            assessment_interventions=(
+                list[runtime_models["AssessmentIntervention"]],
+                Field(description="Assessment interventions in the trial."),
+            ),
+            dichotomous_outcomes=(
+                list[runtime_models["Dichotomous_Outcome"]],
+                Field(default_factory=list, description="Dichotomous outcomes."),
+            ),
+            continuous_outcomes=(
+                list[runtime_models["Continuous_Outcome"]],
+                Field(default_factory=list, description="Continuous outcomes."),
+            ),
+            other_outcomes=(
+                list[runtime_models["Other_Outcome"]],
+                Field(default_factory=list, description="Other outcomes."),
+            ),
+        )
+
+    return runtime_models
+
+
+def _build_dynamic_animal_pipeline(
+    runtime_models: dict[str, type[BaseModel]],
+) -> type[dspy.Module]:
+    extract_study_info_sig = _build_dynamic_signature(
+        "DynamicExtractAnimalStudyInfo",
+        {
+            "context": str,
+            "study_characteristics": runtime_models["Study_Characteristics"],
+            "induction_interventions": list[runtime_models["InductionIntervention"]],
+            "assessment_interventions": list[runtime_models["AssessmentIntervention"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "study_characteristics": dspy.OutputField(
+                desc="Study-level metadata and characteristics."
+            ),
+            "induction_interventions": dspy.OutputField(
+                desc="Every induction intervention (subpopulation) in the trial."
+            ),
+            "assessment_interventions": dspy.OutputField(
+                desc="Every assessment intervention in the trial."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given plain text (converted from PDFs to markdown) from one or more documents\n"
+            "that all describe the SAME animal trial, extract all study-level metadata and\n"
+            "characteristics, and identify every distinct induction intervention (subpopulation\n"
+            "created to induce a condition or model) and every distinct assessment intervention\n"
+            "(treatment/procedure being assessed).\n\n"
+            "Report only information that is explicitly stated in the context."
+        ),
+    )
+
+    extract_dichotomous_sig = _build_dynamic_signature(
+        "DynamicExtractAnimalDichotomousOutcomes",
+        {
+            "context": str,
+            "induction_interventions": list[runtime_models["InductionIntervention"]],
+            "assessment_interventions": list[runtime_models["AssessmentIntervention"]],
+            "dichotomous_outcomes": list[runtime_models["Dichotomous_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "induction_interventions": dspy.InputField(
+                desc="Induction interventions (subpopulations) identified in step 1."
+            ),
+            "assessment_interventions": dspy.InputField(
+                desc="Assessment interventions identified in step 1."
+            ),
+            "dichotomous_outcomes": dspy.OutputField(
+                desc="All dichotomous outcomes reported in the study, per induction/assessment combination."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same animal RCT context and the already-identified induction and\n"
+            "assessment interventions, extract ALL dichotomous (binary event) outcome data\n"
+            "reported in the text, for every unique combination of induction and assessment\n"
+            "intervention.\n\n"
+            "For EVERY dichotomous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
+            'If a value is not reported, use the string "NR".'
+        ),
+    )
+
+    extract_continuous_sig = _build_dynamic_signature(
+        "DynamicExtractAnimalContinuousOutcomes",
+        {
+            "context": str,
+            "induction_interventions": list[runtime_models["InductionIntervention"]],
+            "assessment_interventions": list[runtime_models["AssessmentIntervention"]],
+            "continuous_outcomes": list[runtime_models["Continuous_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "induction_interventions": dspy.InputField(
+                desc="Induction interventions (subpopulations) identified in step 1."
+            ),
+            "assessment_interventions": dspy.InputField(
+                desc="Assessment interventions identified in step 1."
+            ),
+            "continuous_outcomes": dspy.OutputField(
+                desc="All continuous outcomes reported in the study, per induction/assessment combination."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same animal RCT context and the already-identified induction and\n"
+            "assessment interventions, extract ALL continuous outcome data (mean ± SD)\n"
+            "reported in the text, for every unique combination of induction and assessment\n"
+            "intervention.\n\n"
+            "For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
+            'If a value is not reported, use the string "NR".'
+        ),
+    )
+
+    extract_other_sig = _build_dynamic_signature(
+        "DynamicExtractAnimalOtherOutcomes",
+        {
+            "context": str,
+            "induction_interventions": list[runtime_models["InductionIntervention"]],
+            "assessment_interventions": list[runtime_models["AssessmentIntervention"]],
+            "dichotomous_outcomes": list[runtime_models["Dichotomous_Outcome"]],
+            "continuous_outcomes": list[runtime_models["Continuous_Outcome"]],
+            "flexible_outcomes": list[runtime_models["Other_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "induction_interventions": dspy.InputField(
+                desc="Induction interventions (subpopulations) identified in step 1."
+            ),
+            "assessment_interventions": dspy.InputField(
+                desc="Assessment interventions identified in step 1."
+            ),
+            "dichotomous_outcomes": dspy.InputField(
+                desc="All already extracted data related to dichotomous outcomes reported in the study."
+            ),
+            "continuous_outcomes": dspy.InputField(
+                desc="All already extracted data related to continuous outcomes reported in the study."
+            ),
+            "flexible_outcomes": dspy.OutputField(
+                desc="All non-dichotomous, non-continuous outcomes, per induction/assessment combination."
+            ),
+        },
+        (
+            "You are a systematic review assistant.\n\n"
+            "Given the same animal RCT context and the already-identified induction and\n"
+            "assessment interventions, extract ALL other (non-dichotomous, non-continuous)\n"
+            "outcome data reported in the text, for every unique combination of induction and\n"
+            "assessment intervention. Do not re-extract a dichotomous or continuous outcome\n"
+            "unless you can identify new data for it that wasn't extracted in the previous steps.\n\n"
+            "For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
+            "Report values exactly as they appear in the source — do not calculate or impute.\n"
+            'If a value is not reported, use the string "NR".'
+        ),
+    )
+
+    study_model = runtime_models["Study"]
+
+    class DynamicAnimalRCTExtractionPipeline(dspy.Module):
+        """Dynamic runtime variant of Animal RCT extraction pipeline."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.extract_study_info = dspy.Predict(extract_study_info_sig)
+            self.extract_dichotomous = dspy.Predict(extract_dichotomous_sig)
+            self.extract_continuous = dspy.Predict(extract_continuous_sig)
+            self.extract_other = dspy.Predict(extract_other_sig)
+
+        def forward(self, context: str) -> BaseModel:
+            study_pred = self.extract_study_info(context=context)
+            dichot_pred = self.extract_dichotomous(
+                context=context,
+                induction_interventions=study_pred.induction_interventions,
+                assessment_interventions=study_pred.assessment_interventions,
+            )
+            cont_pred = self.extract_continuous(
+                context=context,
+                induction_interventions=study_pred.induction_interventions,
+                assessment_interventions=study_pred.assessment_interventions,
+            )
+            other_pred = self.extract_other(
+                context=context,
+                induction_interventions=study_pred.induction_interventions,
+                assessment_interventions=study_pred.assessment_interventions,
+                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+                continuous_outcomes=cont_pred.continuous_outcomes,
+            )
+
+            return study_model(
+                study_characteristics=study_pred.study_characteristics,
+                induction_interventions=study_pred.induction_interventions,
+                assessment_interventions=study_pred.assessment_interventions,
+                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+                continuous_outcomes=cont_pred.continuous_outcomes,
+                other_outcomes=other_pred.flexible_outcomes,
+            )
+
+    return DynamicAnimalRCTExtractionPipeline
+
+
 def _validate_export_flags(config: dict[str, Any]) -> None:
     """Default and validate export_csv/export_xlsx/export_json, mirroring main_hierarchical.py."""
     config.setdefault("export_csv", True)
@@ -1012,6 +1261,10 @@ def _build_dynamic_pipeline_for_study_type(
         runtime_models = _ensure_climate_carbon_pricing_runtime_models(schema, dynamic_models)
         return _build_dynamic_climate_carbon_pricing_pipeline(runtime_models)
 
+    if study_type == "AnimalRCT":
+        runtime_models = _ensure_animal_runtime_models(schema, dynamic_models)
+        return _build_dynamic_animal_pipeline(runtime_models)
+
     runtime_models = _ensure_rct_runtime_models(schema, dynamic_models)
     return _build_dynamic_rct_pipeline(runtime_models)
 
@@ -1160,6 +1413,104 @@ def _write_dynamic_study_outputs(
                     item["attribute"] for item in eo_schema
                 ]
                 tables["outcomes"] = (fieldnames, flat_effect_outcome_rows)
+
+            if tables:
+                csv_dir.mkdir(parents=True, exist_ok=True)
+                _write_tables(
+                    tables,
+                    csv_dir,
+                    timestamp,
+                    suffix,
+                    write_csv=export_csv_files,
+                    write_xlsx=export_xlsx_file,
+                    study_name=study_name if flat_output else None,
+                )
+    elif study_type == "AnimalRCT":
+        sc_schema = schema.get("Study_Characteristics", [])
+        ii_schema = schema.get("InductionIntervention", [])
+        ai_schema = schema.get("AssessmentIntervention", [])
+        do_schema = schema.get("Dichotomous_Outcome", [])
+        co_schema = schema.get("Continuous_Outcome", [])
+        oo_schema = schema.get("Other_Outcome", [])
+
+        study_row = _project_instance_to_schema(study.study_characteristics, sc_schema)
+        induction_rows = [
+            _project_instance_to_schema(item, ii_schema)
+            for item in study.induction_interventions
+        ]
+        assessment_rows = [
+            _project_instance_to_schema(item, ai_schema)
+            for item in study.assessment_interventions
+        ]
+        dichot_rows = [
+            _project_instance_to_schema(item, do_schema)
+            for item in study.dichotomous_outcomes
+        ]
+        cont_rows = [
+            _project_instance_to_schema(item, co_schema)
+            for item in study.continuous_outcomes
+        ]
+        other_rows = [
+            _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
+        ]
+
+        if export_json_file:
+            dynamic_payload = {
+                "study_characteristics": study_row,
+                "induction_interventions": induction_rows,
+                "assessment_interventions": assessment_rows,
+                "dichotomous_outcomes": dichot_rows,
+                "continuous_outcomes": cont_rows,
+                "other_outcomes": other_rows,
+            }
+            output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+
+        if export_csv_files or export_xlsx_file:
+            raw_outcome_fieldnames = []
+            for group in (do_schema, co_schema, oo_schema):
+                for item in group:
+                    attr = item["attribute"]
+                    if attr not in raw_outcome_fieldnames:
+                        raw_outcome_fieldnames.append(attr)
+            combined_outcomes = (
+                [
+                    _flatten_row_for_export({"outcome_type": "dichotomous", **row})
+                    for row in dichot_rows
+                ]
+                + [
+                    _flatten_row_for_export({"outcome_type": "continuous", **row})
+                    for row in cont_rows
+                ]
+                + [
+                    _flatten_row_for_export({"outcome_type": "other", **row})
+                    for row in other_rows
+                ]
+            )
+
+            flat_study_row = _flatten_row_for_export(study_row)
+            flat_induction_rows = [_flatten_row_for_export(row) for row in induction_rows]
+            flat_assessment_rows = [_flatten_row_for_export(row) for row in assessment_rows]
+
+            tables = {}
+            if sc_schema:
+                tables["study"] = (list(flat_study_row.keys()), [flat_study_row])
+            if ii_schema:
+                fieldnames = _fieldnames_union(flat_induction_rows) or [
+                    item["attribute"] for item in ii_schema
+                ]
+                tables["induction_interventions"] = (fieldnames, flat_induction_rows)
+            if ai_schema:
+                fieldnames = _fieldnames_union(flat_assessment_rows) or [
+                    item["attribute"] for item in ai_schema
+                ]
+                tables["assessment_interventions"] = (fieldnames, flat_assessment_rows)
+            if raw_outcome_fieldnames:
+                fieldnames = _fieldnames_union(combined_outcomes) or [
+                    "outcome_type",
+                    *raw_outcome_fieldnames,
+                ]
+                tables["outcomes"] = (fieldnames, combined_outcomes)
 
             if tables:
                 csv_dir.mkdir(parents=True, exist_ok=True)
