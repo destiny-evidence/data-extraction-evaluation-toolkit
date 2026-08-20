@@ -16,23 +16,23 @@ For each class, give: class name, and a table of fields as
   field_name | type (str/int/float/bool/list[...]) | description (include valid choice-list
   options inline in the description text, exactly as they should appear to the LLM)
 
-### <ClassName1> (e.g. Study_Characteristics)
+### `<ClassName1>` (e.g. Study_Characteristics)
 | field_name | type | description |
 |---|---|---|
 | ... | ... | ... |
 
-### <ClassName2> (e.g. Intervention / entity-group class)
+### `<ClassName2>` (e.g. Intervention / entity-group class)
 | field_name | type | description |
 |---|---|---|
 
-### <ClassName3...N> (one per outcome type, if more than one)
+### `<ClassName3...N>` (one per outcome type, if more than one)
 | field_name | type | description |
 |---|---|---|
 
 ## Study composition
-- study_characteristics: <ClassName1>
-- <entity_list_field_name>: list[<ClassName2>]
-- <outcome_list_field_name(s)>: list[<ClassNameN>] (one field per outcome type)
+- study_characteristics: `<ClassName1>`
+- <entity_list_field_name>: `list[<ClassName2>]`. Extract this information together in the pipeline with the study_characteristics: `<ClassName1>`
+- <outcome_list_field_name(s)>: `list[<ClassNameN>] (one field per outcome type)`. This is a separate extraction step, use the output from the first call above as input to this extraction call.
 
 ## Notes
 - Flag any field name that isn't a valid Python identifier (spaces, special chars) so I know

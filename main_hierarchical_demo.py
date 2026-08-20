@@ -23,14 +23,14 @@ run_parse_pdfs(input_folder)
 ###FOR CLI usage, activate the venv and run:
 ## python -m deet.main_hierarchical parse_pdfs "misc\hierarchical_mvp\input\batch_pdfs"
 
-# #######################################################Single-study extraction
+#######################################################Single-study extraction
 single_study_config = {
-    "study_type": "ClimateCarbonPricing",
+    "study_type": "RCT",
     "llm_model": "azure/gpt-5.6-terra",
-    "max_tokens": 128000,
+    "max_tokens": 60000,
     "dspy_cache": False,
-    "input_paths": ["misc/hierarchical_mvp/input/CarbonPricing/5142448.md"],
-    "output_parent_dir": "misc/hierarchical_mvp/output/CarbonPricing",
+    "input_paths": ["misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"],
+    "output_parent_dir": "misc/hierarchical_mvp/output/mira_rct",
     "export_csv": False,
     "export_xlsx": True,
     "export_json": False,

@@ -50,17 +50,13 @@ Both columns below do exactly the same thing, so pick whichever fits your workfl
 
 Note: pandoc is required for non-PDF files. 
 
-<table>
-<tr><th>Terminal (CLI)</th><th>Python script</th></tr>
-<tr>
-<td valign="top" markdown="1">
+**Terminal (CLI)**
 
 ~~~sh
 python -m deet.main_hierarchical parse_pdfs "misc\hierarchical_mvp\input\batch_pdfs"
 ~~~
 
-</td>
-<td valign="top" markdown="1">
+**Python script**
 
 ~~~python
 from deet.main_hierarchical import run_parse_pdfs, setup_console_logging
@@ -68,10 +64,6 @@ from deet.main_hierarchical import run_parse_pdfs, setup_console_logging
 setup_console_logging()
 run_parse_pdfs("misc/hierarchical_mvp/input/batch_pdfs")
 ~~~
-
-</td>
-</tr>
-</table>
 
 ### Predicting a single study
 
@@ -102,10 +94,7 @@ Example OpenAI models for this file are: `"azure/gpt-5.6-terra"`, `"azure/gpt-5.
 
 Run from the repository root:
 
-<table>
-<tr><th>Terminal (CLI)</th><th>Python script</th></tr>
-<tr>
-<td valign="top" markdown="1">
+**Terminal (CLI)**
 
 Save the JSON above to `misc/hierarchical_mvp/configs/demo_single_config.json`, then:
 
@@ -113,8 +102,7 @@ Save the JSON above to `misc/hierarchical_mvp/configs/demo_single_config.json`, 
 python -m deet.main_hierarchical predict_single_study "misc\hierarchical_mvp\configs\demo_single_config.json"
 ~~~
 
-</td>
-<td valign="top" markdown="1">
+**Python script**
 
 ~~~python
 import json
@@ -142,18 +130,15 @@ config_path.write_text(json.dumps(single_study_config, indent=2), encoding="utf-
 run_predict_single_study(str(config_path))
 ~~~
 
-</td>
-</tr>
-</table>
-
 Output summary:
 
-- A timestamped JSON file is written to output_parent_dir, for example: mira_rct_YYYYMMDD_HHMMSS.json
-- CSV files are written under output_parent_dir/<study_name>/:
+- If `"export_json": True`: A timestamped JSON file is written to output_parent_dir, for example: mira_rct_YYYYMMDD_HHMMSS.json
+- If `"export_csv": True`: CSV files are written under output_parent_dir/<study_name>/:
 	- study_YYYYMMDD_HHMMSS.csv
 	- interventions_YYYYMMDD_HHMMSS.csv
 	- outcomes_YYYYMMDD_HHMMSS.csv
-- The JSON and CSV outputs contain study characteristics, intervention arms, and extracted outcomes.
+- If `"export_xlsx": True`: Excel (.xlsx) single file under output_parent_dir/<study_name> in the format study_YYYYMMDD_HHMMSS_<model>.xlsx.
+- The all outputs will contain study characteristics, intervention arms, and extracted outcomes.
 
 ### Predicting a batch of studies
 
@@ -173,10 +158,8 @@ Output summary:
 }
 ~~~
 
-<table>
-<tr><th>Terminal (CLI)</th><th>Python script</th></tr>
-<tr>
-<td valign="top" markdown="1">
+
+**Terminal (CLI)**
 
 Save the JSON above to `misc/hierarchical_mvp/configs/demo_batch_config.json`, then:
 
@@ -184,8 +167,7 @@ Save the JSON above to `misc/hierarchical_mvp/configs/demo_batch_config.json`, t
 python -m deet.main_hierarchical predict_batch "misc\hierarchical_mvp\configs\demo_batch_config.json"
 ~~~
 
-</td>
-<td valign="top" markdown="1">
+**Python script**
 
 ~~~python
 import json
@@ -213,11 +195,7 @@ config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
 run_predict_batch(str(config_path))
 ~~~
 
-</td>
-</tr>
-</table>
-
-Unlike `predict_single_study`, outputs are written directly into `output_parent_dir` (no per-study subfolder), with the source markdown filename embedded in each output filename, for example: `misc/hierarchical_mvp/input/ailbhe/Abdullah_2005.md` produces `study_Abdullah_2005_YYYYMMDD_HHMMSS_<model>.xlsx` (and equivalently named `.csv`/`.json` files) in `output_parent_dir`. If processing one file fails, it is logged and the batch continues with the remaining files.
+Unlike `predict_single_study`, outputs are written directly into `output_parent_dir` (no per-study subfolder), with the source markdown filename embedded in each output filename, for example: `misc/hierarchical_mvp/input/projectX/Abdullah_2005.md` produces `study_Abdullah_2005_YYYYMMDD_HHMMSS_<model>.xlsx` (and equivalently named `.csv`/`.json` files) in `output_parent_dir`. If processing one file fails, it is logged and the batch continues with the remaining files.
 
 ## Customisable hierarchical RCT extraction (dynamic)
 

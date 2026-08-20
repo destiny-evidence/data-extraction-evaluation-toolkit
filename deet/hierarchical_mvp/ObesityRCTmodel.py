@@ -223,7 +223,7 @@ class Dichotomous_Outcome(BaseModel):
 class Continuous_Outcome(BaseModel):
     outcome_name: str = Field(description="Name of the continuous outcome")
     outcome_definition: str = Field(
-        description="PProvide a definition of the outcome and how it was defined. For example, if it was BMI z-score or BMI score. If a study investigated the effects of physical activity on child weight at 4 weeks, measured in raw BMI (kg/m2) and BMI z-score, the answer is child weight measured at 4 weeks (raw BMI (kg/m2), BMI z-score)'. Be as precise as possible."
+        description="Provide a definition of the outcome and how it was defined. For example, if it was BMI z-score or BMI score. If a study investigated the effects of physical activity on child weight at 4 weeks, measured in raw BMI (kg/m2) and BMI z-score, the answer is child weight measured at 4 weeks (raw BMI (kg/m2), BMI z-score)'. Be as precise as possible."
     )
     outcome_category: OutcomeTypes = Field(
         description="Assign the best fitting outcome category defined in this classification scheme."
