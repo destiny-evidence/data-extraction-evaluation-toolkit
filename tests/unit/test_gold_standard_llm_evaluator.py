@@ -16,7 +16,7 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
 )
-from deet.data_models.evaluation import COUNT_METRIC_NAMES, RunMetricsReport
+from deet.data_models.evaluation import AttributeCountMetric, RunMetricsReport
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
 
 pytest_plugins = ["tests.unit.test_eppi"]
@@ -31,7 +31,7 @@ def test_evaluator_evaluates(processed_data):
     )
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
-        if metric.metric_name in COUNT_METRIC_NAMES:
+        if isinstance(metric, AttributeCountMetric):
             continue
         assert metric.value == 1
 
@@ -47,7 +47,7 @@ def test_evaluator_evaluates_with_custom_metric(processed_data):
     assert "jaccard_score" in evaluator.metrics_config
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
-        if metric.metric_name in COUNT_METRIC_NAMES:
+        if isinstance(metric, AttributeCountMetric):
             continue
         assert metric.value == 1
 
@@ -68,7 +68,7 @@ def test_evaluator_evaluates_with_nonexistent_metric(processed_data):
     assert "nonexistent_metric" not in evaluator.metrics_config
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
-        if metric.metric_name in COUNT_METRIC_NAMES:
+        if isinstance(metric, AttributeCountMetric):
             continue
         assert metric.value == 1
 
@@ -89,7 +89,7 @@ def test_evaluator_evaluates_with_nonfloat_metric(processed_data):
     assert any(f"Tried to add {nonfloat_metric}" in m for m in messages)
     evaluator.evaluate_llm_annotations()
     for metric in evaluator.calculated_metrics:
-        if metric.metric_name in COUNT_METRIC_NAMES:
+        if isinstance(metric, AttributeCountMetric):
             continue
         assert metric.value == 1
 
@@ -119,7 +119,7 @@ def test_evaluator_fails_gracefully_missing_doc(
     )
     evaluator.evaluate_llm_annotations()
     for m in evaluator.calculated_metrics:
-        if m.metric_name in COUNT_METRIC_NAMES or m.metric_name == "n_labels":
+        if isinstance(m, AttributeCountMetric) or m.metric_name == "n_labels":
             continue
         assert m.value is None
 
@@ -153,7 +153,7 @@ def test_evaluator_fails_gracefully_duplicated_annotations(
     )
     evaluator.evaluate_llm_annotations()
     for m in evaluator.calculated_metrics:
-        if m.metric_name in COUNT_METRIC_NAMES or m.metric_name == "n_labels":
+        if isinstance(m, AttributeCountMetric) or m.metric_name == "n_labels":
             continue
         assert m.value is None
 
@@ -316,7 +316,10 @@ def test_evaluator_displays_metrics(evaluator_evaluated):
 
     metric_columns = table.columns[1:]
     for col in metric_columns:
-        if col.header in COUNT_METRIC_NAMES:
+        if any(
+            isinstance(m, AttributeCountMetric) and m.metric_name == col.header
+            for m in evaluator_evaluated.calculated_metrics
+        ):
             continue
         for cell in col._cells:
             assert float(cell) == 1.0
@@ -472,8 +475,8 @@ def test_empty_bad_source_subset_leaves_metrics_blank(tmp_path) -> None:
     metrics_csv = tmp_path / "metrics.csv"
     evaluator.write_metrics_to_csv(metrics_csv)
     row = next(csv.DictReader(metrics_csv.open()))
-    assert row["n_gold_instances"] == "1.0"
-    assert row["n_good_source_instances"] == "1.0"
+    assert row["n_gold_instances"] == "1"
+    assert row["n_good_source_instances"] == "1"
     assert row["edit_distance_match_rate"] == "1.0"
     assert row["edit_distance_match_rate_given_good_source"] == "1.0"
     assert row["accuracy_given_good_source"] == "1.0"

@@ -12,9 +12,24 @@ _NUMERIC_TOKEN_PATTERN = re.compile(
 )
 
 
+SOURCE_FIDELITY_ATTRIBUTE_TYPES: frozenset[AttributeType] = frozenset(
+    {
+        AttributeType.STRING,
+        AttributeType.INTEGER,
+        AttributeType.FLOAT,
+    }
+)
+
+
 def parse_numeric_tokens(text: str | None) -> list[float]:
     """
     Parse standalone numeric tokens from free text.
+
+    Tokens must be digit sequences optionally with a decimal point (e.g.
+    ``1000``, ``0.11``). Thousand separators such as ``1,000`` are **not**
+    recognised: comma-separated forms are treated as separate tokens, which
+    is locale-ambiguous (``1,015`` may mean one thousand fifteen or one
+    point zero one five).
 
     Args:
         text: Source text to scan.
@@ -136,11 +151,7 @@ def classify_match_status(
         for STRING/INTEGER/FLOAT, else ``None``.
 
     """
-    if attribute_type not in {
-        AttributeType.STRING,
-        AttributeType.INTEGER,
-        AttributeType.FLOAT,
-    }:
+    if attribute_type not in SOURCE_FIDELITY_ATTRIBUTE_TYPES:
         return None
     if predicted_value is None:
         return "missing_prediction"

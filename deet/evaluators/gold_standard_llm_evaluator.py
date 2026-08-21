@@ -17,12 +17,17 @@ from rapidfuzz import fuzz
 from rich.console import Console
 from rich.table import Table
 
-from deet.data_models.base import Attribute, AttributeType, GoldStandardAnnotation
+from deet.data_models.base import Attribute, GoldStandardAnnotation
 from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
 )
-from deet.data_models.evaluation import AttributeMetric, RunMetricsReport
+from deet.data_models.evaluation import (
+    AttributeCountMetric,
+    AttributeMetric,
+    AttributeScoreMetric,
+    RunMetricsReport,
+)
 from deet.evaluators.metrics import (
     METRICS,
     EvaluationMetricSettings,
@@ -31,6 +36,7 @@ from deet.evaluators.metrics import (
     get_metrics_for_attribute_type,
 )
 from deet.evaluators.source_fidelity import (
+    SOURCE_FIDELITY_ATTRIBUTE_TYPES,
     classify_match_status,
     is_gold_value_in_text,
 )
@@ -142,14 +148,61 @@ def _citation_fields_from_annotation(
     return format_parsed_citations(parse_eppi_citations_from_details(details))
 
 
+def _citation_haystack_from_parts(
+    additional_text: str,
+    citation_highlight: str,
+    detail_text: str,
+) -> str:
+    """
+    Join citation-related text parts into one haystack for gold-value search.
+
+    Args:
+        additional_text: Human ``additional_text`` (may be empty).
+        citation_highlight: Parsed EPPI highlight text (may be empty).
+        detail_text: Raw full-text detail string(s) (may be empty).
+
+    Returns:
+        Space-joined non-empty parts, or ``""`` if all parts are blank.
+
+    """
+    return " ".join(
+        part
+        for part in (additional_text, citation_highlight, detail_text)
+        if part.strip()
+    )
+
+
+def _citation_haystack_from_annotation(annotation: GoldStandardAnnotation) -> str:
+    """
+    Build citation haystack from a gold annotation's text fields.
+
+    Args:
+        annotation: Gold-standard annotation (EPPI or otherwise).
+
+    Returns:
+        Combined additional text, parsed highlight, and raw detail text.
+
+    """
+    additional_text = str(annotation.additional_text or "")
+    detail_text = _eppi_full_text_details_colon_separated(annotation)
+    _citation_page, citation_highlight = _citation_fields_from_annotation(annotation)
+    return _citation_haystack_from_parts(
+        additional_text, citation_highlight, detail_text
+    )
+
+
 @dataclass(slots=True)
 class EvaluationRow:
-    """Container for per-document values needed by extraction/source scoring."""
+    """Per-document values for extraction scoring and comparison export."""
 
+    document_id: int | str | None
     gold_value: Any
     predicted_value: Any | None
     citation_haystack: str
     context: str | None
+    gold_in_citation: bool | None
+    gold_in_context: bool | None
+    match_status: str | None
 
 
 class GoldStandardLLMEvaluator:
@@ -192,6 +245,7 @@ class GoldStandardLLMEvaluator:
         self.metrics_config: dict[str, MetricFunction] = METRICS
         self.custom_metrics: dict[str, MetricFunction] = {}
         self.calculated_metrics: list[AttributeMetric] = []
+        self._evaluation_rows_by_attribute: dict[int, list[EvaluationRow]] = {}
         if custom_metrics is not None:
             self.add_custom_metrics(custom_metrics)
 
@@ -224,11 +278,13 @@ class GoldStandardLLMEvaluator:
         if self.calculated_metrics:
             logger.warning("Already calculated metrics, deleting and overwriting.")
             self.calculated_metrics = []
+            self._evaluation_rows_by_attribute = {}
         for attribute in self.attributes:
             logger.debug(
                 f"Calculating metric for attribute: {attribute.attribute_label}"
             )
             rows = self._collect_attribute_rows(attribute)
+            self._evaluation_rows_by_attribute[attribute.attribute_id] = rows
             y_true = [row.gold_value for row in rows]
             y_pred = [row.predicted_value for row in rows]
 
@@ -241,9 +297,9 @@ class GoldStandardLLMEvaluator:
             self._append_count_metric(
                 attribute=attribute,
                 metric_name="n_gold_instances",
-                metric_value=float(len(rows)),
+                metric_value=len(rows),
             )
-            self._append_metrics_for_subset(
+            self._append_score_metrics(
                 attribute=attribute,
                 y_true=y_true,
                 y_pred=y_pred,
@@ -251,57 +307,35 @@ class GoldStandardLLMEvaluator:
                 suffix="",
             )
 
-            if attribute.output_data_type not in {
-                AttributeType.STRING,
-                AttributeType.INTEGER,
-                AttributeType.FLOAT,
-            }:
+            if attribute.output_data_type not in SOURCE_FIDELITY_ATTRIBUTE_TYPES:
                 continue
 
-            in_context_flags = [
-                is_gold_value_in_text(
-                    gold_value=row.gold_value,
-                    haystack_text=row.context,
-                    attribute_type=attribute.output_data_type,
-                    edit_distance_threshold=self.metric_settings.edit_distance_match_threshold,
-                    allow_string_near_match=False,
-                )
-                for row in rows
+            good_indices = [
+                i for i, row in enumerate(rows) if row.gold_in_context is True
             ]
-            in_citation_flags = [
-                is_gold_value_in_text(
-                    gold_value=row.gold_value,
-                    haystack_text=row.citation_haystack,
-                    attribute_type=attribute.output_data_type,
-                    edit_distance_threshold=self.metric_settings.edit_distance_match_threshold,
-                    allow_string_near_match=True,
-                )
-                for row in rows
-            ]
-            good_indices = [i for i, is_good in enumerate(in_context_flags) if is_good]
             bad_indices = [
-                i for i, is_good in enumerate(in_context_flags) if not is_good
+                i for i, row in enumerate(rows) if row.gold_in_context is False
             ]
 
             self._append_count_metric(
                 attribute=attribute,
                 metric_name="n_good_source_instances",
-                metric_value=float(len(good_indices)),
+                metric_value=len(good_indices),
             )
             self._append_count_metric(
                 attribute=attribute,
                 metric_name="n_good_citation_instances",
-                metric_value=float(sum(in_citation_flags)),
+                metric_value=sum(1 for row in rows if row.gold_in_citation is True),
             )
 
-            self._append_metrics_for_subset(
+            self._append_score_metrics(
                 attribute=attribute,
                 y_true=[y_true[i] for i in good_indices],
                 y_pred=[y_pred[i] for i in good_indices],
                 metrics=combined_metrics,
                 suffix="_given_good_source",
             )
-            self._append_metrics_for_subset(
+            self._append_score_metrics(
                 attribute=attribute,
                 y_true=[y_true[i] for i in bad_indices],
                 y_pred=[y_pred[i] for i in bad_indices],
@@ -314,11 +348,11 @@ class GoldStandardLLMEvaluator:
         *,
         attribute: Attribute,
         metric_name: str,
-        metric_value: float,
+        metric_value: int,
     ) -> None:
-        """Append a count-like metric row."""
+        """Append an :class:`AttributeCountMetric` onto ``calculated_metrics``."""
         self.calculated_metrics.append(
-            AttributeMetric(
+            AttributeCountMetric(
                 attribute=attribute,
                 metric_name=metric_name,
                 value=metric_value,
@@ -326,7 +360,7 @@ class GoldStandardLLMEvaluator:
             )
         )
 
-    def _append_metrics_for_subset(
+    def _append_score_metrics(
         self,
         *,
         attribute: Attribute,
@@ -336,29 +370,35 @@ class GoldStandardLLMEvaluator:
         suffix: str,
     ) -> None:
         """
-        Run metrics over one subset and append rows.
+        Apply score metrics to ``y_true`` / ``y_pred`` and append result rows.
 
-        Empty stratified subsets leave ``value=None`` so the CSV cell is blank
-        rather than a misleading ``0.0`` (e.g. ``edit_distance_match_rate``
-        returns ``0.0`` for empty lists).
+        Appends one :class:`AttributeScoreMetric` per metric onto
+        ``self.calculated_metrics``. The lists may be the full attribute set or
+        any filtered subset (e.g. good/bad source). When a metric raises on
+        empty or invalid inputs, ``value`` is recorded as ``None`` (blank CSV
+        cell).
+
+        Args:
+            attribute: Attribute being scored.
+            y_true: Gold values for this (sub)set.
+            y_pred: Predictions aligned with ``y_true``.
+            metrics: Metric name → callable map to apply.
+            suffix: Appended to each metric name (e.g. ``_given_good_source``).
+
         """
-        empty_subset = bool(suffix) and not y_true
         for metric_name, metric_fn in metrics.items():
             metric_key = f"{metric_name}{suffix}"
-            if empty_subset:
+            try:
+                value = float(metric_fn(y_true, y_pred))
+            except (ValueError, TypeError) as error:
+                logger.warning(
+                    f"Metric '{metric_key}' not applicable for "
+                    f"attribute '{attribute.attribute_label}' "
+                    f"(type={attribute.output_data_type}): {error}"
+                )
                 value = None
-            else:
-                try:
-                    value = float(metric_fn(y_true, y_pred))
-                except (ValueError, TypeError) as error:
-                    logger.warning(
-                        f"Metric '{metric_key}' not applicable for "
-                        f"attribute '{attribute.attribute_label}' "
-                        f"(type={attribute.output_data_type}): {error}"
-                    )
-                    value = None
             self.calculated_metrics.append(
-                AttributeMetric(
+                AttributeScoreMetric(
                     attribute=attribute,
                     metric_name=metric_key,
                     value=value,
@@ -366,8 +406,51 @@ class GoldStandardLLMEvaluator:
                 )
             )
 
+    def _source_fidelity_fields(
+        self,
+        *,
+        attribute: Attribute,
+        gold_value: object,
+        predicted_value: object | None,
+        citation_haystack: str,
+        context: str | None,
+    ) -> tuple[bool | None, bool | None, str | None]:
+        """
+        Compute citation/context presence and match status when in scope.
+
+        Returns:
+            ``(gold_in_citation, gold_in_context, match_status)``, or three
+            ``None`` values for attribute types outside source fidelity.
+
+        """
+        if attribute.output_data_type not in SOURCE_FIDELITY_ATTRIBUTE_TYPES:
+            return None, None, None
+        threshold = self.metric_settings.edit_distance_match_threshold
+        gold_in_citation = is_gold_value_in_text(
+            gold_value=gold_value,
+            haystack_text=citation_haystack,
+            attribute_type=attribute.output_data_type,
+            edit_distance_threshold=threshold,
+            allow_string_near_match=True,
+        )
+        gold_in_context = is_gold_value_in_text(
+            gold_value=gold_value,
+            haystack_text=context,
+            attribute_type=attribute.output_data_type,
+            edit_distance_threshold=threshold,
+            allow_string_near_match=False,
+        )
+        match_status = classify_match_status(
+            gold_value=gold_value,
+            predicted_value=predicted_value,
+            gold_in_context=gold_in_context,
+            attribute_type=attribute.output_data_type,
+            edit_distance_threshold=threshold,
+        )
+        return gold_in_citation, gold_in_context, match_status
+
     def _collect_attribute_rows(self, attribute: Attribute) -> list[EvaluationRow]:
-        """Collect gold/prediction/source context rows for one attribute."""
+        """Collect gold/prediction/source fidelity rows for one attribute."""
         rows: list[EvaluationRow] = []
         for document in self.gold_standard_annotated_documents:
             doc_id = document.document.safe_identity.document_id
@@ -381,18 +464,11 @@ class GoldStandardLLMEvaluator:
                 ),
                 None,
             )
-            citation_haystack = ""
-            if gold_real is not None:
-                additional_text = str(gold_real.additional_text or "")
-                detail_text = _eppi_full_text_details_colon_separated(gold_real)
-                _citation_page, citation_highlight = _citation_fields_from_annotation(
-                    gold_real
-                )
-                citation_haystack = " ".join(
-                    part
-                    for part in (additional_text, citation_highlight, detail_text)
-                    if part.strip()
-                )
+            citation_haystack = (
+                _citation_haystack_from_annotation(gold_real)
+                if gold_real is not None
+                else ""
+            )
 
             context: str | None = None
             llm_val: Any | None = None
@@ -405,12 +481,25 @@ class GoldStandardLLMEvaluator:
                 )
             except MissingDocumentError:
                 logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
-                rows.append(
-                    EvaluationRow(
+                gold_in_citation, gold_in_context, match_status = (
+                    self._source_fidelity_fields(
+                        attribute=attribute,
                         gold_value=gs_val,
                         predicted_value=None,
                         citation_haystack=citation_haystack,
                         context=context,
+                    )
+                )
+                rows.append(
+                    EvaluationRow(
+                        document_id=doc_id,
+                        gold_value=gs_val,
+                        predicted_value=None,
+                        citation_haystack=citation_haystack,
+                        context=context,
+                        gold_in_citation=gold_in_citation,
+                        gold_in_context=gold_in_context,
+                        match_status=match_status,
                     )
                 )
                 continue
@@ -424,15 +513,42 @@ class GoldStandardLLMEvaluator:
                 )
                 llm_val = None
 
-            rows.append(
-                EvaluationRow(
+            gold_in_citation, gold_in_context, match_status = (
+                self._source_fidelity_fields(
+                    attribute=attribute,
                     gold_value=gs_val,
                     predicted_value=llm_val,
                     citation_haystack=citation_haystack,
                     context=context,
                 )
             )
+            rows.append(
+                EvaluationRow(
+                    document_id=doc_id,
+                    gold_value=gs_val,
+                    predicted_value=llm_val,
+                    citation_haystack=citation_haystack,
+                    context=context,
+                    gold_in_citation=gold_in_citation,
+                    gold_in_context=gold_in_context,
+                    match_status=match_status,
+                )
+            )
         return rows
+
+    def _rows_by_document_id(
+        self, attribute: Attribute
+    ) -> dict[int | str | None, EvaluationRow]:
+        """
+        Return evaluation rows for ``attribute``, collecting if needed.
+
+        Used by comparison export so source-fidelity fields are not recomputed.
+        """
+        rows = self._evaluation_rows_by_attribute.get(attribute.attribute_id)
+        if rows is None:
+            rows = self._collect_attribute_rows(attribute)
+            self._evaluation_rows_by_attribute[attribute.attribute_id] = rows
+        return {row.document_id: row for row in rows}
 
     def display_metrics(self) -> None:
         """Print metrics in a nice table to the command line."""
@@ -456,89 +572,35 @@ class GoldStandardLLMEvaluator:
             metrics_sorted, key=lambda m: m.attribute.attribute_label
         ):
             row = [attribute]
-            group_metrics = {str(m.metric_name): m.value for m in group}
+            group_metrics: dict[str, float | int | None] = {}
+            for metric in group:
+                if isinstance(metric, AttributeCountMetric | AttributeScoreMetric):
+                    group_metrics[str(metric.metric_name)] = metric.value
             # fill cells in order of metric_names
-            row += [
-                f"{group_metrics[name]:.4f}"
-                if group_metrics.get(name) is not None
-                else "N/A"
-                for name in metric_names
-            ]
+            formatted: list[str] = []
+            for name in metric_names:
+                value = group_metrics.get(name)
+                if value is None:
+                    formatted.append("N/A")
+                elif isinstance(value, int) and not isinstance(value, bool):
+                    formatted.append(str(value))
+                else:
+                    formatted.append(f"{float(value):.4f}")
+            row += formatted
             table.add_row(*row)
 
         console.print(table)
 
     def write_metrics_to_csv(self, filepath: Path) -> None:
-        """Save metrics to csv in wide format (one row per attribute)."""
+        """Save metrics to csv in wide format via :class:`RunMetricsReport`."""
         if filepath.suffix != ".csv":
             bad_filetype = "file ending must be .csv"
             raise ValueError(bad_filetype)
-
-        base_columns = [
-            "extraction_run_id",
-            "attribute_id",
-            "attribute_label",
-            "attribute_type",
-        ]
-        preferred_metric_columns = [
-            "n_gold_instances",
-            "n_good_source_instances",
-            "n_good_citation_instances",
-            "accuracy",
-            "accuracy_given_good_source",
-            "accuracy_given_bad_source",
-            "precision",
-            "recall",
-            "f1_score",
-            "n_labels",
-            "edit_distance_match_rate",
-            "edit_distance_match_rate_given_good_source",
-            "edit_distance_match_rate_given_bad_source",
-            "mean_absolute_error",
-            "mean_absolute_error_given_good_source",
-            "mean_absolute_error_given_bad_source",
-            "mean_absolute_percentage_error",
-            "mean_absolute_percentage_error_given_good_source",
-            "mean_absolute_percentage_error_given_bad_source",
-        ]
-
-        by_attribute: dict[tuple[int, str], dict[str, Any]] = {}
-        metric_names: set[str] = set()
-        for metric in self.calculated_metrics:
-            attr_key = (
-                metric.attribute.attribute_id,
-                metric.attribute.attribute_label,
-            )
-            if attr_key not in by_attribute:
-                by_attribute[attr_key] = {
-                    "extraction_run_id": self.extraction_run_id,
-                    "attribute_id": metric.attribute.attribute_id,
-                    "attribute_label": metric.attribute.attribute_label,
-                    "attribute_type": metric.attribute.output_data_type.value,
-                }
-            by_attribute[attr_key][metric.metric_name] = metric.value
-            metric_names.add(metric.metric_name)
-
-        ordered_metric_columns = [
-            name for name in preferred_metric_columns if name in metric_names
-        ]
-        ordered_metric_columns.extend(
-            sorted(name for name in metric_names if name not in ordered_metric_columns)
+        report = RunMetricsReport.from_attribute_metrics(
+            extraction_run_id=self.extraction_run_id,
+            calculated_metrics=self.calculated_metrics,
         )
-        fieldnames = base_columns + ordered_metric_columns
-
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-        with filepath.open("w", newline="", encoding="utf-8") as file_handle:
-            writer = csv.DictWriter(file_handle, fieldnames=fieldnames)
-            writer.writeheader()
-            for _, row_values in sorted(
-                by_attribute.items(), key=lambda item: item[1]["attribute_label"]
-            ):
-                row = {name: row_values.get(name, "") for name in fieldnames}
-                for metric_name in ordered_metric_columns:
-                    if row[metric_name] is None:
-                        row[metric_name] = ""
-                writer.writerow(row)
+        report.to_csv(filepath)
 
     def write_metrics_to_json(self, filepath: Path) -> None:
         """Save metrics to JSON via :class:`RunMetricsReport`."""
@@ -610,6 +672,10 @@ class GoldStandardLLMEvaluator:
                 ],
             )
             writer.writeheader()
+            rows_by_attr: dict[int, dict[int | str | None, EvaluationRow]] = {
+                attribute.attribute_id: self._rows_by_document_id(attribute)
+                for attribute in self.attributes
+            }
             for doc in self.gold_standard_annotated_documents:
                 try:
                     llm_annotated_doc = self.llm_annotated_documents.get_by_id(
@@ -625,6 +691,10 @@ class GoldStandardLLMEvaluator:
                 )
 
                 for attribute in self.attributes:
+                    eval_row = rows_by_attr[attribute.attribute_id].get(
+                        doc.document.safe_identity.document_id
+                    )
+
                     human_ann = doc.get_attribute_annotation(attribute)
                     gold_real = next(
                         (
@@ -677,40 +747,10 @@ class GoldStandardLLMEvaluator:
                                 "for this single attribute"
                             )
 
-                    if attribute.output_data_type in {
-                        AttributeType.STRING,
-                        AttributeType.INTEGER,
-                        AttributeType.FLOAT,
-                    }:
-                        gold_in_citation = is_gold_value_in_text(
-                            gold_value=human_ann.output_data,
-                            haystack_text=" ".join(
-                                part
-                                for part in (
-                                    human_additional_text,
-                                    citation_highlight,
-                                    item_attr_full,
-                                )
-                                if part.strip()
-                            ),
-                            attribute_type=attribute.output_data_type,
-                            edit_distance_threshold=self.metric_settings.edit_distance_match_threshold,
-                            allow_string_near_match=True,
-                        )
-                        gold_in_context = is_gold_value_in_text(
-                            gold_value=human_ann.output_data,
-                            haystack_text=context,
-                            attribute_type=attribute.output_data_type,
-                            edit_distance_threshold=self.metric_settings.edit_distance_match_threshold,
-                            allow_string_near_match=False,
-                        )
-                        match_status = classify_match_status(
-                            gold_value=human_ann.output_data,
-                            predicted_value=llm_extraction,
-                            gold_in_context=gold_in_context,
-                            attribute_type=attribute.output_data_type,
-                            edit_distance_threshold=self.metric_settings.edit_distance_match_threshold,
-                        )
+                    if eval_row is not None:
+                        gold_in_citation = eval_row.gold_in_citation
+                        gold_in_context = eval_row.gold_in_context
+                        match_status = eval_row.match_status
                     else:
                         gold_in_citation = None
                         gold_in_context = None

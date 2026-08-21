@@ -79,8 +79,9 @@ For STRING / INTEGER / FLOAT, metrics are exported in three views:
 - **Given bad source** (`gold value not in context`), e.g. `accuracy_given_bad_source`
 
 When a stratified subset is empty (for example every instance is good-source, so
-there are no bad-source rows), those `*_given_*` cells are left **empty**. A `0`
-would look like a real score of zero rather than “not computed”.
+there are no bad-source rows), those `*_given_*` cells are left **empty**. Score
+metrics raise on empty inputs (as with sklearn), and the evaluator records
+`None` rather than a misleading `0`.
 
 You can also pass extra sklearn metric names with
 `--custom-evaluation-metrics` on `deet experiments evaluate`.
@@ -189,6 +190,10 @@ comes from the gold annotation's supporting / verbatim text (often from EPPI);
 
 BOOL rows leave these fields empty (source-fidelity checks are out of scope for
 bool values).
+
+For INTEGER / FLOAT source checks, numeric tokens are parsed from free text
+without thousand separators (e.g. gold `1000` is not matched to `"1,000"`),
+because comma forms are locale-ambiguous.
 
 ### `llm_annotations.json`
 
