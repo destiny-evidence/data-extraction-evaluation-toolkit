@@ -17,52 +17,53 @@ from deet.main_hierarchical import (
 setup_console_logging()
 
 ######################################################PDF parsing (optional)
-input_folder = "misc/hierarchical_mvp/input/CarbonPricing"
+#input_folder = "misc/hierarchical_mvp/input/CarbonPricing"
+input_folder = "misc/hierarchical_mvp/input/galenos/pdf_selection"
 run_parse_pdfs(input_folder)
 
 ###FOR CLI usage, activate the venv and run:
 ## python -m deet.main_hierarchical parse_pdfs "misc\hierarchical_mvp\input\batch_pdfs"
 
 #######################################################Single-study extraction
-single_study_config = {
-    "study_type": "RCT",
-    "llm_model": "azure/gpt-5.6-terra",
-    "max_tokens": 60000,
-    "dspy_cache": False,
-    "input_paths": ["misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"],
-    "output_parent_dir": "misc/hierarchical_mvp/output/mira_rct",
-    "export_csv": False,
-    "export_xlsx": True,
-    "export_json": False,
-}
-
-single_study_config_path = Path("misc/hierarchical_mvp/configs/demo_single_config.json")
-single_study_config_path.write_text(
-    json.dumps(single_study_config, indent=2), encoding="utf-8"
-)
-
-run_predict_single_study(str(single_study_config_path))
-
-###FOR CLI usage, activate the venv, make sure the config file is present, and run:
-## python -m deet.main_hierarchical predict_single_study "misc\hierarchical_mvp\configs\demo_single_config.json"
-
-# ########################################################Batch extraction
-# batch_config = {
+# single_study_config = {
 #     "study_type": "RCT",
-#     "llm_model": "anthropic/claude-sonnet-4-5",
+#     "llm_model": "azure/gpt-5.6-terra",
 #     "max_tokens": 60000,
 #     "dspy_cache": False,
-#     "input_folder": "misc/hierarchical_mvp/input/batch_pdfs",
-#     "output_parent_dir": "misc/hierarchical_mvp/output/batch_demo",
+#     "input_paths": ["misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"],
+#     "output_parent_dir": "misc/hierarchical_mvp/output/mira_rct",
 #     "export_csv": False,
 #     "export_xlsx": True,
 #     "export_json": False,
 # }
 
-# batch_config_path = Path("misc/hierarchical_mvp/configs/demo_batch_config.json")
-# batch_config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
+# single_study_config_path = Path("misc/hierarchical_mvp/configs/demo_single_config.json")
+# single_study_config_path.write_text(
+#     json.dumps(single_study_config, indent=2), encoding="utf-8"
+# )
 
-# run_predict_batch(str(batch_config_path))
+# run_predict_single_study(str(single_study_config_path))
+
+###FOR CLI usage, activate the venv, make sure the config file is present, and run:
+## python -m deet.main_hierarchical predict_single_study "misc\hierarchical_mvp\configs\demo_single_config.json"
+
+# ########################################################Batch extraction
+batch_config = {
+    "study_type": "RCT",
+    "llm_model": "azure/gpt-5.6-terra",
+    "max_tokens": 60000,
+    "dspy_cache": False,
+    "input_folder": "misc/hierarchical_mvp/input/galenos/pdf_selection",
+    "output_parent_dir": "misc/hierarchical_mvp/output/galenos_demo",
+    "export_csv": False,
+    "export_xlsx": True,
+    "export_json": False,
+}
+
+batch_config_path = Path("misc/hierarchical_mvp/configs/demo_batch_config.json")
+batch_config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
+
+run_predict_batch(str(batch_config_path))
 
 ###FOR CLI usage, activate the venv, make sure the config file is present, and run:
 ## python -m deet.main_hierarchical predict_batch "misc\hierarchical_mvp\configs\demo_batch_config.json"
