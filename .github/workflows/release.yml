@@ -32,6 +32,13 @@ jobs:
         run: uv tool install python-semantic-release==10.6.1 --with "gitpython<3.1.60"
 
       - name: Bump version and tag
-        run: semantic-release -c pyproject.toml version
+        # Only write to the changelog on main releases
+        # dev pre-releases just bump version, tag and release, but don't touch changelog
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            semantic-release -c pyproject.toml version
+          else
+            semantic-release -c pyproject.toml version --no-changelog
+          fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
