@@ -1350,23 +1350,18 @@ The following represent valid boolean attributes:</p>
 <span class="p">]</span>
 </code></pre></div>
 <h3 id="string">string</h3>
-<p>String attributes describe data extraction elements that can be represented as texts. For example, a string attribute could be used to extract the location of a study</p>
-<div class="admonition warning">
-<p class="admonition-title">Not fully supported</p>
-<p>string attributes are only partially covered by standard evaluation metrics</p>
-</div>
+<p>String attributes describe data extraction elements that can be represented as texts. For example, a string attribute could be used to extract the location of a study.</p>
+<p>Default evaluation uses exact-match <code>accuracy</code> on string <code>output_data</code>, plus
+<code>edit_distance_match_rate</code> for near matches; see
+<a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 <h3 id="float">float</h3>
 <p>Float attributes describe any type of numeric data extraction elements, such as the average age of study participants, or the effect size or standard error.</p>
-<div class="admonition warning">
-<p class="admonition-title">Not fully supported</p>
-<p>float attributes are only partially covered by standard evaluation metrics</p>
-</div>
+<p>Default evaluation uses exact-match <code>accuracy</code>, plus magnitude-of-error metrics
+(MAE / MAPE); see <a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 <h3 id="integer">integer</h3>
 <p>Integer attributes describe the subset of numeric data extraction elements that can be represented by whole numbers, and whole numbers only, for example, the number of participants in a trial, or the year in which a trial was carried out.</p>
-<div class="admonition warning">
-<p class="admonition-title">Not fully supported</p>
-<p>integer attributes are only partially covered by standard evaluation metrics</p>
-</div>
+<p>As with floats, default evaluation uses exact-match <code>accuracy</code>, plus MAE / MAPE;
+see <a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 <h3 id="list">list</h3>
 <p>Lists describe data extraction elements that have 0, 1, or more elements. For example, the prompt "extract all of the health outcomes described in the study" could be represented as a list</p>
 <div class="admonition warning">

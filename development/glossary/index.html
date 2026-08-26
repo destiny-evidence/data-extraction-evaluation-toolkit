@@ -1025,6 +1025,26 @@
 </dt>
 <dd>An instance of an automated data extraction pipeline, used to evaluate a specific experiment configuration</dd>
 
+<dt>
+	<a id="9656b28cf5c3edde05916d75db6a4d3e">attribute presence</a> 
+</dt>
+<dd>Whether a gold-standard annotation for a given attribute exists on a document. In the comparison CSV this appears as <code>attribute_presence</code> (<code>"True"</code> or <code>"False"</code>). Absence does not always mean the gold value used for scoring is empty: missing annotations may still be represented with a type-specific default when metrics are computed.</dd>
+
+<dt>
+	<a id="6bfd877268269355fd0613cab638b75f">citation page</a> 
+</dt>
+<dd>Page number(s) parsed from EPPI citation markup in gold full-text details (comparison CSV column <code>citation_page</code>). Empty when markup is missing or not EPPI-sourced.</dd>
+
+<dt>
+	<a id="415a2e367ebcbaf26d65d3a4fac6b528">citation highlight</a> 
+</dt>
+<dd>Highlight / quoted text extracted from EPPI citation markup after parsing and cleaning (comparison CSV column <code>citation_highlight_text</code>).</dd>
+
+<dt>
+	<a id="2b36e1f8fe475899fe1ff30a19b50262">verbatim fuzzy match</a> 
+</dt>
+<dd>A 0–100 score for how well a support snippet is grounded in the document text used for extraction. For gold rows, the snippet is <code>human_additional_text</code> (the human annotator's supporting / verbatim text on the gold annotation, e.g. from EPPI reviwer). For LLM rows, the snippet is <code>llm_verbatim_text</code> (the model's <code>additional_text</code>). Scores are written to <code>human_verbatim_fuzzy_match_pct</code> and <code>llm_verbatim_fuzzy_match_pct</code> in the comparison CSV. Empty snippets score <code>0</code>. <em>Example:</em> if the human additional text appears almost unchanged in the document's markdown, the score is near <code>100</code>; if the text only partly overlaps the document wording, the score is lower; if it is missing from the markdown or there is no supporting text, the score is near <code>0</code>.</dd>
+
 </dl>
 
 

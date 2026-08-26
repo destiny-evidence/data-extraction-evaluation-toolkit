@@ -1132,7 +1132,7 @@ we conduct <a class="mkdocs-ezglossary-link"
 <p>The success of any experiment will depend on the model chosen,
 how this is configured, and how prompts are defined to explain the data extraction
 task to the LLM. We use the term <a class="mkdocs-ezglossary-link"
-    id="95c6f3f71074359ef9e926b4ab8b24ba"
+    id="496a4104c343721070fb7bca798705ab"
     title="All of the variables that can be configured to affect how well LLMs perform a data extraction task. Includes the prompts used."
     name="term:experiment configuration"
     href="../../glossary/#78820ad13a2ea5769c18367da2c96265">experiment configuration</a> to the combination of all of these variables.</p>
@@ -1143,16 +1143,19 @@ to reproduce it, as experiment artefacts. These are defined in
 <a href="../../reference/api/#deet.data_models.project.ExperimentArtefacts"><code>deet.data_models.project.ExperimentArtefacts</code></a>,
 and comprise</p>
 <ul>
-<li>The exact prompts used in the experiment (<code>ExperimentArtefacts.prompts_snapshot</code>)</li>
-<li>All configurable options (such as the model, the temperature setting, etc.) (<code>ExperimentArtefacts.config_snapshot</code>)</li>
-<li>A csv containing metrics for each attribute and each document (see <a href="../evaluation/">evaluation</a>) (<code>ExperimentArtefacts.metrics</code>)</li>
-<li>A csv showing the gold-standard and llm-generated data extraction results for each document and attribute side by side (<code>ExperimentArtefacts.comparison</code>)</li>
-<li>The annotated documents (containing the data extracted by the LLM) (<code>ExperimentArtefacts.llm_annotations</code>)</li>
+<li>The exact prompts used in the experiment (<code>ExperimentArtefacts.prompts_snapshot</code> → <code>prompts_used.csv</code>)</li>
+<li>All configurable options (such as the model, the temperature setting, etc.) (<code>ExperimentArtefacts.config_snapshot</code> → <code>config.yaml</code>)</li>
+<li>A csv of per-attribute evaluation metrics (<code>ExperimentArtefacts.metrics</code> → <code>metrics.csv</code>)</li>
+<li>A csv showing the gold-standard and llm-generated data extraction results for each document and attribute side by side (<code>ExperimentArtefacts.comparison</code> → <code>goldstandard_llm_comparison.csv</code>)</li>
+<li>The annotated documents containing the data extracted by the LLM (<code>ExperimentArtefacts.llm_annotations</code> → <code>llm_annotations.json</code>)</li>
+<li>Run cost, token, and timing metadata (<code>ExperimentArtefacts.extraction_metadata</code> → <code>extraction_metadata.json</code>)</li>
 </ul>
+<p>Column-level descriptions of the metrics and comparison CSVs, and notes on the
+other files, are in <a href="../evaluation/#output-artefacts">Evaluation</a>.</p>
 <h2 id="comparing-experiments">Comparing experiments</h2>
 <p>By running multiple experiments, each time varying the configuration, we
 are able to compare different <a class="mkdocs-ezglossary-link"
-    id="496a4104c343721070fb7bca798705ab"
+    id="1c27930e40aaf0c70b4434b91268697c"
     title="All of the variables that can be configured to affect how well LLMs perform a data extraction task. Includes the prompts used."
     name="term:experiment configuration"
     href="../../glossary/#78820ad13a2ea5769c18367da2c96265">experiment configuration</a>s.</p>

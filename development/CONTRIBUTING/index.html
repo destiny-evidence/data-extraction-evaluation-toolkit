@@ -1047,6 +1047,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#branch-and-versioning-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Branch and versioning flows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Branch and versioning flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#working-on-a-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working on a feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pr-merged-into-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PR merged into development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pr-merged-into-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PR merged into main
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checking-the-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking the version
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1136,6 +1208,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#branch-and-versioning-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Branch and versioning flows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Branch and versioning flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#working-on-a-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working on a feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pr-merged-into-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PR merged into development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pr-merged-into-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PR merged into main
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checking-the-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking the version
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1164,7 +1308,7 @@
 <!-- markdownlint-disable MD041 -->
 
 <h1 id="how-to-contribute-to-deet">How to contribute to <code>deet</code></h1>
-<p>Last updated: NL, 2025-02-19</p>
+<p>Last updated: HM, 2026-07-31</p>
 <h2 id="generally-applicable-guidelines">Generally applicable guidelines</h2>
 <ul>
 <li>Any contribution should be encapsulated within a pull request (PR), from a new branch whose sole purpose is the implementation of the contribution.</li>
@@ -1172,6 +1316,7 @@
 <li>By default, PRs should point to the <code>development</code> branch, where they can be stress-tested before getting merged into <code>main</code>.</li>
 <li>However, a lot of PRs will likely point towards other fix/feature branches.</li>
 <li>PRs will only be merged into <code>development</code> once they have been approved by at least one reviewer. This is peer review -- ask your fellow contributors to review your code, it won't happen automatically.</li>
+<li>We enforce <a href="https://www.conventionalcommits.org/en/v1.0.0/">conventional commit</a> tags and require you to use pre-commit hooks, installed via <code>pre-commit install</code>. These tags will lead to your feature potentially incrementing the version number of <code>deet</code>. Please keep this in mind when tagging your commits.</li>
 <li>In the spirit of atomicity, keep in mind the reviewer's time when putting together your PR. This should reflect both a manageable complexity and length of the new feature.</li>
 <li>Some people enjoy using AI-assisted coding, and that's cool. But the notion that tools like Cursor, Claude Code, Copilot etc. will <strong>10x</strong> your software development chops are debateable, at best. For the purpose of contributing to <code>deet</code>, please ensure that you've self-reviewed your AI code to the degree that you're 100% sure it's the absolute best it can be before asking for review. Do <em>not</em> throw end-to-end AI code to a human reviewer, as this simply externalises the effort onto the review process.</li>
 <li><strong>BEFORE ASKING FOR REVIEW</strong>, please ensure the following:</li>
@@ -1204,6 +1349,42 @@
 </ul>
 <h2 id="do-you-want-to-addmodify-documentation">Do you want to add/modify documentation?</h2>
 <p>Documentation is really important. It's usually something developers don't prioritise. If you see some documentation that's missing, wrong our out of date, follow the <a href="#have-you-written-a-patch-that-fixes-a-bug">bug-fixing flow</a> for adding your documentation.</p>
+<h2 id="branch-and-versioning-flows">Branch and versioning flows</h2>
+<p>We list some typical flows for contributing to <code>deet</code> below. Note that conventional commits are now enforced via pre-commit hooks, so please ensure you have them installed before committing.</p>
+<h3 id="working-on-a-feature">Working on a feature</h3>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feat/my-feature<span class="w">    </span><span class="c1"># branch from main or development</span>
+<span class="c1"># make changes</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add my feature&quot;</span><span class="w">    </span><span class="c1"># hook validates the message format</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>feat/my-feature
+<span class="c1"># open a pr to development or main</span>
+</code></pre></div>
+<h3 id="pr-merged-into-development">PR merged into development</h3>
+<p>CI runs python-semantic-release on the merged commit history and:</p>
+<ul>
+<li>determines the version bump from commit prefixes (<code>fix:</code> -&gt; patch, <code>feat:</code> -&gt; minor, etc.)</li>
+<li>writes the pre-release version to <code>pyproject.toml</code> (e.g. <code>0.2.0.dev1</code>)</li>
+<li>commits that change as <code>chore(release): 0.2.0.dev1 [skip ci]</code> and pushes it</li>
+<li>creates git tag <code>v0.2.0.dev1</code></li>
+</ul>
+<p>Subsequent merges to development increment the dev counter: <code>0.2.0.dev2</code>, <code>0.2.0.dev3</code>, and so on.</p>
+<h3 id="pr-merged-into-main">PR merged into main</h3>
+<p>CI runs python-semantic-release and:</p>
+<ul>
+<li>strips the pre-release suffix to produce the canonical version (e.g. <code>0.2.0</code>)</li>
+<li>writes it to <code>pyproject.toml</code></li>
+<li>creates git tag <code>v0.2.0</code></li>
+<li>creates a github release and updates <code>CHANGELOG.md</code></li>
+</ul>
+<p>Canonical versions only exist on <code>main</code>.</p>
+<h3 id="checking-the-version">Checking the version</h3>
+<p>Check pyproject.toml directly.</p>
+<h3 id="notes">Notes</h3>
+<ul>
+<li>Use <code>uv run semantic-release version --noop</code> to preview what a release would do locally. Never run it without <code>--noop</code>.</li>
+<li>Adding the <code>[skip ci]</code> tag in actions workflows prevents the workflow from triggering itself in a loop.</li>
+<li>If a merge contains only <code>chore:</code>, <code>docs:</code>, or <code>test:</code> commits, no version bump or release is created.</li>
+<li>Do not create or move git tags manually; let CI own them entirely.</li>
+</ul>
 
 
 
