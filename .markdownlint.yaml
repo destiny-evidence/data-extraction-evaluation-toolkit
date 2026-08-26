@@ -1,6 +1,4 @@
 ---
 # Markdown linting rules to ignore.
 MD013: false #  line-length
-ignore:
-  - "tests/test_files/**/*"
 MD046: false # code block style (need both styles if tabs are to work)
