@@ -157,7 +157,7 @@ allow_zero_version = true
 build_command = """
     uv lock --upgrade-package "$PACKAGE_NAME"
     git add uv.lock
-    uv build
+    uv build --wheel --no-config
 """
 tag_format = "v{version}"
 version_toml = ["pyproject.toml:project.version"]
