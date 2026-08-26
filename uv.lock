@@ -508,7 +508,7 @@ nvtx = [
 
 [[package]]
 name = "data-extraction-evaluation-toolkit"
-version = "0.3.0.dev1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "destiny-sdk" },
