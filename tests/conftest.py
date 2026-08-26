@@ -1,7 +1,26 @@
+import json
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 
 import pytest
+from pydantic import SecretStr
+from vcr.request import Request
+
+from deet.processors.converter_register import SupportedImportFormat
+from deet.processors.parser import ParsedOutput
+from deet.settings import get_settings
+
+try:
+    from aiohttp.streams import AsyncStreamReaderMixin  # type: ignore[attr-defined]
+except ImportError:
+    import aiohttp.streams
+
+    class AsyncStreamReaderMixin:  # type: ignore[no-redef]
+        """Compatibility shim for aiohttp 3.9+ which removed this class."""
+
+    aiohttp.streams.AsyncStreamReaderMixin = AsyncStreamReaderMixin  # type: ignore[attr-defined]
 
 
 @pytest.fixture
@@ -20,6 +39,35 @@ def valid_parsed_epub():
 def valid_parsed_html():
     with Path.open("tests/test_files/output/conrad-html-parsed.md") as infile:
         return infile.read()
+
+
+@pytest.fixture
+def mock_check_language(monkeypatch):
+    """Stub the language checker."""
+    monkeypatch.setattr(
+        "deet.processors.parser.check_language",
+        lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
+    )
+
+
+@pytest.fixture
+def mock_pdfminerparser_parse(monkeypatch):
+    """Stub PdfminerParser.parse to avoid actual PDF parsing."""
+
+    def _stub_parse(
+        cls,
+        input_,
+        *,
+        return_metadata: bool = False,
+        return_images: bool = False,
+        **kwargs,
+    ) -> ParsedOutput:
+        return ParsedOutput(text="dummy pdfminer text", parser_library="pdfminer")
+
+    monkeypatch.setattr(
+        "deet.processors.parser.PdfminerParser.parse",
+        classmethod(_stub_parse),
+    )
 
 
 @pytest.fixture
@@ -126,3 +174,102 @@ def sample_eppi_data_duplicated_annotations(sample_eppi_data):
         ref["Codes"] += ref["Codes"]
 
     return duplicated
+
+
+@pytest.fixture
+def valid_project_data(tmp_path, sample_eppi_data):
+    # Create a real dummy file so Pydantic's FilePath is happy
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps(sample_eppi_data))
+
+    return {
+        "name": "TestProject",
+        "gold_standard_data_path": data_file,
+        "gold_standard_data_format": SupportedImportFormat.EPPI_JSON,
+        "environment_file": "project",
+        "pdf_dir": tmp_path,  # A real directory
+    }
+
+
+def scrub_response_secrets(response: dict[str, Any]):
+    """Scrub secrets from the response body before VCR saves it."""
+    settings = get_settings()
+
+    clean_secrets = [
+        val.get_secret_value()
+        for _, val in settings
+        if isinstance(val, SecretStr)
+        and val.get_secret_value()
+        and len(val.get_secret_value()) > 4
+    ]
+
+    body_data = response["body"]["string"]
+
+    is_bytes = isinstance(body_data, bytes)
+    body_str = body_data.decode("utf-8") if is_bytes else body_data
+
+    for secret in clean_secrets:
+        body_str = body_str.replace(secret, "DUMMY_SECRET")
+
+    response["body"]["string"] = body_str.encode("utf-8") if is_bytes else body_str
+
+    if "headers" in response:
+        headers = response["headers"]
+        for key, values in headers.items():
+            scrubbed = []
+            for raw in values:
+                scrubbed_v = raw
+                for secret in clean_secrets:
+                    scrubbed_v = scrubbed_v.replace(secret, "DUMMY_SECRET")
+                scrubbed.append(scrubbed_v)
+            headers[key] = scrubbed
+        for k in list(headers.keys()):
+            if k.lower() == "content-length":
+                actual_len = len(response["body"]["string"])
+                headers[k] = [str(actual_len)]
+
+    return response
+
+
+def scrub_request_uri(request: Request) -> Request:
+    """Remove secrets from uri."""
+    settings = get_settings()
+
+    clean_secrets = [
+        val.get_secret_value()
+        for _, val in settings
+        if isinstance(val, SecretStr)
+        and val.get_secret_value()
+        and len(val.get_secret_value()) > 4
+    ]
+
+    for secret in clean_secrets:
+        if secret.lower() in request.uri.lower():
+            request.uri = "https://dummy.secret/"
+
+    for key, value in request.headers.items():
+        scrubbed = value
+        for secret in clean_secrets:
+            hostname = urlparse(secret).hostname
+            if hostname:
+                scrubbed = scrubbed.replace(hostname, "DUMMY_SECRET")
+            scrubbed = scrubbed.replace(secret, "DUMMY_SECRET")
+        request.headers[key] = scrubbed
+
+    return request
+
+
+@pytest.fixture(scope="module")
+def vcr_config():
+    """Configure vcr to focus on llm calls and scrub secrets."""
+    base_cassette_path = Path(__file__).parent / "integration" / "cassettes"
+
+    return {
+        "ignore_hosts": ["raw.githubusercontent.com"],
+        "decode_compressed_response": True,
+        "match_on": ["method", "uri"],
+        "filter_headers": ["authorization", "api-key", "x-api-key"],
+        "before_record_request": scrub_request_uri,
+        "before_record_response": scrub_response_secrets,
+        "cassette_dir": str(base_cassette_path),
+    }

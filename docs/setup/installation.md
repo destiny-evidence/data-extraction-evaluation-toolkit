@@ -184,6 +184,13 @@ We recommend installing uv to manage python packages. This can also be used to i
 
     In Mac/Linux, we recommend you install uv using the [standalone installer](https://docs.astral.sh/uv/getting-started/installation/#__tabbed_1_1)
 
+!!! warning "Updating uv"
+    Deet requires at least version `0.9.8` of uv.
+
+    Check your current uv version by running `uv --version`.
+
+    Update uv by running `uv self`
+
 Now you have the basics set up, continue to [CLI users](#cli-users) if you want to use the CLI, or [package users](#package-users) if you want to use deet as a package, or to [contributors](#contributors) if you want to contribute to `deet`.
 
 ## CLI users
@@ -270,7 +277,9 @@ pre-commit install
 `deet` reads general settings from a `.env` file within the directory you are running it from.
 Settings will be set to default values if this file does not exist, but if you want to use deet with azure models (default behaviour), you will need to provide a set of credentials.
 
-To do this, open a file called `.env` in the directory you are running `deet`, and add the following lines, replacing the placeholders with your own credentials:
+If you are using the CLI, you will be prompted to enter this information
+
+Otherwise, open a file called `.env` in the directory you are running `deet`, and add the following lines, replacing the placeholders with your own credentials:
 
 ```sh
 AZURE_API_KEY="your-azure-api-key-here"

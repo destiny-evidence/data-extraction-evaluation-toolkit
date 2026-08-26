@@ -1,0 +1,1011 @@
+interactions:
+- request:
+    body: "{\"messages\":[{\"role\":\"system\",\"content\":\"You will be provided
+      with a context from a paper and a list of attributes (questions) below.\\nBased
+      on the context, answer every attribute and return a single JSON object containing
+      one response per attribute. Each attribute response is keyed by its attribute
+      id in the form \\\"attribute_<id>\\\" and must contain the output_data, additional_text
+      and reasoning fields. You must provide a response for every attribute and must
+      not invent attributes that were not asked for.\\n\\nYou are a very meticulous
+      data extraction assistant, and you are extracting different types of data from
+      academic papers.\\n\\nYou will be given:\\n- an academic document, provided
+      as a markdown-formatted file\\n- a list of questions or attributes for which
+      answers are requested.\\n- for each question, an expected output type.\\n\\nYour
+      task is to extract information strictly from the provided document.\\n\\nFor
+      each question, produce a structured response containing the following fields:\\n\\nAnswer:
+      A concise, direct answer to the question. The answer may be:\\n\\n- A Boolean
+      (`true` or `false`) for BOOL questions.\\n- A short string or text span extracted
+      or paraphrased from the document for STRING questions.\\n- A whole number for
+      INTEGER questions.\\n- A decimal number for FLOAT questions.\\n- A list of values
+      for LIST questions.\\n- A dictionary/object with key-value pairs for DICT questions.\\n\\nReasoning:
+      A clear explanation on how the answer was derived from the document's content.\\nAdditional_text:
+      A verbatim excerpt from the document that directly supports the answer.\\n\\nExtraction
+      Rules\\n- Use only the content of the provided document\\n- Do not speculate,
+      infer unstated information, or rely on domain knowledge\\n- The Answer must
+      conform exactly to the output type specified by the attribute.\\n- The Additional_text
+      must be exact quotations from the document and should be minimal but sufficient
+      to justify the answer. If multiple passages are relevant, include the single
+      most direct citation\\n- If the document does not contain sufficient information
+      to answer the question:\\n     explain in Reasoning why the information is missing\\n
+      \    leave Additional_text blank\\n\\nOutput Format:\\n-Provide one response
+      per question, preserving the original question order\\n-Return results in json
+      format\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
+      \\\"# **BMC Neuroscience**\\\\n\\\\n![](_page_0_Picture_1.jpeg)\\\\n\\\\nResearch
+      article **[Open Access](http://www.biomedcentral.com/info/about/charter/)**\\\\n\\\\n#
+      **Chronic administration of R-flurbiprofen attenuates learning impairments in
+      transgenic amyloid precursor protein mice**\\\\n\\\\nThomas Kukar1, Sonya Prescott1,
+      Jason L Eriksen1, Vallie Holloway1, M Paul Murphy2, Edward H Koo3, Todd E Golde1
+      and Michelle M Nicolle\\\\\\\\*1,4\\\\n\\\\nAddress: 1Department of Neuroscience,
+      Mayo Clinic College of Medicine, Jacksonville, FL 32224, USA, 2Department of
+      Molecular and Cellular Biochemistry, University of Kentucky, Lexington, KY 40536,
+      USA, 3Department of Neurosciences, University of California, San Diego, La Jolla,
+      California, USA and 4Departments Internal Medicine/Gerontology and the Department
+      of Physiology and Pharmacology, Wake Forest University School of Medicine, Winston-Salem,
+      NC 27157, USA\\\\n\\\\nEmail: Thomas Kukar - kukar.thomas@mayo.edu; Sonya Prescott
+      - prescott.sonya@mayo.edu; Jason L Eriksen - eriksen.jason@mayo.edu; Vallie
+      Holloway - holloway.vallie@mayo.edu; M Paul Murphy - mpmurp3@email.uky.edu;
+      Edward H Koo - edkoo@ucsd.edu; Todd E Golde - golde.todd@mayo.edu; Michelle
+      M Nicolle\\\\\\\\* - mnicolle@wfubmc.edu\\\\n\\\\nPublished: 24 July 2007\\\\n\\\\n*BMC
+      Neuroscience* 2007, **8**:54 doi:10.1186/1471-2202-8-54 Received: 29 November
+      2006 Accepted: 24 July 2007\\\\n\\\\n[This article is available from: http://www.biomedcentral.com/1471-2202/8/54](http://www.biomedcentral.com/1471-2202/8/54)\\\\n\\\\n\xA9
+      2007 Kukar et al; licensee BioMed Central Ltd.\\\\n\\\\nThis is an Open Access
+      article distributed under the terms of the Creative Commons Attribution License
+      [\\\\\\\\(http://creativecommons.org/licenses/by/2.0\\\\\\\\)](http://creativecommons.org/licenses/by/2.0),
+      which permits unrestricted use, distribution, and reproduction in any medium,
+      provided the original work is properly cited.\\\\n\\\\n# **Abstract**\\\\n\\\\n**Background:**
+      Long-term use of non-steroidal anti-inflammatory drugs (NSAIDs) is associated
+      with a reduced incidence of Alzheimer's disease (AD). We and others have shown
+      that certain NSAIDs reduce secretion of A\u03B242 in cell culture and animal
+      models, and that the effect of NSAIDs on A\u03B242 is independent of the inhibition
+      of cyclooxygenase by these compounds. Since A\u03B242 is hypothesized to be
+      the initiating pathologic molecule in AD, the ability of these compounds to
+      lower A\u03B242 selectively may be associated with their protective effect.
+      We have previously identified *R*-flurbiprofen (tarenflurbil) as a selective
+      A\u03B242 lowering agent with greatly reduced cyclooxygenase activity that shows
+      promise for testing this hypothesis. In this study we report the effect of chronic
+      *R*-flurbiprofen treatment on cognition and A\u03B2 loads in Tg2576 APP mice.\\\\n\\\\n**Results:**
+      A four-month preventative treatment regimen with *R*-flurbiprofen (10 mg/kg/day)
+      was administered to young Tg2576 mice prior to robust plaque or A\u03B2 pathology.
+      This treatment regimen improved spatial learning as assessed by the Morris water
+      maze, indicated by an increased spatial bias during the third probe trial and
+      an increased utilization of a place strategy to solve the water maze. These
+      results are consistent with an improvement in hippocampal- and medial temporal
+      lobe-dependent memory function. A modest, though not statistically significant,
+      reduction in formic acid-soluble levels of A\u03B2 was also observed. To determine
+      if R-flurbiprofen could reverse cognitive deficits in Tg2576 mice where plaque
+      pathology was already robust, a two-week therapeutic treatment was given to
+      older Tg2576 mice with the same dose of *R*-flurbiprofen. This approach resulted
+      in a significant decrease in A\u03B2 plaque burden but no significant improvement
+      in spatial learning.\\\\n\\\\n**Conclusion:** We have found that chronic administration
+      of *R*-flurbiprofen is able to attenuate spatial learning deficits if given
+      prior to plaque deposition in Tg2576 mice. Given its ability to selectively
+      target A\u03B242 production and improve cognitive impairments in transgenic
+      APP mice, as well as promising data from a phase 2 human clinical trial, future
+      studies are needed to investigate the utility of *R*-flurbiprofen as an AD therapeutic
+      and its possible mechanisms of action.\\\\n\\\\n<sup>\\\\\\\\*</sup> Corresponding
+      author\\\\n\\\\n#### **Background**\\\\n\\\\nAlzheimer's disease (AD) is the
+      most common form of dementia, and results in a progressive, irreversible decline
+      in memory and cognitive function. One of the pathological hallmarks of the Alzheimer's
+      brain is the presence of aggregated amyloid beta (A\u03B2) peptide in extracellular
+      proteinaceous deposits in the parenchyma (senile plaques), and cerebral blood
+      vessels [1]. A\u03B2 species with different amino- and carboxyl-termini are
+      constitutively produced from the amyloid \u03B2 precursor protein (APP) through
+      sequential proteolysis by \u03B2- and \u03B3-secretases [2]. In most cases,
+      a 40 amino acid form of A\u03B2 (A\u03B240) is the major secreted product of
+      these cleavages. The 42 amino acid form of A\u03B2 (A\u03B242), although secreted
+      at much lower levels than A\u03B240, has been implicated as the initiating molecule
+      in the pathogenesis of AD [3].\\\\n\\\\nA\u03B242 is more amyloidogenic than
+      A\u03B240, and is deposited earlier and more consistently than A\u03B240 in
+      the AD brain parenchyma. Significantly, mutations in presenilin 1 (PS1), presenilin
+      2 (PS2), and APP genes linked to early onset genetic forms of AD perturb A\u03B2
+      peptide levels or in rare cases directly alter the A\u03B2 sequence in a way
+      that increase the propensity of the mutant A\u03B2 to aggregate and form fibrils.
+      The vast majority of these AD-linked mutations selectively increase the relative
+      levels of A\u03B242 peptides (reviewed in [4,5]). Small shifts in A\u03B242
+      production have a tremendous impact on the development of AD. In humans, AD-causing
+      mutations in APP and PS elevate plasma A\u03B242 levels by 30%\u2013100%, and
+      are associated with the onset of dementia in the 3rd to 5th decade of life [6].
+      Studies of these same mutations in transgenic mice also demonstrate that small
+      increases in A\u03B242 levels markedly accelerate A\u03B2 deposition in the
+      brain and associated pathologies [7,8]. More recent studies in transgenic mice
+      and Drosophila selectively expressing A\u03B240 and A\u03B242 in the secretory
+      pathway, demonstrates that A\u03B242 but not A\u03B240 is sufficient to drive
+      A\u03B2 deposition, and, at least in Drosophila, neurodegeneration [9,10].\\\\n\\\\nAlthough
+      numerous lines of evidence support a role for A\u03B242 in the underlying pathogenesis
+      of AD, no therapies in clinical use target this molecule. The only currently
+      approved treatments for AD are the acetylcholinesterase inhibitors (donepizil,
+      rivastigmine, galantamine) and the N-methyl-D-aspartate receptor antagonist,
+      memantine [11]. These pharmacologic therapies are thought to improve cognition
+      by targeting specific symptoms of the disease, such as reduced cholinergic neurotransmission
+      and increased glutamatergic activity leading to excess activation of NMDA receptors,
+      respectively, without significantly modifying the underlying disease pathology
+      [12,13]. Despite only modest symptomatic benefit, cholinesterase inhibitors
+      have been widely adopted for clinical use in the early stages of AD, whereas
+      memantine has shown benefit in the moderate to severe stages of the disease
+      [14,15]. Given the growing AD epidemic there is an urgent need to discover alternative,
+      more effective, therapies that not only target the disease symptoms but can
+      also slow or halt the underlying neurodegenerative process. Several novel therapies
+      based on the current understanding of AD pathogenesis are being clinically evaluated,
+      including the use of anti-inflammatories [1].\\\\n\\\\nOver the past 20 years,
+      a substantial number of epidemiological reports have shown that long-term use
+      of nonaspirin, nonsteroidal, anti-inflammatory drugs (NSAIDs) is associated
+      with protection from the development of AD [16]. This data has been used to
+      support the hypothesis that anti-inflammatory drugs may be effective in slowing
+      the progression of disease, since a robust CNS inflammatory response is another
+      prevalent feature of AD [17]. Indeed, the epidemiologic data has been used as
+      the primary rationale for previous and ongoing trials of select NSAIDs in AD
+      [18].\\\\n\\\\nResults from these trials have been mixed. Clinical data from
+      one double-blind placebo-controlled trial showed that indomethacin may improve
+      cognition in dementia [19], but the results from this study were confounded
+      by the lack of power and high drop-out rate due to adverse effects of the drug.
+      A prospective, 25-week, randomized, double-blind placebo-controlled trial evaluating
+      the efficacy and safety of diclofenac in combination with misoprostol in patients
+      with mild to moderate AD in a prospective, 25-week trial, did not demonstrate
+      a significant effect of NSAID treatment [20]. A more recent randomized, placebo-controlled
+      1-year clinical trial of naproxen or rofecoxib failed to detect any effect on
+      cognitive impairment by naproxen or rofecoxib administration in mild to moderate
+      AD patients [21]. Finally, because of concerns over side-effects, a large prevention
+      study (the ADAPT trial) of naproxen and celecoxib was recently halted [22,23].\\\\n\\\\nThere
+      are a number of possible reasons for the varying results from these trials,
+      and one potential explanation comes from studies which suggest that the general
+      antiinflammatory activity of NSAIDs may play a secondary role in modulating
+      the development of A\u03B2 pathology while other pathways are involved [18].
+      First, chronic administration of only certain NSAIDs in mice has been reported
+      to reduce A\u03B2 deposition. Ibuprofen treatment was shown to significantly
+      reduce amyloid pathology, neuritic dystrophy, plaque-associated gliosis and
+      IL-1 expression in Tg2576 transgenic mice [24]. After 6 months of treatment,
+      amyloid plaque numbers and A\u03B2 levels in brain were reduced almost 50% and
+      40%, respectively. In the same study, naproxen treatment was not effective.
+      This result suggests that cyclooxygenase (COX) inhibition, the main target of
+      NSAIDs, *per se*, is not driving reductions in A\u03B2 deposition. Furthermore,
+      two nitric oxide-releasing derivates of flurbiprofen (HCT 1026 and NCX2216)
+      and indomethacin have also been shown to reduce amyloid pathology following
+      long-term administration to A\u03B2-depositing mice [25-27].\\\\n\\\\nIn contrast,
+      nimesulide and celecoxib have been reported to have no effect on A\u03B2 plaque
+      pathology, further suggesting that COX 1 or 2 inhibition is not sufficient to
+      decrease A\u03B2 deposition [27,28]. These results provide additional evidence
+      that only certain NSAIDs are able to suppress A\u03B2 aggregation in the brain
+      and that these compounds may be targeting a unique pathway.\\\\n\\\\nOne possible
+      explanation for these observations is the discovery that certain NSAIDs, such
+      as ibuprofen, indomethacin, and the enantiomer of flurbiprofen are capable of
+      lowering the production of A\u03B242 selectively [29,30]. In contrast, certain
+      COX-2 inhibitors selectively raise A\u03B242 or have no effect [31]. The ability
+      of these compounds to modulate A\u03B242 levels is independent of COX and other
+      previously identified targets of these drugs, such as NF\u03BAB [32]. Although
+      the mechanism of A\u03B2 modulation has not been definitively established, experimental
+      evidence suggests that these compounds target the \u03B3-secretase complex which
+      is composed of PS1 or PS2, substrate (i.e. carboxylterminal fragments of APP),
+      and three essential accessory proteins: nicastrin, APH-1, and PEN-2 [30,33-35].\\\\n\\\\nThe
+      identification of compounds that selectively lower A\u03B242 provides a unique
+      opportunity to test the hypothesis that decreasing levels of this peptide will
+      have a positive impact on A\u03B2 plaque pathology and cognition. Unfortunately,
+      the potential toxicity related to inhibition of COX as well as diverse secondary
+      targets of this class of drugs, complicates efforts to experimentally test this
+      hypothesis. Extensive screening of NSAIDs, derivatives and related compounds
+      led to the identification of *R*-flurbiprofen as a promising selective A\u03B242-lowering
+      agent that may circumvent some of these complications [30].\\\\n\\\\n*R*-Flurbiprofen
+      is a purified enantiomer of the classical racemic NSAID, flurbiprofen, which
+      displays minimal COX activity and does not undergo stereoinversion in humans
+      [36,37]. Like the racemate, *R*-flurbiprofen retains the ability to lower A\u03B242
+      in cell culture and in the brain of young non-depositing Tg2576 APP mice following
+      3-days of oral dosing [30,38]. Based on *R*-flurbiprofen's selective lowering
+      of A\u03B242, reduced COX activity and safety profile in humans we have previously
+      suggested that this drug was a good candidate for clinical testing in AD [30].\\\\n\\\\nRecently,
+      a 1 year randomized, placebo-controlled, double-blind Phase 2 study of *R*-flurbiprofen
+      (MPC-7869, Myriad Pharmaceuticals, Inc.) in 207 subjects with mild to moderate
+      AD (MMSE 15\u201326) was completed [39]. In mild AD subjects (MMSE of 20\u201326)
+      receiving the highest dose of *R*-flurbiprofen (800 mg twice daily), statistically
+      significant benefit was observed in measures of activities of daily living (ADCS-ADL;
+      and global function (CDRsb), with positive trends in cognition (ADAS-cog). No
+      benefit was observed in moderate AD patients. In addition, *R*-flurbiprofen
+      was generally well-tolerated in this patient population. Phase 3 studies are
+      currently ongoing to further assess efficacy, safety, and the potential for
+      this compound to be a disease modifying agent.\\\\n\\\\nIn this study we report
+      the effect of chronic *R*-flurbiprofen treatment on cognition and A\u03B2 loads
+      in a transgenic model of AD, Tg2576 APP mice. Tg2576 mice were generated as
+      follows: male Tg2576 (C57BL/6.SJL, APP+/-) were crossed with C57BL/6.SJL F1
+      females (APP-/-). These crosses generated the F2 Tg2576 APP +/- mice (mixed
+      C57BL/6.SJL background), which were used in all experiments. In two separate
+      behavioural trials, long-term treatment initiated in young Tg2576 mice with
+      10 mg/kg/day *R*-flurbiprofen improved spatial learning as assessed by the Morris
+      water maze (WM). A modest reduction in biochemical A\u03B2 loads was also observed,
+      though this did not reach statistical significance in either study. A 2-week
+      treatment of older Tg2576 with the same dose of *R*-flurbiprofen decreased A\u03B2
+      plaque levels (p < 0.0001) but did not result in any significant alteration
+      in spatial learning.\\\\n\\\\n# **Results**\\\\n\\\\n#### *Chronic administration
+      and brain levels of* **R***-flurbiprofen in Tg2576 mice*\\\\n\\\\nAcute 3-day
+      oral dosing of *R*-flurbiprofen in Tg2576 mice is well-tolerated at doses up
+      to 50 mg/kg/day. Maximal brain A\u03B242 lowering was observed with doses of
+      25\u201350 mg/kg/day, but doses of 10 mg/kg/day also lowered A\u03B242 [30].
+      In these initial short-term dosing studies no mortality or morbidity was observed.
+      However, initial pilot longterm studies using dosing regimens designed to deliver
+      either 25 and 50 mg/kg day (see Methods) resulted in 85% and 100% mortality,
+      respectively, within 2 weeks. A 10 mg/kg/day dose did not result in increased
+      mortality after 14 days, and was therefore chosen for long-term studies. Experimental
+      design, group sizes, and survival data for each of the experiments designed
+      to deliver ~10 mg/kg/day of *R*-flurbiprofen are shown in Tables 1 and 2. *R*-
+      and *S*-flurbiprofen levels in the brain of mice from one water maze (Exp. 3)
+      were analyzed using liquid chromatography and mass spectrometry techniques and
+      were found to be 158 \xB1 14.7 and 76.0 \xB1 8.0 ng/gm brain tissue respectively.\\\\n\\\\n**Table
+      1: Experimental Design**\\\\n\\\\n| Experiment   | Drug Regimen | Age at Drug
+      Onset | Age at Behavioral Testing | Age at Sacrifice |  |\\\\n|--------------|--------------|-------------------|---------------------------|------------------|--|\\\\n|
+      Experiment 1 | Preventative | 8 months          | 11\xBD\u201312 months             |
+      15 months        |  |\\\\n| Experiment 2 | Preventative | 8\u20139 months        |
+      11\xBD\u201312 months             | 13 months        |  |\\\\n| Experiment 3
+      | Therapeutic  | 17 \xBD\u201318 months    | 18\u201319 months              |
+      19\u201320 months     |  |\\\\n\\\\n#### *Sensory and motor ability*\\\\n\\\\nFor
+      the behavioural analysis, the control groups were collapsed across experiments
+      as described in the statistical analysis section, resulting in 3 groups for
+      statistical analysis: Control, Preventative (\\\\\\\"Preventative\\\\\\\", experiments
+      1 & 2) and Therapeutic (\\\\\\\"Therapeutic\\\\\\\", experiment 3)(see Statistical
+      Analysis section for further discussion of groups). Assessment of sensory and
+      motor ability was determined by measuring the latency of mice to escape to a
+      visible platform and their swimming speed. Figure 1A shows that there were no
+      differences between groups in escaping to the visible platform [F(2,55) = .61,
+      ns] although all groups became more proficient in escaping to the visible platform
+      over the course of the 6 training trials [F(55,5) = 31.62, p < .0001]. Similar
+      results were apparent in the pathlength the mice took to reach the visible escape
+      platform, which showed no main effect of group [F(2,55) = 1.23, ns] but a general
+      decrease in distance travelled with increased training [F(55,5) = 28.35, p <
+      .0001, data not shown]. Table 3 shows that mice treated with *R*-flurbiprofen,
+      regardless of length of administration, had modest but significantly lower swimming
+      speed [F(2,55) = 4.11, p < .05].\\\\n\\\\n#### *Spatial reference memory*\\\\n\\\\nFigure
+      1B shows the search error in the acquisition of the spatial reference memory
+      task. All groups became more proficient with increased training [F(55, 9) =
+      8.38, p < .0001]. A significant interaction between training day and group indicated
+      that the groups differed on certain days but there was no main effect of drug-treatment
+      group [F(2,55) = 1.16, ns]. *Post hoc* Fisher's PLSDs for each day revealed
+      the following differences: on day 4, there was a significant difference between
+      the Control and the Preventative group (p < .05); on days 7, 8, and 10 there
+      was a significant difference between the Therapeutic and the Preventative *R*-flurbiprofen
+      groups (p < .05); on day 9 there was a significant difference between the Control
+      and Therapeutic group (p < .05). The general pattern indicates that the oldest
+      group of mice that only received drug for 2 weeks (Therapeutic) performed more
+      poorly than the vehicle and 16-week *R*-flurbiprofen-treated (Preventative)
+      groups on the last few days of training trials. Similar results were obtained
+      with latency (day \xD7 group interaction, F(2,55) = 1.77, p < .05) and pathlength
+      measures (day \xD7 group interaction, F(2,55) = 2.02, p < .01), data not shown.\\\\n\\\\nThe
+      spatial bias of the mice for the location of the hidden escape platform is shown
+      by the percent of time the mice spent in the quadrant of the maze that contained
+      the platform during the three interpolated probe trials (Figure 1C). A main
+      effect of group [F(2,55) = 3.91, p < .05] and a significant interaction between
+      group and probe trial [F(4,110)= 6.52, p < .0001] indicates that the mice in
+      the Preventative *R*-flurbiprofen treatment group significantly increased their
+      spatial bias on the third probe trial (post hoc one-way ANOVA (\xD7 Group) on
+      Probe 3, [F(2,55) = 12.10, p < .0001]). The performance of the Preventative
+      group is significantly different from both the Control and the Therapeutic group
+      (Fisher's PLSD p's < .0005). Figure 1D shows representative swim paths of the
+      control and the Preventative group during the third probe trial. The swimming
+      paths of the *R*-flurbiprofen-treated mice demonstrate a more localized search
+      pattern over the location of the hidden escape platform (bottom left quadrant),
+      indicating a well-formed spatial bias.\\\\n\\\\n#### *Strategy preference*\\\\n\\\\nIn
+      accordance with the increased spatial bias of the mice on the *R*-flurbiprofen
+      Preventive regimen, these mice also show a significant preference for using
+      a hippocampal-\\\\n\\\\n**Table 2: Subject**\\\\n\\\\n| Water Maze | Control
+      Groups<br>Tg2575 mice not administered R-fluribiprofen |         |      | Drug
+      Treatment Groups<br>Tg2576 mice administered 10 mg/kg R-flurbiprofen |           |
+      \        |      |                              |\\\\n|------------|----------------------------------------------------------------|---------|------|---------------------------------------------------------------------------|-----------|---------|------|------------------------------|\\\\n|
+      \           | Initial N                                                      |
+      Final N | Died | Failed Cue Training or Blind                                              |
+      Initial N | Final N | Died | Failed Cue Training or Blind |\\\\n| Exp. 1     |
+      18                                                             | 13      | 3
+      \   | 2                                                                         |
+      13        | 11      | 0    | 2                            |\\\\n| Exp. 2     |
+      17                                                             | 13      | 1
+      \   | 3                                                                         |
+      14        | 10      | 1    | 3                            |\\\\n| Exp. 3     |
+      15                                                             | 12      | 0
+      \   | 3                                                                         |
+      15        | 13      | 1    | 1                            |\\\\n\\\\n**Table
+      3: Swim Speed**\\\\n\\\\n| Group                     | Swim Speed (m/sec \xB1
+      SE) |  |  |  |  |\\\\n|---------------------------|-------------------------|--|--|--|--|\\\\n|
+      Controls                  | .191 \xB1 .005             |  |  |  |  |\\\\n| Preventative
+      (Exp. 1 & 2) | .169 \xB1 .010*            |  |  |  |  |\\\\n| Therapeutic (Exp.
+      3)      | .167 \xB1 .008*            |  |  |  |  |\\\\n\\\\n<sup>\\\\\\\\*</sup>p
+      < .05 compared to Controls, Fisher's PLSD\\\\n\\\\ndependent place learning
+      strategy compared to the Control and Therapeutic groups (\u03C72 = 11.23, p
+      < .01), shown in Figure 1E. The Control and the Therapeutic groups both preferred
+      the use of a cue response on the competition test, thought to indicate the use
+      of a striatal-based learning strategy [40].\\\\n\\\\n#### *Assessment of A*\u03B2
+      *loads*\\\\n\\\\nAt the conclusion of behavioural testing, mice were sacrificed
+      and assessed for biochemical loads of A\u03B2 using sequential extraction first
+      of detergent soluble A\u03B2 followed by formic acid (FA) soluble A\u03B2. Although
+      both groups of mice on the preventive dose of *R*-flurbiprofen (experiments
+      1 & 2) displayed similar improvements of spatial learning and were pooled for
+      analysis of behaviour, they were aged for different lengths of time following
+      the end of water maze testing and were expected to have different levels of
+      A\u03B2 deposition (see Table 1). Thus, these groups were separated for biochemical
+      analysis of A\u03B2 levels.\\\\n\\\\nWe observed no significant differences
+      in detergent soluble A\u03B240 or A\u03B242 levels between the treated and control
+      groups in experiments 1, 2 or 3 (Fig 2) as measured by peptide specific sandwich
+      ELISAs. In experiment 1, preventative *R*-flurbiprofen treatment and sacrifice
+      at 15 months of age resulted in a non-significant reduction in FA A\u03B240
+      (24%) and A\u03B242 (23%) levels (Fig 2). In experiment 2, a preventative *R*-flurbiprofen
+      regime and sacrifice at 13 months of age produced no change in A\u03B240 levels
+      but a 34% decrease in the levels of FA A\u03B242, which did not reach significance
+      (p < 0.25). In experiment 3, a 2-week therapeutic treatment with *R*-flurbiprofen
+      in 20-monthold mice produced a non-significant lowering of A\u03B240 (14%) and
+      a significant lowering of A\u03B242 (17%) (p < 0.05). Assessment of total A\u03B2
+      plaque load using immunohistochemical quantification failed to reveal significant
+      differences after long-term *R*-flurbiprofen treatment (experiment 2). In contrast,
+      short-term treatment with *R*flurbiprofen at 20 months of age (experiment 3)
+      resulted in a significant decrease in A\u03B2 plaque burden as measured by the
+      percent immunoreactive area (Fig 3C, p < 0.001).\\\\n\\\\n# **Discussion and
+      conclusion**\\\\n\\\\nWe have found that chronic administration of *R*-flurbiprofen
+      is able to attenuate spatial learning deficits in Tg2576 mice that began treatment
+      at 8 months of age. The improved spatial learning ability of the *R*-flurbiprofentreated
+      mice was indicated by an increased spatial bias during the third probe trial
+      and the increased preference for using a place strategy on the strategy preference
+      test. These results are consistent with an improvement in hippocampal/medial
+      temporal lobe-dependent memory function [40]. A short 2-week administration
+      of *R*-flurbiprofen in 19-month-old Tg2576 mice with AD-like A\u03B2 loads had
+      no effect on cognitive performance. Unfortunately, long-term treatment of aged
+      Tg2576 mice with the same dose of *R*-flurbiprofen results in enhanced morbidity
+      and mortality (not shown), making it difficult to perform an experiment in which
+      older mice are treated for the same period of time.\\\\n\\\\nBoth long- and
+      short-term treatment of Tg2576 mice with *R*-flurbiprofen resulted in a decrease
+      in the swim speed of the mice. It is possible that the decrease in swim speed
+      in the *R*-flurbiprofen-treated mice observed in this study reflects a general
+      effect of returning motor activity to normal levels in Tg2576 mice. Decreases
+      in swim speed reported in this study are unlikely to account for the effects
+      of *R*-flurbiprofen on our measures of hippocampal-dependent memory as *R*-flurbiprofen
+      was an effective modulator of swim speed with both the Preventative and Therapeutic
+      treatment regimens but only the Preventative treatment regimen increased spatial
+      learning ability in the Tg2576 mice.\\\\n\\\\n*R*-flurbiprofen has been demonstrated
+      to lower steadystate A\u03B242 levels after 3 days of oral administration in
+      Tg2576 mice [30]. In this study, however, the results indicate that a preventative
+      treatment strategy of *R*-flurbiprofen administration does not significantly
+      alter soluble, RIPA extracted-A\u03B240 or 42 but does reduce insoluble, formic
+      acid-soluble A\u03B2 levels 24\u201334%, although the decrease is not statistically
+      significant (Fig 2). Interestingly, the preventative treatment had no effect
+      on plaque burden (Fig 3). These results contrast with the therapeutic, or shortterm,
+      treatment in 18-month-old mice where formic-acid soluble A\u03B242 levels and
+      the A\u03B2 plaque burden was significantly decreased. The reduction in A\u03B242
+      levels and plaque burden did not improve spatial learning in the 18 month-old
+      mice. Clearly, these results indicate that the length of time *R*-flurbiprofen
+      is administered and the age at which treatment is started are critical factors
+      in producing beneficial effects on cognition. The relationship between cognitive
+      improvement and A\u03B2 is controversial. Improvement in spatial memory in Tg2576
+      mice has been shown to occur using a preventative regime of ginko biloba or
+      alpha lipoic acid without a corresponding change in A\u03B2 levels or deposition
+      [41,42]. In addition, several studies now show that cognitive impairment in
+      Tg2576 mice and other APP mice does not correlate well\\\\n\\\\n![](_page_5_Figure_2.jpeg)\\\\n\\\\nSensory
+      motor and spatial learning **Figure 1** ability measured in the water maze **Sensory
+      motor and spatial learning ability measured in the water maze**. 1A shows the
+      latency to escape to the visible escape platform during cue training. There
+      are no differences in the performance of any of the groups. 1B shows the search
+      error during the acquisition of the spatial reference memory task. The 2-week
+      *R*-flurbiprofen-treated mice (Therapeutic group) performed more poorly than
+      the other groups (Preventative group) on days 4, 7, 8, 9 and 10. 1C shows that
+      only the Tg2576 mice treated for 16 weeks (Preventative group) with *R*-flurbiprofen
+      developed a spatial bias for the training quadrant. 1D shows representative
+      swim paths of the Control and the Preventative groups during Probe Trial 3.
+      Note that the *R*-flurbiprofen-treated mice focus their search in the training
+      quadrant that contained the hidden escape platform (bottom left quadrant). 1E
+      shows the percent of subjects that preferred using a cue or place strategy during
+      the strategy competition. 80% of the Tg2576 mice in the Preventative group preferred
+      using a place strategy compared to only 30% of the Control and 31% of the Therapeutic
+      group (Chi-square = 11.23, p < .01).\\\\n\\\\n![](_page_6_Figure_2.jpeg)\\\\n\\\\nFigure
+      2 ELISA quantitation of  $A\\\\\\\\beta$  levels in Tg2576 from water maze experiments.
+      The levels of detergent soluble (RIPA or SDS) and formic acid soluble  $A\\\\\\\\beta$
+      \ I-40 and  $A\\\\\\\\beta$  I-42 in R-flurbiprofen treated mice from the three
+      water mazes are plotted as percent control. The mean  $A\\\\\\\\beta$  levels
+      +/- the standard error from control mice are shown below each graph. The absolute
+      values (pmoles/gram tissue) of formic acid soluble  $A\\\\\\\\beta$ 40 and  $A\\\\\\\\beta$
+      42 levels from individual animals are plotted against one another to show the
+      distribution of individual animals from experimental groups. \\\\\\\"Preventative
+      I and Preventative 2\\\\\\\" refers to two different experiments examining the
+      effects of 4 months of administration of R-flurbiprofen to Tg2576 mice. \\\\\\\"Therapeutic\\\\\\\"
+      refers to 2 weeks administration of R-flurbiprofen.\\\\n\\\\nwith A $\\\\\\\\beta$
+      \ deposition and may be attributable to small soluble assemblies of A $\\\\\\\\beta$
+      \ [43,44]. Moreover, cognitive improvement can be seen following anti-A $\\\\\\\\beta$
+      \ immunotherapy, even when there is no significant alteration in A $\\\\\\\\beta$
+      \ deposition [45-49]. It is possible that delaying interventions until pathology
+      is well-developed may prevent functionally significant changes in learning and
+      memory due to irreversible changes in synaptic transmission.\\\\n\\\\nThe reason
+      that the two-week therapeutic-regimen in older Tg2576 (19\u201320 month) did
+      not lead to significant behavioral improvement is not readily apparent. However,
+      since it appears that chronic treatment with *R*-flurbi-\\\\n\\\\n![](_page_6_Figure_6.jpeg)\\\\n\\\\nFigure
+      3 Effect of R-flurbiprofen treatment on amyloid-\u03B2 plaques in Tg2576 mice.
+      Brain sections of representative Control and R-flurbiprofen-treated mice from
+      water maze Experiment 3 (20 months at sacrifice) were stained for A\u03B2 plaques
+      using antibody 33.1.1 (A) and thioflavin (B). In (C), the level of A\u03B2 plaque
+      burden (quantified as % A\u03B2 immunoreactive area) in Control compared to
+      R-flurbiprofen treated-Tg2576 mice from Experiments 2 and 3 are compared. Note
+      the significant reduction in plaque burden in the R-flurbiprofen treated mice
+      from Experiment 3 (\\\\\\\\*\\\\\\\\*\\\\\\\\* p < 0.0001).\\\\n\\\\nprofen
+      is necessary in Tg2576 mice for spatial learning augmentation, it seems unlikely
+      that the drug is working through the same mechanism as the anti-AB antibodies,
+      which have been reported to work rapidly [48]. Furthermore, our more recent
+      experience with behavioral testing of APP mice suggests that negative results
+      be interpreted cautiously, since assessment of the cognitive phenotype in APP
+      mice can be variable even among cohorts of mice bred and housed in the same
+      environment (unpublished observations). Moreover, it is possible that behavioral
+      testing and analysis of Tg2576 mice itself alters A\u03B2 burden since it has
+      been shown that enrichment paradigms, such as access to running wheels, appear
+      to be capable of altering A $\\\\\\\\beta$  deposition and cognition [50,51].
+      In future studies it will be important to control for possible effects of behavioral
+      training on AB deposition by including cohorts of treated and untreated mice
+      that are not subject to behavioral testing.\\\\n\\\\nIn humans, *R*-flurbiprofen
+      appears to be safe and is welltolerated, with relatively few side effects [39]
+      and undergoes minimal racemization to the *S*-enantiomer [36]. In contrast,
+      following oral administration to mice ~20\u201340% of the *R*-flurbiprofen is
+      converted to the S-enantiomer (see Results; [52]). This conversion is likely
+      to account for toxicity observed upon chronic dosing regimens more likely to
+      alter A\u03B242 production. Overall, our data demonstrate a clear cognitive
+      benefit of long-term administration, but are inconclusive with respect to the
+      relationship between effects on A\u03B2 deposition and behavioural improvements.
+      Previous studies have shown that chronic treatment with nitric oxide-releasing
+      flurbiprofen derivatives do lower A\u03B2 accumulation in APP mice, but it is
+      not clear if this effect is due to the prodrug (which is not likely to affect
+      A\u03B242 production) or flurbiprofen released following metabolism [27,53].
+      In this study we see trends towards reduced A\u03B2 deposition in the prevention
+      studies and small but significant decrease in A\u03B2 deposition in the therapeutic
+      study.\\\\n\\\\nA\u03B242-lowering NSAIDs have been shown to affect multiple
+      pathways and targets that could alter the AD phenotype, any of which could contribute
+      to their ability to protect against the development of AD [18]. For instance,
+      certain NSAIDs reduce production of the more amyloidogenic A\u03B2 peptide by
+      altering \u03B3-secretase cleavage of APP [29,30]. While other NSAIDs have also
+      been shown to directly inhibit A\u03B2 aggregation *in vitro* [54,55]. They
+      may also decrease BACE expression through activation of PPAR\u03B3 leading to
+      decreased levels of A\u03B2 [56]. In addition, more classic anti-inflammatory
+      activities against cyclooxygenase as well as additional non-intended target
+      activities against lipoxygenase and NFk-\u03B2 could mediate beneficial effects
+      [18]. In contrast, *R*-flurbiprofen is not a classic NSAID in humans because
+      it does not significantly inhibit cycloxygenase enzymes; however, it is similar
+      in structure and could bind to other known targets of NSAIDs as well as unknown
+      targets. Given the data presented here which suggests that *R*-flurbiprofen
+      improves cognitive performance in APP mice it will be important in future studies
+      to further delineate the underling mechanisms that contribute to efficacy of
+      *R*-flurbiprofen as a potential AD therapeutic.\\\\n\\\\nTaken together, the
+      results from this study show that chronic treatment with *R*-flurbiprofen beginning
+      at an early stage of cognitive dysfunction maybe necessary to improve learning
+      impairments, at least in the Tg2576 APP mouse model. An important caveat is
+      that these results were obtained using a sub-optimal dose of *R*-flurbiprofen,
+      which was necessitated by the toxicity of the compound at higher doses in these
+      mice, most likely caused by bioinversion to *S*-flurbiprofen and the subsequent
+      COX-mediated gastrointestinal toxicity that is not seen in humans. Thus, extrapolating
+      this dosing paradigm and results to human AD patients is difficult at best.
+      The ongoing phase 3 clinical trial of *R*-flurbiprofen in mild AD patients should
+      provide the most conclusive test to date of the efficacy of this drug, and the
+      general strategy of selectively lowering A\u03B242, in modifying the underlying
+      disease progression and associated cognitive decline in AD.\\\\n\\\\n#### **Methods**
+      *Animals*\\\\n\\\\nAll animal husbandry and testing procedures performed were
+      approved by the Mayo Clinic Institutional Animal Care and Use Committee in accordance
+      with NIH guidelines. Female Tg2576 mice were generated and confirmed by genotyping
+      as described previously [57,58]. All animals were housed 3\u20135 to a cage
+      and maintained on ad libitum food and water with a 12-hour light/dark cycle
+      in a controlled environment. One week prior to and during water maze testing
+      animals were individually housed. *R*-Flurbiprofen, at a concentration of 67,
+      167.5 or 335 or mg per kg of diet was homogenously incorporated into Harlan
+      Teklad 7012 kibble by Research Diets, Inc. Based upon dietary consumption of
+      diet at this age, these diets were designed to result in 10, 25 or 50 mg *R*-flurbiprofen
+      on average per day. By monitoring daily consumption on the dose designed to
+      deliver 10 mg/kg/day, we estimate that the mice received between 8\u201312 mg
+      *R*-flurbiprofen per kg body weight per day. Kibble consumption, general health
+      and body weight were monitored on a weekly basis. For behavioral experiments,
+      all mice were negative for the retinal degeneration mutation that occurs in
+      approximately 25% of the mice in our colony [59].\\\\n\\\\n# **R***-Flurbiprofen
+      experiments*\\\\n\\\\nThe mice were assigned to a \\\\\\\"Preventative\\\\\\\"
+      or a \\\\\\\"Therapeutic\\\\\\\" experimental group based on age. *R*-Flurbiprofen
+      was administered at a concentration of 10 mg/kg/day for all experiments. In
+      the two \\\\\\\"Preventative\\\\\\\" experiments (experiments 1 and 2), dosing
+      was started at ages prior to or early in the emergence of cognitive deficits,
+      between 8 and 9 months of age, and treatment continued for 4 months. Treated
+      and untreated mice were then assessed for spatial learning ability in the Morris
+      water maze at approximately 12 months of age when learning deficits are usually
+      present (e.g. [43]). In a \\\\\\\"Therapeutic\\\\\\\" experiment (experiment
+      3), Tg2576 mice were given 2 weeks of *R*-flurbiprofen prior to water maze testing,
+      starting at 18 months of age when A\u03B2 levels have already increased and
+      cognitive deficits are normally present.\\\\n\\\\n#### *Spatial learning assessment*\\\\n\\\\nAt
+      the conclusion of the drug-treatment phase, mice were assessed for spatial reference
+      memory in the Morris water maze. Subjects were maintained on their appropriate
+      drug regime during behavioral evaluation. The water maze was chosen as the testing
+      paradigm as spatial learning in the water maze has been extensively used to
+      measure hippocampal function and age-associated cognitive impairment in rodents
+      (e.g., [60]).\\\\n\\\\nThe water maze consists of a circular tank (4-ft dia)
+      with a removable escape platform centered in one of the four maze quadrants.
+      During testing, the tank is filled with 25\xB0C water clouded by non-toxic white
+      paint. For training trials, the top of the escape platform is submerged .05
+      cm below the water surface. Black curtains with white patterns surround the
+      maze. Data are analyzed using a video tracking system and software developed
+      by Richard Baker, HVS Image Analyzing (Hampton, U.K.).\\\\n\\\\nCue training
+      occurs prior to hidden platform trials to test for sensorimotor and motivational
+      factors that may influence spatial learning. There is one day of cue training,
+      containing 6 trials. A visible black platform that extends 2 cm from the water
+      surface is moved to different locations in the pool between trials and the subject's
+      entry point into the tank randomized. Each mouse is given 30 sec to reach the
+      platform and remains on the platform briefly. Trials are separated by a 5\u201310
+      minute intertrial interval. Mice that performed +/- three times the standard
+      deviation from the mean were excluded from further study. This accounted for
+      approximately 20% of the initial number of mice. In addition, mice that exhibited
+      stereotypic behaviour such as compulsive circling were also excluded from behavioral
+      analysis (< 1%).\\\\n\\\\nFor hidden platform training trials, there are 4 trials
+      a day for 10 days. The animal is placed in the water at the pool's perimeter
+      and allowed 60 seconds to locate the stationary escape platform. These trials
+      generate the search error score that reflects the animal's distance from the
+      platform throughout their search. The search error reflects the cumulative proximity
+      of the mouse from the escape platform during the training trial. The position
+      of entry for the animal is varied at each trial. There is a 5\u201310 minute
+      intertrial interval. The first trial of training days 4, 7, and 10 consists
+      of a 30 sec probe trial that serves to assess the development of a spatially
+      localized search for the escape platform. During such trials, the escape platform
+      is unavailable for escape.\\\\n\\\\nStrategy preference was assessed 24 hours
+      after the last day of place training. A visible platform was placed in the quadrant
+      opposite the training quadrant where the hidden platform was previously located.
+      The mice were given two 60-second strategy probe trials. Start locations were
+      on either side of the tank, equidistant from the visible cue platform and the
+      prior hidden platform location. A \\\\\\\"place strategy\\\\\\\" was recorded
+      if the mouse crossed the annulus of the prior hidden platform location before
+      escaping to the visible platform. The annulus was defined as a 5 cm perimeter
+      around the prior hidden escape platform location. A \\\\\\\"cue strategy\\\\\\\"
+      was recorded if the mouse did not cross the prior hidden platform annulus before
+      swimming to the visible platform. Data was scored by observation of recorded
+      swim paths by the HVS Imaging program.\\\\n\\\\n#### *Analysis of flurbiprofen
+      levels in brains of Tg2576 mice*\\\\n\\\\nMouse hemibrains or cerebella were
+      homogenized in two volumes of HPLC-grade water (\u03BCL per mg) with a Turrax
+      T8 homogenizer followed by centrifugation of homogenates at 2,000 g 4\xB0C,
+      for 10 min. Concentrations of *R* and *S*-flurbiprofen in extracts were determined
+      against untreated brain extracts including drug standards, with a range of quantification
+      between 1\u20131,000 ng/ml using tandem liquid chromatography-mass spectrometry-mass
+      spectrometry as previously described [31].\\\\n\\\\nMethanol (200 \u03BCL) was
+      used to precipitate proteins from 100 \u03BCL of brain homogenate followed by
+      fortification with an internal standard (deuterated racemic flurbiprofen). Samples
+      were mixed for two minutes in a Captiva filter plate on a plate shaker before
+      being transferred to a vacuum apparatus. Vacuum (1 mm Hg) was applied for three
+      minutes and filtered extracts were collected in a new 96-well plate ready for
+      LC-MS/MS analysis.\\\\n\\\\nA calibration curve for the quantitative determination
+      of each compound was made in the range of 1 to1000 ng/ mL. Each 10\xD7 spiking
+      solution (10 \u03BCL) was added to 90 \u03BCL of blank mouse brain homogenate
+      (prepared as above) to generate the curve. Three QC samples were made at each
+      different concentration of 80, 320 and 800 ng/mL to determine the validity of
+      the calibration curve. Standard curve and QC points were prepared in the same
+      manner as the samples for analysis.\\\\n\\\\nFollowing sample preparation, 10
+      \u03BCL of sample extract was injected onto a Daicel ChiralPAK AD-RH 4 \xD7
+      150 mm column and eluted at 0.55 mL/min using the following isocratic mobile
+      phase: 90% methanol, 5% acetonitrile, 5% water and 0.1% acetic acid. Compounds
+      were detected using an ABI 4000 Q-Trap linear ion trap mass spectrometer in
+      Multiple Reaction Monitoring mode with the following mass transitions monitored:
+      m/z 243.3\u2192199.1 for 7869 and *S*-flurbiprofen and m/z 246.3\u2192202.1
+      for the deuterated 7869 and *S*-flurbiprofen internal standard.\\\\n\\\\n###
+      *Analysis of A*\u03B2 *levels in Tg2576 mice*\\\\n\\\\nBrains of mice were divided
+      by midsagittal dissection after sacrifice by CO2 asphyxiation. One hemibrain
+      was fixed in 4% paraformaldehyde for immunohistochemical studies and the other
+      flash frozen in isopentane and used for biochemical analysis as described previously
+      [61]. Briefly, each hemibrain (150 mg/ml wet wt) was extracted in\\\\n\\\\neither
+      1\xD7 RIPA buffer or 2% SDS with complete protease inhibitor (Roche) using a
+      PowerMax 200 homogenizer (VWR), followed by centrifugation at 100,000 g for
+      1 hour at 4\xB0C. Following centrifugation, the supernatant was collected, which
+      represented the detergent-soluble fraction. The resultant pellet was then extracted
+      in 70% FA, using a probe sonicator 3000 (Misonix), centrifuged at 100,000 g
+      for 1 hour at 4\xB0C, and the supernatant collected. Extracted A\u03B2 was measured
+      using a sandwich ELISA system utilizing monoclonal antibodies developed at Mayo
+      Clinic that has been described before in detail [31,61]. To measure A\u03B242
+      levels-peptides were captured with mAb 2.1.3 (specific for the c-terminus of
+      A\u03B242) and detected with HRP-conjugated mAb Ab9 (specific for human A\u03B21\u201316);
+      To measure A\u03B240 levels peptides were captured with mAb Ab9 and detected
+      with HRP-conjugated mAb 13.1.1 (specific for the c-terminus of A\u03B240)\\\\n\\\\n####
+      *Immunohistology*\\\\n\\\\nHemibrains of mice were fixed in 4% paraformaldehyde
+      in 0.1 M PBS (pH 7.6) and then stained for A\u03B2 plaques as described previously
+      [61]. Paraffin sections (5 \u03BCm) were pretreated with 80% FA for 5 minutes,
+      boiled in water using a rice steam cooker, washed, and immersed in 0.3% H2O2
+      for 30 minutes to block intrinsic peroxidase activity. They were then incubated
+      with 2% normal goat serum in PBS for 1 hour, with 33.1.1 (A\u03B21\u201316 mAb)
+      at 1 \u03BCg/ml dilution overnight, and then with HRP-conjugated goat anti-mouse
+      secondary mAb (1:500 dilution; Amersham Biosciences) for 1 hour. Sections were
+      washed in PBS, and immunoreactivity was visualized by 3,3'-diaminobenzidine
+      tetrahydrochloride (DAB) according to the manufacturer's specifications (ABC
+      system; Vector Laboratories). Adjacent sections were stained with 4% thioflavin-S
+      for 10 minutes. Fixed, paraffin-embedded sections were stained for activated
+      microglia using anti-Iba1 (1:3000; Wako Chemicals) and for activated astrocytes
+      using anti-GFAP (1:1000, Chemicon).\\\\n\\\\n#### *Quantitation of amyloid plaque
+      burden*\\\\n\\\\nComputer-assisted quantification of A\u03B2 plaques was performed
+      in a blinded fashion as described previously [62]. Serial coronal sections were
+      stained with 33.1.1 and plaques were quantified (calculated as proportional
+      area of plaque burden) in the neocortex of the same plane of section for each
+      mouse (~10 sections per mouse) using MetaMorph 6.1 software (Universal Imaging
+      Corp, Downington, PA).\\\\n\\\\n#### *Statistical analysis*\\\\n\\\\nExperiments
+      1 and 2 were replicate experiments investigating the long-term treatment effects
+      of *R*-flurbiprofen on spatial memory. The results from the two studies paralleled
+      each other, but the N was relatively small in experiment 2 compared to experiment
+      1 (experiment 1, control N = 12, *R*-flurbiprofen = 9; experiment 2, control
+      = 6, *R*flurbiprofen = 6). There were no differences between the 12-month-old
+      control mice from experiments 1 and 2 (N = 18) when compared to the 19-month-old
+      control mice from experiment 3 (N = 12) on visible platform latency [F(1,28)
+      = .15, ns], hidden platform search error [F(1,28) = .003, ns] or the percent
+      time in training quadrant [F(1,28) = .05, ns]. Therefore, for subsequent analysis
+      of the behavioral data, the control groups from all three experiments were collapsed
+      into one group for statistical power and clarity of presentation. The final
+      groups were: vehicle control (N = 30), the collapsed group of experiments 1
+      and 2 (16-week-*R*-flurbiprofen treatment, preventative regimen, N = 15) and
+      experiment 3 (2-week-*R*flurbiprofen treated, therapeutic regimen, N = 15).
+      Repeated measures ANOVAs (\xD7 Group) were then used to examine visible platform
+      latency, hidden platform search error and probe trial data. Significant interactions
+      were examined *post hoc* by one-way ANOVAs and Fisher's PLSDs. Chi-square analysis
+      was done on the number of subjects categorized as \\\\\\\"place\\\\\\\" or \\\\\\\"cue\\\\\\\"
+      learners during the strategy preference test. For presentation purposes, this
+      data was converted to the percent of subjects.\\\\n\\\\n#### **Abbreviations**\\\\n\\\\nAlzheimer's
+      disease (AD); Alzheimer's Disease Cooperative Study Activities of Daily Living
+      Index (ADCS-ADL); Alzheimer's Disease Assessment Scale cognitive subscale (ADAS-cog);
+      amyloid beta peptide (A\u03B2); Amyloid Precursor Protein (APP); Clinical Dementia
+      Rating-Sum of Boxes (CDR-SB); cyclooxygenase (COX); diaminobenzidine (DAB);
+      enyzme-linked immunosorbent assay (ELISA); horseradish peroxidise (HRP); phosphate-buffered
+      saline (PBS); Mini-Mental Status Examination (MMSE); Morris water maze (WM);
+      non-steroidal antiinflammatory drugs (NSAIDs); RIPA (radioimmuno precipitation
+      assay); sodium dodecyl sulfate (SDS)\\\\n\\\\n#### **Authors' contributions**\\\\n\\\\nTK
+      participated in watermaze studies, performed A\u03B2 ELISA measurements and
+      analysis, participated in the conception, design and execution of the study
+      and helped to draft the manuscript. SP participated in watermaze studies. JLE
+      participated in watermaze studies, performed A\u03B2 ELISA measurements and
+      participated in the conception and design of the study. VH participated in A\u03B2
+      histology and quantification. MPM carried out A\u03B2 immunoassays. EK participated
+      in the conception of the study. TEG participated in the conception, design and
+      coordination of the study and helped to draft the manuscript. MMN participated
+      in the conception, design, and coordination of the study, performed statistical
+      analysis and helped to draft the manuscript.\\\\n\\\\n## **Acknowledgements**\\\\n\\\\nThese
+      studies were funded by the US National Institutes of Health National Institute
+      on Aging and the Alzheimer's Association (P01 AG20206 to E.K. and T.G.; NIRG
+      02-4082 to M.M.N.). Additional resources from the Mayo Foundation provided by
+      a gift from Robert and Clarice Smith were used to support the Tg2576 mouse colony
+      that provided the mice used in these studies. T.K. was supported by a Smith
+      Fellowship in Neurological Disease Research. J.E. was supported by a John Douglas
+      French Foundation fellowship grant. We thank K. Jessing and J. Scott Patton
+      at Myriad Pharmaceuticals for analyzing flurbiprofen levels. The authors acknowledge
+      the technical assistance of Linda Rousseau, Virginia Phillips, Monica Casey-Castanedes
+      in the Neuropathology Laboratory at Mayo Clinic Jacksonville which is supported
+      by NIH grants \u2013 P50-NS40256, P50-AG16574, P50-AG25711, P01- AG17216 and
+      P01-AG03949.\\\\n\\\\n#### **References**\\\\n\\\\n- 1. Blennow K, de Leon MJ,
+      Zetterberg H: **Alzheimer's disease.** *The Lancet* **368(9533):**387-403.\\\\n-
+      2. Golde TE, Eckman CB, Younkin SG: **[Biochemical detection of](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10899442)
+      [Abeta isoforms: implications for pathogenesis, diagnosis,](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10899442)
+      [and treatment of Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10899442)**
+      *Biochim Biophys Acta* 2000, **1502(1):**172-187.\\\\n- 3. Younkin SG: **[The
+      role of A beta 42 in Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=9789825)**
+      *J Physiol Paris* 1998, **92(3-4):**289-292.\\\\n- 4. Selkoe DJ: **[Clearing
+      the brain's amyloid cobwebs.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11683988)**
+      *Neuron* 2001, **32(2):**177-180.\\\\n- 5. Selkoe DJ, Podlisny MB: **Deciphering
+      the genetic basis of alzheimer's disease.** *Annual Review of Genomics and Human
+      Genetics* 2002, **3(1):**67-99.\\\\n- 6. Scheuner D, Eckman C, Jensen M, Song
+      X, Citron M, Suzuki N, Bird TD, Hardy J, Hutton M, Kukull W, Larson E, Levy-Lahad
+      E, Viitanen M, Peskind E, Poorkaj P, Schellenberg G, Tanzi R, Wasco W, Lannfelt
+      L, Selkoe D, Younkin S: **[Secreted amyloid beta-protein similar](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8705854)
+      [to that in the senile plaques of Alzheimer's disease is](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8705854)
+      increased in vivo by the presenilin 1 and 2 and APP muta[tions linked to familial
+      Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8705854)**
+      *Nat Med* 1996, **2(8):**864-870.\\\\n- 7. Duff K, Eckman C, Zehr C, Yu X, Prada
+      CM, Perez-tur J, Hutton M, Buee L, Harigaya Y, Yager D, Morgan D, Gordon MN,
+      Holcomb L, Refolo L, Zenk B, Hardy J, Younkin S: **[Increased amyloid-](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8878479)
+      [\\\\\\\\[beta\\\\\\\\]42\\\\\\\\(43\\\\\\\\) in brains of mice expressing mutant
+      presenilin](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8878479)
+      [1.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8878479)**
+      *Nature* 1996, **383(6602):**710-713.\\\\n- 8. Games D, Adams D, Alessandrini
+      R, Barbour R, Borthelette P, Blackwell C, Carr T, Clemens J, Donaldson T, Gillespie
+      F, Guido T, Hagopian S, Johnson-Wood K, Khan K, Lee M, Leibowitz P, Lieberburg
+      I, Little S, Masliah E, McConlogue L, Montoya-Zavala M, Mucke L, Paganini L,
+      Penniman E, Power M, Schenk D, Seubert P, Snyder B, Soriano F, Tan H, Vitale
+      J, Wadsworth S, Wolozin B, Zhao J: **[Alzhe](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=7845465)[imer-type
+      neuropathology in transgenic mice overexpress](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=7845465)[ing
+      V717F \\\\\\\\[beta\\\\\\\\]-amyloid precursor protein.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=7845465)**
+      *Nature* 1995, **373(6514):**523-527.\\\\n- 9. Iijima K, Liu HP, Chiang AS,
+      Hearn SA, Konsolaki M, Zhong Y: **[Dis](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15069204)[secting
+      the pathological effects of human Abeta40 and](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15069204)
+      Abeta42 in Drosophila: a potential model for Alzheimer's [disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15069204)**
+      *Proc Natl Acad Sci U S A* 2004, **101(17):**6623-6628.\\\\n- 10. Greeve I,
+      Kretzschmar D, Tschape JA, Beyn A, Brellinger C, Schweizer M, Nitsch RM, Reifegerste
+      R: **[Age-dependent neurodegen](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15102905)[eration
+      and Alzheimer-amyloid plaque formation in](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15102905)
+      [transgenic Drosophila.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15102905)**
+      *J Neurosci* 2004, **24(16):**3899-3906.\\\\n- 11. Lleo A, Greenberg SM, Growdon
+      JH: **[Current pharmacotherapy](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16409164)
+      [for Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16409164)**
+      *Annu Rev Med* 2006, **57:**513-533.\\\\n- 12. Birks J: **[Cholinesterase inhibitors
+      for Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16437532)**
+      *Cochrane Database Syst Rev* 2006:CD005593.\\\\n- 13. McShane R, Areosa Sastre
+      A, Minakaran N: **[Memantine for](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16625572)
+      [dementia.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16625572)**
+      *Cochrane Database Syst Rev* 2006:CD003154.\\\\n- 14. Seltzer B: **[Cholinesterase
+      inhibitors in the clinical manage](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16989488)[ment
+      of Alzheimer's disease: importance of early and per](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16989488)[sistent
+      treatment.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16989488)**
+      *J Int Med Res* 2006, **34(4):**339-347.\\\\n- 15. Smith M, Wells J, Borrie
+      M: **[Treatment effect size of memantine](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16917181)
+      [therapy in Alzheimer disease and vascular dementia.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16917181)**
+      *Alzheimer Dis Assoc Disord* 2006, **20(3):**133-137.\\\\n\\\\n- 16. Etminan
+      M, Gill S, Samii A: **[Effect of non-steroidal anti-inflamma](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12869452)[tory
+      drugs on risk of Alzheimer's disease: systematic review](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12869452)
+      [and meta-analysis of observational studies.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12869452)**
+      *BMJ* 2003, **327(7407):**128.\\\\n- 17. McGeer PL, McGeer EG: **[Inflammation
+      and the degenerative](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15681803)
+      [diseases of aging.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15681803)**
+      *Ann N Y Acad Sci* 2004, **1035:**104-116.\\\\n- 18. Townsend KP, Pratico D:
+      **[Novel therapeutic opportunities for](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16195368)
+      [Alzheimer's disease: focus on nonsteroidal anti-inflamma](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16195368)[tory
+      drugs.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16195368)**
+      *FASEB J* 2005, **19(12):**1592-1601.\\\\n- 19. Rogers J, Kirby LC, Hempelman
+      SR, Berry DL, McGeer PL, Kaszniak AW, Zalinski J, Cofield M, Mansukhani L, Willson
+      P, Kogan F: **[Clinical](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8351023)
+      [trial of indomethacin in Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8351023)**
+      *Neurology* 1993, **43(8):**1609.\\\\n- 20. Scharf S, Mander A, Ugoni A, Vajda
+      F, Christophidis N: **[A double](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10408559)[blind,
+      placebo-controlled trial of diclofenac/misoprostol in](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10408559)
+      [Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10408559)**
+      *Neurology* 1999, **53(1):**197-201.\\\\n- 21. Aisen PS, Schafer KA, Grundman
+      M, Pfeiffer E, Sano M, Davis KL, Farlow MR, Jin S, Thomas RG, Thal LJ: **[Effects
+      of rofecoxib or](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12783912)
+      [naproxen vs placebo on Alzheimer disease progression: a](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12783912)
+      [randomized controlled trial.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12783912)**
+      *JAMA* 2003, **289(21):**2819-2826.\\\\n- 22. van Gool WA, Aisen PS, Eikelenboom
+      P: **[Anti-inflammatory ther](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12883918)[apy
+      in Alzheimer's disease: is hope still alive?](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12883918)**
+      *J Neurol* 2003, **250(7):**788-792.\\\\n- 23. McGeer PL, McGeer EG: **NSAIDs
+      and Alzheimer disease: Epidemiological, animal model and clinical studies.**
+      *Neurobiol Aging* 2006.\\\\n- 24. Lim GP, Yang F, Chu T, Chen P, Beech W, Teter
+      B, Tran T, Ubeda O, Ashe KH, Frautschy SA, Cole GM\\\", \\\"attributes\\\":
+      [{\\\"prompt\\\": \\\"List the given names of the species used in this experiment.
+      Separate each model with a semicolon, using the format: species; species; specis.\\\",
+      \\\"attribute_id\\\": 2, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\":
+      \\\"List the given names of the animal models used in this experiment. Separate
+      each model with a semicolon, using the format: model; model; model.\\\", \\\"attribute_id\\\":
+      4, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      strains of animal species involved in this experiment. Separate each strain
+      with a semicolon, using the format strain; strain; strain.\\\", \\\"attribute_id\\\":
+      5, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      target of therapeutic interventions evaluation in the experiment. Separate each
+      target with a semicolon, using the format target; target; target. If a combined
+      target is used for a single intervention, you may classify this as \\\\\\\"Multi-target\\\\\\\".
+      If multiple interventions are tested, list all targets separately. Use the full
+      name of the target.\\\", \\\"attribute_id\\\": 7, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the therapeutic interventions evaluated
+      in the experiment. Separate each intervention with a semicolon, using the format:
+      intervention\\\", \\\"attribute_id\\\": 8, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List all the outcomes measured in the experiment which
+      quantify behavioural changes (including motor, cognitive, affective). Specify
+      each of the assay/paradigm/test name in full with no abbreviations. Separate
+      each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      41, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      molecular outcomes measured in the experiment including quantitative or qualitative
+      measurements of molecules such as genes, proteins, metabolites, signalling molecules,
+      or biochemical markers. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 33, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the biomarker outcomes measured in the experiment
+      i.e. measurable indicators that often support diagnosis, indicate disease progression,
+      or health status. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 34, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the cell biology outcomes measured in the experiment.
+      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      42, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      cell chemistry outcomes measured in the experiment. Separate each outcome with
+      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 53, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the electron microscopy outcomes
+      measured in the experiment. Separate each outcome with a semicolon, using the
+      format: outcome\\\", \\\"attribute_id\\\": 56, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the electrophysiology outcomes measured in the experiment.
+      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      46, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      histopathology outcomes measured in the experiment. Separate each outcome with
+      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 35, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the imaging outcomes measured in
+      the experiment. Separate each outcome with a semicolon, using the format: outcome\\\",
+      \\\"attribute_id\\\": 57, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\":
+      \\\"List the immunohistochemistry outcomes measured in the experiment. Separate
+      each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      36, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      immunology outcomes measured in the experiment. Separate each outcome with a
+      semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 49, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Microscopy outcomes measured
+      in the experiment. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 43, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the Motor Function outcomes measured in the experiment.
+      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      44, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      Omics outcomes measured in the experiment. Separate each outcome with a semicolon,
+      using the format: outcome\\\", \\\"attribute_id\\\": 45, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Pharmacodynamics outcomes measured
+      in the experiment. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 37, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\" List the Pharmacokinetics or ADME outcomes (Absorption,
+      Distribution, Metabolism, or Excretion) measured in the experiment. Separate
+      each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      48, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      immunology outcomes measured in the experiment. Separate each outcome with a
+      semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 50, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Physiology outcomes measured
+      in the experiment. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 51, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the Protein Structures outcomes measured in the experiment.
+      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      58, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      Spectroscopy outcomes measured in the experiment. Separate each outcome with
+      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 38, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Toxicology outcomes measured
+      in the experiment. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 39, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"llm_annotation_response\",\"schema\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
+      LLM's annotation for this attribute.\",\"title\":\"Output Data\",\"type\":\"string\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
+      text from document containing the context window where the attribute is found\",\"title\":\"Additional
+      Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_2\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_4\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_7\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_8\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_41\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_33\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_34\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_42\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_53\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_56\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_46\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_35\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_57\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_36\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_49\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_43\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_44\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_45\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_37\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_48\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_50\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_51\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_58\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_38\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_39\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"}},\"required\":[\"attribute_2\",\"attribute_4\",\"attribute_5\",\"attribute_7\",\"attribute_8\",\"attribute_41\",\"attribute_33\",\"attribute_34\",\"attribute_42\",\"attribute_53\",\"attribute_56\",\"attribute_46\",\"attribute_35\",\"attribute_57\",\"attribute_36\",\"attribute_49\",\"attribute_43\",\"attribute_44\",\"attribute_45\",\"attribute_37\",\"attribute_48\",\"attribute_50\",\"attribute_51\",\"attribute_58\",\"attribute_38\",\"attribute_39\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":0.1}"
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '70534'
+      Content-Type:
+      - application/json
+      Host:
+      - DUMMY_SECRET
+      User-Agent:
+      - AzureOpenAI/Python 1.109.1
+      X-Stainless-Arch:
+      - x64
+      X-Stainless-Async:
+      - 'false'
+      X-Stainless-Lang:
+      - python
+      X-Stainless-OS:
+      - Linux
+      X-Stainless-Package-Version:
+      - 1.109.1
+      X-Stainless-Raw-Response:
+      - 'true'
+      X-Stainless-Runtime:
+      - CPython
+      X-Stainless-Runtime-Version:
+      - 3.12.11
+      x-stainless-read-timeout:
+      - '600.0'
+      x-stainless-retry-count:
+      - '0'
+    method: POST
+    uri: https://dummy.secret/
+  response:
+    body:
+      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\n
+        \ \\\"attribute_2\\\": {\\n    \\\"output_data\\\": \\\"Tg2576\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document mentions the use of Tg2576
+        mice as the primary animal model in the experiments conducted. No other species
+        are specified in the context provided.\\\"\\n  },\\n  \\\"attribute_4\\\":
+        {\\n    \\\"output_data\\\": \\\"Tg2576 APP mice\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document specifically refers to
+        Tg2576 APP mice as the animal model used in the experiments, indicating that
+        this is the only model evaluated.\\\"\\n  },\\n  \\\"attribute_5\\\": {\\n
+        \   \\\"output_data\\\": \\\"Tg2576\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The strain mentioned in the document is Tg2576,
+        which is a specific transgenic mouse model used for studying Alzheimer's disease.\\\"\\n
+        \ },\\n  \\\"attribute_7\\\": {\\n    \\\"output_data\\\": \\\"A\u03B242\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The therapeutic
+        intervention evaluated in the experiment targets A\u03B242 levels, as indicated
+        by the focus on R-flurbiprofen's ability to lower A\u03B242.\\\"\\n  },\\n
+        \ \\\"attribute_8\\\": {\\n    \\\"output_data\\\": \\\"R-flurbiprofen\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The only
+        therapeutic intervention evaluated in the experiments is R-flurbiprofen, as
+        detailed throughout the document.\\\"\\n  },\\n  \\\"attribute_41\\\": {\\n
+        \   \\\"output_data\\\": \\\"spatial learning; memory function\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The outcomes measured in the experiment
+        that quantify behavioral changes include assessments of spatial learning and
+        memory function, particularly through the Morris water maze.\\\"\\n  },\\n
+        \ \\\"attribute_33\\\": {\\n    \\\"output_data\\\": \\\"A\u03B2 levels\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document
+        discusses measuring A\u03B2 levels as a molecular outcome, specifically focusing
+        on A\u03B240 and A\u03B242.\\\"\\n  },\\n  \\\"attribute_34\\\": {\\n    \\\"output_data\\\":
+        \\\"A\u03B2 plaque burden\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document mentions assessing A\u03B2 plaque
+        burden as a biomarker outcome, indicating its relevance to the study.\\\"\\n
+        \ },\\n  \\\"attribute_42\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not specify any cell
+        biology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_53\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not mention any specific cell
+        chemistry outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_56\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not provide information on any
+        electron microscopy outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_46\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not mention any electrophysiology
+        outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_35\\\":
+        {\\n    \\\"output_data\\\": \\\"A\u03B2 plaque burden\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document discusses measuring A\u03B2
+        plaque burden as a histopathology outcome, indicating its significance in
+        the study.\\\"\\n  },\\n  \\\"attribute_57\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not specify any imaging outcomes measured in the experiment.\\\"\\n
+        \ },\\n  \\\"attribute_36\\\": {\\n    \\\"output_data\\\": \\\"A\u03B2 plaques\\\",\\n
+        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document
+        mentions the measurement of A\u03B2 plaques through immunohistochemistry as
+        part of the experimental outcomes.\\\"\\n  },\\n  \\\"attribute_49\\\": {\\n
+        \   \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not provide information on any
+        immunology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_43\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not mention any microscopy outcomes
+        measured in the experiment.\\\"\\n  },\\n  \\\"attribute_44\\\": {\\n    \\\"output_data\\\":
+        \\\"swimming speed\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document discusses measuring swimming speed as a motor function outcome
+        in the behavioral assessments.\\\"\\n  },\\n  \\\"attribute_45\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not specify any omics outcomes measured in the experiment.\\\"\\n
+        \ },\\n  \\\"attribute_37\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not provide information
+        on any pharmacodynamics outcomes measured in the experiment.\\\"\\n  },\\n
+        \ \\\"attribute_48\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
+        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not mention any pharmacokinetics
+        or ADME outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_50\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not provide information on any
+        immunology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_51\\\":
+        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
+        \   \\\"reasoning\\\": \\\"The document does not specify any physiology outcomes
+        measured in the experiment.\\\"\\n  },\\n  \\\"attribute_58\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not mention any protein structures outcomes measured
+        in the experiment.\\\"\\n  },\\n  \\\"attribute_38\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not provide information on any spectroscopy outcomes
+        measured in the experiment.\\\"\\n  },\\n  \\\"attribute_39\\\": {\\n    \\\"output_data\\\":
+        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
+        \\\"The document does not mention any toxicology outcomes measured in the
+        experiment.\\\"\\n  }\\n}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1785424080,\"id\":\"chatcmpl-E7MeWmGpR7Fwn46qG80hMoLm1mELO\",\"model\":\"gpt-4o-mini-2024-07-18\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"service_tier\":\"default\",\"system_fingerprint\":\"fp_27599ce29d\",\"usage\":{\"completion_tokens\":1249,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":0,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":10,\"engine_ttft_ms\":45,\"engine_ttlt_ms\":13153,\"pre_inference_ms\":135,\"service_tbt_ms\":10,\"service_ttft_ms\":269,\"service_ttlt_ms\":13373,\"total_duration_ms\":13247,\"user_visible_ttft_ms\":134},\"prompt_tokens\":17203,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":17152},\"total_tokens\":18452}}\n"
+    headers:
+      Content-Length:
+      - '7371'
+      Content-Type:
+      - application/json
+      Date:
+      - Thu, 30 Jul 2026 15:08:13 GMT
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      apim-request-id:
+      - f6a7977b-d859-4a9d-95cb-2d6434361e32
+      azureai-fe-is-streaming:
+      - 'False'
+      azureai-fe-requested-service-tier:
+      - PayGo
+      azureai-fe-requested-zone:
+      - default
+      azureml-model-session:
+      - d20260721024335-41ad77c6
+      skip-error-remapping:
+      - 'true'
+      x-accel-buffering:
+      - 'no'
+      x-content-type-options:
+      - nosniff
+      x-ms-deployment-name:
+      - gpt-4o-mini
+      x-ms-is-spilled-over:
+      - 'false'
+      x-ms-rai-invoked:
+      - 'true'
+      x-ms-region:
+      - Sweden Central
+      x-ms-served-model:
+      - gpt-4o-mini-2024-07-18
+      x-ratelimit-abusepenalty-active:
+      - 'False'
+      x-ratelimit-key:
+      - gpt-4o-mini
+      x-ratelimit-limit-requests:
+      - '13900'
+      x-ratelimit-limit-tokens:
+      - '1390000'
+      x-ratelimit-remaining-requests:
+      - '13899'
+      x-ratelimit-remaining-tokens:
+      - '1372797'
+      x-ratelimit-renewalperiod-requests:
+      - '60'
+      x-ratelimit-renewalperiod-tokens:
+      - '60'
+      x-ratelimit-reset-requests:
+      - '0'
+      x-ratelimit-reset-tokens:
+      - '0'
+      x-request-id:
+      - f6a7977b-d859-4a9d-95cb-2d6434361e32
+    status:
+      code: 200
+      message: OK
+version: 1
