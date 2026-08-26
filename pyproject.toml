@@ -61,7 +61,7 @@ dependencies = [
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
-requires-python = ">=3.12.11,<3.14"
+requires-python = ">=3.14.7,<3.15"
 version = "0.3.0"
 
 [project.scripts]
