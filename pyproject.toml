@@ -62,7 +62,7 @@ description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11,<3.14"
-version = "0.2.2"
+version = "0.3.0-dev.1"
 
 [project.scripts]
 deet = "deet.scripts.cli:main"
