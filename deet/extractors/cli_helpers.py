@@ -177,6 +177,7 @@ def run_extraction_pipeline(  # noqa: PLR0913
             processed_annotation_data.populate_custom_prompts(
                 method=prompt_population,
                 filepath=prompt_csv_path or deet_project.prompt_csv_path,
+                config=config,
             )
             if not processed_annotation_data.attributes:
                 fail_with_message(

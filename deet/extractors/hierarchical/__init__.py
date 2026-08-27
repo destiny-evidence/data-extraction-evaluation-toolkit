@@ -1,0 +1,1 @@
+"""Extractors for hierarchical attributes."""
