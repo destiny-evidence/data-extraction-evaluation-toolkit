@@ -1,0 +1,1976 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation website for Data Extraction & Evaluation Toolkit (DEET)">
+      
+      
+        <meta name="author" content="DESTinY Consortium">
+      
+      
+      
+        <link rel="prev" href="../data-extraction/">
+      
+      
+        <link rel="next" href="../gold-standard/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Evaluation - Data Extraction & Evaluation Toolkit (DEET)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#evaluation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Data Extraction &amp; Evaluation Toolkit (DEET)" class="md-header__button md-logo" aria-label="Data Extraction & Evaluation Toolkit (DEET)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Data Extraction & Evaluation Toolkit (DEET)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Evaluation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    destiny-evidence/data-extraction-evaluation-toolkit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Data Extraction &amp; Evaluation Toolkit (DEET)" class="md-nav__button md-logo" aria-label="Data Extraction & Evaluation Toolkit (DEET)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Data Extraction & Evaluation Toolkit (DEET)
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    destiny-evidence/data-extraction-evaluation-toolkit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-human-and-ai-extracted-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparing human and AI-extracted data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is compared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output artefacts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Output artefacts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metricscsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics.csv
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="metrics.csv">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metrics-by-attribute-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics by attribute type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#goldstandard_llm_comparisoncsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        goldstandard_llm_comparison.csv
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="goldstandard_llm_comparison.csv">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#presence-and-gold-support-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presence and gold support text
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eppi-citation-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EPPI citation fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extractions-and-llm-extras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extractions and LLM extras
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verbatim-grounding-scores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verbatim grounding scores
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llm_annotationsjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        llm_annotations.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configyaml-and-prompts_usedcsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.yaml and prompts_used.csv
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extraction_metadatajson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        extraction_metadata.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deetlog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deet.log
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#good-evaluation-practice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Good evaluation practice
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Good evaluation practice">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evaluation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Evaluation strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-null-evaluation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The null evaluation strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-dev-val-test-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dev-val-test strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gold-standard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gold standard annotated data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DeetProject: a data extraction project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Extraction Experiment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompting-strategies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompting strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The command line interface (CLI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../python/introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensible data extraction pipelines with deet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Technical Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../LICENSE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-human-and-ai-extracted-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparing human and AI-extracted data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is compared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output artefacts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Output artefacts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metricscsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics.csv
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="metrics.csv">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metrics-by-attribute-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics by attribute type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#goldstandard_llm_comparisoncsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        goldstandard_llm_comparison.csv
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="goldstandard_llm_comparison.csv">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#presence-and-gold-support-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presence and gold support text
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eppi-citation-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EPPI citation fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extractions-and-llm-extras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extractions and LLM extras
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verbatim-grounding-scores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verbatim grounding scores
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llm_annotationsjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        llm_annotations.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configyaml-and-prompts_usedcsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.yaml and prompts_used.csv
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extraction_metadatajson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        extraction_metadata.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deetlog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deet.log
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#good-evaluation-practice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Good evaluation practice
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Good evaluation practice">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evaluation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Evaluation strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-null-evaluation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The null evaluation strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-dev-val-test-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dev-val-test strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/edit/development/docs/concepts/evaluation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="evaluation">Evaluation</h1>
+<h2 id="comparing-human-and-ai-extracted-data">Comparing human and AI-extracted data</h2>
+<p>To evaluate an <a href="../experiment/">experiment</a>, deet compares compares LLM-extracted values to <a class="mkdocs-ezglossary-link"
+    id="0312356a30e603dd8ecce11713d573a0"
+    title="The &#34;ground truth&#34; data manually extracted by human experts. Used as the benchmark against which to evaluate AI-extracted data."
+    name="term:Ground Truth"
+    href="../../glossary/#892686cc180c09b387639a35a64f1f90">Ground Truth</a> annotations
+for the same documents and attributes.
+In the CLI this happens at the end of <code>deet experiments evaluate</code>, which
+writes a set of <a href="../experiment/#experiment-artefacts">experiment artefacts</a>
+under <code>data-extraction-experiments/&lt;run_id&gt;/</code>.</p>
+<p>Artefact paths are defined by
+<a href="../../reference/api/#deet.data_models.project.ExperimentArtefacts"><code>deet.data_models.project.ExperimentArtefacts</code></a>.
+Metric registries live in
+<a href="../../reference/api/#deet.data_models.evaluation"><code>deet.data_models.evaluation</code></a>.</p>
+<h2 id="what-is-compared">What is compared</h2>
+<p>For each attribute in the prompt CSV (non-empty <code>prompt</code>), and for each gold
+document, DEET collects:</p>
+<ul>
+<li><strong>Gold</strong> <code>output_data</code> from the gold-standard annotation (or the attribute's
+  missing-annotation default when the attribute is absent for that document)</li>
+<li><strong>LLM</strong> <code>output_data</code> from the model annotation for the same document and
+  attribute (<code>None</code> if the document failed extraction or produced no usable
+  annotation)</li>
+</ul>
+<p>Those parallel lists are scored with the metrics registered for the attribute's
+<a href="../../reference/api/#deet.data_models.base.AttributeType"><code>AttributeType</code></a>.</p>
+<h2 id="output-artefacts">Output artefacts</h2>
+<p>Each successful <code>deet experiments evaluate</code> run creates a new folder and writes
+the files below. <code>deet experiments predict</code> extracts without scoring, so it
+does not write <code>metrics.csv</code> or <code>goldstandard_llm_comparison.csv</code>.</p>
+<h3 id="metricscsv"><code>metrics.csv</code></h3>
+<p>One row per attribute × metric. Produced by
+<a href="../../reference/api/#deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator.write_metrics_to_csv"><code>GoldStandardLLMEvaluator.write_metrics_to_csv</code></a>
+via <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetric"><code>AttributeMetric</code></a>.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>attribute_id</code></td>
+<td>Attribute identifier</td>
+</tr>
+<tr>
+<td><code>attribute_label</code></td>
+<td>Human-readable attribute name</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>Metric score, or empty if the metric could not be computed (including when any LLM prediction is missing or invalid — same failure behaviour across metric types)</td>
+</tr>
+<tr>
+<td><code>extraction_run_id</code></td>
+<td>Run folder / run id</td>
+</tr>
+<tr>
+<td><code>metric_name</code></td>
+<td>Name of the metric (see below)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="metrics-by-attribute-type">Metrics by attribute type</h4>
+<table>
+<thead>
+<tr>
+<th>Attribute type</th>
+<th>Default metrics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BOOL</strong></td>
+<td><code>accuracy</code>, <code>precision</code>, <code>recall</code>, <code>f1_score</code>, <code>n_labels</code></td>
+</tr>
+<tr>
+<td><strong>STRING</strong></td>
+<td><code>accuracy</code>, <code>edit_distance_match_rate</code></td>
+</tr>
+<tr>
+<td><strong>INTEGER</strong> / <strong>FLOAT</strong></td>
+<td><code>accuracy</code>, <code>mean_absolute_error</code>, <code>mean_absolute_percentage_error</code></td>
+</tr>
+<tr>
+<td><strong>LIST</strong> / <strong>DICT</strong></td>
+<td>No default metrics yet</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>accuracy</code></strong>: fraction of exact matches between gold and LLM <code>output_data</code>.</li>
+<li><strong><code>precision</code> / <code>recall</code> / <code>f1_score</code></strong>: standard binary classification metrics
+  (BOOL attributes).</li>
+<li><strong><code>n_labels</code></strong>: count of positive gold labels for the attribute (BOOL).</li>
+<li><strong><code>edit_distance_match_rate</code></strong>: fraction of pairs whose normalised Levenshtein
+  similarity is at least a configurable threshold (default <code>0.90</code>). Threshold
+  can be set as <code>edit_distance_match_threshold</code> in the extraction config YAML.</li>
+<li><strong><code>mean_absolute_error</code> / <code>mean_absolute_percentage_error</code></strong>: magnitude of
+  numeric error. These complement exact-match accuracy; they do not replace it.
+  Missing or invalid LLM predictions (e.g. failed document extraction or
+  duplicate annotations → <code>None</code>) cause the metric to fail for that attribute,
+  as with binary metrics — the CSV <code>value</code> is left empty rather than scoring
+  only the successful subset. MAPE is undefined when a gold value is zero
+  (sklearn behaviour); that also leaves <code>value</code> empty.</li>
+</ul>
+<p>You can also pass extra sklearn metric names with
+<code>--custom-evaluation-metrics</code> on <code>deet experiments evaluate</code>.</p>
+<h3 id="goldstandard_llm_comparisoncsv"><code>goldstandard_llm_comparison.csv</code></h3>
+<p>Side-by-side gold vs LLM values for every document × attribute pair evaluated.
+This is the main file for debugging failures and inspecting citations /
+verbatim grounding. Written by
+<a href="../../reference/api/#deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator.export_llm_comparison"><code>GoldStandardLLMEvaluator.export_llm_comparison</code></a>.</p>
+<h4 id="identifiers">Identifiers</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>document_id</code></td>
+<td>Internal document id</td>
+</tr>
+<tr>
+<td><code>external_id</code></td>
+<td>External identifier when available (e.g. from the gold import)</td>
+</tr>
+<tr>
+<td><code>document_name</code></td>
+<td>Document title / name</td>
+</tr>
+<tr>
+<td><code>attribute_id</code></td>
+<td>Attribute identifier</td>
+</tr>
+<tr>
+<td><code>attribute_label</code></td>
+<td>Human-readable attribute name</td>
+</tr>
+<tr>
+<td><code>extraction_run_id</code></td>
+<td>Run id</td>
+</tr>
+</tbody>
+</table>
+<h4 id="presence-and-gold-support-text">Presence and gold support text</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>attribute_presence</code></td>
+<td><a class="mkdocs-ezglossary-link"
+    id="48a8eab9b017caaa06cd904d18d4e899"
+    title="Whether a gold-standard annotation for a given attribute exists on a document. In the comparison CSV this appears as attribute_presence (&#34;True&#34; or &#34;False&#34;). Absence does not always mean the gold value used for scoring is empty: missing annotations may still be represented with a type-specific default when metrics are computed."
+    name="term:attribute presence"
+    href="../../glossary/#9656b28cf5c3edde05916d75db6a4d3e">attribute presence</a>: <code>"True"</code> if a gold annotation for this attribute exists on the document, otherwise <code>"False"</code></td>
+</tr>
+<tr>
+<td><code>human_additional_text</code></td>
+<td>Gold verbatim / supporting text from the annotation (<code>additional_text</code>), when present</td>
+</tr>
+<tr>
+<td><code>item_attribute_full_text_details</code></td>
+<td>Raw EPPI full-text detail string(s) joined for the cell (empty for non-EPPI gold)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="eppi-citation-fields">EPPI citation fields</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>citation_page</code></td>
+<td><a class="mkdocs-ezglossary-link"
+    id="849b4b18db01408b1a4ebb8202961e50"
+    title="Page number(s) parsed from EPPI citation markup in gold full-text details (comparison CSV column citation_page). Empty when markup is missing or not EPPI-sourced."
+    name="term:citation page"
+    href="../../glossary/#6bfd877268269355fd0613cab638b75f">citation page</a>: page number(s) parsed from EPPI citation markup</td>
+</tr>
+<tr>
+<td><code>citation_highlight_text</code></td>
+<td><a class="mkdocs-ezglossary-link"
+    id="d7d8231f01671f2656463b43b92cf8f6"
+    title="Highlight / quoted text extracted from EPPI citation markup after parsing and cleaning (comparison CSV column citation_highlight_text)."
+    name="term:citation highlight"
+    href="../../glossary/#415a2e367ebcbaf26d65d3a4fac6b528">citation highlight</a>: highlight text extracted from EPPI markup after cleaning</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Related work</p>
+<p><code>citation_page</code> and <code>citation_highlight_text</code> are added with EPPI citation
+parsing / text-normalisation work. Older comparison CSVs may omit them;
+raw <code>item_attribute_full_text_details</code> remains available either way.</p>
+</div>
+<h4 id="extractions-and-llm-extras">Extractions and LLM extras</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>human_extraction</code></td>
+<td>Gold <code>output_data</code> used for scoring</td>
+</tr>
+<tr>
+<td><code>llm_extraction</code></td>
+<td>LLM <code>output_data</code> (may be empty if extraction failed for the document)</td>
+</tr>
+<tr>
+<td><code>llm_reasoning</code></td>
+<td>Model reasoning text, or an explanatory message when no LLM annotation was produced</td>
+</tr>
+<tr>
+<td><code>llm_verbatim_text</code></td>
+<td>Model <code>additional_text</code> (verbatim / citation-style support text)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="verbatim-grounding-scores">Verbatim grounding scores</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>human_verbatim_fuzzy_match_pct</code></td>
+<td><a class="mkdocs-ezglossary-link"
+    id="c695f4df482d3e1795b18a720ce1865a"
+    title="A 0–100 score for how well a support snippet is grounded in the document text used for extraction. For gold rows, the snippet is human_additional_text (the human annotator&#39;s supporting / verbatim text on the gold annotation, e.g. from EPPI reviwer). For LLM rows, the snippet is llm_verbatim_text (the model&#39;s additional_text). Scores are written to human_verbatim_fuzzy_match_pct and llm_verbatim_fuzzy_match_pct in the comparison CSV. Empty snippets score 0. Example: if the human additional text appears almost unchanged in the document&#39;s markdown, the score is near 100; if the text only partly overlaps the document wording, the score is lower; if it is missing from the markdown or there is no supporting text, the score is near 0."
+    name="term:verbatim fuzzy match"
+    href="../../glossary/#2b36e1f8fe475899fe1ff30a19b50262">verbatim fuzzy match</a>: how well <code>human_additional_text</code> is grounded in the document context used for extraction (0–100)</td>
+</tr>
+<tr>
+<td><code>llm_verbatim_fuzzy_match_pct</code></td>
+<td>Same score for <code>llm_verbatim_text</code> against the same context</td>
+</tr>
+</tbody>
+</table>
+<p>Scores measure how well the snippet appears to be grounded in the document
+text used for extraction. Empty snippets score <code>0.00</code>. <code>human_additional_text</code>
+comes from the gold annotation's supporting / verbatim text (often from EPPI);
+<code>llm_verbatim_text</code> is the model's corresponding support text.</p>
+<h3 id="llm_annotationsjson"><code>llm_annotations.json</code></h3>
+<p>Full structured LLM output for the run: annotated documents (including
+document context and per-attribute annotations with <code>output_data</code>, reasoning,
+and additional text) plus run metadata. This is the machine-readable record
+of what the model returned.</p>
+<p><code>deet experiments predict</code> also writes this file (without evaluation CSVs).
+A flatter CSV export of LLM rows may be written as <code>llm_annotations.csv</code> on
+predict (<code>ExperimentArtefacts.llm_annotation_csv</code>).</p>
+<h3 id="configyaml-and-prompts_usedcsv"><code>config.yaml</code> and <code>prompts_used.csv</code></h3>
+<p>Snapshots of the <a class="mkdocs-ezglossary-link"
+    id="95c6f3f71074359ef9e926b4ab8b24ba"
+    title="All of the variables that can be configured to affect how well LLMs perform a data extraction task. Includes the prompts used."
+    name="term:experiment configuration"
+    href="../../glossary/#78820ad13a2ea5769c18367da2c96265">experiment configuration</a> and the prompt CSV actually
+used for the run. Use these to reproduce or compare runs.</p>
+<ul>
+<li><code>config.yaml</code> — model, provider, temperature, context options, etc.
+  (<code>ExperimentArtefacts.config_snapshot</code>)</li>
+<li><code>prompts_used.csv</code> — attributes and prompts retained for the run
+  (<code>ExperimentArtefacts.prompts_snapshot</code>)</li>
+</ul>
+<h3 id="extraction_metadatajson"><code>extraction_metadata.json</code></h3>
+<p>Run-level cost, token, and timing summary written after extraction:</p>
+<ul>
+<li>Totals such as <code>total_cost_usd</code>, <code>total_input_tokens</code>, <code>total_output_tokens</code>,
+  <code>total_pipeline_duration_seconds</code></li>
+<li><code>stage_durations_seconds</code> for pipeline stages (annotation conversion, prompt
+  population, document preparation, LLM extraction, artefact export)</li>
+<li><code>per_document</code> entries with per-document token counts and timings
+  (parsing skip flags, <code>llm_call_seconds</code>, etc.)</li>
+</ul>
+<p>See
+<a href="../../reference/api/#deet.data_models.extraction.ExtractionRunMetadata"><code>ExtractionRunMetadata</code></a>
+and related models in <code>deet.data_models.extraction</code>.</p>
+<h3 id="deetlog"><code>deet.log</code></h3>
+<p>A copy of log output for the run directory (useful when investigating failed
+documents or metric warnings).</p>
+<h2 id="reading-results">Reading results</h2>
+<ol>
+<li>Start with <strong><code>metrics.csv</code></strong> (or the CLI metrics table) to see which
+   attributes scored well.</li>
+<li>Open <strong><code>goldstandard_llm_comparison.csv</code></strong> for mismatches: compare
+   <code>human_extraction</code> vs <code>llm_extraction</code>, check <a class="mkdocs-ezglossary-link"
+    id="b4df86fec9d1640da6cbf468891e6dea"
+    title="Whether a gold-standard annotation for a given attribute exists on a document. In the comparison CSV this appears as attribute_presence (&#34;True&#34; or &#34;False&#34;). Absence does not always mean the gold value used for scoring is empty: missing annotations may still be represented with a type-specific default when metrics are computed."
+    name="term:attribute presence"
+    href="../../glossary/#9656b28cf5c3edde05916d75db6a4d3e">attribute presence</a>,
+   and inspect citations / verbatim fuzzy scores when diagnosing grounding.</li>
+<li>Use <strong><code>llm_annotations.json</code></strong> and <strong><code>extraction_metadata.json</code></strong> for full
+   model payloads and cost/timing.</li>
+</ol>
+<p>For how artefacts fit into the wider experiment workflow, see
+<a href="../experiment/">Data Extraction Experiment</a>.</p>
+<h2 id="good-evaluation-practice">Good evaluation practice</h2>
+<p>Deet is designed to encourage good evaluation practices.</p>
+<p>This means separating data used to develop a pipeline (e.g. by engineering prompts or selected best-performing models) from data used to evaluate a pipeline.</p>
+<h3 id="evaluation-strategies">Evaluation strategies</h3>
+<p>To do this, deet implements evaluation strategies to manage how data is used for evaluation, in order to maximise efficiency while avoiding leaking.</p>
+<p>Evaluation strategies are in general managed by running</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>experiments<span class="w"> </span>splits
+</code></pre></div>
+<p>which will trigger an interactive wizard that prompts you with options managing your evaluation.</p>
+<h4 id="the-null-evaluation-strategy">The null evaluation strategy</h4>
+<p>By default, the null evaluation strategy is selected for new projects. With the null evaluation strategy, data extraction with deet is run on all documents within a <a href="../project/">project</a>. This is appropriate if you have separated your evaluation data manually into a separate "evaluation" project, or if you just want to test something informally. In this case running <code>deet experiments splits</code> will simply print a message informing you that the current strategy has no further options.</p>
+<h4 id="the-dev-val-test-strategy">The dev-val-test strategy</h4>
+<p>The dev-val-test strategy explicitly handles the separation of data used for training and evaluation, by creating three splits of the data (<a href="https://destiny-evidence.github.io/evaluation-book/index-1/#chunked-evaluation-data">more info</a>). Assigning documents to those splits is managed by running</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>experiments<span class="w"> </span>splits
+</code></pre></div>
+<p>The first time this is run, the only available option will be to assign documents to the development set. These documents will be used to iteratively try out and improve upon prompts and other experiment configuration options. Each time you run <code>deet experiments evaluate</code>, you will see performance metrics for the chosen experiment configuration.</p>
+<p>Once you have reached an experiment configuration which achieves performance you are happy with, you can run <code>deet experiments splits</code> again to re-enter the wizard. You will now see an option to "Move to validation". Selecting this will prompt you to select a number of documents to be used for validation, that is, for a first out-of-sample test of your chosen configuration.</p>
+<p>If you choose to move to validation, you will be prompted to choose the model configuration you wish to validate. The prompts and other settings from this model will then be used to extract data from the documents in the newly created validation set, and metrics will be reported.</p>
+<p>Users are then prompted to choose between:</p>
+<ul>
+<li>Accepting the configuration and doing a final test of the pipeline on all remaining documents; and</li>
+<li>Rejecting the configuration (because performance was dissappointing), and moving back to prompt development.</li>
+</ul>
+<p>If the former option is selected, the project is finished, and the results are to be seen as the final evaluation scores.</p>
+<p>If the latter option is selected, documents from the validation set are passed to the development set, and you are invited to continue iterating prompts.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2025 DESTinY Consortium
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/destiny-evidence" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.action.edit", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
