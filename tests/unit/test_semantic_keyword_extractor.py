@@ -1,5 +1,6 @@
 """Tests for the semantic keyword data extractor module."""
 
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,7 +9,9 @@ import pytest
 from deet.data_models.base import AnnotationType, Attribute, AttributeType
 from deet.data_models.documents import ContextType
 from deet.extractors.base_extractor import DataExtractionConfig, ExtractionMethod
-from deet.extractors.semantic_keyword_extractor import SemanticKeywordDataExtractor
+from deet.extractors.keyword.semantic_keyword_extractor import (
+    SemanticKeywordDataExtractor,
+)
 
 
 @pytest.fixture
@@ -20,7 +23,7 @@ def config() -> DataExtractionConfig:
     )
 
 
-def _attribute(attribute_id: int, prompt: str) -> Attribute:
+def _attribute(attribute_id: int, prompt: str | None) -> Attribute:
     return Attribute(
         attribute_id=attribute_id,
         attribute_label=f"Attribute {attribute_id}",
@@ -34,7 +37,7 @@ def _make_extractor(config, chunk_emb, keyword_emb) -> SemanticKeywordDataExtrac
     model = MagicMock()
     model.encode.side_effect = [np.array(chunk_emb), np.array(keyword_emb)]
     with patch(
-        "deet.extractors.semantic_keyword_extractor.SentenceTransformer",
+        "deet.extractors.keyword.semantic_keyword_extractor.SentenceTransformer",
         return_value=model,
     ):
         return SemanticKeywordDataExtractor(config=config)
@@ -78,3 +81,24 @@ def test_similarity_below_threshold_produces_no_annotation(config):
         payload="Unrelated sentence.",
     )
     assert result.annotations == []
+
+
+def test_empty_document_yields_no_annotations(config):
+    """A document with no sentences returns early without encoding."""
+    extractor = _make_extractor(config, [[1.0]], [[1.0]])
+    result = extractor.extract_from_document(
+        attributes=[_attribute(1, "climate")],
+        payload="",
+    )
+    assert result.annotations == []
+    cast("MagicMock", extractor.model).encode.assert_not_called()
+
+
+def test_attribute_without_prompt_raises(config):
+    """An attribute with no usable prompt is a misconfiguration, not skipped."""
+    extractor = _make_extractor(config, [[1.0]], [[1.0]])
+    with pytest.raises(ValueError, match="non-empty prompt"):
+        extractor.extract_from_document(
+            attributes=[_attribute(1, None)],
+            payload="Some sentence here.",
+        )

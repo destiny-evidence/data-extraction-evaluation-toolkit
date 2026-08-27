@@ -1,4 +1,4 @@
-"""Generalisable data extraction module for keyword-based extraction."""
+"""Plain string-matching keyword extractor."""
 
 from pathlib import Path
 
@@ -9,16 +9,15 @@ from deet.data_models.documents import (
 from deet.data_models.extraction import (
     DocumentExtractionResult,
 )
-from deet.extractors.base_extractor import BaseDataExtractor
+from deet.extractors.keyword.base_keyword_extractor import BaseKeywordDataExtractor
 
 
-class KeywordDataExtractor(BaseDataExtractor):
+class RawKeywordDataExtractor(BaseKeywordDataExtractor):
     """
-    Generalisable module for LLM-based data extraction from documents.
+    String-matching implementation of a keyword extractor.
 
-    This module provides a flexible interface for extracting structured data
-    from documents using LLMs, with support for different context types and
-    customizable prompts.
+    Extracts the presence of attributes where phrases in attribute prompts
+    match the document content.
     """
 
     def extract_from_document(
@@ -41,8 +40,8 @@ class KeywordDataExtractor(BaseDataExtractor):
             prompt = attribute.prompt
             if prompt is None:
                 continue
-            for term in prompt.split():
-                if term.lower().strip() in context:
+            for phrase in self._get_prompt_phrases(attribute):
+                if phrase.lower().strip() in context.lower():
                     annotations.extend(
                         [
                             GoldStandardAnnotation(

@@ -5,13 +5,15 @@ from deet.extractors.base_extractor import (
     DataExtractionConfig,
     ExtractionMethod,
 )
-from deet.extractors.keyword_extractor import KeywordDataExtractor
+from deet.extractors.keyword.raw_keyword_extractor import RawKeywordDataExtractor
+from deet.extractors.keyword.semantic_keyword_extractor import (
+    SemanticKeywordDataExtractor,
+)
 from deet.extractors.llm_data_extractor import LLMDataExtractor
-from deet.extractors.semantic_keyword_extractor import SemanticKeywordDataExtractor
 
 extractor_mapping: dict[ExtractionMethod, type[BaseDataExtractor]] = {
     ExtractionMethod.LLM: LLMDataExtractor,
-    ExtractionMethod.KEYWORD: KeywordDataExtractor,
+    ExtractionMethod.KEYWORD: RawKeywordDataExtractor,
     ExtractionMethod.SEMANTIC: SemanticKeywordDataExtractor,
 }
 

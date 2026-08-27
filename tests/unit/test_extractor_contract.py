@@ -21,7 +21,9 @@ def _attr(attribute_id: int) -> Attribute:
 def extractor(request):
     """Each registered extractor, constructed via the registry."""
     config = DataExtractionConfig(method=request.param)
-    with patch("deet.extractors.semantic_keyword_extractor.SentenceTransformer"):
+    with patch(
+        "deet.extractors.keyword.semantic_keyword_extractor.SentenceTransformer"
+    ):
         return get_data_extractor(config=config)
 
 
