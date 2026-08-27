@@ -20,6 +20,17 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
     match the document content.
     """
 
+    SNIPPET_WINDOW = 80
+
+    def _snippet_around(self, context: str, idx: int, phrase_len: int) -> str:
+        """Return a window of the document around the first match of phrase."""
+        start = max(0, idx - self.SNIPPET_WINDOW)
+        end = min(len(context), idx + phrase_len + self.SNIPPET_WINDOW)
+        snippet = context[start:end].strip()
+        prefix = "..." if start > 0 else ""
+        suffix = "..." if end < len(context) else ""
+        return f"{prefix}{snippet}{suffix}"
+
     def extract_from_document(
         self,
         attributes: list[Attribute],
@@ -41,19 +52,25 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
+        context_lower = context.lower()
         annotations: list[GoldStandardAnnotation] = []
         for attribute in selected_attributes:
             prompt = attribute.prompt
             if prompt is None:
                 continue
             for phrase in self._get_prompt_phrases(attribute):
-                if phrase.lower().strip() in context.lower():
+                idx = context_lower.find(phrase.lower())
+                if idx != -1:
                     annotations.extend(
                         [
                             GoldStandardAnnotation(
                                 attribute=attribute,
                                 raw_data=True,
                                 annotation_type=AnnotationType.KEYWORD,
+                                additional_text=self._snippet_around(
+                                    context, idx, len(phrase)
+                                ),
+                                reasoning=f"Matched phrase '{phrase}'",
                             )
                         ]
                     )

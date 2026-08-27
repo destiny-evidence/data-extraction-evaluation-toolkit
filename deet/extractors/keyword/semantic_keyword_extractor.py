@@ -74,11 +74,18 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
     def _best_sentence_match(
         self,
         similarities: np.ndarray,
+        phrases: list[str],
         doc_chunks: list[str],
-    ) -> tuple[float, str]:
+    ) -> tuple[float, str, str]:
         """Return the best (score, sentence) from one attribute's similarity rows."""
-        _, chunk_idx = np.unravel_index(similarities.argmax(), similarities.shape)
-        return float(similarities.max()), doc_chunks[chunk_idx]
+        phrase_idx, chunk_idx = np.unravel_index(
+            similarities.argmax(), similarities.shape
+        )
+        return (
+            float(similarities.max()),
+            phrases[int(phrase_idx)],
+            doc_chunks[chunk_idx],
+        )
 
     def extract_from_document(
         self,
@@ -115,17 +122,23 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         )
 
         annotations: list[GoldStandardAnnotation] = []
-        for attribute, similarities in zip(
-            selected_attributes, similarities_per_attribute, strict=True
+        for attribute, phrases, similarities in zip(
+            selected_attributes,
+            phrases_per_attribute,
+            similarities_per_attribute,
+            strict=True,
         ):
-            score, sentence = self._best_sentence_match(similarities, doc_chunks)
+            score, phrase, sentence = self._best_sentence_match(
+                similarities, phrases, doc_chunks
+            )
             if score >= self.similarity_threshold:
                 annotations.append(
                     GoldStandardAnnotation(
                         attribute=attribute,
                         raw_data=True,
                         annotation_type=AnnotationType.KEYWORD,
-                        reasoning=f"Matches {sentence}, score {score:.4f}",
+                        additional_text=sentence,
+                        reasoning=f"Phrase '{phrase}' matched with score {score:.4f}",
                     )
                 )
 

@@ -66,7 +66,7 @@ def test_similarity_above_threshold_produces_annotation(config):
     assert annotation.attribute.attribute_id == 1
     assert annotation.annotation_type == AnnotationType.KEYWORD
     assert annotation.reasoning is not None
-    assert "Sentence one." in annotation.reasoning
+    assert annotation.additional_text == "Sentence one."
 
 
 def test_similarity_below_threshold_produces_no_annotation(config):
