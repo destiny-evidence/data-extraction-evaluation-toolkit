@@ -12,6 +12,16 @@ from deet.processors.converter_register import SupportedImportFormat
 from deet.processors.parser import ParsedOutput
 from deet.settings import get_settings
 
+try:
+    from aiohttp.streams import AsyncStreamReaderMixin  # type: ignore[attr-defined]
+except ImportError:
+    import aiohttp.streams
+
+    class AsyncStreamReaderMixin:  # type: ignore[no-redef]
+        """Compatibility shim for aiohttp 3.9+ which removed this class."""
+
+    aiohttp.streams.AsyncStreamReaderMixin = AsyncStreamReaderMixin  # type: ignore[attr-defined]
+
 
 @pytest.fixture
 def valid_parsed_pdf():
