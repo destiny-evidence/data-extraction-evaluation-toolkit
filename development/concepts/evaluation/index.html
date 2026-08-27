@@ -550,6 +550,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#comparing-human-and-ai-extracted-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparing human and AI-extracted data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-is-compared" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -729,6 +740,62 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#good-evaluation-practice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Good evaluation practice
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Good evaluation practice">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evaluation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Evaluation strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-null-evaluation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The null evaluation strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-dev-val-test-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dev-val-test strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1214,6 +1281,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#comparing-human-and-ai-extracted-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparing human and AI-extracted data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-is-compared" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1396,6 +1474,62 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#good-evaluation-practice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Good evaluation practice
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Good evaluation practice">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evaluation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Evaluation strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-null-evaluation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The null evaluation strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-dev-val-test-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dev-val-test strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1422,7 +1556,8 @@
 
 
 <h1 id="evaluation">Evaluation</h1>
-<p>Evaluation compares LLM-extracted values to <a class="mkdocs-ezglossary-link"
+<h2 id="comparing-human-and-ai-extracted-data">Comparing human and AI-extracted data</h2>
+<p>To evaluate an <a href="../experiment/">experiment</a>, deet compares compares LLM-extracted values to <a class="mkdocs-ezglossary-link"
     id="0312356a30e603dd8ecce11713d573a0"
     title="The &#34;ground truth&#34; data manually extracted by human experts. Used as the benchmark against which to evaluate AI-extracted data."
     name="term:Ground Truth"
@@ -1737,6 +1872,31 @@ documents or metric warnings).</p>
 </ol>
 <p>For how artefacts fit into the wider experiment workflow, see
 <a href="../experiment/">Data Extraction Experiment</a>.</p>
+<h2 id="good-evaluation-practice">Good evaluation practice</h2>
+<p>Deet is designed to encourage good evaluation practices.</p>
+<p>This means separating data used to develop a pipeline (e.g. by engineering prompts or selected best-performing models) from data used to evaluate a pipeline.</p>
+<h3 id="evaluation-strategies">Evaluation strategies</h3>
+<p>To do this, deet implements evaluation strategies to manage how data is used for evaluation, in order to maximise efficiency while avoiding leaking.</p>
+<p>Evaluation strategies are in general managed by running</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>experiments<span class="w"> </span>splits
+</code></pre></div>
+<p>which will trigger an interactive wizard that prompts you with options managing your evaluation.</p>
+<h4 id="the-null-evaluation-strategy">The null evaluation strategy</h4>
+<p>By default, the null evaluation strategy is selected for new projects. With the null evaluation strategy, data extraction with deet is run on all documents within a <a href="../project/">project</a>. This is appropriate if you have separated your evaluation data manually into a separate "evaluation" project, or if you just want to test something informally. In this case running <code>deet experiments splits</code> will simply print a message informing you that the current strategy has no further options.</p>
+<h4 id="the-dev-val-test-strategy">The dev-val-test strategy</h4>
+<p>The dev-val-test strategy explicitly handles the separation of data used for training and evaluation, by creating three splits of the data (<a href="https://destiny-evidence.github.io/evaluation-book/index-1/#chunked-evaluation-data">more info</a>). Assigning documents to those splits is managed by running</p>
+<div class="highlight"><pre><span></span><code>deet<span class="w"> </span>experiments<span class="w"> </span>splits
+</code></pre></div>
+<p>The first time this is run, the only available option will be to assign documents to the development set. These documents will be used to iteratively try out and improve upon prompts and other experiment configuration options. Each time you run <code>deet experiments evaluate</code>, you will see performance metrics for the chosen experiment configuration.</p>
+<p>Once you have reached an experiment configuration which achieves performance you are happy with, you can run <code>deet experiments splits</code> again to re-enter the wizard. You will now see an option to "Move to validation". Selecting this will prompt you to select a number of documents to be used for validation, that is, for a first out-of-sample test of your chosen configuration.</p>
+<p>If you choose to move to validation, you will be prompted to choose the model configuration you wish to validate. The prompts and other settings from this model will then be used to extract data from the documents in the newly created validation set, and metrics will be reported.</p>
+<p>Users are then prompted to choose between:</p>
+<ul>
+<li>Accepting the configuration and doing a final test of the pipeline on all remaining documents; and</li>
+<li>Rejecting the configuration (because performance was dissappointing), and moving back to prompt development.</li>
+</ul>
+<p>If the former option is selected, the project is finished, and the results are to be seen as the final evaluation scores.</p>
+<p>If the latter option is selected, documents from the validation set are passed to the development set, and you are invited to continue iterating prompts.</p>
 
 
 
