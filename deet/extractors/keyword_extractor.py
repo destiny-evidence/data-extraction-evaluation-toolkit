@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-from loguru import logger
-
 from deet.data_models.base import AnnotationType, Attribute, GoldStandardAnnotation
 from deet.data_models.documents import (
     ContextType,
@@ -35,17 +33,11 @@ class KeywordDataExtractor(BaseDataExtractor):
         """Extract data from a single document."""
         payload = self._resolve_payload(payload=payload, md_path=md_path)
 
-        selected_attributes = attributes
-        # TODO: Implement attribute filtering as method of ABC extractor
-
-        if not selected_attributes:
-            msg = "No attributes selected for extraction"
-            logger.warning(msg)
-            raise ValueError(msg)
+        selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
         annotations: list[GoldStandardAnnotation] = []
-        for attribute in attributes:
+        for attribute in selected_attributes:
             prompt = attribute.prompt
             if prompt is None:
                 continue

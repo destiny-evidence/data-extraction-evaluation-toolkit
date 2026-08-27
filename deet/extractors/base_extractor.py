@@ -411,6 +411,52 @@ class BaseDataExtractor(ABC):
             return md_path.read_text(encoding="utf-8")
         return cast("str", payload)
 
+    def _filter_attributes(
+        self, attributes: list[Attribute], filter_ids: list[int] | None = None
+    ) -> list[Attribute]:
+        """
+        Filter attributes using provided attribute IDs.
+
+        Args:
+            attributes: List of attributes to filter
+            filter_ids: Optional list of attribute IDs (ints) to filter by.
+                        If None, returns all attributes.
+                        If empty list, returns empty list.
+
+        Returns:
+            Filtered list of attributes matching the provided IDs, or all attributes
+            if filter_ids is None, or empty list if filter_ids is empty.
+
+        """
+        if filter_ids is None:
+            logger.debug(
+                f"No attribute filtering applied, "
+                f"using all {len(attributes)} attributes"
+            )
+            return attributes
+
+        filtered = [attr for attr in attributes if attr.attribute_id in filter_ids]
+        logger.debug(
+            f"Filtered {len(attributes)} attributes to {len(filtered)} "
+            f"using filter_ids: {filter_ids}"
+        )
+        return filtered
+
+    def _select_attributes(
+        self, attributes: list[Attribute], filter_ids: list[int] | None = None
+    ) -> list[Attribute]:
+        """Filter attributes by ID and require the result to be non-empty."""
+        try:
+            selected = self._filter_attributes(attributes, filter_ids=filter_ids)
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid attribute IDs: {filter_ids}. Selecting none.")
+            selected = []
+        if not selected:
+            msg = "No attributes selected for extraction"
+            logger.warning(msg)
+            raise ValueError(msg)
+        return selected
+
     @abstractmethod
     def extract_from_document(
         self,

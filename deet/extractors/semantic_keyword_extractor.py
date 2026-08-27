@@ -3,7 +3,6 @@
 import re
 from pathlib import Path
 
-from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -54,13 +53,7 @@ class SemanticKeywordDataExtractor(BaseDataExtractor):
 
         annotations: list[GoldStandardAnnotation] = []
 
-        selected_attributes = attributes
-        # TODO: Implement attribute filtering as method of ABC extractor
-
-        if not selected_attributes:
-            msg = "No attributes selected for extraction"
-            logger.warning(msg)
-            raise ValueError(msg)
+        selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
         doc_chunks = self._split_into_sentences(context)
@@ -76,7 +69,7 @@ class SemanticKeywordDataExtractor(BaseDataExtractor):
 
         similarity_matrix = cosine_similarity(keyword_embeddings, chunk_embeddings)
 
-        for attr_idx, attribute in enumerate(attributes):
+        for attr_idx, attribute in enumerate(selected_attributes):
             max_sim_score = similarity_matrix[attr_idx].max()
             if max_sim_score >= self.similarity_threshold:
                 best_match_idx = similarity_matrix[attr_idx].argmax()
