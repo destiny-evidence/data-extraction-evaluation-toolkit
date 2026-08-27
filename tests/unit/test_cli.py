@@ -153,13 +153,13 @@ def test_init_project_initialises_in_emptydir():
     fake_settings.dump_to_env.assert_called_once()
 
 
-def test_init_project_aborts_no_overwrite():
+def test_init_project_aborts_no_overwrite(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     fake_project = MagicMock(spec=DeetProject)
     fake_project.name = "Existing project"
     fake_settings = MagicMock(spec=DataExtractionSettings)
 
     with (
-        runner.isolated_filesystem(),
         patch("deet.data_models.project.DeetProject.load", return_value=fake_project),
         patch("deet.scripts.project_utils.inquirer.confirm") as mock_confirm,
         patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
@@ -178,14 +178,14 @@ def test_init_project_aborts_no_overwrite():
         fake_settings.dump_to_env.assert_not_called()
 
 
-def test_init_project_overwrites_after_confirm():
+def test_init_project_overwrites_after_confirm(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     fake_project = MagicMock(spec=DeetProject)
     fake_project.name = "Existing project"
     fake_settings = MagicMock(spec=DataExtractionSettings)
     new_project = MagicMock(spec=DeetProject)
 
     with (
-        runner.isolated_filesystem(),
         patch("deet.data_models.project.DeetProject.load", return_value=fake_project),
         patch("deet.scripts.project_utils.inquirer.confirm") as mock_confirm,
         patch("deet.scripts.project_utils.run_model_wizard") as mock_wizard,
@@ -221,12 +221,12 @@ def test_slugify_rejects_unusable_name():
         slugify("---")
 
 
-def test_new_project_creates_directory_and_anchors():
+def test_new_project_creates_directory_and_anchors(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     fake_project = MagicMock(spec=DeetProject)
     fake_settings = MagicMock(spec=DataExtractionSettings)
 
     with (
-        runner.isolated_filesystem() as td,
         patch(
             "deet.data_models.project.DeetProject.load",
             side_effect=FileNotFoundError,
@@ -238,7 +238,7 @@ def test_new_project_creates_directory_and_anchors():
         mock_wizard.side_effect = [fake_project, fake_settings]
 
         result = runner.invoke(app, ["project", "new", "--name", "My Project"])
-        target = Path(td) / "my-project"
+        target = tmp_path / "my-project"
 
         assert result.exit_code == 0
         assert target.exists()
@@ -247,12 +247,12 @@ def test_new_project_creates_directory_and_anchors():
         fake_settings.dump_to_env.assert_called_once()
 
 
-def test_new_project_prompts_for_name_when_omitted():
+def test_new_project_prompts_for_name_when_omitted(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     fake_project = MagicMock(spec=DeetProject)
     fake_settings = MagicMock(spec=DataExtractionSettings)
 
     with (
-        runner.isolated_filesystem() as td,
         patch(
             "deet.data_models.project.DeetProject.load",
             side_effect=FileNotFoundError,
@@ -268,7 +268,7 @@ def test_new_project_prompts_for_name_when_omitted():
         mock_wizard.side_effect = [fake_project, fake_settings]
 
         result = runner.invoke(app, ["project", "new"])
-        target = Path(td) / "my-project"
+        target = tmp_path / "my-project"
 
         assert result.exit_code == 0
         mock_name_prompt.assert_called_once()  # name collected interactively
@@ -276,9 +276,9 @@ def test_new_project_prompts_for_name_when_omitted():
         fake_project.anchor_to.assert_called_once_with(target)
 
 
-def test_new_project_headless_with_args():
+def test_new_project_headless_with_args(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     with (
-        runner.isolated_filesystem() as td,
         patch(
             "deet.data_models.project.DeetProject.load",
             side_effect=FileNotFoundError,
@@ -291,7 +291,7 @@ def test_new_project_headless_with_args():
             app,
             ["project", "new", "--name", "My Project", "-d", "references.json"],
         )
-        target = Path(td) / "my-project"
+        target = tmp_path / "my-project"
 
         assert result.exit_code == 0
         assert target.exists()
@@ -430,9 +430,9 @@ def test_init_project_noninteractive_fails_with_insufficient_args(tmp_path):
     assert result.exit_code == 1
 
 
-def test_init_project_noninteractive_no_overwrite():
+def test_init_project_noninteractive_no_overwrite(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     with (
-        runner.isolated_filesystem(),
         patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
     ):
@@ -444,9 +444,9 @@ def test_init_project_noninteractive_no_overwrite():
         assert result.exit_code == 1
 
 
-def test_init_project_noninteractive_force_overwrite():
+def test_init_project_noninteractive_force_overwrite(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     with (
-        runner.isolated_filesystem(),
         patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
     ):
@@ -486,9 +486,12 @@ def test_extract_happy_path(tmp_path):
     mock_project.experiments_dir = exp_dir
     mock_project.pdf_dir = tmp_path / "pdfs"
 
+    mock_doc = MagicMock()
+    mock_doc.safe_identity.document_id = 1
+
     mock_processed_data = MagicMock()
     mock_processed_data.attributes = [1]
-    mock_processed_data.documents = []
+    mock_processed_data.documents = [mock_doc]
     mock_processed_data.annotated_documents = []
 
     mock_project.process_data.return_value = mock_processed_data
@@ -540,9 +543,7 @@ def test_test_llm_config():
     mock_cfg = MagicMock(spec=DataExtractionConfig)
 
     with (
-        patch(
-            "deet.extractors.cli_helpers.load_config_from_typer_context"
-        ) as mock_load,
+        patch("deet.extractors.cli_helpers.load_or_init_config") as mock_load,
         patch(
             "deet.extractors.llm_data_extractor.LLMDataExtractor"
         ) as mock_extractor_cls,
