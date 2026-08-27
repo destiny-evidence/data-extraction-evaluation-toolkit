@@ -134,35 +134,9 @@ class LLMDataExtractor(BaseDataExtractor):
             ValueError: If neither payload nor md_path provided, or both provided.
 
         """
-        if (payload is None and md_path is None) or (
-            payload is not None and md_path is not None
-        ):
-            msg = "Exactly one of payload or md_path must be provided"
-            raise ValueError(msg)
-        if md_path is not None:
-            if not md_path.exists():
-                msg = f"Markdown file not found: {md_path}"
-                raise FileNotFoundError(msg)
-            payload = md_path.read_text(encoding="utf-8")
-        payload = cast("str", payload)
+        payload = self._resolve_payload(payload=payload, md_path=md_path)
 
-        selected_attributes = attributes
-        if filter_attribute_ids and len(filter_attribute_ids) > 0:
-            try:
-                selected_attributes = self._filter_attributes(
-                    selected_attributes, filter_ids=filter_attribute_ids
-                )
-            except (ValueError, TypeError):
-                logger.warning(
-                    f"Invalid attribute IDs in config: "
-                    f"{filter_attribute_ids}. "
-                    "No attributes will be selected."
-                )
-
-        if not selected_attributes:
-            msg = "No attributes selected for extraction"
-            logger.warning(msg)
-            raise ValueError(msg)
+        selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
         prompt = self._generate_user_message_json(
@@ -209,37 +183,6 @@ class LLMDataExtractor(BaseDataExtractor):
         """
         if path is not None:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-
-    def _filter_attributes(
-        self, attributes: list[Attribute], filter_ids: list[int] | None = None
-    ) -> list[Attribute]:
-        """
-        Filter attributes using provided attribute IDs.
-
-        Args:
-            attributes: List of attributes to filter
-            filter_ids: Optional list of attribute IDs (ints) to filter by.
-                        If None, returns all attributes.
-                        If empty list, returns empty list.
-
-        Returns:
-            Filtered list of attributes matching the provided IDs, or all attributes
-            if filter_ids is None, or empty list if filter_ids is empty.
-
-        """
-        if filter_ids is None:
-            logger.debug(
-                f"No attribute filtering applied, "
-                f"using all {len(attributes)} attributes"
-            )
-            return attributes
-
-        filtered = [attr for attr in attributes if attr.attribute_id in filter_ids]
-        logger.debug(
-            f"Filtered {len(attributes)} attributes to {len(filtered)} "
-            f"using filter_ids: {filter_ids}"
-        )
-        return filtered
 
     def _generate_user_message_json(
         self,

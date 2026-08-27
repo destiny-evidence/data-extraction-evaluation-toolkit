@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from enum import StrEnum, auto
 from importlib.resources import files
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import yaml
 from loguru import logger
@@ -17,7 +17,7 @@ from pydantic import (
     model_validator,
 )
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, AttributeType
 from deet.data_models.documents import (
     ContextType,
     Document,
@@ -31,6 +31,7 @@ from deet.data_models.extraction import (
     PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
+from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
@@ -87,7 +88,7 @@ class PromptConfig(BaseModel):
 
 
 class ExtractionMethod(StrEnum):
-    """Enum of extraction methods."""
+    """Supported extraction methods, with each mapping to a data extractor."""
 
     LLM = auto()
     KEYWORD = auto()
@@ -101,7 +102,8 @@ class DataExtractionConfig(BaseModel):
     model_config = ConfigDict()
 
     method: ExtractionMethod = Field(
-        default=ExtractionMethod.LLM, description="Extraction Method"
+        default=ExtractionMethod.LLM,
+        description="Extraction Method: defines the data extractor to use.",
     )
 
     # LLM
@@ -113,6 +115,9 @@ class DataExtractionConfig(BaseModel):
             default="gpt-4o-mini",
             description="LLM model identifier used for completions.",
         )
+    )
+    semantic_similarity_threshold: float = Field(
+        default=0.5, description="Threshold for matching sentences to prompt phrases"
     )
     temperature: float = Field(
         default=0.1,
@@ -204,6 +209,19 @@ class DataExtractionConfig(BaseModel):
         description="Path to json file mapping vocabulary concepts to column IDs",
     )
 
+    # Evaluation
+    edit_distance_match_threshold: float = Field(
+        default=DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum normalised Levenshtein similarity (0-1) for a string pair "
+            "to count as a match in edit_distance_match_rate. Omit from the "
+            "config YAML to use the default."
+        ),
+        json_schema_extra={"skip_prompt": True},
+    )
+
     @model_validator(mode="after")
     def populate_max_context_tokens_from_model(self) -> "DataExtractionConfig":
         """Populate max_context_tokens from model when not set."""
@@ -237,6 +255,8 @@ class BaseDataExtractor(ABC):
     def __init__(self, config: DataExtractionConfig) -> None:
         """Initialise with data extraction config."""
         self.config = config
+
+    SUPPORTED_ATTRIBUTE_TYPES: frozenset[AttributeType] | None = None
 
     def _prepare_context(
         self,
@@ -387,6 +407,98 @@ class BaseDataExtractor(ABC):
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
         return run_output
+
+    def _resolve_payload(self, payload: str | None, md_path: Path | None) -> str:
+        """
+        Resolve document text from exactly one of payload or md_path.
+
+        Raises:
+            ValueError: If neither or both of payload and md_path are provided.
+            FileNotFoundError: If md_path is given but does not exist.
+
+        """
+        if (payload is None) == (md_path is None):
+            msg = "Exactly one of payload or md_path must be provided"
+            raise ValueError(msg)
+        if md_path is not None:
+            if not md_path.exists():
+                msg = f"Markdown file not found: {md_path}"
+                raise FileNotFoundError(msg)
+            return md_path.read_text(encoding="utf-8")
+        return cast("str", payload)
+
+    def _filter_attributes(
+        self, attributes: list[Attribute], filter_ids: list[int] | None = None
+    ) -> list[Attribute]:
+        """
+        Filter attributes using provided attribute IDs.
+
+        Args:
+            attributes: List of attributes to filter
+            filter_ids: Optional list of attribute IDs (ints) to filter by.
+                        If None, returns all attributes.
+                        If empty list, returns empty list.
+
+        Returns:
+            Filtered list of attributes matching the provided IDs, or all attributes
+            if filter_ids is None, or empty list if filter_ids is empty.
+
+        """
+        if filter_ids is None:
+            logger.debug(
+                f"No attribute filtering applied, "
+                f"using all {len(attributes)} attributes"
+            )
+            return attributes
+
+        filtered = [attr for attr in attributes if attr.attribute_id in filter_ids]
+        logger.debug(
+            f"Filtered {len(attributes)} attributes to {len(filtered)} "
+            f"using filter_ids: {filter_ids}"
+        )
+        return filtered
+
+    def _validate_supported_attribute_types(self, selected: list[Attribute]) -> None:
+        """
+        Validate that selected attributes are supported by extractor.
+
+        Raise if any selected attributes are not supported.
+
+        Interprets self.SUPPORTED_ATTRIBUTE_TYPES=None
+        as a sentinel that all attributes are supported.
+        """
+        if self.SUPPORTED_ATTRIBUTE_TYPES is not None:
+            attribute_types = {attribute.output_data_type for attribute in selected}
+            unsupported_attribute_types = (
+                attribute_types - self.SUPPORTED_ATTRIBUTE_TYPES
+            )
+            if unsupported_attribute_types:
+                msg = (
+                    "The following attribute types are not supported"
+                    f" {unsupported_attribute_types}"
+                )
+                raise ValueError(msg)
+
+    def _select_attributes(
+        self, attributes: list[Attribute], filter_ids: list[int] | None = None
+    ) -> list[Attribute]:
+        """
+        Filter attributes by ID and require the result to be non-empty.
+
+        Raise when selected attributes include attributes not supported by extractor
+        """
+        try:
+            selected = self._filter_attributes(attributes, filter_ids=filter_ids)
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid attribute IDs: {filter_ids}. Selecting none.")
+            selected = []
+        if not selected:
+            msg = "No attributes selected for extraction"
+            logger.warning(msg)
+            raise ValueError(msg)
+        self._validate_supported_attribute_types(selected)
+
+        return selected
 
     @abstractmethod
     def extract_from_document(
