@@ -2,6 +2,75 @@
 
 <!-- version list -->
 
+## v0.3.0-dev.2 (2026-08-27)
+
+### Bug Fixes
+
+- Amend existing tests
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+### Chores
+
+- Address comments on base evaluation strattegy
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Further documentation improvments for base evaluation strategies
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Make strategy registry public
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Move more boilerplate to base evaluation strategies and splits. Require splits to define a mapping
+  between stages and the field that contains a stage's IDs
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Move snapshot from abstract to concrete m
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Re-organise dev_val_test to isolate library code and UI elements
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Split validation_run into intial validation and decision
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Update tests
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Write self.name in notification screen
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+### Documentation
+
+- Add documentation on evaluation strategies
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+### Refactoring
+
+- Generalise evaluation splitting with ABC
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Stop passing typer_context to helper functions. Use it to instantiate the project in CLI commands
+  and pass project to helpers
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+### Testing
+
+- Complete tests for dev-val-test strategy, and to ensure all strategies are registered
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Separate failure for no docs in project and no documents in stage, test this
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Test evaluation strategies
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Test project.load_evaluation_strategy wiring works
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+- Wrap prompttoolkit pipe to wait after key presses
+  ([`df6f484`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df6f4846ef83db2167faf9872c673b36f315cc59))
+
+
 ## v0.3.0-dev.1 (2026-08-26)
 
 ### Bug Fixes
