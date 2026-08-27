@@ -38,7 +38,7 @@ dependencies = [
     "diskcache>=5.6.3",
     "inquirerpy>=0.3.4",
     "jinja2>=3.1.6",
-    "litellm>=1.77.4",
+    "litellm>=1.96.2",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",
@@ -50,6 +50,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
+    "python-semantic-release>=10.6.1",
     "pyyaml>=6.0.2",
     "rapidfuzz>=3.9.0",
     "scikit-learn>=1.7.1",
@@ -61,8 +62,8 @@ dependencies = [
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
-requires-python = ">=3.12.11"
-version = "0.2.0"
+requires-python = ">=3.12.11,<3.14"
+version = "0.3.0-dev.2"
 
 [project.scripts]
 deet = "deet.scripts.cli:main"
@@ -152,6 +153,25 @@ select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]
 
+[tool.semantic_release]
+allow_zero_version = true
+build_command = """
+    uv lock --upgrade-package "$PACKAGE_NAME"
+    git add uv.lock
+    uv build --wheel --no-config
+"""
+tag_format = "v{version}"
+version_toml = ["pyproject.toml:project.version"]
+
+[tool.semantic_release.branches.develop]
+match = "develop"
+prerelease = true
+prerelease_token = "dev"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
 [tool.setuptools]
 package-data = {"deet.prompts" = ["*.txt"], "deet.ui.terminal.templates" = ["**/*.md"]}
 package-dir = {"" = "."}
@@ -163,3 +183,11 @@ spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 overrides."tool.coverage.paths.source".inline_arrays = false
+
+[tool.uv]
+exclude-dependencies = [
+    "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
+]
+exclude-newer = "P5D"
+no-binary-package = ["data-extraction-evaluation-toolkit"]
+no-build = true

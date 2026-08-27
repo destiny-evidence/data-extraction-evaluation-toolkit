@@ -281,3 +281,100 @@ def test_evaluator_displays_metrics(evaluator_evaluated):
     for col in metric_columns:
         for cell in col._cells:
             assert float(cell) == 1.0
+
+
+def test_evaluator_mixed_types_include_extraction_metrics(tmp_path):
+    """STRING / INTEGER / FLOAT attributes emit the new metric names in output."""
+    string_attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=10,
+        attribute_label="Outcome label",
+        output_data_type=AttributeType.STRING,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    int_attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=11,
+        attribute_label="Sample size",
+        output_data_type=AttributeType.INTEGER,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    float_attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=12,
+        attribute_label="Effect size",
+        output_data_type=AttributeType.FLOAT,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    doc = EppiDocument(
+        name="Mixed Doc", citation=ReferenceFileInput(), document_id=42424242
+    )
+    gold_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc,
+        annotations=[
+            EppiGoldStandardAnnotation(
+                attribute=string_attr,
+                output_data="hypertension",
+                annotation_type=AnnotationType.HUMAN,
+            ),
+            EppiGoldStandardAnnotation(
+                attribute=int_attr,
+                output_data=100,
+                annotation_type=AnnotationType.HUMAN,
+            ),
+            EppiGoldStandardAnnotation(
+                attribute=float_attr,
+                output_data=0.95,
+                annotation_type=AnnotationType.HUMAN,
+            ),
+        ],
+    )
+    llm_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc,
+        annotations=[
+            EppiGoldStandardAnnotation(
+                attribute=string_attr,
+                output_data="hypertention",
+                annotation_type=AnnotationType.LLM,
+            ),
+            EppiGoldStandardAnnotation(
+                attribute=int_attr,
+                output_data=101,
+                annotation_type=AnnotationType.LLM,
+            ),
+            EppiGoldStandardAnnotation(
+                attribute=float_attr,
+                output_data=0.96,
+                annotation_type=AnnotationType.LLM,
+            ),
+        ],
+    )
+    attributes = [string_attr, int_attr, float_attr]
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=[gold_doc],
+        llm_annotated_documents=[llm_doc],
+        attributes=attributes,
+        extraction_run_id="mixed_types",
+    )
+    evaluator.evaluate_llm_annotations()
+
+    metrics_by_attr: dict[str, dict[str, float | None]] = {}
+    for metric in evaluator.calculated_metrics:
+        label = metric.attribute.attribute_label
+        metrics_by_attr.setdefault(label, {})[metric.metric_name] = metric.value
+
+    assert "edit_distance_match_rate" in metrics_by_attr["Outcome label"]
+    assert metrics_by_attr["Outcome label"]["edit_distance_match_rate"] == 1.0
+
+    for numeric_label in ("Sample size", "Effect size"):
+        assert "mean_absolute_error" in metrics_by_attr[numeric_label]
+        assert "mean_absolute_percentage_error" in metrics_by_attr[numeric_label]
+        assert metrics_by_attr[numeric_label]["mean_absolute_error"] is not None
+        assert (
+            metrics_by_attr[numeric_label]["mean_absolute_percentage_error"] is not None
+        )
+
+    metrics_csv = tmp_path / "metrics.csv"
+    evaluator.write_metrics_to_csv(metrics_csv)
+    rows = list(csv.DictReader(metrics_csv.open()))
+    metric_names = {row["metric_name"] for row in rows}
+    assert "edit_distance_match_rate" in metric_names
+    assert "mean_absolute_error" in metric_names
+    assert "mean_absolute_percentage_error" in metric_names

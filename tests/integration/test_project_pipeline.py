@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
 
 import pytest
 import yaml
@@ -92,13 +92,31 @@ def initialised_project_workspace(
         os.chdir(previous_cwd)
 
 
-@pytest.fixture(scope="module")
+class VirtualKeyboard:
+    """Feed keystrokes to the wizard, pausing after each."""
+
+    def __init__(self, pipe_input, default_pause=0.75) -> None:
+        """Wrap a prompt_toolkit pipe input."""
+        self._pipe = pipe_input
+        self.default_pause = default_pause
+
+    def press(self, text="\r", pause=None) -> None:
+        """Sent text to the current prompt, then wait."""
+        self._pipe.send_text(text)
+        time.sleep(self.default_pause if pause is None else pause)
+
+    def __getattr__(self, name) -> None:
+        """Forward unknown attributes (e.g. send_text) to the pipe input."""
+        return getattr(self._pipe, name)
+
+
+@pytest.fixture
 def virtual_keyboard():
     with (
         create_pipe_input() as pipe_input,
         create_app_session(input=pipe_input, output=DummyOutput()),
     ):
-        yield pipe_input
+        yield VirtualKeyboard(pipe_input)
 
 
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
@@ -124,37 +142,38 @@ def test_initialise_project_via_wizard(
     time_limit = 10
     did_time_out = False
 
+    done = Event()
+
     def user_journey():
         """Replicate the keyboard strokes Alice will make when using the CLI."""
         nonlocal did_time_out
         try:
             # Alice sees an informative splash screen informing her on how to
             # use the wizard. She presses enter to continue
-            virtual_keyboard.send_text("\r")
-            time.sleep(0.1)
+            virtual_keyboard.press("\r")
             # She selects the default dataset type option (eppijson)
-            virtual_keyboard.send_text("\r")
+            virtual_keyboard.press("\r")
 
             # Then she enters path to her dataset
-            virtual_keyboard.send_text(f"{dataset_base_path / 'reports.json'}\r")
-            virtual_keyboard.send_text("\r")
+            virtual_keyboard.press(f"{dataset_base_path / 'reports.json'}\r")
+            virtual_keyboard.press("\r")
 
             # She enters the path to her pdfs
-            virtual_keyboard.send_text(f"{dataset_base_path / 'pdfs'}\r")
-            virtual_keyboard.send_text("\r")
+            virtual_keyboard.press(f"{dataset_base_path / 'pdfs'}\r")
+            virtual_keyboard.press("\r")
 
             # She then sees a splash screen informing her on the collection of API keys
-            virtual_keyboard.send_text("\r")
+            virtual_keyboard.press("\r")
 
             # She leaves each unchanged
-            virtual_keyboard.send_text("\r")
-            virtual_keyboard.send_text("\r")
+            virtual_keyboard.press("\r")
+            virtual_keyboard.press("\r")
 
             # If things haven't finished at the end of the time limit,
             # Alice exits the wizard.
-            time.sleep(time_limit)
-            did_time_out = True
-            virtual_keyboard.send_text("\x03")
+            if not done.wait(time_limit):
+                did_time_out = True
+                virtual_keyboard.send_text("\x03")
         except OSError:
             # Safely caught when the main thread finishes successfully
             # and tears down the keyboard pipes early.
@@ -167,7 +186,11 @@ def test_initialise_project_via_wizard(
         # Run natively on the main thread so CliRunner can attach to streams properly
         result = runner.invoke(app, ["project", "init"])
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0, (
+            f"exit={result.exit_code} did_time_out={did_time_out}\n"
+            f"exception={result.exception!r}\n"
+            f"--- wizard stdout ---\n{result.output}"
+        )
         deet_project = DeetProject.load()
         assert deet_project.name == project_name
 
@@ -177,7 +200,8 @@ def test_initialise_project_via_wizard(
         assert len(processed_data.annotated_documents) > 0
 
     finally:
-        # Fixed: Pass your tracked path variable back to recover process state
+        done.set()
+        typer_thread.join(timeout=5)
         os.chdir(original_cwd)
 
 
@@ -259,10 +283,9 @@ def test_extraction_without_evaluating(
 
     # She finds the directory for the experiment she just carried out
     experiment_run_dir = run_dirs[0]
-    run_id = experiment_run_dir.name
 
     # And makes sure it contains all the experiment artefacts she would expect
-    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir, run_id=run_id)
+    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir)
 
     assert artefacts.config_snapshot.exists()
     assert artefacts.prompts_snapshot.exists()
@@ -318,10 +341,9 @@ def test_extraction_without_evaluating_or_linking(
 
     # She finds the directory for the experiment she just carried out
     experiment_run_dir = run_dirs[0]
-    run_id = experiment_run_dir.name
 
     # And makes sure it contains all the experiment artefacts she would expect
-    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir, run_id=run_id)
+    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir)
 
     assert artefacts.config_snapshot.exists()
     assert artefacts.prompts_snapshot.exists()
@@ -372,10 +394,9 @@ def test_extraction_with_evaluation(
 
     # She finds the directory for the experiment she just carried out
     experiment_run_dir = run_dirs[0]
-    run_id = experiment_run_dir.name
 
     # And makes sure it contains all the experiment artefacts she would expect
-    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir, run_id=run_id)
+    artefacts = ExperimentArtefacts(base_dir=experiment_run_dir)
 
     assert artefacts.config_snapshot.exists()
     assert artefacts.prompts_snapshot.exists()
