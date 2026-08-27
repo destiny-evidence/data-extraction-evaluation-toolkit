@@ -246,7 +246,7 @@ class BaseDataExtractor(ABC):
         """Initialise with data extraction config."""
         self.config = config
 
-    SUPPORTED_ATTRIBUTE_TYPES: frozenset[AttributeType]
+    SUPPORTED_ATTRIBUTE_TYPES: frozenset[AttributeType] | None = None
 
     def _prepare_context(
         self,
