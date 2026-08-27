@@ -25,7 +25,7 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
     def __init__(self, config: DataExtractionConfig) -> None:
         """Initialise, set the similarity threshold, and load the model."""
         super().__init__(config)
-        self.similarity_threshold: float = 0.65
+        self.similarity_threshold: float = config.semantic_similarity_threshold
         self.model = SentenceTransformer(config.model)
 
     def _split_into_sentences(self, text: str) -> list[str]:
@@ -89,7 +89,13 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         md_path: Path | None = None,
         context_type: ContextType | None = None,
     ) -> DocumentExtractionResult:
-        """Extract data from a single document."""
+        """
+        Extract data from a single document.
+
+        Return Annotations with output_data=`True` for all attributes where the maximum
+        similarity between a phrase ("separated by ';') in the prompt and the document
+        if greater than `DataExtractionConfig.semantic_similarity_threshold`
+        """
         payload = self._resolve_payload(payload=payload, md_path=md_path)
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
         context = self._prepare_context(payload=payload, context_type=context_type)

@@ -29,7 +29,13 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
         md_path: Path | None = None,
         context_type: ContextType | None = None,
     ) -> DocumentExtractionResult:
-        """Extract data from a single document."""
+        """
+        Extract data from a single document.
+
+        Return Annotations with output_data=`True` for all attributes where
+        any phrase in the attribute's prompt (phrases are separated by ';')
+        is contained in the document.
+        """
         payload = self._resolve_payload(payload=payload, md_path=md_path)
 
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)

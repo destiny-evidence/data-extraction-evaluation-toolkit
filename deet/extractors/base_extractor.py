@@ -88,7 +88,7 @@ class PromptConfig(BaseModel):
 
 
 class ExtractionMethod(StrEnum):
-    """Enum of extraction methods."""
+    """Supported extraction methods, with each mapping to a data extractor."""
 
     LLM = auto()
     KEYWORD = auto()
@@ -101,7 +101,8 @@ class DataExtractionConfig(BaseModel):
     model_config = ConfigDict()
 
     method: ExtractionMethod = Field(
-        default=ExtractionMethod.LLM, description="Extraction Method"
+        default=ExtractionMethod.LLM,
+        description="Extraction Method: defines the data extractor to use.",
     )
 
     # LLM
@@ -113,6 +114,9 @@ class DataExtractionConfig(BaseModel):
             default="gpt-4o-mini",
             description="LLM model identifier used for completions.",
         )
+    )
+    semantic_similarity_threshold: float = Field(
+        default=0.5, description="Threshold for matching sentences to prompt phrases"
     )
     temperature: float = Field(
         default=0.1,
