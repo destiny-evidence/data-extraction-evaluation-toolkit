@@ -17,7 +17,7 @@ from pydantic import (
     model_validator,
 )
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, AttributeType
 from deet.data_models.documents import (
     ContextType,
     Document,
@@ -246,6 +246,8 @@ class BaseDataExtractor(ABC):
         """Initialise with data extraction config."""
         self.config = config
 
+    SUPPORTED_ATTRIBUTE_TYPES: frozenset[AttributeType]
+
     def _prepare_context(
         self,
         payload: str,
@@ -446,10 +448,35 @@ class BaseDataExtractor(ABC):
         )
         return filtered
 
+    def _validate_supported_attribute_types(self, selected: list[Attribute]) -> None:
+        """
+        Validate that selected attributes are supported by extractor.
+
+        Raise if any selected attributes are not supported.
+
+        Interprets self.SUPPORTED_ATTRIBUTE_TYPES=None
+        as a sentinel that all attributes are supported.
+        """
+        if self.SUPPORTED_ATTRIBUTE_TYPES is not None:
+            attribute_types = {attribute.output_data_type for attribute in selected}
+            unsupported_attribute_types = (
+                attribute_types - self.SUPPORTED_ATTRIBUTE_TYPES
+            )
+            if unsupported_attribute_types:
+                msg = (
+                    "The following attribute types are not supported"
+                    f" {unsupported_attribute_types}"
+                )
+                raise ValueError(msg)
+
     def _select_attributes(
         self, attributes: list[Attribute], filter_ids: list[int] | None = None
     ) -> list[Attribute]:
-        """Filter attributes by ID and require the result to be non-empty."""
+        """
+        Filter attributes by ID and require the result to be non-empty.
+
+        Raise when selected attributes include attributes not supported by extractor
+        """
         try:
             selected = self._filter_attributes(attributes, filter_ids=filter_ids)
         except (ValueError, TypeError):
@@ -459,6 +486,8 @@ class BaseDataExtractor(ABC):
             msg = "No attributes selected for extraction"
             logger.warning(msg)
             raise ValueError(msg)
+        self._validate_supported_attribute_types(selected)
+
         return selected
 
     @abstractmethod

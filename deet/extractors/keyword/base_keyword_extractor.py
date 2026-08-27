@@ -1,6 +1,6 @@
 """Shared classes for keyword-type extractors."""
 
-from deet.data_models.base import Attribute
+from deet.data_models.base import Attribute, AttributeType
 from deet.extractors.base_extractor import BaseDataExtractor
 
 
@@ -13,6 +13,7 @@ class BaseKeywordDataExtractor(BaseDataExtractor):
     """
 
     PROMPT_SEPARATOR = ";"
+    SUPPORTED_ATTRIBUTE_TYPES = frozenset({AttributeType.BOOL})
 
     def _get_prompt_phrases(self, attribute: Attribute) -> list[str]:
         """
