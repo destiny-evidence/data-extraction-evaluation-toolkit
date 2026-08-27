@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from enum import StrEnum, auto
 from importlib.resources import files
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import yaml
 from loguru import logger
@@ -391,6 +391,25 @@ class BaseDataExtractor(ABC):
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
 
         return run_output
+
+    def _resolve_payload(self, payload: str | None, md_path: Path | None) -> str:
+        """
+        Resolve document text from exactly one of payload or md_path.
+
+        Raises:
+            ValueError: If neither or both of payload and md_path are provided.
+            FileNotFoundError: If md_path is given but does not exist.
+
+        """
+        if (payload is None) == (md_path is None):
+            msg = "Exactly one of payload or md_path must be provided"
+            raise ValueError(msg)
+        if md_path is not None:
+            if not md_path.exists():
+                msg = f"Markdown file not found: {md_path}"
+                raise FileNotFoundError(msg)
+            return md_path.read_text(encoding="utf-8")
+        return cast("str", payload)
 
     @abstractmethod
     def extract_from_document(

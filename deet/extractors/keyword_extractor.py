@@ -1,7 +1,6 @@
 """Generalisable data extraction module for keyword-based extraction."""
 
 from pathlib import Path
-from typing import cast
 
 from loguru import logger
 
@@ -34,17 +33,7 @@ class KeywordDataExtractor(BaseDataExtractor):
         context_type: ContextType | None = None,
     ) -> DocumentExtractionResult:
         """Extract data from a single document."""
-        if (payload is None and md_path is None) or (
-            payload is not None and md_path is not None
-        ):
-            msg = "Exactly one of payload or md_path must be provided"
-            raise ValueError(msg)
-        if md_path is not None:
-            if not md_path.exists():
-                msg = f"Markdown file not found: {md_path}"
-                raise FileNotFoundError(msg)
-            payload = md_path.read_text(encoding="utf-8")
-        payload = cast("str", payload)
+        payload = self._resolve_payload(payload=payload, md_path=md_path)
 
         selected_attributes = attributes
         # TODO: Implement attribute filtering as method of ABC extractor
