@@ -1,7 +1,6 @@
 """Top down LLM Extractor that starts at root and descends through leaves."""
 
 from pathlib import Path
-from typing import cast
 
 from loguru import logger
 from rich.pretty import pretty_repr
@@ -69,35 +68,7 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
             ValueError: If neither payload nor md_path provided, or both provided.
 
         """
-        if (payload is None and md_path is None) or (
-            payload is not None and md_path is not None
-        ):
-            msg = "Exactly one of payload or md_path must be provided"
-            raise ValueError(msg)
-        if md_path is not None:
-            if not md_path.exists():
-                msg = f"Markdown file not found: {md_path}"
-                raise FileNotFoundError(msg)
-            payload = md_path.read_text(encoding="utf-8")
-        payload = cast("str", payload)
-
-        selected_attributes = attributes
-        if filter_attribute_ids and len(filter_attribute_ids) > 0:
-            try:
-                selected_attributes = self._filter_attributes(
-                    selected_attributes, filter_ids=filter_attribute_ids
-                )
-            except (ValueError, TypeError):
-                logger.warning(
-                    f"Invalid attribute IDs in config: "
-                    f"{filter_attribute_ids}. "
-                    "No attributes will be selected."
-                )
-
-        if not selected_attributes:
-            msg = "No attributes selected for extraction"
-            logger.warning(msg)
-            raise ValueError(msg)
+        payload = self._resolve_payload(payload=payload, md_path=md_path)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
 
