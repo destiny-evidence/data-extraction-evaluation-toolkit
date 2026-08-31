@@ -10,6 +10,7 @@ TODO: Extend to cover classes and properties.
 """
 
 from collections.abc import Sequence
+from enum import StrEnum, auto
 from pathlib import Path
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, TypeAdapter
@@ -24,6 +25,15 @@ from deet.utils._vendor.taxonomy_builder.rdf_parser import (
     get_scheme_title,
     parse_rdf,
 )
+
+
+class ConceptPromptField(StrEnum):
+    """Concept fields usable as prompt text for extraction."""
+
+    PREF_LABEL = auto()
+    DEFINITION = auto()
+    SCOPE_NOTE = auto()
+    ALT_LABELS = auto()
 
 
 class Concept(BaseModel):
@@ -85,6 +95,30 @@ class Concept(BaseModel):
             attribute_id=synthetic_id,
             attribute_label=self.pref_label,
         )
+
+    def build_prompt(self, fields: list[str]) -> str:
+        """
+        Concatenate the given concept fields into a single prompt string.
+
+        If a list prompt field is selected,
+        return this as a semi-colon concatenated string.
+        """
+        parts: list[str] = []
+        for field in fields:
+            value = getattr(self, field)
+            if value is None:
+                continue
+            if isinstance(value, list | tuple):
+                parts.extend("; ".join(value))
+            elif str(value).strip():
+                parts.append(str(value))
+        if not parts:
+            empty = (
+                f"No prompt text for concept {self.identifier}"
+                f" from fields: {fields}"
+            )
+            raise ValueError(empty)
+        return ". ".join(parts)
 
 
 class ConceptMappingRow(BaseModel):

@@ -210,6 +210,12 @@ class DataExtractionConfig(BaseModel):
         default=True, description="Include additional text/citations in output"
     )
 
+    vocab_prompt_locations: list[str] = Field(
+        default=["definition", "scope_note"],
+        description="Concept fields used to set prompts from vocabulary.",
+    )
+
+
     # Evaluation
     edit_distance_match_threshold: float = Field(
         default=DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD,
