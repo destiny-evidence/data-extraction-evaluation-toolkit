@@ -251,7 +251,9 @@ class ProcessedAttributeData[AttributeT: Attribute](BaseModel):
         attributes = []
         for scheme in mapped_schemes:
             for concept in scheme.concepts.values():
-                concept.attribute.prompt = concept.definition
+                concept.attribute.prompt = concept.build_prompt(
+                    config.vocab_prompt_locations
+                )
                 concept.attribute.output_data_type = AttributeType.BOOL
                 if not concept.attribute.concept_id:
                     concept.attribute.concept_id = concept.identifier

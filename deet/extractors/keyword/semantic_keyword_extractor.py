@@ -49,8 +49,20 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
 
         """
         phrases_per_attribute = [self._get_prompt_phrases(attr) for attr in attributes]
-        if any(not phrases for phrases in phrases_per_attribute):
-            msg = "Every attribute must have a non-empty prompt for keyword extraction"
+        missing = [
+            attr
+            for attr, phrases in zip(attributes, phrases_per_attribute, strict=True)
+            if not phrases
+        ]
+        if missing:
+            details = ", ".join(
+                f"{attr.attribute_label} (id={attr.attribute_id}, prompt={attr.prompt})"
+                for attr in missing
+            )
+            msg = (
+                "Keyword extraction requires a non-empty prompt for every attribute; "
+                f"the following yielded no phrases: {details}"
+            )
             raise ValueError(msg)
         return phrases_per_attribute
 
