@@ -7,6 +7,7 @@ from deet.data_models.evaluation import (
     AttributeCountMetric,
     AttributeScoreMetric,
     RunMetricsReport,
+    preferred_metric_column_names,
 )
 
 
@@ -120,3 +121,61 @@ def test_run_metrics_report_to_csv_writes_blank_for_none(tmp_path) -> None:
     assert row["n_gold_instances"] == "10"
     assert row["accuracy"] == "0.6"
     assert row["accuracy_given_good_source"] == ""
+
+
+def test_preferred_metric_column_names_derived_from_registries() -> None:
+    """Column order follows metric registries; source-fidelity types get suffixes."""
+    columns = preferred_metric_column_names()
+    assert columns[0] == "n_gold_instances"
+    assert "accuracy" in columns
+    assert "accuracy_given_good_source" in columns
+    assert "accuracy_given_bad_source" in columns
+    assert "edit_distance_match_rate_given_good_source" in columns
+    assert "precision" in columns
+    assert "precision_given_good_source" not in columns
+    assert columns.index("accuracy") < columns.index("precision")
+
+
+def test_run_metrics_report_to_csv_appends_custom_metrics_sorted(tmp_path) -> None:
+    """Custom metric columns not in the preferred list are appended alphabetically."""
+    attribute = Attribute(
+        attribute_id=1,
+        attribute_label="Outcome label",
+        output_data_type=AttributeType.STRING,
+    )
+    report = RunMetricsReport.from_attribute_metrics(
+        extraction_run_id="run_1",
+        calculated_metrics=[
+            AttributeCountMetric(
+                attribute=attribute,
+                metric_name="n_gold_instances",
+                value=1,
+                extraction_run_id="run_1",
+            ),
+            AttributeScoreMetric(
+                attribute=attribute,
+                metric_name="accuracy",
+                value=1.0,
+                extraction_run_id="run_1",
+            ),
+            AttributeScoreMetric(
+                attribute=attribute,
+                metric_name="jaccard_score",
+                value=0.5,
+                extraction_run_id="run_1",
+            ),
+            AttributeScoreMetric(
+                attribute=attribute,
+                metric_name="jaccard_score_given_good_source",
+                value=0.5,
+                extraction_run_id="run_1",
+            ),
+        ],
+    )
+    csv_path = tmp_path / "metrics.csv"
+    report.to_csv(csv_path)
+    fieldnames = next(csv.DictReader(csv_path.open())).keys()
+    names = list(fieldnames)
+    assert "jaccard_score" in names
+    assert "jaccard_score_given_good_source" in names
+    assert names.index("accuracy") < names.index("jaccard_score")

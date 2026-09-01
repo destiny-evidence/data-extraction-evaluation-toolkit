@@ -8,6 +8,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from deet.data_models.base import Attribute, AttributeType
+from deet.evaluators.metrics import METRICS_BY_ATTRIBUTE_TYPE
+from deet.evaluators.source_fidelity import SOURCE_FIDELITY_ATTRIBUTE_TYPES
 
 # Stable wide-CSV column order for count metrics.
 COUNT_METRIC_COLUMN_ORDER: tuple[str, ...] = (
@@ -16,25 +18,20 @@ COUNT_METRIC_COLUMN_ORDER: tuple[str, ...] = (
     "n_good_citation_instances",
 )
 
-# Score bases that get unconditional + good/bad-source stratified columns.
-_METRICS_WITH_STRATIFICATION: frozenset[str] = frozenset(
-    {
-        "accuracy",
-        "edit_distance_match_rate",
-        "mean_absolute_error",
-        "mean_absolute_percentage_error",
-    }
+# Preserve registry definition order; dedupe names shared across attribute types.
+_SCORE_METRIC_BASE_ORDER: tuple[str, ...] = tuple(
+    dict.fromkeys(
+        name for metrics in METRICS_BY_ATTRIBUTE_TYPE.values() for name in metrics
+    )
 )
 
-_SCORE_METRIC_BASE_ORDER: tuple[str, ...] = (
-    "accuracy",
-    "precision",
-    "recall",
-    "f1_score",
-    "n_labels",
-    "edit_distance_match_rate",
-    "mean_absolute_error",
-    "mean_absolute_percentage_error",
+# Metrics on source-fidelity types are stratified by good/bad context in the evaluator.
+_METRICS_WITH_STRATIFICATION: frozenset[str] = frozenset(
+    {
+        name
+        for attr_type in SOURCE_FIDELITY_ATTRIBUTE_TYPES
+        for name in METRICS_BY_ATTRIBUTE_TYPE[attr_type]
+    }
 )
 
 _STRATIFICATION_SUFFIXES: tuple[str, ...] = (
@@ -48,8 +45,11 @@ def preferred_metric_column_names() -> list[str]:
     """
     Preferred wide-CSV metric column order.
 
-    Derived from count names plus score bases, with stratification suffixes
-    only for metrics that the evaluator stratifies by source fidelity.
+    Score bases and stratification suffixes are derived from
+    :data:`~deet.evaluators.metrics.METRICS_BY_ATTRIBUTE_TYPE` and
+    :data:`~deet.evaluators.source_fidelity.SOURCE_FIDELITY_ATTRIBUTE_TYPES`.
+    Custom metrics passed at evaluate time are not listed here; they are
+    appended alphabetically when writing CSV (see :meth:`RunMetricsReport.to_csv`).
     """
     columns: list[str] = list(COUNT_METRIC_COLUMN_ORDER)
     for base in _SCORE_METRIC_BASE_ORDER:
