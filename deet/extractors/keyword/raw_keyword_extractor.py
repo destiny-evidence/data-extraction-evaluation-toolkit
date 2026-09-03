@@ -1,5 +1,6 @@
 """Plain string-matching keyword extractor."""
 
+import re
 from pathlib import Path
 
 from deet.data_models.base import AnnotationType, Attribute, GoldStandardAnnotation
@@ -21,6 +22,23 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
     """
 
     SNIPPET_WINDOW = 80
+
+    def _find_phrase(self, context: str, context_lower: str, phrase: str) -> int:
+        """
+        Return the start index of a word-boundary match of ``phrase``, or -1.
+
+        Matching is at word boundaries (so "ad" does not fire inside "road").
+        All-caps phrases (typically abbreviations)
+        are matched case-sensitively, so they only fire on the abbreviation as
+        written and not on lowercase text ("road", "communities"); every other
+        phrase is matched case-insensitively.
+        """
+        if phrase.isupper():
+            haystack, needle = context, phrase
+        else:
+            haystack, needle = context_lower, phrase.lower()
+        match = re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", haystack)
+        return match.start() if match else -1
 
     def _snippet_around(self, context: str, idx: int, phrase_len: int) -> str:
         """Return a window of the document around the first match of phrase."""
@@ -59,7 +77,7 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
             if prompt is None:
                 continue
             for phrase in self._get_prompt_phrases(attribute):
-                idx = context_lower.find(phrase.lower())
+                idx = self._find_phrase(context, context_lower, phrase)
                 if idx != -1:
                     annotations.extend(
                         [
