@@ -6,6 +6,7 @@ data extracted by hand.
 import csv
 import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 from itertools import groupby
 from pathlib import Path
 from typing import Any
@@ -21,13 +22,23 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
     GoldStandardAnnotatedDocumentList,
 )
-from deet.data_models.evaluation import AttributeMetric
+from deet.data_models.evaluation import (
+    AttributeCountMetric,
+    AttributeMetric,
+    AttributeScoreMetric,
+    RunMetricsReport,
+)
 from deet.evaluators.metrics import (
     METRICS,
     EvaluationMetricSettings,
     MetricFunction,
     check_metric_returns_float,
     get_metrics_for_attribute_type,
+)
+from deet.evaluators.source_fidelity import (
+    SOURCE_FIDELITY_ATTRIBUTE_TYPES,
+    classify_match_status,
+    is_gold_value_in_text,
 )
 from deet.exceptions import DuplicateAnnotationError, MissingDocumentError
 from deet.processors.eppi_citation_parser import (
@@ -137,6 +148,63 @@ def _citation_fields_from_annotation(
     return format_parsed_citations(parse_eppi_citations_from_details(details))
 
 
+def _citation_haystack_from_parts(
+    additional_text: str,
+    citation_highlight: str,
+    detail_text: str,
+) -> str:
+    """
+    Join citation-related text parts into one haystack for gold-value search.
+
+    Args:
+        additional_text: Human ``additional_text`` (may be empty).
+        citation_highlight: Parsed EPPI highlight text (may be empty).
+        detail_text: Raw full-text detail string(s) (may be empty).
+
+    Returns:
+        Space-joined non-empty parts, or ``""`` if all parts are blank.
+
+    """
+    return " ".join(
+        part
+        for part in (additional_text, citation_highlight, detail_text)
+        if part.strip()
+    )
+
+
+def _citation_haystack_from_annotation(annotation: GoldStandardAnnotation) -> str:
+    """
+    Build citation haystack from a gold annotation's text fields.
+
+    Args:
+        annotation: Gold-standard annotation (EPPI or otherwise).
+
+    Returns:
+        Combined additional text, parsed highlight, and raw detail text.
+
+    """
+    additional_text = str(annotation.additional_text or "")
+    detail_text = _eppi_full_text_details_colon_separated(annotation)
+    _citation_page, citation_highlight = _citation_fields_from_annotation(annotation)
+    return _citation_haystack_from_parts(
+        additional_text, citation_highlight, detail_text
+    )
+
+
+@dataclass(slots=True)
+class EvaluationRow:
+    """Per-document values for extraction scoring and comparison export."""
+
+    document_id: int | str | None
+    gold_value: Any
+    predicted_value: Any | None
+    citation_haystack: str
+    context: str | None
+    gold_in_citation: bool | None
+    gold_in_context: bool | None
+    match_status: str | None
+
+
 class GoldStandardLLMEvaluator:
     """
     A class to manage the evaluation of LLM-extracted data against
@@ -177,6 +245,7 @@ class GoldStandardLLMEvaluator:
         self.metrics_config: dict[str, MetricFunction] = METRICS
         self.custom_metrics: dict[str, MetricFunction] = {}
         self.calculated_metrics: list[AttributeMetric] = []
+        self._evaluation_rows_by_attribute: dict[int, list[EvaluationRow]] = {}
         if custom_metrics is not None:
             self.add_custom_metrics(custom_metrics)
 
@@ -209,35 +278,15 @@ class GoldStandardLLMEvaluator:
         if self.calculated_metrics:
             logger.warning("Already calculated metrics, deleting and overwriting.")
             self.calculated_metrics = []
+            self._evaluation_rows_by_attribute = {}
         for attribute in self.attributes:
             logger.debug(
                 f"Calculating metric for attribute: {attribute.attribute_label}"
             )
-            y_true = []
-            y_pred: list[Any] = []
-            for document in self.gold_standard_annotated_documents:
-                doc_id = document.document.safe_identity.document_id
-                logger.debug(
-                    f"Extracting gold standard and LLM prediction for doc {doc_id}"
-                )
-                gs_val = document.get_attribute_annotation(attribute).output_data
-                y_true.append(gs_val)
-
-                try:
-                    llm_doc = self.llm_annotated_documents.get_by_id(doc_id)
-                except MissingDocumentError:
-                    y_pred.append(None)
-                    logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
-                    continue
-                try:
-                    llm_val = llm_doc.get_attribute_annotation(attribute).output_data
-                except DuplicateAnnotationError:
-                    llm_val = None
-                    logger.warning(
-                        f"LLM produced multiple annotations for a single"
-                        f" attribute with doc: {doc_id}"
-                    )
-                y_pred.append(llm_val)
+            rows = self._collect_attribute_rows(attribute)
+            self._evaluation_rows_by_attribute[attribute.attribute_id] = rows
+            y_true = [row.gold_value for row in rows]
+            y_pred = [row.predicted_value for row in rows]
 
             applicable_metrics = get_metrics_for_attribute_type(
                 attribute.output_data_type,
@@ -245,24 +294,261 @@ class GoldStandardLLMEvaluator:
             )
             combined_metrics = {**applicable_metrics, **self.custom_metrics}
 
-            for metric_name, metric_fn in combined_metrics.items():
-                try:
-                    value = float(metric_fn(y_true, y_pred))
-                except (ValueError, TypeError) as e:
-                    logger.warning(
-                        f"Metric '{metric_name}' not applicable for "
-                        f"attribute '{attribute.attribute_label}' "
-                        f"(type={attribute.output_data_type}): {e}"
-                    )
-                    value = None
-                self.calculated_metrics.append(
-                    AttributeMetric(
+            self._append_count_metric(
+                attribute=attribute,
+                metric_name="n_gold_instances",
+                metric_value=len(rows),
+            )
+            self._append_score_metrics(
+                attribute=attribute,
+                y_true=y_true,
+                y_pred=y_pred,
+                metrics=combined_metrics,
+                suffix="",
+            )
+
+            if attribute.output_data_type not in SOURCE_FIDELITY_ATTRIBUTE_TYPES:
+                continue
+
+            good_indices = [
+                i for i, row in enumerate(rows) if row.gold_in_context is True
+            ]
+            bad_indices = [
+                i for i, row in enumerate(rows) if row.gold_in_context is False
+            ]
+
+            self._append_count_metric(
+                attribute=attribute,
+                metric_name="n_good_source_instances",
+                metric_value=len(good_indices),
+            )
+            self._append_count_metric(
+                attribute=attribute,
+                metric_name="n_good_citation_instances",
+                metric_value=sum(1 for row in rows if row.gold_in_citation is True),
+            )
+
+            self._append_score_metrics(
+                attribute=attribute,
+                y_true=[y_true[i] for i in good_indices],
+                y_pred=[y_pred[i] for i in good_indices],
+                metrics=combined_metrics,
+                suffix="_given_good_source",
+            )
+            self._append_score_metrics(
+                attribute=attribute,
+                y_true=[y_true[i] for i in bad_indices],
+                y_pred=[y_pred[i] for i in bad_indices],
+                metrics=combined_metrics,
+                suffix="_given_bad_source",
+            )
+
+    def _append_count_metric(
+        self,
+        *,
+        attribute: Attribute,
+        metric_name: str,
+        metric_value: int,
+    ) -> None:
+        """Append an :class:`AttributeCountMetric` onto ``calculated_metrics``."""
+        self.calculated_metrics.append(
+            AttributeCountMetric(
+                attribute=attribute,
+                metric_name=metric_name,
+                value=metric_value,
+                extraction_run_id=self.extraction_run_id,
+            )
+        )
+
+    def _append_score_metrics(
+        self,
+        *,
+        attribute: Attribute,
+        y_true: list[Any],
+        y_pred: list[Any | None],
+        metrics: dict[str, MetricFunction],
+        suffix: str,
+    ) -> None:
+        """
+        Apply score metrics to ``y_true`` / ``y_pred`` and append result rows.
+
+        Appends one :class:`AttributeScoreMetric` per metric onto
+        ``self.calculated_metrics``. The lists may be the full attribute set or
+        any filtered subset (e.g. good/bad source). When a metric raises on
+        empty or invalid inputs, ``value`` is recorded as ``None`` (blank CSV
+        cell).
+
+        Args:
+            attribute: Attribute being scored.
+            y_true: Gold values for this (sub)set.
+            y_pred: Predictions aligned with ``y_true``.
+            metrics: Metric name → callable map to apply.
+            suffix: Appended to each metric name (e.g. ``_given_good_source``).
+
+        """
+        for metric_name, metric_fn in metrics.items():
+            metric_key = f"{metric_name}{suffix}"
+            try:
+                value = float(metric_fn(y_true, y_pred))
+            except (ValueError, TypeError) as error:
+                logger.warning(
+                    f"Metric '{metric_key}' not applicable for "
+                    f"attribute '{attribute.attribute_label}' "
+                    f"(type={attribute.output_data_type}): {error}"
+                )
+                value = None
+            self.calculated_metrics.append(
+                AttributeScoreMetric(
+                    attribute=attribute,
+                    metric_name=metric_key,
+                    value=value,
+                    extraction_run_id=self.extraction_run_id,
+                )
+            )
+
+    def _source_fidelity_fields(
+        self,
+        *,
+        attribute: Attribute,
+        gold_value: object,
+        predicted_value: object | None,
+        citation_haystack: str,
+        context: str | None,
+    ) -> tuple[bool | None, bool | None, str | None]:
+        """
+        Compute citation/context presence and match status when in scope.
+
+        Returns:
+            ``(gold_in_citation, gold_in_context, match_status)``, or three
+            ``None`` values for attribute types outside source fidelity.
+
+        """
+        if attribute.output_data_type not in SOURCE_FIDELITY_ATTRIBUTE_TYPES:
+            return None, None, None
+        threshold = self.metric_settings.edit_distance_match_threshold
+        gold_in_citation = is_gold_value_in_text(
+            gold_value=gold_value,
+            haystack_text=citation_haystack,
+            attribute_type=attribute.output_data_type,
+            edit_distance_threshold=threshold,
+            allow_string_near_match=True,
+        )
+        gold_in_context = is_gold_value_in_text(
+            gold_value=gold_value,
+            haystack_text=context,
+            attribute_type=attribute.output_data_type,
+            edit_distance_threshold=threshold,
+            allow_string_near_match=False,
+        )
+        match_status = classify_match_status(
+            gold_value=gold_value,
+            predicted_value=predicted_value,
+            gold_in_context=gold_in_context,
+            attribute_type=attribute.output_data_type,
+            edit_distance_threshold=threshold,
+        )
+        return gold_in_citation, gold_in_context, match_status
+
+    def _collect_attribute_rows(self, attribute: Attribute) -> list[EvaluationRow]:
+        """Collect gold/prediction/source fidelity rows for one attribute."""
+        rows: list[EvaluationRow] = []
+        for document in self.gold_standard_annotated_documents:
+            doc_id = document.document.safe_identity.document_id
+            logger.debug(f"Extracting gold/LLM values for doc {doc_id}")
+            gs_val = document.get_attribute_annotation(attribute).output_data
+            gold_real = next(
+                (
+                    ann
+                    for ann in document.annotations
+                    if ann.attribute.attribute_id == attribute.attribute_id
+                ),
+                None,
+            )
+            citation_haystack = (
+                _citation_haystack_from_annotation(gold_real)
+                if gold_real is not None
+                else ""
+            )
+
+            context: str | None = None
+            llm_val: Any | None = None
+            try:
+                llm_doc = self.llm_annotated_documents.get_by_id(doc_id)
+                context = (
+                    str(text)
+                    if (text := llm_doc.document.context) not in (None, "")
+                    else None
+                )
+            except MissingDocumentError:
+                logger.warning(f"LLM annotated doc not found - ID: {doc_id}")
+                gold_in_citation, gold_in_context, match_status = (
+                    self._source_fidelity_fields(
                         attribute=attribute,
-                        metric_name=metric_name,
-                        value=value,
-                        extraction_run_id=self.extraction_run_id,
+                        gold_value=gs_val,
+                        predicted_value=None,
+                        citation_haystack=citation_haystack,
+                        context=context,
                     )
                 )
+                rows.append(
+                    EvaluationRow(
+                        document_id=doc_id,
+                        gold_value=gs_val,
+                        predicted_value=None,
+                        citation_haystack=citation_haystack,
+                        context=context,
+                        gold_in_citation=gold_in_citation,
+                        gold_in_context=gold_in_context,
+                        match_status=match_status,
+                    )
+                )
+                continue
+
+            try:
+                llm_val = llm_doc.get_attribute_annotation(attribute).output_data
+            except DuplicateAnnotationError:
+                logger.warning(
+                    f"LLM produced multiple annotations for a single"
+                    f" attribute with doc: {doc_id}"
+                )
+                llm_val = None
+
+            gold_in_citation, gold_in_context, match_status = (
+                self._source_fidelity_fields(
+                    attribute=attribute,
+                    gold_value=gs_val,
+                    predicted_value=llm_val,
+                    citation_haystack=citation_haystack,
+                    context=context,
+                )
+            )
+            rows.append(
+                EvaluationRow(
+                    document_id=doc_id,
+                    gold_value=gs_val,
+                    predicted_value=llm_val,
+                    citation_haystack=citation_haystack,
+                    context=context,
+                    gold_in_citation=gold_in_citation,
+                    gold_in_context=gold_in_context,
+                    match_status=match_status,
+                )
+            )
+        return rows
+
+    def _rows_by_document_id(
+        self, attribute: Attribute
+    ) -> dict[int | str | None, EvaluationRow]:
+        """
+        Return evaluation rows for ``attribute``, collecting if needed.
+
+        Used by comparison export so source-fidelity fields are not recomputed.
+        """
+        rows = self._evaluation_rows_by_attribute.get(attribute.attribute_id)
+        if rows is None:
+            rows = self._collect_attribute_rows(attribute)
+            self._evaluation_rows_by_attribute[attribute.attribute_id] = rows
+        return {row.document_id: row for row in rows}
 
     def display_metrics(self) -> None:
         """Print metrics in a nice table to the command line."""
@@ -286,25 +572,46 @@ class GoldStandardLLMEvaluator:
             metrics_sorted, key=lambda m: m.attribute.attribute_label
         ):
             row = [attribute]
-            group_metrics = {str(m.metric_name): m.value for m in group}
+            group_metrics: dict[str, float | int | None] = {}
+            for metric in group:
+                if isinstance(metric, AttributeCountMetric | AttributeScoreMetric):
+                    group_metrics[str(metric.metric_name)] = metric.value
             # fill cells in order of metric_names
-            row += [
-                f"{group_metrics[name]:.4f}"
-                if group_metrics.get(name) is not None
-                else "N/A"
-                for name in metric_names
-            ]
+            formatted: list[str] = []
+            for name in metric_names:
+                value = group_metrics.get(name)
+                if value is None:
+                    formatted.append("N/A")
+                elif isinstance(value, int) and not isinstance(value, bool):
+                    formatted.append(str(value))
+                else:
+                    formatted.append(f"{float(value):.4f}")
+            row += formatted
             table.add_row(*row)
 
         console.print(table)
 
     def write_metrics_to_csv(self, filepath: Path) -> None:
-        """Save metrics to csv."""
+        """Save metrics to csv in wide format via :class:`RunMetricsReport`."""
         if filepath.suffix != ".csv":
             bad_filetype = "file ending must be .csv"
             raise ValueError(bad_filetype)
-        for metric in self.calculated_metrics:
-            metric.save_to_csv(filepath=filepath)
+        report = RunMetricsReport.from_attribute_metrics(
+            extraction_run_id=self.extraction_run_id,
+            calculated_metrics=self.calculated_metrics,
+        )
+        report.to_csv(filepath)
+
+    def write_metrics_to_json(self, filepath: Path) -> None:
+        """Save metrics to JSON via :class:`RunMetricsReport`."""
+        if filepath.suffix != ".json":
+            bad_filetype = "file ending must be .json"
+            raise ValueError(bad_filetype)
+        report = RunMetricsReport.from_attribute_metrics(
+            extraction_run_id=self.extraction_run_id,
+            calculated_metrics=self.calculated_metrics,
+        )
+        report.to_json(filepath)
 
     def export_llm_comparison(
         self,
@@ -358,10 +665,17 @@ class GoldStandardLLMEvaluator:
                     "llm_verbatim_text",
                     "human_verbatim_fuzzy_match_pct",
                     "llm_verbatim_fuzzy_match_pct",
+                    "gold_value_in_citation",
+                    "gold_value_in_context",
+                    "match_status",
                     "extraction_run_id",
                 ],
             )
             writer.writeheader()
+            rows_by_attr: dict[int, dict[int | str | None, EvaluationRow]] = {
+                attribute.attribute_id: self._rows_by_document_id(attribute)
+                for attribute in self.attributes
+            }
             for doc in self.gold_standard_annotated_documents:
                 try:
                     llm_annotated_doc = self.llm_annotated_documents.get_by_id(
@@ -377,6 +691,10 @@ class GoldStandardLLMEvaluator:
                 )
 
                 for attribute in self.attributes:
+                    eval_row = rows_by_attr[attribute.attribute_id].get(
+                        doc.document.safe_identity.document_id
+                    )
+
                     human_ann = doc.get_attribute_annotation(attribute)
                     gold_real = next(
                         (
@@ -429,6 +747,15 @@ class GoldStandardLLMEvaluator:
                                 "for this single attribute"
                             )
 
+                    if eval_row is not None:
+                        gold_in_citation = eval_row.gold_in_citation
+                        gold_in_context = eval_row.gold_in_context
+                        match_status = eval_row.match_status
+                    else:
+                        gold_in_citation = None
+                        gold_in_context = None
+                        match_status = None
+
                     writer.writerow(
                         {
                             "document_id": doc.document.safe_identity.document_id,
@@ -447,6 +774,15 @@ class GoldStandardLLMEvaluator:
                             "llm_verbatim_text": llm_verbatim,
                             "human_verbatim_fuzzy_match_pct": f"{human_fuzzy:.2f}",
                             "llm_verbatim_fuzzy_match_pct": f"{llm_fuzzy:.2f}",
+                            "gold_value_in_citation": (
+                                ""
+                                if gold_in_citation is None
+                                else str(gold_in_citation)
+                            ),
+                            "gold_value_in_context": (
+                                "" if gold_in_context is None else str(gold_in_context)
+                            ),
+                            "match_status": match_status or "",
                             "extraction_run_id": self.extraction_run_id,
                         }
                     )

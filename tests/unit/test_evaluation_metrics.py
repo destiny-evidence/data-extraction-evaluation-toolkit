@@ -57,8 +57,9 @@ def test_edit_distance_match_rate_rejects_length_mismatch() -> None:
 
 
 def test_edit_distance_match_rate_empty_lists() -> None:
-    """Empty aligned lists yield 0.0."""
-    assert edit_distance_match_rate([], []) == 0.0
+    """Empty aligned lists raise, matching sklearn empty-input behaviour."""
+    with pytest.raises(ValueError, match="non-empty"):
+        edit_distance_match_rate([], [])
 
 
 def test_mean_absolute_error_rounding_vs_hallucination() -> None:

@@ -72,10 +72,11 @@ def edit_distance_match_rate(
             match. Defaults to ``0.90``.
 
     Returns:
-        Match rate in ``[0.0, 1.0]``. Returns ``0.0`` when both lists are empty.
+        Match rate in ``[0.0, 1.0]``.
 
     Raises:
-        ValueError: If ``y_true`` and ``y_pred`` have different lengths.
+        ValueError: If ``y_true`` and ``y_pred`` have different lengths, or
+            either list is empty (mirroring sklearn empty-input behaviour).
         TypeError: If any prediction is ``None``.
 
     """
@@ -89,7 +90,8 @@ def edit_distance_match_rate(
         msg = "edit_distance_match_rate does not accept None predictions"
         raise TypeError(msg)
     if not y_true:
-        return 0.0
+        msg = "edit_distance_match_rate requires non-empty y_true and y_pred"
+        raise ValueError(msg)
 
     matches = 0
     for true_val, pred_val in zip(y_true, y_pred, strict=True):
