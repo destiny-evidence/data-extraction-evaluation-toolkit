@@ -383,6 +383,25 @@ def test_call_llm(
             )
 
 
+def test_call_llm_forwards_ollama_num_ctx(
+    mock_litellm_completion, mock_settings, sample_eppi_attributes
+):
+    """Ollama requests should pass num_ctx matching max_context_tokens."""
+    mock_settings.llm_provider = LLMProvider.OLLAMA
+    config = DataExtractionConfig(
+        model=mock_settings.llm_model,
+        provider=LLMProvider.OLLAMA,
+        max_context_tokens=16384,
+    )
+    llm_extractor = create_llm_extractor(config, mock_settings)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+
+    llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    call_args = mock_litellm_completion.call_args
+    assert call_args.kwargs["num_ctx"] == 16384
+
+
 def test_parse_llm_response(
     llm_extractor, sample_eppi_attributes, sample_eppi_document
 ):

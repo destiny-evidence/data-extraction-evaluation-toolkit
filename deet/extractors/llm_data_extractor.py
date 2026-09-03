@@ -106,7 +106,20 @@ def _model_string_for_tokenisation(provider: LLMProvider, model: str) -> str:
 
 
 class DataExtractionConfig(BaseModel):
-    """Configuration for data extraction tasks."""
+    """
+    Configuration for data extraction tasks.
+
+    Context Window Parameters:
+        max_tokens: Controls maximum output (completion) length from the LLM.
+            Applies to all providers. E.g., for OpenAI/Azure.
+
+        max_context_tokens: Application-level input context budget. Controls the
+            maximum tokens used for the prompt (system message + attributes +
+            document). If exceeded, prompts are truncated by _enforce_context_limit().
+            Applies to all providers.
+
+        num_ctx (Ollama-only): For Ollama provider, also sets the model's total
+    """
 
     model_config = ConfigDict()
 
@@ -755,13 +768,13 @@ class LLMDataExtractor:
                 f"Estimated input cost: ${prompt_cost:.6f} USD ({input_tokens} tokens)"
             )
 
-        response = litellm.completion(
-            model=self.model,
-            api_key=self.llm_api_key,
-            api_base=self.api_base,
-            messages=messages,
-            temperature=self.config.temperature,
-            response_format={
+        completion_kwargs = {
+            "model": self.model,
+            "api_key": self.llm_api_key,
+            "api_base": self.api_base,
+            "messages": messages,
+            "temperature": self.config.temperature,
+            "response_format": {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "llm_annotation_response",
@@ -769,8 +782,21 @@ class LLMDataExtractor:
                     "strict": True,
                 },
             },
-            max_tokens=self.config.max_tokens,
-        )
+            "max_tokens": self.config.max_tokens,
+        }
+
+        # Add provider-specific parameters for context window handling
+        # Note: Different parameters control context windows across providers:
+        # - max_tokens (OpenAI/Azure): Maximum output (completion) length
+        # - max_context_tokens (config): Application-level input budget, enforced
+        #   via truncation in _enforce_context_limit()
+        # - num_ctx (Ollama-only): Sets the model's total context window size.
+        #   Passed to Ollama via LiteLLM kwargs to allow tuning the model's
+        #   available context, separate from our input truncation budget.
+        if self.config.provider == LLMProvider.OLLAMA:
+            completion_kwargs["num_ctx"] = self.config.max_context_tokens
+
+        response = litellm.completion(**completion_kwargs)
 
         msg = response.choices[0].message
 
