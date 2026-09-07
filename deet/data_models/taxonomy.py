@@ -109,10 +109,17 @@ class Concept(BaseModel):
             if value is None:
                 continue
             if isinstance(value, list | tuple):
-                parts.extend("; ".join(value))
+                joined = "; ".join(value)
+                if joined.strip():
+                    parts.append(joined)
             elif str(value).strip():
                 parts.append(str(value))
         if not parts:
+            # Fall back to the preferred label when the selected fields yield
+            # nothing (e.g. a concept with no altLabels under
+            # vocab_prompt_locations=[alt_labels]), rather than failing.
+            if self.pref_label and self.pref_label.strip():
+                return self.pref_label
             empty = (
                 f"No prompt text for concept {self.identifier}"
                 f" from fields: {fields}"
