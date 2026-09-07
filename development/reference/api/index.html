@@ -25985,7 +25985,9 @@ for the dev-val-test strategy.</p>
 <span class="normal">398</span>
 <span class="normal">399</span>
 <span class="normal">400</span>
-<span class="normal">401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DevValTestEvaluationStrategy</span><span class="p">(</span><span class="n">BaseEvaluationStrategy</span><span class="p">[</span><span class="n">DevValTestSplits</span><span class="p">]):</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DevValTestEvaluationStrategy</span><span class="p">(</span><span class="n">BaseEvaluationStrategy</span><span class="p">[</span><span class="n">DevValTestSplits</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Strategy to manage dynamic splitting into dev-val-test.&quot;&quot;&quot;</span>
 
     <span class="n">name</span> <span class="o">=</span> <span class="n">EvaluationStrategyName</span><span class="o">.</span><span class="n">DEV_VAL_TEST</span>
@@ -26078,6 +26080,8 @@ for the dev-val-test strategy.</p>
             <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">current_stage</span> <span class="o">=</span> <span class="n">DevValTestEvaluationStage</span><span class="o">.</span><span class="n">VALIDATION</span>
         <span class="k">except</span> <span class="n">SplitsValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">fail_with_message</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">dump_to_json</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_project</span><span class="o">.</span><span class="n">evaluation_splits_path</span><span class="p">)</span>
 
         <span class="n">notify</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Added </span><span class="si">{</span><span class="n">n_added</span><span class="si">}</span><span class="s2"> documents to validation set&quot;</span>
@@ -26271,9 +26275,7 @@ for the dev-val-test strategy.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/evaluation_strategies/dev_val_test.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">291</span>
-<span class="normal">292</span>
-<span class="normal">293</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">293</span>
 <span class="normal">294</span>
 <span class="normal">295</span>
 <span class="normal">296</span>
@@ -26303,7 +26305,9 @@ for the dev-val-test strategy.</p>
 <span class="normal">320</span>
 <span class="normal">321</span>
 <span class="normal">322</span>
-<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accept_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project_doc_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accept_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project_doc_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Accept the results of validation run and do final evaluation of test set.&quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">deet.extractors.cli_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">evaluate_extraction_pipeline</span><span class="p">,</span>
@@ -26543,9 +26547,7 @@ to the development set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/evaluation_strategies/dev_val_test.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">327</span>
 <span class="normal">328</span>
 <span class="normal">329</span>
 <span class="normal">330</span>
@@ -26556,7 +26558,9 @@ to the development set.</p>
 <span class="normal">335</span>
 <span class="normal">336</span>
 <span class="normal">337</span>
-<span class="normal">338</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">finalise_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project_doc_ids</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">finalise_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project_doc_ids</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add all remaining docs to test.&quot;&quot;&quot;</span>
     <span class="n">unassigned</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">get_unassigned_ids</span><span class="p">(</span><span class="n">project_doc_ids</span><span class="p">)</span>
 
@@ -26592,12 +26596,12 @@ to the development set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/evaluation_strategies/dev_val_test.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">342</span>
 <span class="normal">343</span>
 <span class="normal">344</span>
-<span class="normal">345</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reject_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reject_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Merge validation IDs into development and continue developing.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">development_ids</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">validation_ids</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">validation_ids</span> <span class="o">=</span> <span class="p">[]</span>
@@ -26625,9 +26629,7 @@ to the development set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/evaluation_strategies/dev_val_test.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">362</span>
-<span class="normal">363</span>
-<span class="normal">364</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">364</span>
 <span class="normal">365</span>
 <span class="normal">366</span>
 <span class="normal">367</span>
@@ -26664,7 +26666,9 @@ to the development set.</p>
 <span class="normal">398</span>
 <span class="normal">399</span>
 <span class="normal">400</span>
-<span class="normal">401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_splits_wizard</span><span class="p">(</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_splits_wizard</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">project</span><span class="p">:</span> <span class="n">DeetProject</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -26726,9 +26730,7 @@ to the development set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/evaluation_strategies/dev_val_test.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">267</span>
-<span class="normal">268</span>
-<span class="normal">269</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">269</span>
 <span class="normal">270</span>
 <span class="normal">271</span>
 <span class="normal">272</span>
@@ -26748,7 +26750,9 @@ to the development set.</p>
 <span class="normal">286</span>
 <span class="normal">287</span>
 <span class="normal">288</span>
-<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_validation_interactive</span><span class="p">(</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_validation_interactive</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">project_doc_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">experiment</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrate validation (prompt for args and dispatch validation).&quot;&quot;&quot;</span>
@@ -26957,7 +26961,9 @@ For programmatic use, provide the experiment directly.</p>
 <span class="normal">262</span>
 <span class="normal">263</span>
 <span class="normal">264</span>
-<span class="normal">265</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_run</span><span class="p">(</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">project_doc_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">experiment</span><span class="p">:</span> <span class="n">ExperimentArtefacts</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -26995,6 +27001,8 @@ For programmatic use, provide the experiment directly.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">current_stage</span> <span class="o">=</span> <span class="n">DevValTestEvaluationStage</span><span class="o">.</span><span class="n">VALIDATION</span>
     <span class="k">except</span> <span class="n">SplitsValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">fail_with_message</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="o">.</span><span class="n">dump_to_json</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_project</span><span class="o">.</span><span class="n">evaluation_splits_path</span><span class="p">)</span>
 
     <span class="n">notify</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;Added </span><span class="si">{</span><span class="n">n_added</span><span class="si">}</span><span class="s2"> documents to validation set&quot;</span>
