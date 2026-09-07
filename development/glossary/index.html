@@ -1023,7 +1023,7 @@
 <dt>
 	<a id="f840e4cef9b4638662ea59211abb2e3f">data extraction experiment</a> 
 </dt>
-<dd>An instance of an automated data extraction pipeline, used to evaluate a specific experiment configuration</dd>
+<dd>An instance of an automated data extraction pipeline, used to evaluate a specific experiment configuration.</dd>
 
 <dt>
 	<a id="9656b28cf5c3edde05916d75db6a4d3e">attribute presence</a> 
@@ -1043,7 +1043,22 @@
 <dt>
 	<a id="2b36e1f8fe475899fe1ff30a19b50262">verbatim fuzzy match</a> 
 </dt>
-<dd>A 0–100 score for how well a support snippet is grounded in the document text used for extraction. For gold rows, the snippet is <code>human_additional_text</code> (the human annotator's supporting / verbatim text on the gold annotation, e.g. from EPPI reviwer). For LLM rows, the snippet is <code>llm_verbatim_text</code> (the model's <code>additional_text</code>). Scores are written to <code>human_verbatim_fuzzy_match_pct</code> and <code>llm_verbatim_fuzzy_match_pct</code> in the comparison CSV. Empty snippets score <code>0</code>. <em>Example:</em> if the human additional text appears almost unchanged in the document's markdown, the score is near <code>100</code>; if the text only partly overlaps the document wording, the score is lower; if it is missing from the markdown or there is no supporting text, the score is near <code>0</code>.</dd>
+<dd>A 0–100 score for how well a support snippet is grounded in the document text used for extraction. For gold rows, the snippet is <code>human_additional_text</code> (the human annotator's supporting / verbatim text on the gold annotation). For LLM rows, the snippet is <code>llm_verbatim_text</code> (the model's <code>additional_text</code>). Scores are written to <code>human_verbatim_fuzzy_match_pct</code> and <code>llm_verbatim_fuzzy_match_pct</code> in the comparison CSV. Empty snippets score <code>0</code>.</dd>
+
+<dt>
+	<a id="63a142ed0302bf864fc1e45c26134599">good source instance</a> 
+</dt>
+<dd>For STRING / INTEGER / FLOAT evaluation, a scored document-attribute instance where the gold value is found in parsed <code>context</code> (the text the LLM read). Counted in <code>n_good_source_instances</code>.</dd>
+
+<dt>
+	<a id="9570d071091db4500fffa0fecc52aac0">gold value in citation</a> 
+</dt>
+<dd>For STRING / INTEGER / FLOAT evaluation, whether the gold value is found in citation text (<code>additional_text</code> and/or <code>item_attribute_full_text_details</code>). Exported per row as <code>gold_value_in_citation</code> in <code>goldstandard_llm_comparison.csv</code>.</dd>
+
+<dt>
+	<a id="2a15dd035b47ef465fd1af7a7e9ac47f">match status</a> 
+</dt>
+<dd>Row-level outcome label in <code>goldstandard_llm_comparison.csv</code> for STRING / INTEGER / FLOAT (<code>match_status</code> column). Values: <code>exact_match</code> (gold equals LLM), <code>near_match</code> (STRING only: normalised Levenshtein similarity at or above the edit-distance threshold), <code>missing_prediction</code> (no LLM value), <code>extraction_error_bad_source</code> (mismatch and gold not in parsed context), <code>extraction_error_good_source</code> (mismatch and gold is in parsed context). Empty for BOOL rows.</dd>
 
 </dl>
 

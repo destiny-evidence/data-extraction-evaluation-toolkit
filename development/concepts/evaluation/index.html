@@ -612,6 +612,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricsjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#goldstandard_llm_comparisoncsv" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -672,6 +683,17 @@
     <span class="md-ellipsis">
       
         Verbatim grounding scores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#source-fidelity-and-match-status-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source-fidelity and match status fields
       
     </span>
   </a>
@@ -1343,6 +1365,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricsjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#goldstandard_llm_comparisoncsv" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1403,6 +1436,17 @@
     <span class="md-ellipsis">
       
         Verbatim grounding scores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#source-fidelity-and-match-status-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source-fidelity and match status fields
       
     </span>
   </a>
@@ -1569,7 +1613,7 @@ under <code>data-extraction-experiments/&lt;run_id&gt;/</code>.</p>
 <p>Artefact paths are defined by
 <a href="../../reference/api/#deet.data_models.project.ExperimentArtefacts"><code>deet.data_models.project.ExperimentArtefacts</code></a>.
 Metric registries live in
-<a href="../../reference/api/#deet.data_models.evaluation"><code>deet.data_models.evaluation</code></a>.</p>
+<a href="../../reference/api/#deet.evaluators.metrics"><code>deet.evaluators.metrics</code></a>.</p>
 <h2 id="what-is-compared">What is compared</h2>
 <p>For each attribute in the prompt CSV (non-empty <code>prompt</code>), and for each gold
 document, DEET collects:</p>
@@ -1585,9 +1629,9 @@ document, DEET collects:</p>
 <h2 id="output-artefacts">Output artefacts</h2>
 <p>Each successful <code>deet experiments evaluate</code> run creates a new folder and writes
 the files below. <code>deet experiments predict</code> extracts without scoring, so it
-does not write <code>metrics.csv</code> or <code>goldstandard_llm_comparison.csv</code>.</p>
+does not write <code>metrics.csv</code>, <code>metrics.json</code>, or <code>goldstandard_llm_comparison.csv</code>.</p>
 <h3 id="metricscsv"><code>metrics.csv</code></h3>
-<p>One row per attribute × metric. Produced by
+<p>Wide metrics table (one row per attribute, metric names as columns). Produced by
 <a href="../../reference/api/#deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator.write_metrics_to_csv"><code>GoldStandardLLMEvaluator.write_metrics_to_csv</code></a>
 via <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetric"><code>AttributeMetric</code></a>.</p>
 <table>
@@ -1599,6 +1643,10 @@ via <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetric"><
 </thead>
 <tbody>
 <tr>
+<td><code>extraction_run_id</code></td>
+<td>Run folder / run id</td>
+</tr>
+<tr>
 <td><code>attribute_id</code></td>
 <td>Attribute identifier</td>
 </tr>
@@ -1607,16 +1655,24 @@ via <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetric"><
 <td>Human-readable attribute name</td>
 </tr>
 <tr>
-<td><code>value</code></td>
-<td>Metric score, or empty if the metric could not be computed (including when any LLM prediction is missing or invalid — same failure behaviour across metric types)</td>
+<td><code>attribute_type</code></td>
+<td>Output type (<code>BOOL</code>, <code>STRING</code>, <code>INTEGER</code>, <code>FLOAT</code>, etc.)</td>
 </tr>
 <tr>
-<td><code>extraction_run_id</code></td>
-<td>Run folder / run id</td>
+<td><code>n_gold_instances</code></td>
+<td>Number of document-attribute instances scored for this attribute</td>
 </tr>
 <tr>
-<td><code>metric_name</code></td>
-<td>Name of the metric (see below)</td>
+<td><code>n_good_source_instances</code></td>
+<td>Number of instances where the gold value is found in parsed <code>context</code> (STRING/INTEGER/FLOAT only)</td>
+</tr>
+<tr>
+<td><code>n_good_citation_instances</code></td>
+<td>Number of instances where the gold value is found in citation text (<code>additional_text</code> and/or <code>item_attribute_full_text_details</code>) (STRING/INTEGER/FLOAT only)</td>
+</tr>
+<tr>
+<td>metric columns (e.g. <code>accuracy</code>, <code>precision</code>, <code>mean_absolute_error</code>)</td>
+<td>Score value, or empty if not applicable / not computable</td>
 </tr>
 </tbody>
 </table>
@@ -1635,11 +1691,11 @@ via <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetric"><
 </tr>
 <tr>
 <td><strong>STRING</strong></td>
-<td><code>accuracy</code>, <code>edit_distance_match_rate</code></td>
+<td><code>accuracy</code>, <code>edit_distance_match_rate</code>, plus stratified variants <code>*_given_good_source</code> and <code>*_given_bad_source</code></td>
 </tr>
 <tr>
 <td><strong>INTEGER</strong> / <strong>FLOAT</strong></td>
-<td><code>accuracy</code>, <code>mean_absolute_error</code>, <code>mean_absolute_percentage_error</code></td>
+<td><code>accuracy</code>, <code>mean_absolute_error</code>, <code>mean_absolute_percentage_error</code>, plus stratified variants <code>*_given_good_source</code> and <code>*_given_bad_source</code></td>
 </tr>
 <tr>
 <td><strong>LIST</strong> / <strong>DICT</strong></td>
@@ -1659,12 +1715,44 @@ via <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetric"><
   numeric error. These complement exact-match accuracy; they do not replace it.
   Missing or invalid LLM predictions (e.g. failed document extraction or
   duplicate annotations → <code>None</code>) cause the metric to fail for that attribute,
-  as with binary metrics — the CSV <code>value</code> is left empty rather than scoring
+  as with binary metrics — the CSV cell is left empty rather than scoring
   only the successful subset. MAPE is undefined when a gold value is zero
-  (sklearn behaviour); that also leaves <code>value</code> empty.</li>
+  (sklearn behaviour); that also leaves the cell empty.</li>
 </ul>
+<p>For STRING / INTEGER / FLOAT, metrics are exported in three views:</p>
+<ul>
+<li><strong>Unconditional</strong> (all scored instances), e.g. <code>accuracy</code></li>
+<li><strong>Given good source</strong> (<code>gold value in context</code>), e.g. <code>accuracy_given_good_source</code></li>
+<li><strong>Given bad source</strong> (<code>gold value not in context</code>), e.g. <code>accuracy_given_bad_source</code></li>
+</ul>
+<p>When a stratified subset is empty (for example every instance is good-source, so
+there are no bad-source rows), those <code>*_given_*</code> cells are left <strong>empty</strong>. Score
+metrics raise on empty inputs (as with sklearn), and the evaluator records
+<code>None</code> rather than a misleading <code>0</code>.</p>
 <p>You can also pass extra sklearn metric names with
 <code>--custom-evaluation-metrics</code> on <code>deet experiments evaluate</code>.</p>
+<h3 id="metricsjson"><code>metrics.json</code></h3>
+<p>Machine-readable metric export with the same values as <code>metrics.csv</code>, grouped by
+attribute. Produced by
+<a href="../../reference/api/#deet.evaluators.gold_standard_llm_evaluator.GoldStandardLLMEvaluator.write_metrics_to_json"><code>GoldStandardLLMEvaluator.write_metrics_to_json</code></a>.</p>
+<p>Top-level fields:</p>
+<ul>
+<li><code>extraction_run_id</code></li>
+<li><code>format_version</code></li>
+<li><code>attributes</code> (list)</li>
+</ul>
+<p>The file is serialised and de-serialised by
+<a href="../../reference/api/#deet.data_models.evaluation.RunMetricsReport"><code>RunMetricsReport</code></a>
+(one <a href="../../reference/api/#deet.data_models.evaluation.AttributeMetricsReport"><code>AttributeMetricsReport</code></a>
+per attribute). <code>attribute_type</code> reuses
+<a href="../../reference/api/#deet.data_models.base.AttributeType"><code>AttributeType</code></a>.
+Inapplicable keys are omitted (not written as <code>null</code>).</p>
+<p>Each attribute object includes:</p>
+<ul>
+<li><code>attribute_id</code>, <code>attribute_label</code>, <code>attribute_type</code></li>
+<li><code>counts</code> (e.g. <code>n_gold_instances</code>, <code>n_good_source_instances</code>)</li>
+<li><code>metrics</code> (e.g. <code>accuracy</code>, <code>accuracy_given_good_source</code>, etc.)</li>
+</ul>
 <h3 id="goldstandard_llm_comparisoncsv"><code>goldstandard_llm_comparison.csv</code></h3>
 <p>Side-by-side gold vs LLM values for every document × attribute pair evaluated.
 This is the main file for debugging failures and inspecting citations /
@@ -1805,7 +1893,7 @@ raw <code>item_attribute_full_text_details</code> remains available either way.<
 <td><code>human_verbatim_fuzzy_match_pct</code></td>
 <td><a class="mkdocs-ezglossary-link"
     id="c695f4df482d3e1795b18a720ce1865a"
-    title="A 0–100 score for how well a support snippet is grounded in the document text used for extraction. For gold rows, the snippet is human_additional_text (the human annotator&#39;s supporting / verbatim text on the gold annotation, e.g. from EPPI reviwer). For LLM rows, the snippet is llm_verbatim_text (the model&#39;s additional_text). Scores are written to human_verbatim_fuzzy_match_pct and llm_verbatim_fuzzy_match_pct in the comparison CSV. Empty snippets score 0. Example: if the human additional text appears almost unchanged in the document&#39;s markdown, the score is near 100; if the text only partly overlaps the document wording, the score is lower; if it is missing from the markdown or there is no supporting text, the score is near 0."
+    title="A 0–100 score for how well a support snippet is grounded in the document text used for extraction. For gold rows, the snippet is human_additional_text (the human annotator&#39;s supporting / verbatim text on the gold annotation). For LLM rows, the snippet is llm_verbatim_text (the model&#39;s additional_text). Scores are written to human_verbatim_fuzzy_match_pct and llm_verbatim_fuzzy_match_pct in the comparison CSV. Empty snippets score 0."
     name="term:verbatim fuzzy match"
     href="../../glossary/#2b36e1f8fe475899fe1ff30a19b50262">verbatim fuzzy match</a>: how well <code>human_additional_text</code> is grounded in the document context used for extraction (0–100)</td>
 </tr>
@@ -1819,6 +1907,65 @@ raw <code>item_attribute_full_text_details</code> remains available either way.<
 text used for extraction. Empty snippets score <code>0.00</code>. <code>human_additional_text</code>
 comes from the gold annotation's supporting / verbatim text (often from EPPI);
 <code>llm_verbatim_text</code> is the model's corresponding support text.</p>
+<h4 id="source-fidelity-and-match-status-fields">Source-fidelity and match status fields</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gold_value_in_citation</code></td>
+<td><code>True</code> / <code>False</code> for STRING/INTEGER/FLOAT: whether the gold value is found in citation text (<code>additional_text</code> and/or <code>item_attribute_full_text_details</code>)</td>
+</tr>
+<tr>
+<td><code>gold_value_in_context</code></td>
+<td><code>True</code> / <code>False</code> for STRING/INTEGER/FLOAT: whether the gold value is found in parsed <code>context</code> (what the LLM read)</td>
+</tr>
+<tr>
+<td><code>match_status</code></td>
+<td>Row-level outcome label for STRING/INTEGER/FLOAT (see below)</td>
+</tr>
+</tbody>
+</table>
+<p><code>match_status</code> values:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exact_match</code></td>
+<td>LLM <code>output_data</code> equals gold <code>output_data</code></td>
+</tr>
+<tr>
+<td><code>near_match</code></td>
+<td>STRING only: not exact, but normalised Levenshtein similarity is at least the edit-distance threshold (default <code>0.90</code>)</td>
+</tr>
+<tr>
+<td><code>missing_prediction</code></td>
+<td>No usable LLM value (<code>None</code>)</td>
+</tr>
+<tr>
+<td><code>extraction_error_bad_source</code></td>
+<td>Mismatch, and gold was <strong>not</strong> found in parsed context</td>
+</tr>
+<tr>
+<td><code>extraction_error_good_source</code></td>
+<td>Mismatch, and gold <strong>was</strong> found in parsed context</td>
+</tr>
+</tbody>
+</table>
+<p>BOOL rows leave these fields empty (source-fidelity checks are out of scope for
+bool values).</p>
+<p>For INTEGER / FLOAT source checks, numeric tokens are parsed from free text
+without thousand separators (e.g. gold <code>1000</code> is not matched to <code>"1,000"</code>),
+because comma forms are locale-ambiguous.</p>
 <h3 id="llm_annotationsjson"><code>llm_annotations.json</code></h3>
 <p>Full structured LLM output for the run: annotated documents (including
 document context and per-attribute annotations with <code>output_data</code>, reasoning,
@@ -1866,7 +2013,13 @@ documents or metric warnings).</p>
     title="Whether a gold-standard annotation for a given attribute exists on a document. In the comparison CSV this appears as attribute_presence (&#34;True&#34; or &#34;False&#34;). Absence does not always mean the gold value used for scoring is empty: missing annotations may still be represented with a type-specific default when metrics are computed."
     name="term:attribute presence"
     href="../../glossary/#9656b28cf5c3edde05916d75db6a4d3e">attribute presence</a>,
-   and inspect citations / verbatim fuzzy scores when diagnosing grounding.</li>
+   <a class="mkdocs-ezglossary-link"
+    id="b40df675aacb608364e869cd53a78875"
+    title="Row-level outcome label in goldstandard_llm_comparison.csv for STRING / INTEGER / FLOAT (match_status column). Values: exact_match (gold equals LLM), near_match (STRING only: normalised Levenshtein similarity at or above the edit-distance threshold), missing_prediction (no LLM value), extraction_error_bad_source (mismatch and gold not in parsed context), extraction_error_good_source (mismatch and gold is in parsed context). Empty for BOOL rows."
+    name="term:match status"
+    href="../../glossary/#2a15dd035b47ef465fd1af7a7e9ac47f">match status</a>, citation/context source-fidelity flags, and verbatim
+   fuzzy scores.</li>
+<li>Use <strong><code>metrics.json</code></strong> when consuming metrics programmatically.</li>
 <li>Use <strong><code>llm_annotations.json</code></strong> and <strong><code>extraction_metadata.json</code></strong> for full
    model payloads and cost/timing.</li>
 </ol>
