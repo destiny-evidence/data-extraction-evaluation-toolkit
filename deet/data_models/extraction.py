@@ -1,13 +1,95 @@
 """Data models for LLM extraction outputs."""
 
 from datetime import UTC, datetime
-from typing import Any, Self
+from enum import StrEnum
+from typing import Any, Final, Self
 
 from pydantic import BaseModel, Field, model_validator
 
 from deet.data_models.base import GoldStandardAnnotation
 from deet.data_models.documents import GoldStandardAnnotatedDocument
 from deet.utils.tokenisation import estimate_cost_usd, merge_prompt_completion_cost_usd
+
+
+class ExtractionPipelineStage(StrEnum):
+    """Named stages timed during an extraction pipeline run."""
+
+    annotation_conversion = "annotation_conversion"
+    prompt_population = "prompt_population"
+    document_preparation = "document_preparation"
+    llm_extraction = "llm_extraction"
+    artifact_export = "artifact_export"
+
+
+PIPELINE_STAGE_NOTES: Final[dict[ExtractionPipelineStage, str]] = {
+    ExtractionPipelineStage.annotation_conversion: (
+        "Load and normalise the gold-standard import into documents and attributes."
+    ),
+    ExtractionPipelineStage.prompt_population: (
+        "Attach custom prompts from the project prompt CSV. Zero if skipped."
+    ),
+    ExtractionPipelineStage.document_preparation: (
+        "Load linked documents from cache or parse/read PDF and markdown sources. "
+        "See per_document.parsing_seconds."
+    ),
+    ExtractionPipelineStage.llm_extraction: (
+        "LLM extraction for each document. See per_document.llm_call_seconds."
+    ),
+    ExtractionPipelineStage.artifact_export: (
+        "Write prompts snapshot, config snapshot, and this metadata file."
+    ),
+}
+
+
+def pipeline_stage_notes() -> dict[str, str]:
+    """Return human-readable notes keyed by pipeline stage name."""
+    return {
+        stage.value: PIPELINE_STAGE_NOTES[stage] for stage in ExtractionPipelineStage
+    }
+
+
+class RunMetadataNotes(BaseModel):
+    """Human-readable notes for timing fields in run metadata."""
+
+    total_pipeline_duration_seconds: str = (
+        "Wall-clock time for the extraction run, from loading project data "
+        "through export of experiment snapshots. Includes time spent answering "
+        "the interactive config wizard when no config file is provided."
+    )
+    stage_durations_seconds: dict[str, str] = Field(
+        default_factory=pipeline_stage_notes,
+    )
+    per_document: dict[str, str] = Field(
+        default_factory=lambda: {
+            "parsing_seconds": (
+                "Parse/read time during document preparation; null when "
+                "parsing_skipped is true."
+            ),
+            "parsing_skipped": (
+                "True when full text came from cache and was not parsed this run."
+            ),
+            "llm_call_seconds": (
+                "Wall-clock time for the LLM request, including local prompt setup."
+            ),
+        },
+    )
+
+
+class DocumentParsingStats(BaseModel):
+    """Parsing timing for a single document during document preparation."""
+
+    parsing_seconds: float | None = None
+    parsing_skipped: bool = True
+
+
+class PerDocumentExtractionStats(BaseModel):
+    """Per-document tokens and timing for an extraction run."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    parsing_seconds: float | None = None
+    parsing_skipped: bool = True
+    llm_call_seconds: float = 0.0
 
 
 class DocumentExtractionResult(BaseModel):
@@ -19,6 +101,7 @@ class DocumentExtractionResult(BaseModel):
     output_tokens: int = 0
     model: str | None = None
     total_cost_usd: float | None = None
+    llm_call_seconds: float = 0.0
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
 
     @model_validator(mode="after")
@@ -44,7 +127,10 @@ class ExtractionRunMetadata(BaseModel):
     total_input_tokens: int = 0
     total_output_tokens: int = 0
     total_cost_usd: float | None = None
-    per_document_tokens: dict[str, dict[str, int]] = Field(default_factory=dict)
+    per_document: dict[str, PerDocumentExtractionStats] = Field(default_factory=dict)
+    total_pipeline_duration_seconds: float | None = None
+    stage_durations_seconds: dict[str, float] = Field(default_factory=dict)
+    notes: RunMetadataNotes = Field(default_factory=RunMetadataNotes)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
 
 

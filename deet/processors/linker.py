@@ -12,9 +12,11 @@ from loguru import logger
 from pydantic import BaseModel, field_validator, model_validator
 
 from deet.data_models.documents import Document
+from deet.data_models.extraction import DocumentParsingStats
 from deet.exceptions import JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
+from deet.utils.timing import measure_elapsed
 
 parser = DocumentParser()
 
@@ -26,6 +28,7 @@ class LinkingStrategy(StrEnum):
     FILENAME_AUTHOR_YEAR_LONGEST = auto()
     FILENAME_AUTHOR_YEAR_LAST = auto()
     FILENAME_ID = auto()
+    FILENAME_EXTERNAL_ID = auto()
     # to add: some sort of interactive selection thing in CLI
     # or, later on, in UI.
 
@@ -166,11 +169,11 @@ class MappingImporter:
         }
 
 
-        Raises:
+        Raises
             JsonStyleError: if bad json style.
 
 
-        Returns:
+        Returns
             dict[int, Path]: the pre-validation object.
 
 
@@ -332,6 +335,7 @@ class DocumentReferenceLinker:
     LINKING_STRATEGY_HIERARCHY = [
         LinkingStrategy.MAPPING_FILE,
         LinkingStrategy.FILENAME_ID,
+        LinkingStrategy.FILENAME_EXTERNAL_ID,
     ]
 
     def __init__(
@@ -346,6 +350,13 @@ class DocumentReferenceLinker:
         # deep copies to ensure lookup tables don't modify validators
         # on our existing reference docuemnts.
         tmp_refs = [doc.model_copy(deep=True) for doc in references]
+        # initialise identity only where missing, to ensure heuristic strategies work.
+        for doc in tmp_refs:
+            if (
+                doc.document_identity is None
+                or doc.document_identity.document_id is None
+            ):
+                doc.init_document_identity(return_id=False)
         self.documents_references = references
 
         # lookup dics for O(1) id & author_year based lookup
@@ -355,7 +366,17 @@ class DocumentReferenceLinker:
             if doc.document_identity.document_id is not None  # type:ignore[union-attr]
         }
         logger.debug(self._references_by_id.keys())
+
+        logger.debug("populating _references_by_external_id lookup...")
+        self._references_by_external_id: dict[str, Document] = {
+            str(doc.document_identity.external_id): doc  # type:ignore[union-attr]
+            for doc in tmp_refs
+            if doc.document_identity.external_id is not None  # type:ignore[union-attr]
+        }
+        logger.debug(self._references_by_external_id.keys())
+
         try:
+            logger.debug("populating _references_by_author_year lookup (longest)...")
             self._references_by_author_year_longest: dict[str, Document] = {
                 doc.author_year_from_document_identity(
                     substring_strategy="longest"
@@ -367,6 +388,7 @@ class DocumentReferenceLinker:
             self._references_by_author_year_longest = {}
 
         try:
+            logger.debug("populating _references_by_author_year lookup (last)...")
             self._references_by_author_year_last: dict[str, Document] = {
                 doc.author_year_from_document_identity(substring_strategy="last"): doc
                 for doc in tmp_refs
@@ -388,6 +410,7 @@ class DocumentReferenceLinker:
         self.parser = parser
 
         self.linking_strategies = linking_strategies or self.LINKING_STRATEGY_HIERARCHY
+        self.document_parsing_stats: dict[str, DocumentParsingStats] = {}
 
     def _create_linking_factory(
         self, linking_strategy: LinkingStrategy
@@ -415,6 +438,7 @@ class DocumentReferenceLinker:
                 self._get_linkages_filename_author_year, "last"
             ),
             LinkingStrategy.FILENAME_ID: self._get_linkages_filename_id,
+            LinkingStrategy.FILENAME_EXTERNAL_ID: self._get_linkages_filename_external_id,  # noqa:E501
         }
 
         return linking_strategy_map[linking_strategy]
@@ -431,7 +455,7 @@ class DocumentReferenceLinker:
           therein.
 
 
-        Yields:
+        Yields
              Generator[LinkedInterimPayload].
 
         """
@@ -472,7 +496,7 @@ class DocumentReferenceLinker:
         best guess at `author_year.pdf` filename structure.
 
 
-        Yields:
+        Yields
             Generator[LinkedInterimPayload]:
 
 
@@ -523,7 +547,7 @@ class DocumentReferenceLinker:
         assumption that files are named `id.pdf`, e.g `12345678.pdf`.
 
 
-        Yields:
+        Yields
             Generator[LinkedInterimPayload]:
 
 
@@ -536,7 +560,11 @@ class DocumentReferenceLinker:
             if file.suffix not in [".md", ".pdf"]:
                 logger.warning(f"file {file} is not pdf/md. next!")
                 continue
-            id_guess = int(file.name.split(".")[0])
+            try:
+                id_guess = int(file.name.split(".")[0])
+            except ValueError:
+                logger.debug(f"{file.name} isn't convertible to int. next!")
+                continue
             unlinked_doc = self._references_by_id.get(id_guess)
             if unlinked_doc is None:
                 logger.debug(f"no reference document found for id {id_guess}. next!")
@@ -549,6 +577,90 @@ class DocumentReferenceLinker:
                 format=cast("Literal['md', 'pdf']", file.suffix[1:]),
                 unlinked_document=unlinked_doc,
             )
+
+    def _get_linkages_filename_external_id(self) -> Generator[LinkedInterimPayload]:
+        """
+        Yield linkages between files and reference-documents based on
+        assumption that files are named `external_id.pdf`, e.g `ABC123.pdf`.
+
+        This strategy looks up documents using their external_id field instead of
+        the internal document_id field.
+
+        Yields
+            Generator[LinkedInterimPayload]:
+
+        """
+        if not self.document_base_dir or not self.document_base_dir.is_dir():
+            bad_base_dir = "self.document_base_dir needs to be a valid directory."
+            raise ValueError(bad_base_dir)
+
+        for file in self.document_base_dir.iterdir():
+            if file.suffix not in [".md", ".pdf"]:
+                logger.warning(f"file {file} is not pdf/md. next!")
+                continue
+            # ID from filename
+            id_guess = str(file.stem)
+
+            # Try to find document by external ID
+            unlinked_doc = self._references_by_external_id.get(id_guess)
+            if unlinked_doc is None:
+                logger.debug(
+                    f"no reference document found for external id {id_guess}. next!"
+                )
+                continue
+
+            if unlinked_doc.document_identity is None:
+                unlinked_doc.init_document_identity()
+
+            yield LinkedInterimPayload(
+                document_id=unlinked_doc.document_identity.document_id,  # type:ignore[union-attr, arg-type]
+                file_path=file,
+                format=cast("Literal['md', 'pdf']", file.suffix[1:]),
+                unlinked_document=unlinked_doc,
+            )
+
+    def guess_file_paths(
+        self,
+        strategies: list[LinkingStrategy] | None = None,
+    ) -> dict[int, Path]:
+        """
+        Attempt to pre-fill doc-file mappings
+        using LinkingStrategies.
+
+        Returns
+            a dict of {document_id: matched_file_path}
+            for documents where a match was found.
+            Unmatched documents are absent from the result.
+
+            NOTE: MAPPING_FILE strategy is excluded, obviously.
+
+        """
+        default_strategies = [
+            LinkingStrategy.FILENAME_ID,
+            LinkingStrategy.FILENAME_EXTERNAL_ID,
+            LinkingStrategy.FILENAME_AUTHOR_YEAR_LONGEST,
+            LinkingStrategy.FILENAME_AUTHOR_YEAR_LAST,
+        ]
+        strategies = [
+            s
+            for s in (strategies or default_strategies)
+            if s != LinkingStrategy.MAPPING_FILE
+        ]
+        logger.debug(f"strategies for guessing file paths: {', '.join(strategies)}")
+
+        result: dict[int, Path] = {}
+
+        for strategy in strategies:
+            try:
+                factory = self._create_linking_factory(strategy)
+                for payload in factory():
+                    if payload.document_id not in result:  # first-match wins
+                        result[payload.document_id] = payload.file_path
+            except (TypeError, ValueError) as e:
+                logger.warning(f"pre-fill strategy {strategy} failed: {e}")
+                continue
+
+        return result
 
     @staticmethod
     def _parse_pdf(
@@ -669,6 +781,7 @@ class DocumentReferenceLinker:
         linked_documents: list[Document] = []
         processed_doc_ids = set()
         n_docs_to_link = len(self.documents_references)
+        self.document_parsing_stats = {}
 
         for strategy in self.linking_strategies:
             if len(linked_documents) == n_docs_to_link:
@@ -687,17 +800,30 @@ class DocumentReferenceLinker:
                         )
                         continue
 
-                    # parse only if pdf.
+                    doc_id_str = str(interim_payload.document_id)
                     if interim_payload.format == "pdf":
-                        parsed_output = self._parse_pdf(
-                            interim_payload.file_path,
-                            return_images=return_images,
-                            return_metadata=return_metadata,
+                        with measure_elapsed() as parse_timer:
+                            parsed_output = self._parse_pdf(
+                                interim_payload.file_path,
+                                return_images=return_images,
+                                return_metadata=return_metadata,
+                            )
+                        self.document_parsing_stats[doc_id_str] = DocumentParsingStats(
+                            parsing_seconds=parse_timer.seconds,
+                            parsing_skipped=False,
                         )
                     elif interim_payload.format == "md":
+                        with measure_elapsed() as parse_timer:
+                            md_text = interim_payload.file_path.read_text(
+                                encoding="utf-8"
+                            )
                         parsed_output = ParsedOutput(
-                            text=interim_payload.file_path.read_text(encoding="utf-8"),
+                            text=md_text,
                             parser_library="unknown",
+                        )
+                        self.document_parsing_stats[doc_id_str] = DocumentParsingStats(
+                            parsing_seconds=parse_timer.seconds,
+                            parsing_skipped=False,
                         )
                     else:
                         logger.warning(

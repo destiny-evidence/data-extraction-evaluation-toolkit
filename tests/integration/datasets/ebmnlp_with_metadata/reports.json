@@ -1,0 +1,199 @@
+{
+    "CodeSets": [
+        {
+            "SetName": "Mapping tool",
+            "ReviewSetId": 1,
+            "SetId": 1,
+            "SetType": {
+                "SetTypeName": "Standard",
+                "SetTypeDescription": "The Standard codeset type is used for regular coding such as keywording or data-extraction. This codeset type can contain multiple levels of child codes but cannot contain the special code types \"Include\" and \"Exclude\"."
+            },
+            "Attributes": {
+                "AttributesList": [
+                    {
+                        "AttributeId": 38,
+                        "AttributeName": "participants",
+                        "AttributeType": "Not selectable (no checkbox)",
+                        "AttributeDescription": "",
+                        "ExtURL": "",
+                        "ExtType": "",
+                        "OriginalAttributeID": 0,
+                        "AttributeSetId": 0,
+                        "AttributeTypeId": 1,
+                        "Attributes": {
+                            "AttributesList": [
+                                {
+                                    "AttributeId": 1,
+                                    "AttributeName": "participants",
+                                    "AttributeType": "Selectable (show checkbox)",
+                                    "AttributeDescription": "",
+                                    "ExtURL": "",
+                                    "ExtType": "",
+                                    "OriginalAttributeID": 0,
+                                    "AttributeSetId": 0,
+                                    "AttributeTypeId": 2
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "AttributeId": 41,
+                        "AttributeName": "participants_Age",
+                        "AttributeType": "Not selectable (no checkbox)",
+                        "AttributeDescription": "",
+                        "ExtURL": "",
+                        "ExtType": "",
+                        "OriginalAttributeID": 0,
+                        "AttributeSetId": 0,
+                        "AttributeTypeId": 1,
+                        "Attributes": {
+                            "AttributesList": [
+                                {
+                                    "AttributeId": 4,
+                                    "AttributeName": "participants_Age",
+                                    "AttributeType": "Selectable (show checkbox)",
+                                    "AttributeDescription": "",
+                                    "ExtURL": "",
+                                    "ExtType": "",
+                                    "OriginalAttributeID": 0,
+                                    "AttributeSetId": 0,
+                                    "AttributeTypeId": 2
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "AttributeId": 42,
+                        "AttributeName": "participants_Age_text",
+                        "AttributeType": "Not selectable (no checkbox)",
+                        "AttributeDescription": "",
+                        "ExtURL": "",
+                        "ExtType": "",
+                        "OriginalAttributeID": 0,
+                        "AttributeSetId": 0,
+                        "AttributeTypeId": 1,
+                        "Attributes": {
+                            "AttributesList": [
+                                {
+                                    "AttributeId": 5,
+                                    "AttributeName": "participants_Age_text",
+                                    "AttributeType": "Selectable (show checkbox)",
+                                    "AttributeDescription": "",
+                                    "ExtURL": "",
+                                    "ExtType": "",
+                                    "OriginalAttributeID": 0,
+                                    "AttributeSetId": 0,
+                                    "AttributeTypeId": 2
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "References": [
+        {
+            "Codes": [
+                {
+                    "AttributeId": 1,
+                    "AdditionalText": "eccentric-exercise-induced hamstring muscle damage .;; Thirty-six young male students performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups : 3 min of static active stretching ( SAS ) , 3 min of dynamic active stretching ( DAS ) , or control ( CON ) .;; subjects performed eccentric exercise immediately after stretching .",
+                    "ItemAttributeFullTextDetails": [],
+                    "ArmId": 0,
+                    "ArmTitle": ""
+                },
+                {
+                    "AttributeId": 4,
+                    "AdditionalText": "1",
+                    "ItemAttributeFullTextDetails": [],
+                    "ArmId": 0,
+                    "ArmTitle": ""
+                },
+                {
+                    "AttributeId": 5,
+                    "AdditionalText": "young;; students",
+                    "ItemAttributeFullTextDetails": [],
+                    "ArmId": 0,
+                    "ArmTitle": ""
+                }
+            ],
+            "Outcomes": [],
+            "ItemId": 25229605,
+            "Title": "Acute effects of static active or dynamic active stretching on eccentric-exercise-induced hamstring muscle damage .",
+            "Abstract": "OBJECTIVES To examine whether an acute bout of active or dynamic hamstring-stretching exercises would reduce the amount of muscle damage observed after a strenuous eccentric task and to determine whether the stretching protocols elicit similar responses . DESIGN A randomized controlled clinical trial . METHODS Thirty-six young male students performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups : 3 min of static active stretching ( SAS ) , 3 min of dynamic active stretching ( DAS ) , or control ( CON ) . All subjects performed eccentric exercise immediately after stretching . Heart rate , core temperature , maximal voluntary isometric contraction , passive hip flexion , passive hamstring stiffness ( PHS ) , plasma creatine kinase activity , and myoglobin were recorded at prestretching , at poststretching , and every day after the eccentric exercises for 5 d. RESULTS After stretching , the change in hip flexion was significantly higher in the SAS ( 5Â° ) and DAS ( 10.8Â° ) groups than in the CON ( -4.1Â° ) group . The change in PHS was significantly higher in the DAS ( 5.6 % ) group than in the CON ( -5.7 % ) and SAS ( -6.7 % ) groups . Furthermore , changes in muscle-damage markers were smaller in the SAS group than in the DAS and CON groups . CONCLUSIONS Prior active stretching could be useful for attenuating the symptoms of muscle damage after eccentric exercise . SAS is recommended over DAS as a stretching protocol in terms of strength , hamstring range of motion , and damage markers .",
+            "ParentTitle": "",
+            "ShortTitle": "",
+            "DateCreated": "",
+            "CreatedBy": "",
+            "DateEdited": "",
+            "EditedBy": "",
+            "Year": "2015",
+            "Month": "",
+            "StandardNumber": "",
+            "City": "",
+            "Country": "",
+            "Publisher": "",
+            "Institution": "",
+            "Volume": "",
+            "Pages": "",
+            "Edition": "",
+            "Issue": "",
+            "Availability": "",
+            "URL": "",
+            "OldItemId": "",
+            "Comments": "",
+            "TypeName": "",
+            "Authors": "",
+            "ParentAuthors": "",
+            "DOI": "",
+            "Keywords": "",
+            "ItemStatus": "",
+            "ItemStatusTooltip": "",
+            "QuickCitation": ""
+        },
+        {
+            "Codes": [
+                {
+                    "AttributeId": 1,
+                    "AdditionalText": "spinal anesthesia .;; Sixty patients undergoing ambulatory anterior cruciate ligament repair of the knee under spinal anesthesia were randomized into two groups ; Group 1;; Group 2",
+                    "ItemAttributeFullTextDetails": [],
+                    "ArmId": 0,
+                    "ArmTitle": ""
+                }
+            ],
+            "Outcomes": [],
+            "ItemId": 10960380,
+            "Title": "The anesthetic and recovery profile of two doses ( 60 and 80 mg ) of plain mepivacaine for ambulatory spinal anesthesia .",
+            "Abstract": "UNLABELLED Reports of transient neurological symptoms with the use of subarachnoid lidocaine has generated interest in alternate local anesthetics of intermediate duration , such as mepivacaine . This prospective randomized , double-blinded , dose-response study examined the anesthetic and recovery profiles of 60- and 80-mg doses of preservative-free plain mepivacaine for ambulatory spinal anesthesia . Sixty patients undergoing ambulatory anterior cruciate ligament repair of the knee under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose ) of plain mepivacaine . All patients received a combined spinal-epidural anesthetic technique . The epidural catheter was used only in the event the surgery outlasted the duration of surgical anesthesia with subarachnoid mepivacaine . Epidural supplementation was administered in three patients ( 12 % ) in Group 1 and one patient ( 3 % ) in Group 2 when the sensory block regressed to L-1 with surgery expected to last longer than 15 min . The cephalad dermatome level of the block and degree of motor block was comparable in the two groups . Times to two-segment and T-10 regression were comparable in the two groups ( 112 +/- 26 min in Group 1 versus 122 +/- 28 min in Group 2 ) . Time to L-1 regression was significantly longer in Group 2 ( 146 +/- 28 min in Group 1 versus 159 +/- 19 min in Group 2 ) . All of the ambulatory milestones were significantly faster in Group 1 . Side effects , such as hypotension and emesis were negligible , severe bradycardia and urinary retention did not occur , and none of the patients in the two groups reported transient neurological symptoms over 24 h. In conclusion , plain mepivacaine in a 60- or 80-mg dose is a suitable local anesthetic choice for ambulatory spinal anesthesia with respect to anesthetic , as well as recovery profiles . IMPLICATIONS We evaluated the anesthetic and recovery profiles of 60- and 80-mg doses of plain mepivacaine for ambulatory spinal anesthesia . Both doses produced comparable sensory and motor block . Sensory and motor regression and ambulatory milestones were 20-30 min longer with the 80-mg dose . Side effects were negligible and transient neurological symptoms were not reported during a 24-h follow-up .",
+            "ParentTitle": "",
+            "ShortTitle": "",
+            "DateCreated": "",
+            "CreatedBy": "",
+            "DateEdited": "",
+            "EditedBy": "",
+            "Year": "2010",
+            "Month": "",
+            "StandardNumber": "",
+            "City": "",
+            "Country": "",
+            "Publisher": "",
+            "Institution": "",
+            "Volume": "",
+            "Pages": "",
+            "Edition": "",
+            "Issue": "",
+            "Availability": "",
+            "URL": "",
+            "OldItemId": "",
+            "Comments": "",
+            "TypeName": "",
+            "Authors": "",
+            "ParentAuthors": "",
+            "DOI": "",
+            "Keywords": "",
+            "ItemStatus": "",
+            "ItemStatusTooltip": "",
+            "QuickCitation": ""
+        }
+    ]
+}

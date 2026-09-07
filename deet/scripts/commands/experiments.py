@@ -4,15 +4,13 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
+import typer
+
 if TYPE_CHECKING:
     from deet.data_models.project import DeetProject
 
-
-import typer
-
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.scripts.typer_context import project_required
-from deet.ui import fail_with_message
 
 app = typer.Typer(
     help=(
@@ -21,39 +19,57 @@ app = typer.Typer(
     )
 )
 
+# Shared options
+ConfigPathOption = Annotated[
+    Path | None,
+    typer.Option(
+        help="A path to a config file containing options for data "
+        "extraction configuration. A template with defaults is generated"
+        " on project setup."
+        "\nLeave this blank to configure interactively."
+    ),
+]
+
+PromptPopulationOption = Annotated[
+    CustomPromptPopulationMethod | None,
+    typer.Option(
+        help="A method to define custom prompts for your attributes to be "
+        "extracted. Leave blank to use the prompts in your gold standard "
+        "data. Set to `file` to provide a file of prompt definitions "
+        "(make sure this is supplied below). Set to `cli` to define prompts"
+        " interactively in the CLI. With `file`, only attributes that appear "
+        "in the CSV with a non-empty `prompt` are kept for extraction and "
+        "evaluation (see also `--csv-path`)."
+    ),
+]
+
+RunNameOption = Annotated[
+    str,
+    typer.Option(
+        help="A name for the run (which will appended to a timestamp) "
+        "to help you identify this run later"
+    ),
+]
+
+PromptPathOption = Annotated[
+    Path | None,
+    typer.Option(
+        help=(
+            "A custom location of a csv file to read prompts from"
+            " (if not default project location)"
+        )
+    ),
+]
+
 
 @app.command()
 @project_required
-def extract(
+def evaluate(  # noqa: PLR0913
     typer_context: typer.Context,
-    config_path: Annotated[
-        Path | None,
-        typer.Option(
-            help="A path to a config file containing options for data "
-            "extraction configuration. A template with defaults is generated"
-            " on project setup."
-            "\nLeave this blank to configure interactively."
-        ),
-    ] = None,
-    prompt_population: Annotated[
-        CustomPromptPopulationMethod | None,
-        typer.Option(
-            help="A method to define custom prompts for your attributes to be "
-            "extracted. Leave blank to use the prompts in your gold standard "
-            "data. Set to `file` to provide a file of prompt definitions "
-            "(make sure this is supplied below). Set to `cli` to define prompts"
-            " interactively in the CLI. With `file`, only attributes that appear "
-            "in the CSV with a non-empty `prompt` are kept for extraction and "
-            "evaluation (see also `--csv-path`)."
-        ),
-    ] = CustomPromptPopulationMethod.FILE,
-    run_name: Annotated[
-        str,
-        typer.Option(
-            help="A name for the run (which will appended to a timestamp) "
-            "to help you identify this run later"
-        ),
-    ] = "",
+    config_path: ConfigPathOption = None,
+    prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
+    prompt_csv_path: PromptPathOption = None,
+    run_name: RunNameOption = "",
     custom_evaluation_metrics: Annotated[
         list[str] | None,
         typer.Option(
@@ -72,59 +88,20 @@ def extract(
     documents in your dataset. Evaluate by comparing the results to the gold
     standard data.
     """
-    import yaml
-
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
-    from deet.extractors.cli_helpers import (
-        init_extraction_run,
-        load_config_from_typer_context,
-        prepare_documents,
-    )
-    from deet.extractors.llm_data_extractor import (
-        LLMDataExtractor,
-    )
+    from deet.evaluators.metrics import EvaluationMetricSettings
+    from deet.extractors.cli_helpers import run_extraction_pipeline
 
     deet_project: DeetProject = typer_context.obj.project
-    processed_annotation_data = deet_project.process_data()
 
-    config = load_config_from_typer_context(typer_context, config_path)
-
-    experiment_artefacts = init_extraction_run(deet_project.experiments_dir, run_name)
-
-    if prompt_population is not None:
-        processed_annotation_data.populate_custom_prompts(
-            method=prompt_population, filepath=deet_project.prompt_csv_path
+    run_output, processed_annotation_data, experiment_artefacts, config = (
+        run_extraction_pipeline(
+            deet_project=deet_project,
+            prompt_csv_path=prompt_csv_path,
+            config_path=config_path,
+            prompt_population=prompt_population,
+            run_name=run_name,
         )
-        if not processed_annotation_data.attributes:
-            fail_with_message(
-                "No attributes selected. Perhaps you forgot to edit your prompt file"
-            )
-
-    data_extractor = LLMDataExtractor(config=config)
-
-    documents = prepare_documents(
-        processed_annotation_data.documents,
-        config,
-        linked_document_path=deet_project.linked_documents_path,
-        pdf_dir=deet_project.pdf_dir,
-        link_map_path=deet_project.link_map_path,
-    )
-
-    run_output = data_extractor.extract_from_documents(
-        attributes=processed_annotation_data.attributes,
-        documents=documents,
-        context_type=data_extractor.config.default_context_type,
-        output_file=experiment_artefacts.llm_annotations,
-        show_progress=True,
-    )
-
-    processed_annotation_data.export_attributes_csv_file(
-        experiment_artefacts.prompts_snapshot
-    )
-
-    experiment_artefacts.config_snapshot.write_text(
-        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False),
-        encoding="utf-8",
     )
 
     evaluator = GoldStandardLLMEvaluator(
@@ -133,8 +110,80 @@ def extract(
         attributes=processed_annotation_data.attributes,
         custom_metrics=custom_evaluation_metrics,
         extraction_run_id=experiment_artefacts.run_id,
+        metric_settings=EvaluationMetricSettings(
+            edit_distance_match_threshold=config.edit_distance_match_threshold,
+        ),
     )
     evaluator.evaluate_llm_annotations()
     evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
+    evaluator.write_metrics_to_json(experiment_artefacts.metrics_json)
     evaluator.export_llm_comparison(experiment_artefacts.comparison)
     evaluator.display_metrics()
+
+
+@app.command()
+@project_required
+def predict(  # noqa: PLR0913
+    typer_context: typer.Context,
+    config_path: ConfigPathOption = None,
+    prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
+    prompt_csv_path: PromptPathOption = None,
+    run_name: RunNameOption = "",
+    ignore_references: bool = typer.Option(  # noqa: FBT001
+        default=False,
+        help=(
+            "Ignore references in gold standard data and just"
+            "extract from whatever is in your pdf_dir"
+        ),
+    ),
+) -> None:
+    """
+    Extract data from documents without evaluating.
+
+    Load gold standard annotation data, and use an LLM to extract data from the
+    documents in your dataset. When used with ignore_references = True,
+    documents are created directly from the files contained in pdf_dir.
+    """
+    from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+    from deet.extractors.cli_helpers import run_extraction_pipeline
+
+    deet_project: DeetProject = typer_context.obj.project
+
+    (run_output, processed_annotation_data, experiment_artefacts, _config) = (
+        run_extraction_pipeline(
+            deet_project=deet_project,
+            prompt_csv_path=prompt_csv_path,
+            config_path=config_path,
+            prompt_population=prompt_population,
+            run_name=run_name,
+            ignore_references=ignore_references,
+        )
+    )
+
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=[],
+        llm_annotated_documents=run_output.annotated_documents,
+        attributes=processed_annotation_data.attributes,
+        extraction_run_id=experiment_artefacts.run_id,
+    )
+    evaluator.export_llm_csv(experiment_artefacts.llm_annotation_csv)
+
+
+@app.command()
+@project_required
+def splits(
+    typer_context: typer.Context,
+    action: Annotated[
+        str | None,
+        typer.Option("--action", "-a", help="add-dev | validate"),
+    ] = None,
+    size: Annotated[
+        int | None,
+        typer.Option("--size", "-s", help="Documents to sample (bypasses prompt)."),
+    ] = None,
+) -> None:
+    """Manage evaluation splits for this project."""
+    deet_project: DeetProject = typer_context.obj.project
+    deet_project.load_evaluation_strategy().run_splits_wizard(
+        project=deet_project, action=action, size=size
+    )

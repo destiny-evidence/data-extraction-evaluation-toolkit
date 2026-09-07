@@ -1,0 +1,535 @@
+{
+  "CodeSets": [
+    {
+      "SetName": "Mapping tool",
+      "Attributes": {
+        "AttributesList": [
+          {
+            "AttributeId": 1,
+            "AttributeName": "Funding Source",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 2,
+            "AttributeName": "Species",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 3,
+            "AttributeName": "Model Type",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 4,
+            "AttributeName": "Model",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 5,
+            "AttributeName": "Strain",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 6,
+            "AttributeName": "Therapy Type",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 7,
+            "AttributeName": "Therapeutic Target",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 8,
+            "AttributeName": "Therapeutic Agent",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 54,
+            "AttributeName": "Other Therapeutic Information",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 47,
+            "AttributeName": "Therapeutic Notes",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 9,
+            "AttributeName": "Power Calculation",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 10,
+            "AttributeName": "Blinded for Treatment",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 11,
+            "AttributeName": "Pharmacokinetic Measures",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 12,
+            "AttributeName": "Toxicology Measures",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 13,
+            "AttributeName": "Use of Biomarkers",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 14,
+            "AttributeName": "Formula",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 15,
+            "AttributeName": "Duration of Treatment",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 16,
+            "AttributeName": "Age at the beginning of Treatment",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 17,
+            "AttributeName": "Sex as a Biological Variable",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 18,
+            "AttributeName": "Number of Premature deaths",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 19,
+            "AttributeName": "Statistical Plan",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 20,
+            "AttributeName": "Inclusion/Exclusion Criteria Included",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 21,
+            "AttributeName": "Randomized into Groups",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 22,
+            "AttributeName": "Blinded for Outcome Measures",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 23,
+            "AttributeName": "Pharmacodynamic Measures",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 24,
+            "AttributeName": "ADMET Measures",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 25,
+            "AttributeName": "Dosage",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 26,
+            "AttributeName": "Route of Delivery",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 27,
+            "AttributeName": "Frequency of Delivery",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 28,
+            "AttributeName": "Age at the end of Treatment",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 29,
+            "AttributeName": "Study Balanced for Sex as a Biological Variable",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 30,
+            "AttributeName": "Number of Excluded Animals",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 31,
+            "AttributeName": "Genetic Background",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 32,
+            "AttributeName": "Conflict of Interest",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 52,
+            "AttributeName": "ADME",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 41,
+            "AttributeName": "Behavioral",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 33,
+            "AttributeName": "Biochemical",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 34,
+            "AttributeName": "Biomarker",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 42,
+            "AttributeName": "Cell Biology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 53,
+            "AttributeName": "Chemistry",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 56,
+            "AttributeName": "Electron Microscopy",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 46,
+            "AttributeName": "Electrophysiology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 35,
+            "AttributeName": "Histopathology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 57,
+            "AttributeName": "Imaging",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 36,
+            "AttributeName": "Immunochemistry",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 49,
+            "AttributeName": "Immunology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 43,
+            "AttributeName": "Microscopy",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 44,
+            "AttributeName": "Motor Function",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 45,
+            "AttributeName": "Omics",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 37,
+            "AttributeName": "Pharmacodynamics",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 48,
+            "AttributeName": "Pharmacokinetics",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 50,
+            "AttributeName": "Pharmacology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 51,
+            "AttributeName": "Physiology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 58,
+            "AttributeName": "Protein Structures",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 38,
+            "AttributeName": "Spectroscopy",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 39,
+            "AttributeName": "Toxicology",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 55,
+            "AttributeName": "Outcomes Notes",
+            "AttributeType": "Selectable (show checkbox)"
+          },
+          {
+            "AttributeId": 40,
+            "AttributeName": "Study Type",
+            "AttributeType": "Selectable (show checkbox)"
+          }
+        ]
+      }
+    }
+  ],
+  "References": [
+    {
+      "Codes": [
+        {
+          "AttributeId": 1,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "National Institute on Aging (NIA), Alzheimer's Association, Mayo Foundation, John Douglas French Foundation, Smith Fellowship in Neurological Disease Research"
+        },
+        {
+          "AttributeId": 2,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Mouse"
+        },
+        {
+          "AttributeId": 3,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "APP"
+        },
+        {
+          "AttributeId": 4,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Tg2576"
+        },
+        {
+          "AttributeId": 5,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "C57BL/6.SJL"
+        },
+        {
+          "AttributeId": 6,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Small Molecule"
+        },
+        {
+          "AttributeId": 7,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "gamma Secretase"
+        },
+        {
+          "AttributeId": 8,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "R-Flurbiprofen/Tarenflurbil/MPC-7869"
+        },
+        {
+          "AttributeId": 47,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "R-Flurbiprofen is the R-enantiomer of the NSAID Flurbiprofen. It is not a cyclooxygenase (COX 1/COX 2) inhibitor. R-Flurbiprofen has recently been shown to modulate gamma secretase and selectively lower levels of Aβ42 and amyloid pathology in vivo. R-Flurbiprofen also modulates NFκB signaling pathways."
+        },
+        {
+          "AttributeId": 9,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 10,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 11,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 12,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 13,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 14,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 15,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 16,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 17,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 18,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 19,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 20,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 21,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 22,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 23,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 24,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 25,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 26,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 27,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 28,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 29,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 30,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 31,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Y"
+        },
+        {
+          "AttributeId": 32,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "N"
+        },
+        {
+          "AttributeId": 41,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Morris Water Maze"
+        },
+        {
+          "AttributeId": 33,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Brain-Detergent Soluble beta Amyloid Peptide 40, Brain-Detergent Soluble beta Amyloid Peptide 42, Brain-Formic Acid Soluble beta Amyloid Peptide 40, Brain-Formic Acid Soluble beta Amyloid Peptide 42"
+        },
+        {
+          "AttributeId": 35,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "beta Amyloid Load"
+        },
+        {
+          "AttributeId": 48,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Drug Concentration-Brain"
+        },
+        {
+          "AttributeId": 39,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Body Weight, General Health, Morbidity"
+        },
+        {
+          "AttributeId": 40,
+          "ItemAttributeFullTextDetails": [],
+          "AdditionalText": "Published"
+        }
+      ],
+      "Outcomes": [],
+      "ItemId": 15810807,
+      "Title": "Chronic administration of R-flurbiprofen attenuates learning impairments in transgenic amyloid precursor protein mice",
+      "ParentTitle": "",
+      "ShortTitle": "",
+      "DateCreated": "",
+      "CreatedBy": "",
+      "DateEdited": "",
+      "EditedBy": "",
+      "Year": "2007",
+      "Month": "",
+      "StandardNumber": "",
+      "City": "",
+      "Country": "",
+      "Publisher": "",
+      "Institution": "Departments Internal Medicine/Gerontology and the Department of Physiology and Pharmacology, Wake Forest University School of Medicine, Winston-Salem, North Carolina, USA",
+      "Volume": "",
+      "Pages": "",
+      "Edition": "",
+      "Issue": "",
+      "Availability": "",
+      "URL": "http://alzped.nia.nih.gov/chronic-administration-r",
+      "OldItemId": "",
+      "Abstract": "Extensive screening of NSAIDs, NSAID-derivatives and related compounds led to the identification of R-flurbiprofen as a promising selective Aβ42-lowering agent. R-Flurbiprofen is a purified enantiomer of the classical racemic NSAID flurbiprofen, which displays minimal COX activity and does not undergo stereoinversion in humans. R-flurbiprofen was observed to lower Aβ42 in cell culture and in the brain of young non-depositing Tg2576 APP mice following 3-days of oral dosing Based on R-flurbiprofen's selective lowering of Aβ42, reduced COX activity and safety profile in humans the authors suggested that this drug was a good candidate for clinical testing in AD.\n\nIn this study the authors report the effect of chronic R-flurbiprofen treatment on cognition and Aβ loads in a transgenic model of AD- Tg2576 APP mice. In two separate behavioral trials, long-term treatment initiated in young Tg2576 mice with 10 mg/kg/day R-flurbiprofen improved spatial learning as assessed by the Morris water maze (WM). A modest reduction in biochemical Aβ loads was also observed, though this did not reach statistical significance in either study. A 2-week treatment of older Tg2576 with the same dose of R-flurbiprofen decreased Aβ plaque levels (p < 0.0001) but did not result in any significant alteration in spatial learning.",
+      "Comments": "",
+      "TypeName": "",
+      "Authors": "Nicolle",
+      "ParentAuthors": "",
+      "DOI": "10.1186/1471-2202-8-54",
+      "Keywords": "",
+      "ItemStatus": "",
+      "ItemStatusTooltip": "",
+      "QuickCitation": ""
+    }
+  ]
+}

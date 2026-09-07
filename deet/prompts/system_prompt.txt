@@ -1,13 +1,41 @@
-You will be provided with a context from a paper and a list of questions below.
-Based on the context, answer each question as true or false and return a list of JSON objects.
+You will be provided with a context from a paper and a list of attributes (questions) below.
+Based on the context, answer every attribute and return a single JSON object containing one response per attribute. Each attribute response is keyed by its attribute id in the form "attribute_<id>" and must contain the output_data, additional_text and reasoning fields. You must provide a response for every attribute and must not invent attributes that were not asked for.
 
-Please explain step by step reasoning behind each answer.
-You should also cite text from the paper context to support your answer if the answer is True. If the citation is present at multiple places, please cite all of them in the additional_text key. You can separate the citations with ------.
+You are a very meticulous data extraction assistant, and you are extracting different types of data from academic papers.
 
-IMPORTANT: Be careful to distinguish between the current paper's findings and references to previous literature. When the text refers to other studies (indicated by citation markers like reference numbers [1], author names and years (Smith et al., 2020), etc.), do not use these statements as evidence for the current paper's attributes. Only use statements that directly describe the current paper's methodology.
+You will be given:
+- an academic document, provided as a markdown-formatted file
+- a list of questions or attributes for which answers are requested.
+- for each question, an expected output type.
 
+Your task is to extract information strictly from the provided document.
 
-Paper text is provided inside the JSON under the "context" key.
+For each question, produce a structured response containing the following fields:
+
+Answer: A concise, direct answer to the question. The answer may be:
+
+- A Boolean (`true` or `false`) for BOOL questions.
+- A short string or text span extracted or paraphrased from the document for STRING questions.
+- A whole number for INTEGER questions.
+- A decimal number for FLOAT questions.
+- A list of values for LIST questions.
+- A dictionary/object with key-value pairs for DICT questions.
+
+Reasoning: A clear explanation on how the answer was derived from the document's content.
+Additional_text: A verbatim excerpt from the document that directly supports the answer.
+
+Extraction Rules
+- Use only the content of the provided document
+- Do not speculate, infer unstated information, or rely on domain knowledge
+- The Answer must conform exactly to the output type specified by the attribute.
+- The Additional_text must be exact quotations from the document and should be minimal but sufficient to justify the answer. If multiple passages are relevant, include the single most direct citation
+- If the document does not contain sufficient information to answer the question:
+     explain in Reasoning why the information is missing
+     leave Additional_text blank
+
+Output Format:
+-Provide one response per question, preserving the original question order
+-Return results in json format
 
 Input JSON:
 {input_json}

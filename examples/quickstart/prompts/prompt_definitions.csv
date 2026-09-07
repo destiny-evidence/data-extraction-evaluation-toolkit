@@ -1,0 +1,5 @@
+prompt,output_data_type,attribute_id,attribute_label,attribute_selection_type,attribute_set_description,hierarchy_path,hierarchy_level,is_leaf,parent_attribute_id,attribute_description
+,bool,1,Relevant (major category),Selectable (show checkbox),,,0,True,,
+,bool,3,Mitigation,Selectable (show checkbox),,,0,True,,
+,bool,4,Adaptation,Selectable (show checkbox),,,0,True,,
+,bool,5,Impacts,Selectable (show checkbox),,,0,True,,

@@ -13,23 +13,27 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
+from loguru import logger
+
 if TYPE_CHECKING:
+    from deet.data_models.evaluation_strategies.base import (
+        BaseEvaluationStrategy,
+        BaseSplits,
+    )
     from deet.data_models.processed_gold_standard_annotations import (
         ProcessedAnnotationData,
     )
-
 
 import yaml
 from pydantic import (
     BaseModel,
     ConfigDict,
-    DirectoryPath,
     Field,
-    FilePath,
     PrivateAttr,
     field_validator,
 )
 
+from deet.data_models.enums import EvaluationStrategyName
 from deet.data_models.ui_schema import UI
 from deet.processors.converter_register import (
     SUPPORTED_EXTENSIONS,
@@ -53,12 +57,22 @@ class DeetProject(BaseModel):
         str,
         UI(
             help="Give your project a name. This will help you to identify it later",
-            valid="Must be at least 2 characters",
+            valid="Must be at least 1 character",
         ),
-    ] = Field(..., description="The name of a deet project", min_length=2)
+    ] = Field(..., description="The name of a deet project", min_length=1)
+
+    gold_standard_data_format: Annotated[
+        SupportedImportFormat,
+        UI(
+            help=(
+                "The format of a file describing documents,"
+                " attributes, and annotations."
+            )
+        ),
+    ] = Field(..., description="Format of gold standard annotations")
 
     gold_standard_data_path: Annotated[
-        FilePath,
+        Path,
         UI(
             help=(
                 "A file containing a list of documents from which you wish to"
@@ -70,29 +84,21 @@ class DeetProject(BaseModel):
             instructions="press Tab to autocomplete, '/' to go to next directory",
             valid="Must be a valid .csv or .json path",
         ),
-    ] = Field(..., description="Path to raw data")
-
-    gold_standard_data_format: Annotated[
-        SupportedImportFormat,
-        UI(
-            help=(
-                "The format of your raw data. "
-                "Choose from the list of supported formats"
-            )
-        ),
-    ] = Field(..., description="Format of gold standard annotations")
+    ] = Field(..., description="Path to gold standard annotated data")
 
     pdf_dir: Annotated[
-        DirectoryPath | None,
+        Path | None,
         UI(
             help=(
                 "If you want to extract data from full texts, "
                 "choose a directory that contains your pdfs."
                 " You will have an opportunity to link this later"
-                " by running `deet link-documents-fulltexts`"
+                " using a 'link map' created here"
             )
         ),
     ] = Field(None, description="Path to folder containing PDFs")
+
+    evaluation_strategy: EvaluationStrategyName = EvaluationStrategyName.NONE
 
     # Project metadata
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -117,6 +123,23 @@ class DeetProject(BaseModel):
         return self.root / "data-extraction-experiments"
 
     @property
+    def completed_experiments(self) -> list[ExperimentArtefacts]:
+        """Return all completed experiments."""
+        return sorted(
+            (
+                exp
+                for exp in (
+                    ExperimentArtefacts(base_dir=path)
+                    for path in self.experiments_dir.iterdir()
+                    if path.is_dir()
+                )
+                if exp.is_complete
+            ),
+            key=lambda exp: exp.run_id,
+            reverse=True,
+        )
+
+    @property
     def prompt_csv_path(self) -> Path:
         """Return path to prompt definition file."""
         return self.root / "prompts" / "prompt_definitions.csv"
@@ -136,6 +159,34 @@ class DeetProject(BaseModel):
         """Return path to config file."""
         return self.root / "default_extraction_config.yaml"
 
+    @property
+    def evaluation_splits_path(self) -> Path:
+        """Return path to file recording evaluation split state."""
+        return self.root / "evaluation_splits.json"
+
+    @property
+    def gold_standard_data_abspath(self) -> Path:
+        """
+        Return a usable path to the gold-standard data.
+
+        ``gold_standard_data_path`` is stored relative to the project root (and
+        never persisted as an absolute path, so ``project.yaml`` stays portable).
+        This joins it with the root only for I/O.
+        """
+        return self.root / self.gold_standard_data_path
+
+    @property
+    def pdf_dir_abspath(self) -> Path | None:
+        """
+        Return a usable path to the pdf directory, or None if unset.
+
+        ``pdf_dir`` is stored relative to the project root and joined with it here
+        only for I/O; it is never persisted as an absolute path.
+        """
+        if self.pdf_dir is None:
+            return None
+        return self.root / self.pdf_dir
+
     # Configuration and validation
     model_config = ConfigDict(
         json_encoders={Path: str},
@@ -144,21 +195,52 @@ class DeetProject(BaseModel):
 
     @field_validator("gold_standard_data_path", mode="after")
     @classmethod
-    def _abs_and_check_suffix(cls, value: Path) -> Path:
-        """Return absolute path, and check if extension is supported."""
-        abs_path = value.resolve()
-        if abs_path.suffix not in SUPPORTED_EXTENSIONS:
+    def check_suffix(cls, value: Path) -> Path:
+        """Check if extension is supported."""
+        if value.suffix not in SUPPORTED_EXTENSIONS:
             unsupported_ext = f"Unsupported extension, allowed: {SUPPORTED_EXTENSIONS}"
             raise ValueError(unsupported_ext)
-        return abs_path
+        return value
 
-    @field_validator("pdf_dir", mode="after")
+    @field_validator("pdf_dir", mode="before")
     @classmethod
-    def _process_pdf_dir(cls, value: Path) -> Path | None:
-        """Parse empty string to None (not cwd), otherwise resolve path."""
-        if value == "" or value is None:
+    def _process_pdf_dir(cls, value: object) -> object | None:
+        """Parse empty string to None (not cwd) before Path coercion."""
+        if isinstance(value, str) and value.strip() == "":
             return None
-        return value.resolve()
+        return value
+
+    def anchor_to(self, root: Path, source_dir: Path | None = None) -> None:
+        """
+        Anchor the project to ``root``, re-expressing resource paths relative to it.
+
+        Resource paths are authored relative to ``source_dir`` (default cwd, i.e.
+        where the wizard ran). They are rewritten relative to ``root`` so they stay
+        correct when ``root`` differs from that directory (as with
+        ``deet project new``). The stored values remain relative, never absolute.
+        """
+        source = source_dir or Path.cwd()
+        self.gold_standard_data_path = (
+            source / self.gold_standard_data_path
+        ).relative_to(root, walk_up=True)
+        if self.pdf_dir is not None:
+            self.pdf_dir = (source / self.pdf_dir).relative_to(root, walk_up=True)
+        self._root = root
+
+    def validate_resources(self) -> None:
+        """Check that the project's resource paths exist on disk."""
+        if not self.gold_standard_data_abspath.exists():
+            missing = (
+                f"Gold standard data not found at {self.gold_standard_data_abspath} "
+                f"(stored as '{self.gold_standard_data_path}', relative to {self.root})"
+            )
+            raise FileNotFoundError(missing)
+        if self.pdf_dir_abspath is not None and not self.pdf_dir_abspath.is_dir():
+            missing_pdfs = (
+                f"PDF directory not found at {self.pdf_dir_abspath} "
+                f"(stored as '{self.pdf_dir}', relative to {self.root})"
+            )
+            raise FileNotFoundError(missing_pdfs)
 
     def setup(self) -> None:
         """
@@ -167,13 +249,18 @@ class DeetProject(BaseModel):
         Create directory structure, process gold-standard data, and create
             prompt csv and link map
         """
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.validate_resources()
+
         processed_data = self.process_data()
         notify("Successfully parsed processed data.", level=LogLevel.SUCCESS)
 
         processed_data.export_attributes_csv_file(filepath=self.prompt_csv_path)
         notify("Initialised prompt definition file.", level=LogLevel.SUCCESS)
 
-        processed_data.export_linkage_mapper_csv(file_path=self.link_map_path)
+        processed_data.export_linkage_mapper_csv(
+            file_path=self.link_map_path, document_base_dir=self.pdf_dir_abspath
+        )
         notify("Initialised reference-pdf link mapping file.", level=LogLevel.SUCCESS)
 
         self.export_config_template()
@@ -184,8 +271,15 @@ class DeetProject(BaseModel):
 
         self.dump_to_yaml()
 
-    def dump_to_yaml(self, target: Path = PROJECT_FILE) -> None:
-        """Write a minimal ``project.yaml`` file to save project options."""
+    def dump_to_yaml(self) -> None:
+        """
+        Write a minimal ``project.yaml`` file to save project options.
+
+        Written to the project root by default. Resource paths are stored as their
+        relative values, never resolved to absolute, so the file stays portable.
+        """
+        target = self.root / PROJECT_FILE
+        target.parent.mkdir(parents=True, exist_ok=True)
         data = {"project": self.model_dump(mode="json")}
         with target.open("w", encoding="utf-8") as f:
             yaml.safe_dump(data, f)
@@ -201,20 +295,41 @@ class DeetProject(BaseModel):
         )
 
     @classmethod
-    def load(cls, filename: Path = PROJECT_FILE) -> DeetProject:
-        """Load a project from a toml file."""
-        data = yaml.safe_load(filename.read_text())
-        return cls.model_validate(data["project"])
+    def load(cls, project_dir: Path | None = None) -> DeetProject:
+        """
+        Load the project from ``project_dir`` (default: the current directory).
 
-    @classmethod
-    def exists(cls) -> bool:
-        """Check if project exists in current directory."""
-        return PROJECT_FILE.exists()
+        The project root is anchored to that directory; stored resource paths stay
+        relative and are resolved against it. deet commands are run from the project
+        directory.
+        """
+        root = (project_dir or Path.cwd()).resolve()
+        project_file = root / PROJECT_FILE
+        if not project_file.is_file():
+            not_found = f"No {PROJECT_FILE} found in {root}"
+            raise FileNotFoundError(not_found)
+        data = yaml.safe_load(project_file.read_text())
+        project = cls.model_validate(data["project"])
+        project._root = root  # noqa: SLF001
+        return project
 
     def process_data(self) -> ProcessedAnnotationData:
         """Process the project's gold standard data."""
         converter = self.gold_standard_data_format.get_annotation_converter()
-        return converter.process_annotation_file(self.gold_standard_data_path)
+        return converter.process_annotation_file(self.gold_standard_data_abspath)
+
+    def get_all_doc_ids(self) -> list[int]:
+        """Process the full dataset and return all document IDs."""
+        processed_data = self.process_data()
+        return processed_data.all_doc_ids
+
+    def load_evaluation_strategy(
+        self,
+    ) -> BaseEvaluationStrategy[BaseSplits]:
+        """Load split state."""
+        from deet.data_models.evaluation_strategies import STRATEGY_REGISTRY
+
+        return STRATEGY_REGISTRY[self.evaluation_strategy](self)
 
 
 @dataclass(frozen=True)
@@ -222,12 +337,40 @@ class ExperimentArtefacts:
     """Defines the structure of a data extraction experiment directory."""
 
     base_dir: Path
-    run_id: str
+
+    @classmethod
+    def create(cls, experiments_dir: Path, run_name: str) -> ExperimentArtefacts:
+        """Initialise and create a new experiments directory."""
+        extraction_run_id = (
+            datetime.now(tz=UTC).strftime("%Y-%m-%d_%H-%M-%S") + f"_{run_name}"
+        )
+
+        experiment_out_dir = experiments_dir / extraction_run_id
+        experiment_out_dir.mkdir(parents=True)
+
+        logger.add(experiment_out_dir / "deet.log", level="DEBUG")
+
+        return cls(base_dir=experiment_out_dir)
+
+    @property
+    def is_complete(self) -> bool:
+        """Verify the experiment directory contains a completed and evaluated run."""
+        return self.config_snapshot.exists() and self.metrics.exists()
+
+    @property
+    def run_id(self) -> str:
+        """Return identifier (based on the directory where the experiment lives)."""
+        return self.base_dir.name
 
     @property
     def metrics(self) -> Path:
         """Return location of experiment metrics."""
         return self.base_dir / "metrics.csv"
+
+    @property
+    def metrics_json(self) -> Path:
+        """Return location of experiment metrics JSON."""
+        return self.base_dir / "metrics.json"
 
     @property
     def comparison(self) -> Path:
@@ -245,6 +388,21 @@ class ExperimentArtefacts:
         return self.base_dir / "config.yaml"
 
     @property
+    def evaluation_splits_snapshot(self) -> Path:
+        """Return location of json capturing how docs were split for evaluation."""
+        return self.base_dir / "evaluation_splits.json"
+
+    @property
     def llm_annotations(self) -> Path:
         """Return location of json containing llm extractions."""
         return self.base_dir / "llm_annotations.json"
+
+    @property
+    def llm_annotation_csv(self) -> Path:
+        """Return location of csv containing llm extractions."""
+        return self.base_dir / "llm_annotations.csv"
+
+    @property
+    def extraction_metadata(self) -> Path:
+        """Return path to extraction metadata JSON (cost, tokens, timing)."""
+        return self.base_dir / "extraction_metadata.json"

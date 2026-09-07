@@ -23,21 +23,22 @@ jobs:
           - "3.12.11"
     if: github.event.pull_request.draft == false
     env:
+      DEET_STARTUP_BUDGET_S: 0.6 # Maximum time deet --help an take before tests break
       UV_CACHE_DIR: /tmp/.uv-cache  # Configure a constant location for the uv cache
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v8.3.2
         with:
-          version: "0.8.11"
+          version: "0.12.0"
 
       - name: Restore uv cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/.uv-cache
           key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
@@ -52,6 +53,9 @@ jobs:
         run: uv sync --locked --all-extras --dev
 
       - name: Run tests with pytest
+        env:
+          AZURE_API_KEY: "DUMMY_SECRET"
+          AZURE_API_BASE: "https://dummy.secret"
         run: |
           TARGET_BRANCH=""
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -64,10 +68,10 @@ jobs:
 
           if [ "$TARGET_BRANCH" = "main" ]; then
             echo "Running all tests (including real files)..."
-            uv run pytest --cov=deet --cov-report=xml
+            uv run pytest --cov=deet --cov-report=xml --record-mode=none
           else
             echo "Omitting real file parser tests..."
-            uv run pytest --ignore=tests/test_parser_real_files.py --cov=deet --cov-report=xml
+            uv run pytest --cov=deet --cov-report=xml --ignore=tests/test_parser_real_files.py  --record-mode=none
           fi
 
       - name: Code coverage reporting
@@ -90,7 +94,7 @@ jobs:
           cat code-coverage-results.md >> data-extraction-evaluation-toolkit-results.md
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3.0.5
         if: github.event_name == 'pull_request'
         with:
           header: "data-extraction-evaluation-toolkit Coverage"

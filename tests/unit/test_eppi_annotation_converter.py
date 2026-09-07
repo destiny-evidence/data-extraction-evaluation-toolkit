@@ -50,6 +50,24 @@ def test_process_annotation_file_with_real_data(sample_eppi_data: dict) -> None:
         assert len(result.annotations) > 0
 
 
+def test_process_annotation_file_with_duplicated_annotations(
+    sample_eppi_data_duplicated_annotations: dict,
+) -> None:
+    """Test processing annotation file with real EPPI data."""
+    converter = EppiAnnotationConverter()
+    with patch(
+        "pathlib.Path.open",
+        mock_open(read_data=json.dumps(sample_eppi_data_duplicated_annotations)),
+    ):
+        result = converter.process_annotation_file("fake_path.json")
+
+    doc = result.annotated_documents[0]
+
+    unique_ids = {ann.attribute.attribute_id for ann in doc.annotations}
+    assert len(doc.annotations) == len(unique_ids)
+    assert all(";;; " in annotation.raw_data for annotation in doc.annotations)
+
+
 def test_empty_boolean_annotation_is_true(sample_eppi_data: dict) -> None:
     """Test processing annotation file with real EPPI data."""
     converter = EppiAnnotationConverter()

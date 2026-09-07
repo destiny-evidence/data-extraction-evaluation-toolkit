@@ -1,15 +1,22 @@
 """Tests for deet/extractors/cli_helpers.py."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml  # type:ignore[import-untyped]
+from destiny_sdk.references import ReferenceFileInput
 
 from deet.data_models.documents import ContextType, Document
+from deet.data_models.extraction import (
+    ExtractionRunMetadata,
+    ExtractionRunOutput,
+    PerDocumentExtractionStats,
+)
 from deet.extractors.cli_helpers import (
-    init_extraction_run,
-    load_config_from_typer_context,
+    load_or_init_config,
     prepare_documents,
+    run_extraction_pipeline,
 )
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 
@@ -54,8 +61,7 @@ def mock_documents():
 
 def test_load_or_init_config_file_exists(config_path, config):
     """Test loading config from existing file."""
-    mock_typer_context = MagicMock()
-    loaded_config = load_config_from_typer_context(mock_typer_context, config_path)
+    loaded_config = load_or_init_config(config_path)
 
     assert isinstance(loaded_config, DataExtractionConfig)
     assert loaded_config.model_dump() == config.model_dump()
@@ -63,22 +69,20 @@ def test_load_or_init_config_file_exists(config_path, config):
 
 def test_load_or_init_config_file_exists_invalid_yaml(tmp_path):
     """Test loading config from existing file."""
-    mock_typer_context = MagicMock()
     config_path = tmp_path / "bad_yaml.yaml"
     config_path.write_text("model_name: gpt-4\n  invalid_indent: true")
     with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
-        load_config_from_typer_context(mock_typer_context, config_path)
+        load_or_init_config(config_path)
 
     assert "YAML Syntax Error" in mock_fail.call_args[0][0]
 
 
 def test_load_or_init_config_file_exists_invalid_config(tmp_path):
     """Test loading config from existing file."""
-    mock_typer_context = MagicMock()
     config_path = tmp_path / "bad_yaml.yaml"
     config_path.write_text("provider: unsupported_provider")
     with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
-        load_config_from_typer_context(mock_typer_context, config_path)
+        load_or_init_config(config_path)
 
     assert "Config validation error" in mock_fail.call_args[0][0]
 
@@ -86,10 +90,9 @@ def test_load_or_init_config_file_exists_invalid_config(tmp_path):
 def test_load_or_init_config_file_doesnt_exist(tmp_path):
     """Test initializing default config when file doesn't exist."""
     non_existent_path = tmp_path / "non_existent_config.yaml"
-    mock_typer_context = MagicMock()
 
     with patch("deet.extractors.cli_helpers.fail_with_message") as mock_fail:
-        load_config_from_typer_context(mock_typer_context, non_existent_path)
+        load_or_init_config(non_existent_path)
 
     assert "file not found" in mock_fail.call_args[0][0]
 
@@ -107,34 +110,128 @@ def test_load_or_init_config_file_doesnt_exist_reverts_project(config_path, conf
         patch("deet.extractors.cli_helpers.console.clear"),
     ):
         mock_wizard.return_value = config
-        loaded_config = load_config_from_typer_context(mock_typer_context, None)
+        loaded_config = load_or_init_config(None)
 
     assert isinstance(loaded_config, DataExtractionConfig)
     assert loaded_config.model_dump() == config.model_dump()
 
 
-def test_init_extraction_run(tmp_path):
-    """Ensure it creates the folder; ensure it creates deet.log."""
-    out_dir = tmp_path / "experiments"
-    out_dir.mkdir()
-    run_name = "test_run"
+def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
+    """run_extraction_pipeline should persist run metadata (cost/tokens) to disk."""
+    exp_dir = tmp_path / "experiments"
 
-    with patch("deet.extractors.cli_helpers.logger") as mock_logger:
-        experiment_artefacts = init_extraction_run(out_dir, run_name)
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+    mock_project.pdf_dir = tmp_path / "pdfs"
+    mock_project.load_evaluation_strategy.return_value.get_active_ids.return_value = [1]
 
-    # run ID format contains timestamp and run name
-    assert run_name in experiment_artefacts.run_id
-    assert "_" in experiment_artefacts.run_id  # timestamp separator
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = [MagicMock()]
+    mock_project.process_data.return_value = mock_processed_data
 
-    # check experiment directory was created
-    assert experiment_artefacts.base_dir.exists()
-    assert experiment_artefacts.base_dir.is_dir()
-    assert experiment_artefacts.base_dir.parent == out_dir
+    run_metadata = ExtractionRunMetadata(
+        model="gpt-4o-mini",
+        total_input_tokens=100,
+        total_output_tokens=50,
+        total_cost_usd=0.0123,
+        per_document={
+            "doc-1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+        },
+    )
+    run_output = ExtractionRunOutput(annotated_documents=[], metadata=run_metadata)
 
-    # check logger.add was called with log file path
-    mock_logger.add.assert_called_once()
-    log_path = mock_logger.add.call_args[0][0]
-    assert log_path == experiment_artefacts.base_dir / "deet.log"
+    with (
+        patch(
+            "deet.extractors.cli_helpers.load_or_init_config",
+            return_value=config,
+        ),
+        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
+    ):
+        mock_extractor = mock_extractor_cls.return_value
+        mock_extractor.config = config
+        mock_extractor.extract_from_documents.return_value = run_output
+
+        result_output, _, experiment_artefacts, _config = run_extraction_pipeline(
+            deet_project=mock_project,
+            prompt_population=None,
+            prompt_csv_path=None,
+        )
+
+    assert result_output is run_output
+
+    metadata_path = experiment_artefacts.extraction_metadata
+    assert metadata_path.name == "extraction_metadata.json"
+    assert metadata_path.exists()
+
+    written = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert written["model"] == "gpt-4o-mini"
+    assert written["total_input_tokens"] == 100
+    assert written["total_output_tokens"] == 50
+    assert written["total_cost_usd"] == 0.0123
+
+
+def test_run_extraction_pipeline_fails_when_project_has_no_documents(tmp_path, config):
+    """fail_with_message is called when the project data contains no documents."""
+    exp_dir = tmp_path / "experiments"
+    exp_dir.mkdir()
+
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = []
+    mock_project.process_data.return_value = mock_processed_data
+
+    with (
+        patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
+        patch(
+            "deet.extractors.cli_helpers.fail_with_message", side_effect=SystemExit
+        ) as mock_fail,
+        pytest.raises(SystemExit),
+    ):
+        run_extraction_pipeline(
+            deet_project=mock_project, prompt_population=None, prompt_csv_path=None
+        )
+
+    assert "No documents found in project" in mock_fail.call_args[0][0]
+
+
+def test_run_extraction_pipeline_fails_when_no_documents_in_stage(tmp_path, config):
+    """fail_with_message called when filtering leaves no documents in active stage."""
+    exp_dir = tmp_path / "experiments"
+    exp_dir.mkdir()
+
+    mock_project = MagicMock()
+    mock_project.experiments_dir = exp_dir
+    mock_strategy = mock_project.load_evaluation_strategy.return_value
+    mock_strategy.get_active_ids.return_value = []
+    mock_strategy.splits.current_stage = "development"
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = [MagicMock()]
+    mock_project.process_data.return_value = mock_processed_data
+
+    def clear_documents(ids):
+        mock_processed_data.documents = []
+
+    mock_processed_data.filter_documents_by_ids.side_effect = clear_documents
+
+    with (
+        patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
+        patch(
+            "deet.extractors.cli_helpers.fail_with_message", side_effect=SystemExit
+        ) as mock_fail,
+        pytest.raises(SystemExit),
+    ):
+        run_extraction_pipeline(
+            deet_project=mock_project, prompt_population=None, prompt_csv_path=None
+        )
+
+    assert "No documents in evaluation stage" in mock_fail.call_args[0][0]
 
 
 def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_path):
@@ -143,7 +240,7 @@ def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_pat
     linked_doc_path = tmp_path / "linked_documents"
     pdf_dir = tmp_path / "pdfs"
 
-    result = prepare_documents(
+    documents, parsing_stats = prepare_documents(
         documents=mock_documents,
         config=config,
         linked_document_path=linked_doc_path,
@@ -151,7 +248,8 @@ def test_prepare_documents_context_type_abstract(mock_documents, config, tmp_pat
         link_map_path=None,
     )
 
-    assert result == mock_documents
+    assert documents == mock_documents
+    assert parsing_stats == {}
 
 
 def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
@@ -162,23 +260,37 @@ def test_prepare_documents_context_full_doc_linked_exists(config, tmp_path):
     pdf_dir = tmp_path / "pdfs"
     pdf_dir.mkdir()
 
+    documents = [
+        Document(document_id=1234, name="1234", citation=ReferenceFileInput()),
+        Document(document_id=3456, name="1234", citation=ReferenceFileInput()),
+    ]
     # Create some mock linked document files
-    (linked_doc_path / "doc1.json").write_text("{}")
-    (linked_doc_path / "doc2.json").write_text("{}")
+    for document in documents:
+        document.init_document_identity()
+        (
+            (linked_doc_path / f"{document.safe_identity.document_id}.json").write_text(
+                "{}"
+            )
+        )
 
-    mock_loaded_doc = MagicMock(spec=Document)
+    mock_doc_1 = MagicMock(spec=Document)
+    mock_doc_1.safe_identity.document_id = 1
+    mock_doc_2 = MagicMock(spec=Document)
+    mock_doc_2.safe_identity.document_id = 2
 
-    with patch.object(Document, "load", return_value=mock_loaded_doc) as mock_load:
-        result = prepare_documents(
-            documents=[],
+    with patch.object(Document, "load", side_effect=[mock_doc_1, mock_doc_2]):
+        documents, parsing_stats = prepare_documents(
+            documents=[mock_doc_1, mock_doc_2],
             config=config,
             linked_document_path=linked_doc_path,
             pdf_dir=pdf_dir,
             link_map_path=None,
         )
 
-    assert len(result) == 2
-    assert mock_load.call_count == 2
+    assert len(documents) == 2
+    assert len(parsing_stats) == 2
+    assert all(stats.parsing_skipped for stats in parsing_stats.values())
+    assert all(stats.parsing_seconds is None for stats in parsing_stats.values())
 
 
 def test_prepare_documents_unsupported_context_type(config, tmp_path, mock_documents):
