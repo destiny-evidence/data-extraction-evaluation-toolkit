@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v0.3.0-dev.4 (2026-09-07)
+
+### Bug Fixes
+
+- Persist evaluation splits after modifying, so that validation run uses validation documents
+  ([#394](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/394),
+  [`3475f72`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/3475f7229edde30860707b37842a4d0dd87925a1))
+
+
 ## v0.3.0-dev.3 (2026-09-07)
 
 ### Chores
