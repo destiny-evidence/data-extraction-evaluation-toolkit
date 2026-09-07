@@ -10,11 +10,16 @@
     "aliases": []
   },
   {
-    "version": "v0.3.0-dev.3",
-    "title": "v0.3.0-dev.3",
+    "version": "v0.3.0-dev.4",
+    "title": "v0.3.0-dev.4",
     "aliases": [
       "stable"
     ]
+  },
+  {
+    "version": "v0.3.0-dev.3",
+    "title": "v0.3.0-dev.3",
+    "aliases": []
   },
   {
     "version": "v0.3.0-dev.2",
