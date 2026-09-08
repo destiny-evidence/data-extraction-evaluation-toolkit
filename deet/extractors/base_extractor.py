@@ -93,6 +93,7 @@ class ExtractionMethod(StrEnum):
     LLM = auto()
     KEYWORD = auto()
     SEMANTIC = auto()
+    HIERARCHICAL_TOP_DOWN = auto()
 
 
 class DataExtractionConfig(BaseModel):
@@ -197,6 +198,20 @@ class DataExtractionConfig(BaseModel):
     )
     include_additional_text: bool = Field(
         default=True, description="Include additional text/citations in output"
+    )
+
+    vocabulary_path: Path | None = Field(
+        default=None, description="Path to vocabulary file"
+    )
+
+    vocabulary_mapping_path: Path | None = Field(
+        default=None,
+        description="Path to json file mapping vocabulary concepts to column IDs",
+    )
+
+    vocab_prompt_locations: list[str] = Field(
+        default=["definition", "scope_note"],
+        description="Concept fields used to set prompts from vocabulary.",
     )
 
     # Evaluation

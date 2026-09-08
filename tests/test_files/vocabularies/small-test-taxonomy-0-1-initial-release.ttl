@@ -1,0 +1,35 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+<https://vocab.evidence-repository.org/minitest/subj/MINT000002> a skos:Concept ;
+    skos:broader <https://vocab.evidence-repository.org/minitest/subj/MINT000001> ;
+    skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
+    skos:prefLabel "Coal, oil, and gas" .
+
+<https://vocab.evidence-repository.org/minitest/subj/MINT000004> a skos:Concept ;
+    skos:broader <https://vocab.evidence-repository.org/minitest/subj/MINT000003> ;
+    skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
+    skos:prefLabel "Malaria" .
+
+<https://vocab.evidence-repository.org/minitest/subj/MINT000005> a skos:Concept ;
+    skos:broader <https://vocab.evidence-repository.org/minitest/subj/MINT000003> ;
+    skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
+    skos:prefLabel "Dengue" .
+
+<https://vocab.evidence-repository.org/minitest/subj/MINT000001> a skos:Concept ;
+    skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
+    skos:narrower <https://vocab.evidence-repository.org/minitest/subj/MINT000002> ;
+    skos:prefLabel "Climate mitigation" .
+
+<https://vocab.evidence-repository.org/minitest/subj/MINT000003> a skos:Concept ;
+    skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
+    skos:narrower <https://vocab.evidence-repository.org/minitest/subj/MINT000004>,
+        <https://vocab.evidence-repository.org/minitest/subj/MINT000005> ;
+    skos:prefLabel "Infectious diseases" .
+
+<https://vocab.evidence-repository.org/minitest/subj> a skos:ConceptScheme ;
+    dct:description "Top-level research subject areas and their sub-topics" ;
+    dct:title "Subject area" ;
+    skos:hasTopConcept <https://vocab.evidence-repository.org/minitest/subj/MINT000001>,
+        <https://vocab.evidence-repository.org/minitest/subj/MINT000003> .
+

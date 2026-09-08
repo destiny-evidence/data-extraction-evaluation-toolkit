@@ -53,6 +53,7 @@ dependencies = [
     "python-semantic-release>=10.6.1",
     "pyyaml>=6.0.2",
     "rapidfuzz>=3.9.0",
+    "rdflib>=7.6.0",
     "scikit-learn>=1.7.1",
     "sentence-transformers>=5.5.1",
     "tabulate>=0.9.0",
@@ -79,9 +80,16 @@ omit = [
 ]
 source = ["deet"]
 
+[tool.mypy]
+exclude = ["deet/utils/_vendor/"]
+
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "pypandoc.*"
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = "deet.utils._vendor.*"
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -116,7 +124,7 @@ pythonpath = "."
 testpaths = ["tests"]
 
 [tool.ruff]
-extend-exclude = ["deet/migrations/versions/*.py", "docs/*.py"]
+extend-exclude = ["deet/migrations/versions/*.py", "deet/utils/_vendor/*.py", "docs/*.py"]
 fix = true
 force-exclude = true
 line-length = 88

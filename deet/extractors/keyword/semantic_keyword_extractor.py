@@ -4,8 +4,6 @@ import re
 from pathlib import Path
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from deet.data_models.base import AnnotationType, Attribute, GoldStandardAnnotation
 from deet.data_models.documents import ContextType
@@ -24,6 +22,8 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
 
     def __init__(self, config: DataExtractionConfig) -> None:
         """Initialise, set the similarity threshold, and load the model."""
+        from sentence_transformers import SentenceTransformer
+
         super().__init__(config)
         self.similarity_threshold: float = config.semantic_similarity_threshold
         self.model = SentenceTransformer(config.model)
@@ -49,8 +49,20 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
 
         """
         phrases_per_attribute = [self._get_prompt_phrases(attr) for attr in attributes]
-        if any(not phrases for phrases in phrases_per_attribute):
-            msg = "Every attribute must have a non-empty prompt for keyword extraction"
+        missing = [
+            attr
+            for attr, phrases in zip(attributes, phrases_per_attribute, strict=True)
+            if not phrases
+        ]
+        if missing:
+            details = ", ".join(
+                f"{attr.attribute_label} (id={attr.attribute_id}, prompt={attr.prompt})"
+                for attr in missing
+            )
+            msg = (
+                "Keyword extraction requires a non-empty prompt for every attribute; "
+                f"the following yielded no phrases: {details}"
+            )
             raise ValueError(msg)
         return phrases_per_attribute
 
@@ -103,6 +115,8 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         similarity between a phrase ("separated by ';') in the prompt and the document
         if greater than `DataExtractionConfig.semantic_similarity_threshold`
         """
+        from sklearn.metrics.pairwise import cosine_similarity
+
         payload = self._resolve_payload(payload=payload, md_path=md_path)
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
         context = self._prepare_context(payload=payload, context_type=context_type)

@@ -5,6 +5,7 @@ from deet.extractors.base_extractor import (
     DataExtractionConfig,
     ExtractionMethod,
 )
+from deet.extractors.hierarchical.top_down_llm_extractor import TopDownLLMExtractor
 from deet.extractors.keyword.raw_keyword_extractor import RawKeywordDataExtractor
 from deet.extractors.keyword.semantic_keyword_extractor import (
     SemanticKeywordDataExtractor,
@@ -15,6 +16,7 @@ extractor_mapping: dict[ExtractionMethod, type[BaseDataExtractor]] = {
     ExtractionMethod.LLM: LLMDataExtractor,
     ExtractionMethod.KEYWORD: RawKeywordDataExtractor,
     ExtractionMethod.SEMANTIC: SemanticKeywordDataExtractor,
+    ExtractionMethod.HIERARCHICAL_TOP_DOWN: TopDownLLMExtractor,
 }
 
 
