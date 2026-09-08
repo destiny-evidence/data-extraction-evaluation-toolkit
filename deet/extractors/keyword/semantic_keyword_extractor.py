@@ -4,8 +4,6 @@ import re
 from pathlib import Path
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from deet.data_models.base import AnnotationType, Attribute, GoldStandardAnnotation
 from deet.data_models.documents import ContextType
@@ -24,6 +22,8 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
 
     def __init__(self, config: DataExtractionConfig) -> None:
         """Initialise, set the similarity threshold, and load the model."""
+        from sentence_transformers import SentenceTransformer
+
         super().__init__(config)
         self.similarity_threshold: float = config.semantic_similarity_threshold
         self.model = SentenceTransformer(config.model)
@@ -115,6 +115,8 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         similarity between a phrase ("separated by ';') in the prompt and the document
         if greater than `DataExtractionConfig.semantic_similarity_threshold`
         """
+        from sklearn.metrics.pairwise import cosine_similarity
+
         payload = self._resolve_payload(payload=payload, md_path=md_path)
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
         context = self._prepare_context(payload=payload, context_type=context_type)
