@@ -278,6 +278,96 @@ class ArmMatch(BaseModel):
     )
 
 
+class EvaluationSupportValue(BaseModel):
+    """A row value from one side of an equivalent support-column pair."""
+
+    gold_column: str
+    prediction_column: str
+    value: str
+
+
+class EvaluationCandidate(BaseModel):
+    """One row's primary value and optional support values."""
+
+    index: int
+    value: str
+    support: list[EvaluationSupportValue] = Field(default_factory=list)
+
+
+class EvaluationMatch(BaseModel):
+    """A predicted row index and its optional matched gold row index."""
+
+    predicted_index: int
+    matched_gold_index: int | None = None
+
+
+class MatchEvaluationRows(dspy.Signature):
+    """
+    Match predicted spreadsheet rows to gold-standard spreadsheet rows.
+
+    Each candidate contains the value from the primary column being matched. It
+    may also contain support values from explicitly equivalent gold/prediction
+    column pairs. Compare support values across each named column pair to
+    disambiguate similar primary values. For example, outcome effect estimates,
+    means, and standard deviations can identify which similarly named outcomes
+    represent the same spreadsheet row.
+
+    Use each gold row at most once. Set `matched_gold_index` to null when no gold
+    row corresponds to a predicted row. Do not match rows merely because their
+    primary values are similar when their support values conflict.
+    """
+
+    predicted_candidates: list[EvaluationCandidate] = dspy.InputField()
+    gold_candidates: list[EvaluationCandidate] = dspy.InputField()
+    matches: list[EvaluationMatch] = dspy.OutputField(
+        desc="One match per predicted candidate, identified by its index."
+    )
+
+
+def match_evaluation_rows(
+    predicted_candidates: list[EvaluationCandidate],
+    gold_candidates: list[EvaluationCandidate],
+) -> list[EvaluationMatch]:
+    """Pair predicted and gold rows using primary values and optional support fields."""
+    if not predicted_candidates:
+        return []
+    if not gold_candidates:
+        return [
+            EvaluationMatch(predicted_index=candidate.index)
+            for candidate in predicted_candidates
+        ]
+
+    result = dspy.Predict(MatchEvaluationRows)(
+        predicted_candidates=predicted_candidates,
+        gold_candidates=gold_candidates,
+    )
+
+    valid_predicted_indexes = {candidate.index for candidate in predicted_candidates}
+    valid_gold_indexes = {candidate.index for candidate in gold_candidates}
+    matches_by_prediction: dict[int, EvaluationMatch] = {}
+    used_gold_indexes: set[int] = set()
+    for match in result.matches:
+        if match.predicted_index not in valid_predicted_indexes:
+            continue
+        gold_index = match.matched_gold_index
+        if gold_index not in valid_gold_indexes or gold_index in used_gold_indexes:
+            gold_index = None
+        elif gold_index is not None:
+            used_gold_indexes.add(gold_index)
+        matches_by_prediction[match.predicted_index] = EvaluationMatch(
+            predicted_index=match.predicted_index,
+            matched_gold_index=gold_index,
+        )
+
+    return [
+        matches_by_prediction.get(
+            candidate.index,
+            EvaluationMatch(predicted_index=candidate.index),
+        )
+        for candidate in predicted_candidates
+    ]
+
+
 class MatchInterventionArms(dspy.Signature):
     """
     You are assisting with evaluating an automated data-extraction tool against a
@@ -308,7 +398,8 @@ def match_predicted_to_gold_arms(
     predicted_group_names: list[str],
     gold_titles: list[str],
 ) -> list[ArmMatch]:
-    """LLM-as-judge: pair each predicted intervention name with at most one gold arm title.
+    """
+    LLM-as-judge: pair each predicted intervention name with at most one gold arm title.
 
     Requires `dspy.configure(lm=...)` to already have been called (see
     `deet.hierarchical_mvp.utils.configure_lm`).

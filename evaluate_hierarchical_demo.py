@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from deet.hierarchical_mvp.evaluate_hierarchical import (
-    evaluate_interventions,
+    EvaluationMap,
+    evaluate_fields,
     summarize_evaluation,
 )
 from deet.hierarchical_mvp.evaluation_helpers_hierarchical import (
@@ -21,6 +22,27 @@ interventions_eval_csv_path = Path(
     "misc/hierarchical_mvp/output/galenos_demo/evaluation/interventions_evaluation.csv"
 )
 llm_model = "azure/gpt-5.6-luna"
+eval_map_dict: EvaluationMap = {
+    "gold": {
+        "sheet": "Arms",
+        "column": "title",
+    },
+    "prediction": {
+        "sheet": "interventions",
+        "column": "group_name",
+    },
+    # Add equivalent secondary columns to help the LLM match ambiguous rows:
+    # "support_columns": [
+    #     {
+    #         "gold_column": "reported_mean",
+    #         "prediction_column": "group_mean",
+    #     },
+    #     {
+    #         "gold_column": "reported_sd",
+    #         "prediction_column": "group_sd",
+    #     },
+    # ],
+}
 ##########################
 
 # 1. Export the EPPI gold standard JSON into the Arms/Outcomes/Timepoints workbook.
@@ -36,11 +58,12 @@ if not mapping_csv_path.exists():
         "then re-run this script."
     )
 else:
-    # 3. Evaluate predicted interventions against the gold standard (LLM-as-judge matching).
-    evaluate_interventions(
+    # 3. Evaluate the configured fields via LLM-as-judge matching.
+    evaluate_fields(
         mapping_csv_path,
         gold_xlsx_path,
         interventions_eval_csv_path,
+        eval_map_dict,
         llm_model=llm_model,
     )
     print(f"Interventions evaluation written to {interventions_eval_csv_path}")
