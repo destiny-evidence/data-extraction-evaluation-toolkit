@@ -1,5 +1,6 @@
 """Tests for deet/scripts/cli.py."""
 
+from importlib.metadata import version
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -577,8 +578,6 @@ def test_deprecated_commands_return_deprecation_warning(command):
 
 def test_version_long_flag() -> None:
     """Test --version outputs the package version."""
-    from importlib.metadata import version
-
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert version("data-extraction-evaluation-toolkit") in result.output
@@ -586,8 +585,6 @@ def test_version_long_flag() -> None:
 
 def test_version_short_flag() -> None:
     """Test -v outputs the package version."""
-    from importlib.metadata import version
-
     result = runner.invoke(app, ["-v"])
     assert result.exit_code == 0
     assert version("data-extraction-evaluation-toolkit") in result.output
