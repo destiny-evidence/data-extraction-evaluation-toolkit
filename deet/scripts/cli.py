@@ -3,6 +3,8 @@
 
 import contextlib
 import warnings
+from importlib.metadata import version as get_version
+from typing import Annotated
 
 import typer
 
@@ -39,11 +41,28 @@ app.command(name="link-documents-fulltexts", hidden=True)(
 app.command(name="test-llm-config", hidden=True)(test_llm_config_legacy)
 
 
+def version_callback(value: Annotated[bool, typer.Option(hidden=True)]) -> None:
+    """Print version and exit if --version is passed."""
+    if value:
+        typer.echo(f"deet {get_version('data-extraction-evaluation-toolkit')}")
+        raise typer.Exit
+
+
 @app.callback(invoke_without_command=True)
 def global_options(
     typer_context: typer.Context,
     *,
     verbose: bool = typer.Option(default=False, help="Display verbose logs."),
+    _version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            "-v",
+            callback=version_callback,
+            is_eager=True,
+            help="Show version and exit.",
+        ),
+    ] = False,
 ) -> None:
     """Set global options for all deet commands."""
     from deet.data_models.project import DeetProject
