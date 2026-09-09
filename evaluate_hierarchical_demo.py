@@ -18,12 +18,14 @@ json_path = Path("misc/hierarchical_mvp/input/galenos/gold/GALENOS_LSR1_58studie
 gold_xlsx_path = Path("misc/hierarchical_mvp/input/galenos/gold/GALENOS_LSR1_eppi_export.xlsx")
 mapping_csv_path = Path("misc/hierarchical_mvp/input/galenos/gold/reference_mapping_demo.csv")
 interventions_eval_csv_path = Path(
-    "misc/hierarchical_mvp/output/galenos/interventions_evaluation2.csv"
+    "misc/hierarchical_mvp/output/galenos_demo/evaluation/interventions_evaluation.csv"
 )
+llm_model = "azure/gpt-5.6-luna"
+##########################
 
 # 1. Export the EPPI gold standard JSON into the Arms/Outcomes/Timepoints workbook.
-# export_from_eppi(json_path, gold_xlsx_path)
-# print(f"EPPI export written to {gold_xlsx_path}")
+export_from_eppi(json_path, gold_xlsx_path)
+print(f"EPPI export written to {gold_xlsx_path}")
 
 # 2. Generate the reference -> extraction-xlsx mapping template, if not already filled in.
 if not mapping_csv_path.exists():
@@ -35,7 +37,12 @@ if not mapping_csv_path.exists():
     )
 else:
     # 3. Evaluate predicted interventions against the gold standard (LLM-as-judge matching).
-    evaluate_interventions(mapping_csv_path, gold_xlsx_path, interventions_eval_csv_path)
+    evaluate_interventions(
+        mapping_csv_path,
+        gold_xlsx_path,
+        interventions_eval_csv_path,
+        llm_model=llm_model,
+    )
     print(f"Interventions evaluation written to {interventions_eval_csv_path}")
 
     # 4. Print summary scores.

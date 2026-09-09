@@ -14,14 +14,13 @@ from deet.logger import logger
 from .AnimalRCTmodel import AssessmentIntervention as AnimalAssessmentIntervention
 from .AnimalRCTmodel import InductionIntervention as AnimalInductionIntervention
 from .AnimalRCTmodel import Study as AnimalStudy
-from .ClimateCarbonPricingmodel import Effect_Outcome as ClimateCarbonPricingEffectOutcome
 from .ClimateCarbonPricingmodel import Intervention as ClimateCarbonPricingIntervention
 from .ClimateCarbonPricingmodel import Study as ClimateCarbonPricingStudy
 from .CochraneRCTmodel import Intervention as CochraneIntervention
 from .CochraneRCTmodel import Study as CochraneStudy
 from .ObesityRCTmodel import Intervention as ObesityIntervention
 from .ObesityRCTmodel import Study as ObesityStudy
-from .PrognosticModel import HazardRatioOutcome, PrognosticFactor, PrognosticStudy
+from .PrognosticModel import PrognosticFactor, PrognosticStudy
 from .RCTmodel import Intervention, Study
 
 # Excel on Windows misreads plain "utf-8" CSVs (special chars like bullet/en-dash
@@ -50,7 +49,8 @@ def _write_tables(
     write_xlsx: bool = False,
     study_name: str | None = None,
 ) -> None:
-    """Write named tables as individual CSV files and/or as sheets in one xlsx workbook.
+    """
+    Write named tables as individual CSV files and/or as sheets in one xlsx workbook.
 
     When `study_name` is given, it is inserted into every output filename (used for
     flat/batch output layouts where files aren't nested under a per-study directory).
@@ -92,19 +92,31 @@ def _write_tables(
         logger.info(f"XLSX workbook saved to {xlsx_path}")
 
 
+def get_api_base_for_model(model: str) -> str:
+    """Return the configured API base for the model's provider."""
+    api_base_env_var = (
+        "AZURE_API_BASE_ANTHROPIC"
+        if model.startswith("anthropic/")
+        else "AZURE_API_BASE"
+    )
+    api_base = os.environ.get(api_base_env_var)
+    if not api_base:
+        message = (
+            f"{api_base_env_var} is not set. "
+            "Copy .env.example to .env and add your Azure endpoint."
+        )
+        raise OSError(message)
+    return api_base
+
+
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
-    """Initialise DSPy with the Azure OpenAI LM."""
+    """Initialise DSPy with the API base configured for the model provider."""
     api_key = os.environ.get("AZURE_API_KEY")
-    api_base = os.environ.get("AZURE_API_BASE")
     if not api_key:
         raise OSError(
             "AZURE_API_KEY is not set. " "Copy .env.example to .env and add your key."
         )
-    if not api_base:
-        raise OSError(
-            "AZURE_API_BASE is not set. "
-            "Copy .env.example to .env and add your Azure endpoint."
-        )
+    api_base = get_api_base_for_model(model)
     lm = dspy.LM(
         model=model,
         api_key=api_key,
@@ -395,7 +407,8 @@ def export_prognostic_csv(
     write_xlsx: bool = False,
     flat_output: bool = False,
 ) -> None:
-    """Write three tables (study, prognostic_factors, outcomes) for a
+    """
+    Write three tables (study, prognostic_factors, outcomes) for a
     prognostic study extraction as timestamped CSV files and/or as sheets of
     a single xlsx workbook into predictions/<study_name>/, or directly into
     `predictions_dir` (with `study_name` in each filename) when `flat_output`

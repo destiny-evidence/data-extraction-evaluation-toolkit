@@ -6,18 +6,18 @@ The Data Extraction and Evaluation Toolkit (DEET) is a suite of tools, data mode
 
 ## .env when using hierarchical extraction
 
-The following information is expected:
+The following information is expected for OpenAI models:
 
 ```
 AZURE_API_KEY=yourkeyhere
 AZURE_API_BASE=https://yourprojecthere.openai.azure.com/
 ```
 
-You can also use an Anthropic endpoint, using the following syntax:
+You can also use an Anthropic endpoint, by adding AZURE_API_BASE_ANTHROPIC:
 
 ```
 AZURE_API_KEY=yourkeyhere
-AZURE_API_BASE=https://yourprojecthere.services.ai.azure.com/anthropic
+AZURE_API_BASE_ANTHROPIC=https://yourprojecthere.services.ai.azure.com/anthropic
 ```
 
 ## Implemented Study Types
@@ -72,7 +72,7 @@ Example `demo_single_config.json`:
 ~~~json
 {
 	"study_type": "RCT",
-	"llm_model": "anthropic/claude-sonnet-4-5",
+	"llm_model": "anthropic/claude-sonnet-5",
 	"max_tokens": 60000,
 	"dspy_cache": false,
 	"input_paths": [
@@ -85,12 +85,12 @@ Example `demo_single_config.json`:
 }
 ~~~
 
-You just need to edit the in/output paths and increase max_tokens if needed. If you have chosen a `AZURE_API_BASE` for Anthropic, you can use any deployed Anthropic model as `"llm_model"` parameter. 
+You just need to edit the in/output paths and increase max_tokens if needed. If you have provided AZURE_API_BASE_ANTHROPIC for Anthropic, you can use any deployed Anthropic model as `"llm_model"` parameter. 
 
-Example Anthropic model parameters for this file are: `"anthropic/claude-sonnet-4-5"`, `"anthropic/claude-opus-5"`
+Example Anthropic model parameters for this file are: `"anthropic/claude-sonnet-5"`, `"anthropic/claude-opus-5"`
 
 If you have given the OpenAI API Base:
-Example OpenAI models for this file are: `"azure/gpt-5.6-terra"`, `"azure/gpt-5.6-luna"`
+Example OpenAI models for this file are: `"azure/gpt-5.6-luna"`, `"azure/gpt-5.6-terra"`, 
 
 Run from the repository root:
 
@@ -114,7 +114,7 @@ setup_console_logging()
 
 single_study_config = {
 	"study_type": "RCT",
-	"llm_model": "anthropic/claude-sonnet-4-5",
+	"llm_model": "anthropic/claude-sonnet-5",
 	"max_tokens": 60000,
 	"dspy_cache": False,
 	"input_paths": ["misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"],
@@ -147,7 +147,7 @@ Output summary:
 ~~~json
 {
 	"study_type": "RCT",
-	"llm_model": "anthropic/claude-sonnet-4-5",
+	"llm_model": "anthropic/claude-sonnet-5",
 	"max_tokens": 60000,
 	"dspy_cache": false,
 	"input_folder": "misc/hierarchical_mvp/input/batch_pdfs",
@@ -179,7 +179,7 @@ setup_console_logging()
 
 batch_config = {
 	"study_type": "RCT",
-	"llm_model": "anthropic/claude-sonnet-4-5",
+	"llm_model": "anthropic/claude-sonnet-5",
 	"max_tokens": 60000,
 	"dspy_cache": False,
 	"input_folder": "misc/hierarchical_mvp/input/batch_pdfs",

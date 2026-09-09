@@ -27,7 +27,7 @@ run_parse_pdfs(input_folder)
 #######################################################Single-study extraction
 # single_study_config = {
 #     "study_type": "RCT",
-#     "llm_model": "azure/gpt-5.6-terra",
+#     "llm_model": "azure/gpt-5.6-luna",
 #     "max_tokens": 60000,
 #     "dspy_cache": False,
 #     "input_paths": ["misc/hierarchical_mvp/input/batch_pdfs/mira_rct.md"],
@@ -50,7 +50,7 @@ run_parse_pdfs(input_folder)
 # ########################################################Batch extraction
 batch_config = {
     "study_type": "RCT",
-    "llm_model": "azure/gpt-5.6-terra",
+    "llm_model": "anthropic/claude-sonnet-5",
     "max_tokens": 60000,
     "dspy_cache": False,
     "input_folder": "misc/hierarchical_mvp/input/galenos/pdf_selection",
