@@ -93,6 +93,7 @@ class ExtractionMethod(StrEnum):
     LLM = auto()
     KEYWORD = auto()
     SEMANTIC = auto()
+    LLM_PER_ATTRIBUTE = auto()
 
 
 class DataExtractionConfig(BaseModel):

@@ -10,10 +10,12 @@ from deet.extractors.keyword.semantic_keyword_extractor import (
     SemanticKeywordDataExtractor,
 )
 from deet.extractors.llm_data_extractor import LLMDataExtractor
+from deet.extractors.per_attribute_llm_extractor import PerAttributeLLMExtractor
 
 extractor_mapping: dict[ExtractionMethod, type[BaseDataExtractor]] = {
     ExtractionMethod.LLM: LLMDataExtractor,
     ExtractionMethod.KEYWORD: RawKeywordDataExtractor,
+    ExtractionMethod.LLM_PER_ATTRIBUTE: PerAttributeLLMExtractor,
     ExtractionMethod.SEMANTIC: SemanticKeywordDataExtractor,
 }
 
