@@ -118,7 +118,13 @@ class DataExtractionConfig(BaseModel):
             document). If exceeded, prompts are truncated by _enforce_context_limit().
             Applies to all providers.
 
-        num_ctx (Ollama-only): For Ollama provider, also sets the model's total
+        num_ctx (Ollama-only): Sets the model's total context window size
+            (input + output tokens), derived from max_context_tokens and
+            forwarded to Ollama via litellm. Unlike max_context_tokens, which
+            only truncates our outgoing prompt, num_ctx tells Ollama how much
+            context to actually allocate. Without it, Ollama defaults to 4096
+            regardless of max_context_tokens, which can truncate long
+            structured JSON responses mid-output.
     """
 
     model_config = ConfigDict()
