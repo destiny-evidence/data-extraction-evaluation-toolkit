@@ -239,6 +239,8 @@ class DevValTestEvaluationStrategy(BaseEvaluationStrategy[DevValTestSplits]):
         except SplitsValidationError as e:
             fail_with_message(str(e))
 
+        self.splits.dump_to_json(self._project.evaluation_splits_path)
+
         notify(
             f"Added {n_added} documents to validation set"
             f" ({len(self.splits.get_unassigned_ids(project_doc_ids))}"

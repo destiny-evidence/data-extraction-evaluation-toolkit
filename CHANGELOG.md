@@ -2,6 +2,41 @@
 
 <!-- version list -->
 
+## v0.3.0-dev.4 (2026-09-07)
+
+### Bug Fixes
+
+- Persist evaluation splits after modifying, so that validation run uses validation documents
+  ([#394](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/394),
+  [`3475f72`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/3475f7229edde30860707b37842a4d0dd87925a1))
+
+
+## v0.3.0-dev.3 (2026-09-07)
+
+### Chores
+
+- Stop using from __future__ import annotations in new files
+  ([`41b90a9`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/41b90a9a61cc0c2b408636e3b800ab6031ca399e))
+
+### Features
+
+- Add source-fidelity metrics and match_status to evaluation artefacts
+  ([`d50aa6c`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/d50aa6ce50802746d22d971b5a94e8a6dcac4562))
+
+### Refactoring
+
+- Address PR #375 review on evaluation structure and DRY
+  ([`b1180e9`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/b1180e949c9b197823963bd50e69adff25bd4972))
+
+- Derive metrics.csv column order from metric registries
+  ([`57a3530`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/57a353024c00a1f4462b865409a6c7470fb78cfd))
+
+### Testing
+
+- Round-trip metrics.json without a gitignored dummy file
+  ([`df8b843`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/df8b843123cdfa24516f94dee9ad4ba806aec602))
+
+
 ## v0.3.0-dev.2 (2026-08-27)
 
 ### Bug Fixes
