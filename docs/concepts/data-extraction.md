@@ -169,3 +169,64 @@ gold_standard_document = GoldStandardAnnotatedDocument(
 ```
 
 represents the fact that the document named "document 1" had been labelled as relevant by a human.
+
+## Extraction methods
+
+Once we have documents and attributes, `deet` needs to work out the value of
+each attribute for each document. How it does this is controlled by the `method`
+field on [`deet.extractors.base_extractor.DataExtractionConfig`](../reference/api.md#deet.extractors.base_extractor.DataExtractionConfig),
+which takes one of the [`deet.extractors.base_extractor.ExtractionMethod`](../reference/api.md#deet.extractors.base_extractor.ExtractionMethod)s.
+The method we choose also changes how an attribute's `prompt` is interpreted.
+
+### LLM (default)
+
+The default method sends the document context and the list of attributes to an
+LLM, and asks it to return a structured answer for every attribute. Here the
+`prompt` is a question or instruction written in natural language, for example
+"Does the article discuss the effects of climate change on human health?". This
+is the only method that produces values for every attribute type, and the LLM is
+chosen with the `provider` and `model` fields.
+
+### Keyword
+
+The keyword method does no LLM call at all: it simply checks whether the words we
+are looking for appear in the document. Here the `prompt` is not a question but a
+list of keyphrases, separated by semicolons (`;`). An attribute is marked `True`
+if any of its phrases appears in the document, and matching is case-insensitive.
+Thus
+
+```python
+Attribute(
+    attribute_id=123,
+    attribute_label="relevant",
+    prompt="climate change; global warming; greenhouse gas",
+    output_data_type=AttributeType.BOOL,
+)
+```
+
+marks a document as relevant if it mentions any of those three phrases. The keyword method only supports boolean attributes such as screening or categorisation.
+
+### Semantic
+
+The semantic method works like the keyword method, but matches on meaning rather
+than exact strings. We split the document into sentences and use a
+sentence-transformer model to compare each of the attribute's phrases against
+each sentence. An attribute is marked True if the highest similarity between
+any phrase and any sentence is at least semantic_similarity_threshold (0.5 by
+default).
+
+As with the keyword method, the prompt is a semicolon-separated list of phrases,
+and only True matches are produced. For this method the model field must name
+a [sentence-transformer model](https://www.sbert.net/docs/sentence_transformer/pretrained_models.html) rather than an LLM:
+
+```yaml
+method: semantic
+model: sentence-transformers/all-MiniLM-L6-v2
+semantic_similarity_threshold: 0.5
+```
+
+!!! Note "Tuning the threshold"
+    Short phrases compared against whole sentences rarely score very highly, so
+    the right threshold depends on the model and documents. If the semantic
+    method returns False for everything, try lowering
+    semantic_similarity_threshold.

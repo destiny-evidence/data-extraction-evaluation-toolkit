@@ -10,15 +10,16 @@ from pydantic import ValidationError
 
 from deet.data_models.documents import ContextType, Document
 from deet.data_models.enums import CustomPromptPopulationMethod
-from deet.data_models.extraction import DocumentParsingStats, ExtractionPipelineStage
+from deet.data_models.extraction import (
+    DocumentParsingStats,
+    ExtractionPipelineStage,
+    ExtractionRunOutput,
+)
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
-from deet.extractors.llm_data_extractor import (
-    DataExtractionConfig,
-    ExtractionRunOutput,
-    LLMDataExtractor,
-)
+from deet.extractors.base_extractor import DataExtractionConfig
+from deet.extractors.extractor_registry import get_data_extractor
 from deet.processors.directory_processor import create_documents_from_directory
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
 from deet.ui import fail_with_message, notify
@@ -200,7 +201,7 @@ def run_extraction_pipeline(  # noqa: PLR0913
         )
         fail_with_message(no_documents_in_stage)
 
-    data_extractor = LLMDataExtractor(config=config)
+    data_extractor = get_data_extractor(config=config)
 
     document_parsing: dict[str, DocumentParsingStats] = {}
     with measure_elapsed() as stage_timer:
