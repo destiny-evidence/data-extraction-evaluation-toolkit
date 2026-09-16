@@ -122,7 +122,7 @@ class DataExtractionConfig(BaseModel):
         )
     )
     temperature: float = Field(
-        default=0.1,
+        default=1.0,
         description="Sampling temperature for the LLM.",
         ge=0.0,
     )
