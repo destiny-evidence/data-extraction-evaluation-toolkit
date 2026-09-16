@@ -1,0 +1,53 @@
+name: Installed package
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - "**.md"
+
+jobs:
+  installed-package:
+    # Every other job runs from a checkout, where config.yaml is findable and dev
+    # dependencies are present. This one imports the built wheel in a clean
+    # environment, which is the only way packaging faults surface before release.
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Set up python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.3"
+
+      - name: Build both distributions
+        # The release builds both, and package-data reaching the sdist is
+        # setuptools-version-dependent, so neither is safe to assume.
+        run: uv build --out-dir dist
+
+    #   - name: Write the import probe
+    #     # this is still do do
+
+      - name: Import each distribution from outside the source tree
+        working-directory: /tmp
+        run: |
+          for artifact in "$GITHUB_WORKSPACE"/dist/*; do
+            name=$(basename "$artifact")
+            echo "::group::$name"
+            uv venv "/tmp/venv-$name" --python 3.12
+            uv pip install --python "/tmp/venv-$name/bin/python" "$artifact"
+            "/tmp/venv-$name/bin/python" /tmp/probe.py
+            echo "::endgroup::"
+          done
