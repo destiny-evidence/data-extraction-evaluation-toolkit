@@ -238,7 +238,7 @@ def test_new_project_creates_directory_and_anchors():
         mock_wizard.side_effect = [fake_project, fake_settings]
 
         result = runner.invoke(app, ["project", "new", "--name", "My Project"])
-        target = Path(td) / "my-project"
+        target = Path(td).resolve() / "my-project"
 
         assert result.exit_code == 0
         assert target.exists()
@@ -268,7 +268,7 @@ def test_new_project_prompts_for_name_when_omitted():
         mock_wizard.side_effect = [fake_project, fake_settings]
 
         result = runner.invoke(app, ["project", "new"])
-        target = Path(td) / "my-project"
+        target = Path(td).resolve() / "my-project"
 
         assert result.exit_code == 0
         mock_name_prompt.assert_called_once()  # name collected interactively

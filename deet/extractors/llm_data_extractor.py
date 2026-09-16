@@ -46,6 +46,7 @@ from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
+    DataExtractionSettings,
     LLMProvider,
     get_settings,
 )
@@ -251,6 +252,7 @@ class LLMDataExtractor:
     def __init__(
         self,
         config: DataExtractionConfig,
+        settings: DataExtractionSettings = settings,
         custom_system_prompt_file: Path | None = None,
         *,
         show_litellm_debug_messages: bool = False,
@@ -943,4 +945,5 @@ class LLMDataExtractor:
             run_output.model_dump_json(indent=2),
             encoding="utf-8",
         )
+        logger.info(f"Results saved to: {output_file}")
         logger.info(f"Results saved to: {output_file}")

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Annotated
 
 if TYPE_CHECKING:
     from deet.data_models.project import DeetProject
-
+    from deet.extractors.llm_data_extractor import DataExtractionConfig
 
 import typer
 from InquirerPy import inquirer
@@ -235,7 +235,9 @@ def test_llm_config(
     )
     from deet.extractors.llm_data_extractor import LLMDataExtractor
 
-    config = load_config_from_typer_context(typer_context, config_path)
+    config: DataExtractionConfig = load_config_from_typer_context(
+        typer_context, config_path
+    )
     data_extractor = LLMDataExtractor(config=config)
     attr = Attribute(
         output_data_type=AttributeType.BOOL,
