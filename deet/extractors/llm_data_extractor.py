@@ -117,7 +117,7 @@ class DataExtractionConfig(BaseModel):
     ] = Field(default=LLMProvider.AZURE, description="LLM Provider")
     model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
         Field(
-            default="gpt-4o-mini",
+            default="gpt-5.6-luna",
             description="LLM model identifier used for completions.",
         )
     )
