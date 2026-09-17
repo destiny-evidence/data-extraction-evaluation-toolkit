@@ -6,10 +6,11 @@ from deet.extractors.base_extractor import BaseDataExtractor
 
 class BaseKeywordDataExtractor(BaseDataExtractor):
     """
-    ABC for keyword data extractors, handling tasks common to them.
+    Intermediate extractor class for keyword extractors.
 
-    Keyword extractors use a prompt separator to separate prompts into phrases,
-    which are then matched against documents.
+    Provides shared phrase-parsing helpers.
+    Subclasses must implement `extract_from_document`
+    (as do all concrete implementations of `BaseDataExtractor`)
     """
 
     PROMPT_SEPARATOR = ";"
