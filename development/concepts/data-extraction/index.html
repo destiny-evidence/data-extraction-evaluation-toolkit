@@ -637,6 +637,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#extraction-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extraction methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extraction methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#llm-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM (default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyword
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1262,6 +1312,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#extraction-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extraction methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extraction methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#llm-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM (default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyword
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1420,6 +1520,54 @@ see <a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 <span class="p">)</span>
 </code></pre></div>
 <p>represents the fact that the document named "document 1" had been labelled as relevant by a human.</p>
+<h2 id="extraction-methods">Extraction methods</h2>
+<p>Once we have documents and attributes, <code>deet</code> needs to work out the value of
+each attribute for each document. How it does this is controlled by the <code>method</code>
+field on <a href="../../reference/api/#deet.extractors.base_extractor.DataExtractionConfig"><code>deet.extractors.base_extractor.DataExtractionConfig</code></a>,
+which takes one of the <a href="../../reference/api/#deet.extractors.base_extractor.ExtractionMethod"><code>deet.extractors.base_extractor.ExtractionMethod</code></a>s.
+The method we choose also changes how an attribute's <code>prompt</code> is interpreted.</p>
+<h3 id="llm-default">LLM (default)</h3>
+<p>The default method sends the document context and the list of attributes to an
+LLM, and asks it to return a structured answer for every attribute. Here the
+<code>prompt</code> is a question or instruction written in natural language, for example
+"Does the article discuss the effects of climate change on human health?". This
+is the only method that produces values for every attribute type, and the LLM is
+chosen with the <code>provider</code> and <code>model</code> fields.</p>
+<h3 id="keyword">Keyword</h3>
+<p>The keyword method does no LLM call at all: it simply checks whether the words we
+are looking for appear in the document. Here the <code>prompt</code> is not a question but a
+list of keyphrases, separated by semicolons (<code>;</code>). An attribute is marked <code>True</code>
+if any of its phrases appears in the document, and matching is case-insensitive.
+Thus</p>
+<div class="highlight"><pre><span></span><code><span class="n">Attribute</span><span class="p">(</span>
+    <span class="n">attribute_id</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span>
+    <span class="n">attribute_label</span><span class="o">=</span><span class="s2">&quot;relevant&quot;</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;climate change;global warming;greenhouse gas&quot;</span><span class="p">,</span>
+    <span class="n">output_data_type</span><span class="o">=</span><span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>marks a document as relevant if it mentions any of those three phrases. The keyword method only supports boolean attributes such as screening or categorisation.</p>
+<h3 id="semantic">Semantic</h3>
+<p>The semantic method works like the keyword method, but matches on meaning rather
+than exact strings. We split the document into sentences and use a
+sentence-transformer model to compare each of the attribute's phrases against
+each sentence. An attribute is marked True if the highest similarity between
+any phrase and any sentence is at least semantic_similarity_threshold (0.5 by
+default).</p>
+<p>As with the keyword method, the prompt is a semicolon-separated list of phrases,
+and only True matches are produced. For this method the model field must name
+a <a href="https://www.sbert.net/docs/sentence_transformer/pretrained_models.html">sentence-transformer model</a> rather than an LLM:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">semantic</span>
+<span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sentence-transformers/all-MiniLM-L6-v2</span>
+<span class="nt">semantic_similarity_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Tuning the threshold</p>
+<p>Short phrases compared against whole sentences rarely score very highly, so
+the right threshold depends on the model and documents. If the semantic
+method returns False for everything, try lowering
+semantic_similarity_threshold.</p>
+</div>
 
 
 
