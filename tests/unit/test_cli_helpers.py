@@ -161,7 +161,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     mock_typer_context.obj.project = mock_project
 
     run_metadata = ExtractionRunMetadata(
-        model="gpt-4o-mini",
+        model="gpt-5.6-luna",
         total_input_tokens=100,
         total_output_tokens=50,
         total_cost_usd=0.0123,
@@ -196,7 +196,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert metadata_path.exists()
 
     written = json.loads(metadata_path.read_text(encoding="utf-8"))
-    assert written["model"] == "gpt-4o-mini"
+    assert written["model"] == "gpt-5.6-luna"
     assert written["total_input_tokens"] == 100
     assert written["total_output_tokens"] == 50
     assert written["total_cost_usd"] == 0.0123
