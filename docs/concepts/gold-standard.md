@@ -12,5 +12,6 @@ We currently accept the following formats:
 
 ## CSV
 
-!!! Warning "Description of CSV data"
-    TODO: fill this in
+Gold standard data can be supplied as a flat CSV, with one row per document. See
+[CSV converter setup](../csv_goldstandard/setup.md) for the expected columns, an
+example dataset, and how to use it to set up a project.
