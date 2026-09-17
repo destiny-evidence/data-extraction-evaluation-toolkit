@@ -133,6 +133,10 @@ class Attribute(BaseModel):
     Core attribute definition for data extraction tasks.
 
     Represents a single piece of information to be extracted from documents.
+
+    Note: Prompt is passed to the LLM for the default LLMDataExtractor.
+    For keyword data extractors, it is split into phrases,
+    which are matched with each document.
     """
 
     model_config = ConfigDict()
