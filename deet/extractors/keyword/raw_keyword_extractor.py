@@ -45,7 +45,12 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
         return match.start() if match else -1
 
     def _snippet_around(self, context: str, idx: int, phrase_len: int) -> str:
-        """Return a window of the document around the first match of phrase."""
+        """
+        Return a window of the document around the first match of phrase.
+
+        idx denotes the index in `context` of the beginning of the phrase,
+        so that idx + phrase length equals the end of the phrase.
+        """
         start = max(0, idx - self.snippet_window)
         end = min(len(context), idx + phrase_len + self.snippet_window)
         snippet = context[start:end].strip()
