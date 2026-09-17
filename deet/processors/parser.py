@@ -28,6 +28,12 @@ from deet.exceptions import (
 from deet.settings import get_settings
 from deet.utils.assess_text_quality import check_language
 
+try:
+    import pypandoc
+except ImportError:
+    pypandoc = None
+
+
 # CACHE init
 CACHE_DIR = get_settings().base_disk_cache_dir / "marker_parser_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -253,7 +259,12 @@ class PandocParser(ParserLibrary):
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using pandoc."""
-        import pypandoc
+        if pypandoc is None:
+            missing_dep = (
+                "pypandoc is not installed. install with "
+                "`pip install data-extraction-evaluation-toolkit[parsers]`."
+            )
+            raise ImportError(missing_dep)
 
         if True in [return_images, return_metadata]:
             image_meta_erro = "PandocParser can't produce images or metadata."
