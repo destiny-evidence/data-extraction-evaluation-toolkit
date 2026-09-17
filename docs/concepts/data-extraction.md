@@ -199,7 +199,7 @@ Thus
 Attribute(
     attribute_id=123,
     attribute_label="relevant",
-    prompt="climate change; global warming; greenhouse gas",
+    prompt="climate change;global warming;greenhouse gas",
     output_data_type=AttributeType.BOOL,
 )
 ```
