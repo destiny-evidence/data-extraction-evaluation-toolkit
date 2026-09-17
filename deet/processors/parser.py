@@ -104,6 +104,12 @@ class ParsedOutput(BaseModel):
             str: parsed text.
 
         """
+        if not get_settings().enforce_language_quality_check:
+            logger.debug(
+                "enforce_language_quality_check is set to False. not running check."
+            )
+            return value
+
         if not check_language(value):
             logger.debug("check lang failed")
             bad_language = "Supplied text didn't pass quality check."
@@ -231,6 +237,8 @@ class PdfminerParser(ParserLibrary):
 
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
+
+    import pypandoc
 
     name: Literal["pandoc"] = "pandoc"
     input_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
