@@ -9,7 +9,6 @@ from os import PathLike
 from pathlib import Path
 from typing import Literal
 
-import pypandoc
 from diskcache import Cache
 from loguru import logger
 from pdfminer.converter import TextConverter
@@ -238,8 +237,6 @@ class PdfminerParser(ParserLibrary):
 class PandocParser(ParserLibrary):
     """Parser with `pandoc` backend."""
 
-    import pypandoc
-
     name: Literal["pandoc"] = "pandoc"
     input_types = [InputFileType.EPUB, InputFileType.HTML, InputFileType.XML]
     output_file_types = [OutputFileType.MD]
@@ -256,6 +253,8 @@ class PandocParser(ParserLibrary):
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using pandoc."""
+        import pypandoc
+
         if True in [return_images, return_metadata]:
             image_meta_erro = "PandocParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(image_meta_erro)
