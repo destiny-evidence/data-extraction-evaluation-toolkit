@@ -8,7 +8,7 @@ Each row in the CSV represents one document, with columns holding document metad
 bibliographic details, and human-labeled annotations. The header row must include at
 least:
 
-```
+```csv
 document_id,name,abstract,mortality
 ```
 
