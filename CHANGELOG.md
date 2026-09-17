@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.3.0-dev.5 (2026-09-17)
+
+### Features
+
+- Add keyword and semantic extractors, and introduce a shared ABC for all extractors
+  ([#303](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/303),
+  [`4646ec5`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/4646ec5ca365eaf357921851ef9eee288e8e9944))
+
+- Add keyword and semantic extractors, and introduce a shared ABC…
+  ([#303](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/303),
+  [`4646ec5`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/4646ec5ca365eaf357921851ef9eee288e8e9944))
+
+
 ## v0.3.0-dev.4 (2026-09-07)
 
 ### Bug Fixes
