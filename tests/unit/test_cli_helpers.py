@@ -146,12 +146,13 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
             "deet.extractors.cli_helpers.load_or_init_config",
             return_value=config,
         ),
-        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.get_data_extractor") as mock_get_extractor,
         patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
     ):
-        mock_extractor = mock_extractor_cls.return_value
+        mock_extractor = MagicMock()
         mock_extractor.config = config
         mock_extractor.extract_from_documents.return_value = run_output
+        mock_get_extractor.return_value = mock_extractor
 
         result_output, _, experiment_artefacts, _config = run_extraction_pipeline(
             deet_project=mock_project,

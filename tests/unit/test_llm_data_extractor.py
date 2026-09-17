@@ -24,10 +24,9 @@ from deet.data_models.eppi import (
     EppiDocument,
 )
 from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunOutput
+from deet.extractors.base_extractor import DataExtractionConfig, PromptConfig
 from deet.extractors.llm_data_extractor import (
-    DataExtractionConfig,
     LLMDataExtractor,
-    PromptConfig,
 )
 from deet.processors.csv_annotation_converter import CSVAnnotationConverter
 from deet.settings import LLMProvider
@@ -158,7 +157,7 @@ def test_prompt_config_missing_file(tmp_path: Path):
 def test_model_validator_populates_max_context_tokens(mock_settings):
     """Test that model_validator sets max_context_tokens from model when None."""
     with patch(
-        "deet.extractors.llm_data_extractor.get_model_max_tokens",
+        "deet.extractors.base_extractor.get_model_max_tokens",
         return_value=128000,
     ):
         config = DataExtractionConfig()
@@ -168,7 +167,7 @@ def test_model_validator_populates_max_context_tokens(mock_settings):
 def test_model_validator_respects_user_override(mock_settings):
     """Test that model_validator does not override explicit max_context_tokens."""
     with patch(
-        "deet.extractors.llm_data_extractor.get_model_max_tokens",
+        "deet.extractors.base_extractor.get_model_max_tokens",
         return_value=128000,
     ):
         config = DataExtractionConfig(max_context_tokens=5000)
