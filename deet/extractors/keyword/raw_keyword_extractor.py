@@ -10,6 +10,7 @@ from deet.data_models.documents import (
 from deet.data_models.extraction import (
     DocumentExtractionResult,
 )
+from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.keyword.base_keyword_extractor import BaseKeywordDataExtractor
 
 
@@ -21,7 +22,10 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
     match the document content.
     """
 
-    SNIPPET_WINDOW = 80
+    def __init__(self, config: DataExtractionConfig, snippet_window: int = 80) -> None:
+        """Initialise and set snippet window."""
+        super().__init__(config)
+        self.snippet_window = snippet_window
 
     def _find_phrase(self, context: str, context_lower: str, phrase: str) -> int:
         """
@@ -42,8 +46,8 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
 
     def _snippet_around(self, context: str, idx: int, phrase_len: int) -> str:
         """Return a window of the document around the first match of phrase."""
-        start = max(0, idx - self.SNIPPET_WINDOW)
-        end = min(len(context), idx + phrase_len + self.SNIPPET_WINDOW)
+        start = max(0, idx - self.snippet_window)
+        end = min(len(context), idx + phrase_len + self.snippet_window)
         snippet = context[start:end].strip()
         prefix = "..." if start > 0 else ""
         suffix = "..." if end < len(context) else ""
