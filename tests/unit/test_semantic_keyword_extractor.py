@@ -15,7 +15,7 @@ from deet.extractors.keyword.semantic_keyword_extractor import (
 
 
 @pytest.fixture
-def config() -> DataExtractionConfig:
+def semantic_config() -> DataExtractionConfig:
     """Config selecting the semantic keyword extraction method."""
     return DataExtractionConfig(
         method=ExtractionMethod.SEMANTIC,
@@ -34,17 +34,17 @@ def _make_extractor(config, chunk_emb, keyword_emb) -> SemanticKeywordDataExtrac
         return SemanticKeywordDataExtractor(config=config)
 
 
-def test_split_into_sentences(config):
+def test_split_into_sentences(semantic_config):
     """Sentences are split on terminal punctuation followed by a space."""
-    extractor = _make_extractor(config, [[1.0]], [[1.0]])
+    extractor = _make_extractor(semantic_config, [[1.0]], [[1.0]])
     sentences = extractor._split_into_sentences("First one. Second two! Third?")
     assert sentences == ["First one.", "Second two!", "Third?"]
 
 
-def test_similarity_above_threshold_produces_annotation(config, make_attr):
+def test_similarity_above_threshold_produces_annotation(semantic_config, make_attr):
     """A chunk similar enough to a prompt yields an annotation with reasoning."""
     extractor = _make_extractor(
-        config,
+        semantic_config,
         chunk_emb=[[1.0, 0.0], [0.0, 1.0]],
         keyword_emb=[[1.0, 0.0]],
     )
@@ -60,10 +60,10 @@ def test_similarity_above_threshold_produces_annotation(config, make_attr):
     assert annotation.additional_text == "Sentence one."
 
 
-def test_similarity_below_threshold_produces_no_annotation(config, make_attr):
+def test_similarity_below_threshold_produces_no_annotation(semantic_config, make_attr):
     """A chunk dissimilar to every prompt yields no annotation."""
     extractor = _make_extractor(
-        config,
+        semantic_config,
         chunk_emb=[[0.0, 1.0]],
         keyword_emb=[[1.0, 0.0]],
     )
@@ -74,9 +74,9 @@ def test_similarity_below_threshold_produces_no_annotation(config, make_attr):
     assert result.annotations == []
 
 
-def test_empty_document_yields_no_annotations(config, make_attr):
+def test_empty_document_yields_no_annotations(semantic_config, make_attr):
     """A document with no sentences returns early without encoding."""
-    extractor = _make_extractor(config, [[1.0]], [[1.0]])
+    extractor = _make_extractor(semantic_config, [[1.0]], [[1.0]])
     result = extractor.extract_from_document(
         attributes=[make_attr(1, "climate")],
         payload="",
@@ -85,9 +85,9 @@ def test_empty_document_yields_no_annotations(config, make_attr):
     cast("MagicMock", extractor.model).encode.assert_not_called()
 
 
-def test_attribute_without_prompt_raises(config, make_attr):
+def test_attribute_without_prompt_raises(semantic_config, make_attr):
     """An attribute with no usable prompt is a misconfiguration, not skipped."""
-    extractor = _make_extractor(config, [[1.0]], [[1.0]])
+    extractor = _make_extractor(semantic_config, [[1.0]], [[1.0]])
     with pytest.raises(ValueError, match="non-empty prompt"):
         extractor.extract_from_document(
             attributes=[make_attr(1, None)],

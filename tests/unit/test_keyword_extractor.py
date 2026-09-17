@@ -9,7 +9,7 @@ from deet.extractors.keyword.raw_keyword_extractor import RawKeywordDataExtracto
 
 
 @pytest.fixture
-def config() -> DataExtractionConfig:
+def keyword_config() -> DataExtractionConfig:
     """Config selecting the keyword extraction method."""
     return DataExtractionConfig(
         method=ExtractionMethod.KEYWORD,
@@ -18,15 +18,15 @@ def config() -> DataExtractionConfig:
 
 
 @pytest.fixture
-def extractor(config) -> RawKeywordDataExtractor:
+def keyword_extractor(keyword_config) -> RawKeywordDataExtractor:
     """Keyword extractor under test."""
-    return RawKeywordDataExtractor(config=config)
+    return RawKeywordDataExtractor(config=keyword_config)
 
 
-def test_matching_term_produces_annotation(extractor, make_attr):
+def test_matching_term_produces_annotation(keyword_extractor, make_attr):
     """A prompt term present in the payload yields one keyword annotation."""
     attributes = [make_attr(1, "climate")]
-    result = extractor.extract_from_document(
+    result = keyword_extractor.extract_from_document(
         attributes=attributes,
         payload="the text discusses climate policy",
     )
@@ -38,61 +38,67 @@ def test_matching_term_produces_annotation(extractor, make_attr):
     assert result.messages == []
 
 
-def test_absent_term_produces_no_annotation(extractor, make_attr):
+def test_absent_term_produces_no_annotation(keyword_extractor, make_attr):
     """A prompt term absent from the payload yields no annotation."""
     attributes = [make_attr(1, "climate")]
-    result = extractor.extract_from_document(
+    result = keyword_extractor.extract_from_document(
         attributes=attributes,
         payload="the text discusses fiscal policy",
     )
     assert result.annotations == []
 
 
-def test_matches_at_most_once_per_attribute(extractor, make_attr):
+def test_matches_at_most_once_per_attribute(keyword_extractor, make_attr):
     """Multiple matching phrases for one attribute produce a single annotation."""
     attributes = [make_attr(1, "climate; change")]
-    result = extractor.extract_from_document(
+    result = keyword_extractor.extract_from_document(
         attributes=attributes,
         payload="climate change appears here",
     )
     assert len(result.annotations) == 1
 
 
-def test_matches_when_any_phrase_present(extractor, make_attr):
+def test_matches_when_any_phrase_present(keyword_extractor, make_attr):
     """An attribute matches if any of its separated phrases appears."""
     attributes = [make_attr(1, "renewable energy; climate adaptation")]
-    result = extractor.extract_from_document(
+    result = keyword_extractor.extract_from_document(
         attributes=attributes,
         payload="the study covers climate adaptation in cities",
     )
     assert len(result.annotations) == 1
 
 
-def test_phrase_must_match_as_a_whole(extractor, make_attr):
+def test_phrase_must_match_as_a_whole(keyword_extractor, make_attr):
     """A multi-word phrase matches as a unit, not by its individual words."""
     attributes = [make_attr(1, "climate change")]
-    result = extractor.extract_from_document(
+    result = keyword_extractor.extract_from_document(
         attributes=attributes,
         payload="this is about climate policy and social change",
     )
     assert result.annotations == []
 
 
-def test_separator_only_prompt_does_not_match(extractor, make_attr):
+def test_separator_only_prompt_does_not_match(keyword_extractor, make_attr):
     """A prompt of only separators yields no phrases and no false positives."""
     attributes = [make_attr(1, ";;")]
-    result = extractor.extract_from_document(
+    result = keyword_extractor.extract_from_document(
         attributes=attributes,
         payload="any text at all",
     )
     assert result.annotations == []
 
 
-def test_get_prompt_phrases_splits_strips_and_drops_empties(extractor, make_attr):
+def test_get_prompt_phrases_splits_strips_and_drops_empties(
+    keyword_extractor, make_attr
+):
     """Prompts split on the separator, are stripped, and empties are dropped."""
-    assert extractor._get_prompt_phrases(make_attr(1, "a; b ; c")) == ["a", "b", "c"]
-    assert extractor._get_prompt_phrases(make_attr(1, "climate change")) == [
+    assert keyword_extractor._get_prompt_phrases(make_attr(1, "a; b ; c")) == [
+        "a",
+        "b",
+        "c",
+    ]
+    assert keyword_extractor._get_prompt_phrases(make_attr(1, "climate change")) == [
         "climate change"
     ]
-    assert extractor._get_prompt_phrases(make_attr(1, " ; ; ")) == []
-    assert extractor._get_prompt_phrases(make_attr(1, None)) == []
+    assert keyword_extractor._get_prompt_phrases(make_attr(1, " ; ; ")) == []
+    assert keyword_extractor._get_prompt_phrases(make_attr(1, None)) == []
