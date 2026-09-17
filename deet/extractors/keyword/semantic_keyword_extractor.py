@@ -41,11 +41,23 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         """
         Return the keyword phrases for each attribute, in order.
 
-        A keyword attribute with no usable prompt has nothing to match on, so an
-        empty result is presumed to be an error.
+        Phrases are split from each attribute's prompt on the ``PROMPT_SEPARATOR``.
+        The result is a list-of-lists aligned with ``attributes``:
 
-        Raises:
-            ValueError: If any attribute yields no phrases.
+            attributes = [
+                Attribute(prompt="fever; temperature; pyrexia"),
+                Attribute(prompt="cough; respiratory"),
+            ]
+            _phrases_per_attribute(attributes)
+            # → [["fever", "temperature", "pyrexia"], ["cough", "respiratory"]]
+
+        This structure is used downstream to slice the phrase-by-chunk similarity
+        matrix back into per-attribute blocks
+        (see ``_group_similarities_by_attribute``).
+
+        A keyword attribute with no usable prompt has nothing to match on, so an
+        empty phrase list is treated as an error rather than silently producing a
+        zero-score attribute.
 
         """
         phrases_per_attribute = [self._get_prompt_phrases(attr) for attr in attributes]
