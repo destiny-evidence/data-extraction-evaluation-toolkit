@@ -6,7 +6,8 @@ These instructions can be followed when the gold standard labeled data is in CSV
 
 Each row in the CSV represents one document, with columns holding document metadata,
 bibliographic details, and human-labeled annotations. The header row must include at
-least:
+least the columns `document_id`, and `name`. The following columns would additionally provide
+an abstract, and an attribute column for an attribute named "mortality".
 
 ```csv
 document_id,name,abstract,mortality
@@ -30,17 +31,18 @@ By default, a column is auto-assigned as a reference field whenever its name mat
 one of the allowed reference field keys below — for example, an `abstract` column is
 automatically treated as the document's abstract.
 
-Allowed reference field keys:
+??? note "Allowed reference field keys:"
 
-- `abstract`
-- `authorship`
-- `cited_by_count`
-- `created_date`
-- `updated_date`
-- `publication_date`
-- `publication_year`
-- `publisher`
-- `title`
+    - `abstract`
+    - `authorship`
+    - `cited_by_count`
+    - `created_date`
+    - `updated_date`
+    - `publication_date`
+    - `publication_year`
+    - `publisher`
+    - `title`
+
 <!-- - `pagination.volume`
 - `pagination.issue`
 - `pagination.first_page`
@@ -143,9 +145,6 @@ Or, in python:
 ```python
 from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.project import DeetProject
-from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
-from deet.extractors.cli_helpers import init_extraction_run, prepare_documents
-from deet.extractors.llm_data_extractor import DataExtractionConfig, LLMDataExtractor
 
 project = DeetProject.load()
 
@@ -154,40 +153,6 @@ processed_annotation_data.populate_custom_prompts(
     method=CustomPromptPopulationMethod.FILE,
     filepath=project.prompt_csv_path,
 )
-
-config = DataExtractionConfig()  # or configure options here
-experiment_artefacts = init_extraction_run(
-    project.experiments_dir, run_name="mortality-eval"
-)
-
-documents = prepare_documents(
-    processed_annotation_data.documents,
-    config,
-    linked_document_path=project.linked_documents_path,
-    pdf_dir=project.pdf_dir,
-    link_map_path=project.link_map_path,
-)
-
-data_extractor = LLMDataExtractor(config=config)
-run_output = data_extractor.extract_from_documents(
-    attributes=processed_annotation_data.attributes,
-    documents=documents,
-    context_type=config.default_context_type,
-    output_file=experiment_artefacts.llm_annotations,
-    show_progress=True,
-)
-
-# Compare the LLM's output against your gold standard `mortality` labels
-evaluator = GoldStandardLLMEvaluator(
-    gold_standard_annotated_documents=processed_annotation_data.annotated_documents,
-    llm_annotated_documents=run_output.annotated_documents,
-    attributes=processed_annotation_data.attributes,
-    extraction_run_id=experiment_artefacts.run_id,
-)
-evaluator.evaluate_llm_annotations()
-evaluator.write_metrics_to_csv(experiment_artefacts.metrics)
-evaluator.export_llm_comparison(experiment_artefacts.comparison)
-evaluator.display_metrics()
 ```
 
 See the [quickstart guide](../setup/quickstart.md) for more on linking PDFs,
