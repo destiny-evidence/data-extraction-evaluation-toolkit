@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.3.0-dev.6 (2026-09-18)
+
+### Bug Fixes
+
+- Hoist importlib.metadata import to top-level in version CLI tests
+  ([`aed3c07`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/aed3c07abc9af03e64a3b40a0a016a277e8539d3))
+
+### Features
+
+- Add --version and -v flags to CLI
+  ([`0da7ae9`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/0da7ae9e0b52abf5acb64be6d5c96e399c4cc144))
+
+
 ## v0.3.0-dev.5 (2026-09-17)
 
 ### Features
