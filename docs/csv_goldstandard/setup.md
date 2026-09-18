@@ -77,10 +77,10 @@ the study measures or analyzes mortality as an outcome, and `False` means it doe
 
 ### 1. Initialize the project
 
-Once your CSV is ready, initialize a project with `--format generic_csv`:
+Once your CSV is ready, initialize a project and select the format `generic_csv`
 
 ```sh
-deet project init --data gold_standard.csv --format generic_csv
+deet project init
 ```
 
 Or, in python:
@@ -99,61 +99,6 @@ project = DeetProject(
 project.setup()
 ```
 
-Either approach parses your CSV and builds the following structure in your project
-directory:
-
-```text
-my-project/
-├── project.yaml                    # saved project configuration
-├── default_extraction_config.yaml  # default data extraction settings
-├── link_map.csv                    # maps documents to pdf files
-├── linked_documents/               # populated once you run `deet project link`
-├── prompts/
-│   └── prompt_definitions.csv      # one row per attribute column - edit this next
-└── data-extraction-experiments/    # populated once you run an evaluation
-```
-
-`prompts/prompt_definitions.csv` has one row for every attribute column found in your
-CSV. In our example, that's a single row for `mortality`, with the `prompt` column left
-blank for you to fill in.
-
-### 2. Write your prompts
-
-Edit the `prompt` column for each attribute you want an LLM to extract. This is the
-instruction the model will be given for that document, so it should describe the same
-rule your human annotators used, e.g.:
-
-{{ read_csv('examples/csv_goldstandard/prompts/prompt_definitions.csv') }}
-
-Leave the `prompt` column blank for any attribute you don't want extracted. See
-[writing and editing prompts](../setup/quickstart.md#writing-and-editing-prompts) for
-more details, including how to override the inferred `output_data_type`.
-
-### 3. Run the evaluation
-
-```sh
-deet experiments evaluate
-```
-
-This runs an LLM over each document using your prompts, compares its output against
-the gold standard labels from your CSV (e.g. `mortality`), and saves the results —
-including comparison and accuracy metrics — to a timestamped folder under
-`data-extraction-experiments/`.
-
-Or, in python:
-
-```python
-from deet.data_models.enums import CustomPromptPopulationMethod
-from deet.data_models.project import DeetProject
-
-project = DeetProject.load()
-
-processed_annotation_data = project.process_data()
-processed_annotation_data.populate_custom_prompts(
-    method=CustomPromptPopulationMethod.FILE,
-    filepath=project.prompt_csv_path,
-)
-```
-
-See the [quickstart guide](../setup/quickstart.md) for more on linking PDFs,
+See the [quickstart guide](../setup/quickstart.md) for more on
+customizing prompts, linking PDFs,
 configuring extraction runs, and interpreting the results.
