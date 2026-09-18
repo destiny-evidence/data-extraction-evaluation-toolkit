@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v0.4.0-dev.2 (2026-09-18)
+
+### Documentation
+
+- Add git installation instructions to docs
+  ([#411](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/411),
+  [`c14a32d`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/c14a32d972ee51c843e2713c5287cd73e48f3329))
+
+### Features
+
+- Don't crash on meeting an eppiattribute that is unkown, but return unkown
+  ([`80de381`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/80de381ce9a07ad22795092d234b56cf8c2ca8bb))
+
+
 ## v0.4.0-dev.1 (2026-09-18)
 
 
