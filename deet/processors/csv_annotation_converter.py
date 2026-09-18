@@ -1,11 +1,13 @@
 """Convert annotation CSV files to Pydantic models."""
 
 import csv
+import io
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 from xmlrpc.client import Boolean
 
+import clevercsv
 from destiny_sdk.enhancements import (
     AbstractContentEnhancement,
     AbstractProcessType,
@@ -66,6 +68,10 @@ ALLOWED_REFERENCE_MAPPING_KEYS = {
 
 class ColumnTypeInferenceError(Exception):
     """Raised when column type inference fails due to incompatible types."""
+
+
+class UnsupportedCsvDialectError(Exception):
+    """Raise when we cant detect csv dialect."""
 
 
 class CSVParserConfig(BaseModel):
@@ -459,88 +465,132 @@ class CSVAnnotationConverter(AnnotationConverter):
             enhancements=enhancements,
         )
 
-    def load_csv(
+    def load_csv(  # noqa: PLR0912, PLR0915 - TO DO: let's break this up!!
         self,
         file_path: Path,
         attribute_fields: list[str] | None = None,
         reference_fields: dict | None = None,
     ) -> tuple[list[str], dict[str, str], list[str], list[dict[str, Any]]]:
         """
-        Load a CSV, normalize headers, and return all column names, attribute names,
+        Load a CSV, normalise headers, and return all column names, attribute names,
         reference names, and rows.
+
+        Uses `clevercsv` to robustly detect the dialect (delimiter, quote character,
+        escape character) of the file, which handles CSVs exported from Excel or
+        other tools that may use non-standard delimiters (e.g. semicolons, tabs).
         """
         path = Path(file_path)
+
         with path.open(newline="", encoding="utf-8-sig") as f:
-            csv_reader = csv.DictReader(f)
+            raw_text = f.read()
 
-            # normalize headers BEFORE reading rows
-            raw_headers = csv_reader.fieldnames or []
-            colnames: list[str] = [h.strip().lower() for h in raw_headers]
-            csv_reader.fieldnames = colnames
+        # dialect detection
+        dialect = clevercsv.Sniffer().sniff(raw_text, verbose=False)
+        if dialect is None:
+            msg = f"can't detect dialect for {path.name}"
+            raise UnsupportedCsvDialectError(msg)
 
-            # --- validate duplicates ---
-            dup_fields = self._find_duplicate_column_names(colnames)
-            if dup_fields:
-                msg = f"{len(dup_fields)} Duplicate fieldnames found: {dup_fields}"
-                raise ValueError(msg)
+        quotechar = dialect.quotechar or '"'
+        escapechar = dialect.escapechar or None
+        delimiter = dialect.delimiter or ","
 
-            # --- validate required fields ---
-            meta_fields = {"name", "document_id"}
-            missing = meta_fields - set(colnames)
-            if missing:
-                msg = f"Required columns missing: {missing}"
-                raise ValueError(msg)
+        logger.info(
+            f"Detected CSV dialect for {file_path!r}: "
+            f"delimiter={delimiter!r}, "
+            f"quotechar={quotechar!r}, "
+            f"escapechar={escapechar!r}"
+        )
 
-            # --- validate reference fields ---
-            # If reference_fields is not povided....
-            if reference_fields is None:
-                if self.config.auto_assign_reference_fields:
-                    logger.info("Auto assigning reference fields")
-                    reference_fields = {
-                        ref_field: ref_field
-                        for ref_field in ALLOWED_REFERENCE_MAPPING_KEYS
-                        if ref_field in colnames
-                    }
-                else:
-                    logger.info("No reference fields provided and auto assign is False")
-                    reference_fields = {}
+        rows_iter = csv.reader(
+            io.StringIO(raw_text, newline=""),
+            delimiter=delimiter,
+            quotechar=quotechar,
+            escapechar=escapechar,
+            doublequote=True,
+        )
+        all_rows = list(rows_iter)
 
-            # If reference_fields is povided....
-            if reference_fields:
-                invalid_keys = set(reference_fields) - ALLOWED_REFERENCE_MAPPING_KEYS
-                if invalid_keys:
-                    msg = f"Invalid mapping keys: {invalid_keys}"
-                    raise ValueError(msg)
+        if not all_rows:
+            msg = f"CSV file {file_path!r} appears to be empty."
+            raise ValueError(msg)
 
-                # normalize reference fields
+        raw_headers = all_rows[0]
+        data_rows = all_rows[1:]
+
+        logger.info(
+            f"Loaded {len(data_rows)} data row(s) and "
+            f"{len(raw_headers)} column(s) from {file_path!r}."
+        )
+
+        # normalise headers BEFORE building row dicts
+        colnames: list[str] = [h.strip().lower() for h in raw_headers]
+
+        dup_fields = self._find_duplicate_column_names(colnames)
+        if dup_fields:
+            msg = f"{len(dup_fields)} Duplicate fieldnames found: {dup_fields}"
+            raise ValueError(msg)
+
+        meta_fields = {"name", "document_id"}
+        missing = meta_fields - set(colnames)
+        if missing:
+            msg = f"Required columns missing: {missing}"
+            raise ValueError(msg)
+
+        if reference_fields is None:
+            if self.config.auto_assign_reference_fields:
+                logger.info("Auto assigning reference fields")
                 reference_fields = {
-                    k: v.strip().lower() for k, v in reference_fields.items()
+                    ref_field: ref_field
+                    for ref_field in ALLOWED_REFERENCE_MAPPING_KEYS
+                    if ref_field in colnames
                 }
-
-                unknown = set(reference_fields.values()) - set(colnames)
-                if unknown:
-                    msg = f"Reference fields not found in CSV: {unknown}"
-                    raise ValueError(msg)
-
-            # --- validate attribute fields ---
-            # normalize and validate provided attribute fields
-            if attribute_fields is None:
-                logger.info("No attribute fields provided")
-                excluded_fields = meta_fields | set(reference_fields.values())
-                resolved_attribute_fields = [
-                    h for h in colnames if h not in excluded_fields
-                ]
             else:
-                resolved_attribute_fields = [
-                    field.strip().lower() for field in attribute_fields
-                ]
-                unknown_attributes = set(resolved_attribute_fields) - set(colnames)
-                if unknown_attributes:
-                    msg = f"Attribute fields not found in CSV: {unknown_attributes}"
-                    raise ValueError(msg)
+                logger.info("No reference fields provided and auto assign is False")
+                reference_fields = {}
 
-            # Read rows into mem once
-            rows = list(csv_reader)
+        if reference_fields:
+            invalid_keys = set(reference_fields) - ALLOWED_REFERENCE_MAPPING_KEYS
+            if invalid_keys:
+                msg = f"Invalid mapping keys: {invalid_keys}"
+                raise ValueError(msg)
+
+            # normalise reference fields
+            reference_fields = {
+                k: v.strip().lower() for k, v in reference_fields.items()
+            }
+
+            unknown = set(reference_fields.values()) - set(colnames)
+            if unknown:
+                msg = f"Reference fields not found in CSV: {unknown}"
+                raise ValueError(msg)
+
+        # normalise and validate attribute fields
+        if attribute_fields is None:
+            logger.info("No attribute fields provided")
+            excluded_fields = meta_fields | set(reference_fields.values())
+            resolved_attribute_fields = [
+                h for h in colnames if h not in excluded_fields
+            ]
+        else:
+            resolved_attribute_fields = [
+                field.strip().lower() for field in attribute_fields
+            ]
+            unknown_attributes = set(resolved_attribute_fields) - set(colnames)
+            if unknown_attributes:
+                msg = f"Attribute fields not found in CSV: {unknown_attributes}"
+                raise ValueError(msg)
+
+        # build row dicts, aligned to normalised colnames
+        rows: list[dict[str, Any]] = []
+        for row_values in data_rows:
+            # pad/truncate rows that don't match header length
+            if len(row_values) < len(colnames):
+                padded_values = row_values + [""] * (len(colnames) - len(row_values))
+            elif len(row_values) > len(colnames):
+                padded_values = row_values[: len(colnames)]
+            else:
+                padded_values = row_values
+            rows.append(dict(zip(colnames, padded_values, strict=True)))
 
         return colnames, reference_fields, resolved_attribute_fields, rows
 
