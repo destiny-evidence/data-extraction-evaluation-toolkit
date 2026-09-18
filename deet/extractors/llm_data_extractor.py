@@ -100,6 +100,10 @@ def _model_string_for_tokenisation(provider: LLMProvider, model: str) -> str:
             return f"azure/{model}"
         case LLMProvider.OLLAMA:
             return f"ollama/{model}"
+        case LLMProvider.OPENAI:  # NEW
+            return model
+        case LLMProvider.HUGGINGFACE:  # NEW
+            return f"huggingface/{model}"
         case _:
             msg = f"Unsupported LLM provider: {provider}"
             raise ValueError(msg)
@@ -275,6 +279,14 @@ class LLMDataExtractor:
         elif self.config.provider == LLMProvider.OLLAMA:
             self.model = f"ollama/{self.config.model}"
             self.llm_api_key = None
+            self.api_base = None
+        elif self.config.provider == LLMProvider.OPENAI:
+            self.model = self.config.model
+            self.llm_api_key = settings.openai_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = None
+        elif self.config.provider == LLMProvider.HUGGINGFACE:
+            self.model = f"huggingface/{self.config.model}"
+            self.llm_api_key = settings.huggingface_api_key.get_secret_value()  # type: ignore[union-attr]
             self.api_base = None
         else:
             error_message = f"Unsupported LLM provider: {self.config.provider}"
