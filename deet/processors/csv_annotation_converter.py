@@ -465,7 +465,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             enhancements=enhancements,
         )
 
-    def load_csv(
+    def load_csv(  # noqa: PLR0912, PLR0915 - TO DO: let's break this up!!
         self,
         file_path: Path,
         attribute_fields: list[str] | None = None,
