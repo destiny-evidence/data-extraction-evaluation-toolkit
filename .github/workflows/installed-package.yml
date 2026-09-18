@@ -37,8 +37,12 @@ jobs:
         # setuptools-version-dependent, so neither is safe to assume.
         run: uv build --out-dir dist --no-config
 
-    #   - name: Write the import probe
-    #     # this is still do do
+      - name: Write the import probe
+        run: |
+          cat > /tmp/probe.py << 'EOF'
+          import deet
+          print("Import OK")
+          EOF
 
       - name: Import each distribution from outside the source tree
         working-directory: /tmp
