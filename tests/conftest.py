@@ -8,6 +8,7 @@ import pytest
 from pydantic import SecretStr
 from vcr.request import Request
 
+from deet.data_models.base import Attribute, AttributeType
 from deet.processors.converter_register import SupportedImportFormat
 from deet.processors.parser import ParsedOutput
 from deet.settings import get_settings
@@ -21,6 +22,21 @@ except ImportError:
         """Compatibility shim for aiohttp 3.9+ which removed this class."""
 
     aiohttp.streams.AsyncStreamReaderMixin = AsyncStreamReaderMixin  # type: ignore[attr-defined]
+
+
+@pytest.fixture
+def make_attr():
+    """Return a factory that builds Attributes by id and optional prompt."""
+
+    def _make(attribute_id: int, prompt: str | None = None) -> Attribute:
+        return Attribute(
+            attribute_id=attribute_id,
+            attribute_label=f"Attribute {attribute_id}",
+            output_data_type=AttributeType.BOOL,
+            prompt=prompt,
+        )
+
+    return _make
 
 
 @pytest.fixture
