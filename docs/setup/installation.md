@@ -202,8 +202,11 @@ Git is a versioning tool that is used here to install the deet package, which is
     ```sh
     scoop install git
     ```
-=== "Mac/Linux"
-    If you a Mac or Linux user, you probably have git installed already
+=== "Mac"
+    Type `git --version` to verify that git is installed, otherwise run `xcode-select --install`
+
+=== "Linux"
+    Install git using your package manager, e.g. `sudo apt install git` on Debian/Ubuntu
 
 ## CLI users
 
