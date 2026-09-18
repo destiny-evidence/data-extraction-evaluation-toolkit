@@ -1,4 +1,4 @@
-# CSV converter
+# Parsing CSV-formatted gold-standard data
 
 These instructions can be followed when the gold standard labeled data is in CSV format.
 
