@@ -540,6 +540,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#installing-git" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing git
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cli-users" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1404,6 +1415,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#installing-git" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing git
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cli-users" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1693,6 +1715,23 @@ This is a test of *pandoc*.
 <p>Update uv by running <code>uv self</code></p>
 </div>
 <p>Now you have the basics set up, continue to <a href="#cli-users">CLI users</a> if you want to use the CLI, or <a href="#package-users">package users</a> if you want to use deet as a package, or to <a href="#contributors">contributors</a> if you want to contribute to <code>deet</code>.</p>
+<h2 id="installing-git">Installing git</h2>
+<p>Git is a versioning tool that is used here to install the deet package, which is stored on Github.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Windows</label><label for="__tabbed_5_2">Mac</label><label for="__tabbed_5_3">Linux</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>On windows machines, install git using your package manager:
+<div class="highlight"><pre><span></span><code>scoop<span class="w"> </span>install<span class="w"> </span>git
+</code></pre></div></p>
+</div>
+<div class="tabbed-block">
+<p>Type <code>git --version</code> to verify that git is installed, otherwise run <code>xcode-select --install</code></p>
+</div>
+<div class="tabbed-block">
+<p>Install git using your package manager, e.g. <code>sudo apt install git</code> on Debian/Ubuntu</p>
+</div>
+</div>
+</div>
 <h2 id="cli-users">CLI users</h2>
 <p>If you just want to use the CLI, we recommend you install the package globally into an isolated managed environment. You can do this using <code>uv tool install &lt;package&gt;</code>.</p>
 <p>To install <code>deet</code></p>
@@ -1724,7 +1763,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://github.com/desti
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync
 </code></pre></div>
 <h3 id="activate-your-virtual-environment">Activate your virtual environment</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Windows</label><label for="__tabbed_5_2">Mac/Linux</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Windows</label><label for="__tabbed_6_2">Mac/Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>.venv/Scripts/activate
