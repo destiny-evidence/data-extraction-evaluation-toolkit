@@ -1,5 +1,6 @@
 """Convert annotation CSV files to Pydantic models."""
 
+import csv
 import io
 from collections import defaultdict
 from pathlib import Path
@@ -490,20 +491,22 @@ class CSVAnnotationConverter(AnnotationConverter):
             raise UnsupportedCsvDialectError(msg)
 
         quotechar = dialect.quotechar or '"'
-        escapechar = dialect.escapechar or ""
+        escapechar = dialect.escapechar or None
+        delimiter = dialect.delimiter or ","
 
         logger.info(
             f"Detected CSV dialect for {file_path!r}: "
-            f"delimiter={dialect.delimiter!r}, "
+            f"delimiter={delimiter!r}, "
             f"quotechar={quotechar!r}, "
             f"escapechar={escapechar!r}"
         )
 
-        rows_iter = clevercsv.reader(
-            io.StringIO(raw_text),
-            delimiter=dialect.delimiter,
+        rows_iter = csv.reader(
+            io.StringIO(raw_text, newline=""),
+            delimiter=delimiter,
             quotechar=quotechar,
             escapechar=escapechar,
+            doublequote=True,
         )
         all_rows = list(rows_iter)
 
