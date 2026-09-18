@@ -119,7 +119,7 @@ def test_data_extraction_config_edit_distance_threshold_from_yaml(tmp_path) -> N
     """Config YAML omits threshold → 0.90; explicit value is honoured."""
     default_path = tmp_path / "default.yaml"
     default_path.write_text(
-        "provider: azure\nmodel: gpt-4o-mini\nmax_context_tokens: 1000\n",
+        "provider: azure\nmodel: gpt-5.6-luna\nmax_context_tokens: 1000\n",
         encoding="utf-8",
     )
     default_config = DataExtractionConfig.from_yaml(default_path)
@@ -127,7 +127,7 @@ def test_data_extraction_config_edit_distance_threshold_from_yaml(tmp_path) -> N
 
     custom_path = tmp_path / "custom.yaml"
     custom_path.write_text(
-        "provider: azure\nmodel: gpt-4o-mini\nmax_context_tokens: 1000\n"
+        "provider: azure\nmodel: gpt-5.6-luna\nmax_context_tokens: 1000\n"
         "edit_distance_match_threshold: 0.85\n",
         encoding="utf-8",
     )

@@ -36,6 +36,3 @@ Extraction Rules
 Output Format:
 -Provide one response per question, preserving the original question order
 -Return results in json format
-
-Input JSON:
-{input_json}

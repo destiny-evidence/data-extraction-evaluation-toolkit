@@ -35,7 +35,17 @@ def get_bc_brown_words() -> set:
     return {x.lower() for x in brown.words()}
 
 
-bc_brown = get_bc_brown_words()
+# NOTE: no longer eagerly computed at import time - only when actually needed,
+# and only if `nltk` is installed / feature is enabled.
+_bc_brown_cache: set | None = None
+
+
+def _get_bc_brown() -> set:
+    """Lazily load/cache brown words, importing nltk only on first use."""
+    global _bc_brown_cache  # noqa: PLW0603
+    if _bc_brown_cache is None:
+        _bc_brown_cache = get_bc_brown_words()
+    return _bc_brown_cache
 
 
 class EmptyTextError(Exception):
@@ -81,6 +91,7 @@ def check_language(
         lang = Language(lang)
 
     if lang == Language.ENGLISH:
+        bc_brown = _get_bc_brown()
         return len(tok & bc_brown) / len(tok) > threshold
     missing_lang = f"Language '{lang.value}' not supported yet."
     raise NotImplementedError(missing_lang)
