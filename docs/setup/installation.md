@@ -193,6 +193,18 @@ We recommend installing uv to manage python packages. This can also be used to i
 
 Now you have the basics set up, continue to [CLI users](#cli-users) if you want to use the CLI, or [package users](#package-users) if you want to use deet as a package, or to [contributors](#contributors) if you want to contribute to `deet`.
 
+## Installing git
+
+Git is a versioning tool that is used here to install the deet package, which is stored on Github.
+
+=== "Windows"
+    On windows machines, install git using your package manager:
+    ```sh
+    scoop install git
+    ```
+=== "Mac/Linux"
+    If you a Mac or Linux user, you probably have git installed already
+
 ## CLI users
 
 If you just want to use the CLI, we recommend you install the package globally into an isolated managed environment. You can do this using `uv tool install <package>`.
