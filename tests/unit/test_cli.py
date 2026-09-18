@@ -132,7 +132,8 @@ def test_project_required_allows_when_project_exists():
     assert "This command works" in result.stdout
 
 
-def test_init_project_initialises_in_emptydir():
+def test_init_project_initialises_in_emptydir(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     fake_project = MagicMock(spec=DeetProject)
     fake_settings = MagicMock(spec=DataExtractionSettings)
 
@@ -406,7 +407,9 @@ def test_edit_warns_when_data_source_changes(valid_project_data, monkeypatch, tm
     )
 
 
-def test_init_project_noninteractive(tmp_path):
+def test_init_project_noninteractive(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
     data_file = tmp_path / "references.json"
     data_file.touch()
 
@@ -419,7 +422,10 @@ def test_init_project_noninteractive(tmp_path):
     assert result.exit_code == 0
 
 
-def test_init_project_noninteractive_fails_with_insufficient_args(tmp_path):
+def test_init_project_noninteractive_fails_with_insufficient_args(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
     with (
         patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
