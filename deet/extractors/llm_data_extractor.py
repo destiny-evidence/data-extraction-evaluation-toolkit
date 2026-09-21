@@ -360,13 +360,13 @@ class LLMDataExtractor(BaseDataExtractor):
                 f"Estimated input cost: ${prompt_cost:.6f} USD ({input_tokens} tokens)"
             )
 
-        response = litellm.completion(
-            model=self.model,
-            api_key=self.llm_api_key,
-            api_base=self.api_base,
-            messages=messages,
-            temperature=self.config.temperature,
-            response_format={
+        completion_kwargs = {
+            "model": self.model,
+            "api_key": self.llm_api_key,
+            "api_base": self.api_base,
+            "messages": messages,
+            "temperature": self.config.temperature,
+            "response_format": {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "llm_annotation_response",
@@ -374,8 +374,21 @@ class LLMDataExtractor(BaseDataExtractor):
                     "strict": True,
                 },
             },
-            max_tokens=self.config.max_tokens,
-        )
+            "max_tokens": self.config.max_tokens,
+        }
+
+        # Add provider-specific parameters for context window handling
+        # Note: Different parameters control context windows across providers:
+        # - max_tokens (OpenAI/Azure): Maximum output (completion) length
+        # - max_context_tokens (config): Application-level input budget, enforced
+        #   via truncation in _enforce_context_limit()
+        # - num_ctx (Ollama-only): Sets the model's total context window size.
+        #   Passed to Ollama via LiteLLM kwargs to allow tuning the model's
+        #   available context, separate from our input truncation budget.
+        if self.config.provider == LLMProvider.OLLAMA:
+            completion_kwargs["num_ctx"] = self.config.max_context_tokens
+
+        response = litellm.completion(**completion_kwargs)
 
         msg = response.choices[0].message
 
