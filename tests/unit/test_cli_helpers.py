@@ -131,7 +131,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     mock_project.process_data.return_value = mock_processed_data
 
     run_metadata = ExtractionRunMetadata(
-        model="gpt-4o-mini",
+        model="gpt-5.6-luna",
         total_input_tokens=100,
         total_output_tokens=50,
         total_cost_usd=0.0123,
@@ -146,12 +146,13 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
             "deet.extractors.cli_helpers.load_or_init_config",
             return_value=config,
         ),
-        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.get_data_extractor") as mock_get_extractor,
         patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
     ):
-        mock_extractor = mock_extractor_cls.return_value
+        mock_extractor = MagicMock()
         mock_extractor.config = config
         mock_extractor.extract_from_documents.return_value = run_output
+        mock_get_extractor.return_value = mock_extractor
 
         result_output, _, experiment_artefacts, _config = run_extraction_pipeline(
             deet_project=mock_project,
@@ -166,7 +167,7 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert metadata_path.exists()
 
     written = json.loads(metadata_path.read_text(encoding="utf-8"))
-    assert written["model"] == "gpt-4o-mini"
+    assert written["model"] == "gpt-5.6-luna"
     assert written["total_input_tokens"] == 100
     assert written["total_output_tokens"] == 50
     assert written["total_cost_usd"] == 0.0123

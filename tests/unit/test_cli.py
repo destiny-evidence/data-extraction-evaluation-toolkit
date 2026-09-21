@@ -1,5 +1,6 @@
 """Tests for deet/scripts/cli.py."""
 
+from importlib.metadata import version
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -502,7 +503,7 @@ def test_extract_happy_path(tmp_path):
     with (
         patch("deet.data_models.project.DeetProject.load") as mock_loader,
         patch("deet.extractors.cli_helpers.run_model_wizard") as mock_wizard,
-        patch("deet.extractors.cli_helpers.LLMDataExtractor") as mock_extractor_cls,
+        patch("deet.extractors.cli_helpers.get_data_extractor") as mock_get_extractor,
         patch("deet.extractors.cli_helpers.continue_after_key"),
         patch("deet.extractors.cli_helpers.console.clear"),
         patch("deet.extractors.cli_helpers.prepare_documents") as mock_prepare,
@@ -515,7 +516,7 @@ def test_extract_happy_path(tmp_path):
         fake_config = DataExtractionConfig()
         mock_wizard.return_value = fake_config
 
-        mock_extractor = mock_extractor_cls.return_value
+        mock_extractor = mock_get_extractor.return_value
         mock_extractor.config = fake_config
         mock_run_output = MagicMock()
         mock_run_output.annotated_documents = mock_processed_data.annotated_documents
@@ -573,3 +574,17 @@ def test_deprecated_commands_return_deprecation_warning(command):
     result = runner.invoke(app, [command])
     assert "deprecated" in result.stdout.lower()
     assert command in result.stdout.lower()
+
+
+def test_version_long_flag() -> None:
+    """Test --version outputs the package version."""
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert version("data-extraction-evaluation-toolkit") in result.output
+
+
+def test_version_short_flag() -> None:
+    """Test -v outputs the package version."""
+    result = runner.invoke(app, ["-v"])
+    assert result.exit_code == 0
+    assert version("data-extraction-evaluation-toolkit") in result.output

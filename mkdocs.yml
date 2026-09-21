@@ -43,6 +43,7 @@ nav:
     - concepts/data-extraction.md
     - concepts/evaluation.md
     - concepts/gold-standard.md
+    - concepts/csv_goldstandard.md
     - concepts/project.md
     - concepts/experiment.md
     - concepts/prompting-strategies.md

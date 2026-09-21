@@ -20,7 +20,7 @@ def test_get_model_max_tokens_known_model():
         "deet.utils.tokenisation.litellm.get_max_tokens",
         return_value=4096,
     ):
-        result = get_model_max_tokens("gpt-4o-mini")
+        result = get_model_max_tokens("gpt-5.6-luna")
     assert result is not None
     assert isinstance(result, int)
     assert result == 4096
@@ -71,7 +71,7 @@ def test_count_tokens_basic():
         "deet.utils.tokenisation.litellm.token_counter",
         return_value=3,
     ):
-        result = count_tokens("gpt-4o-mini", "Hello world")
+        result = count_tokens("gpt-5.6-luna", "Hello world")
     assert isinstance(result, int)
     assert result == 3
 
@@ -83,7 +83,7 @@ def test_estimate_cost_usd_returns_tuple():
         return_value=(0.001, 0.002),
     ):
         prompt_cost, completion_cost = estimate_cost_usd(
-            "gpt-4o-mini",
+            "gpt-5.6-luna",
             prompt_tokens=100,
             completion_tokens=50,
         )
@@ -98,7 +98,7 @@ def test_estimate_cost_usd_completion_only():
         return_value=(None, 0.0001),
     ):
         prompt_cost, completion_cost = estimate_cost_usd(
-            "gpt-4o-mini",
+            "gpt-5.6-luna",
             completion_tokens=10,
         )
     assert prompt_cost is None
@@ -137,7 +137,7 @@ def test_estimate_cost_usd_other_exception_returns_none() -> None:
         "deet.utils.tokenisation.litellm.cost_per_token",
         side_effect=RuntimeError("unexpected"),
     ):
-        prompt_cost, completion_cost = estimate_cost_usd("gpt-4o-mini")
+        prompt_cost, completion_cost = estimate_cost_usd("gpt-5.6-luna")
     assert prompt_cost is None
     assert completion_cost is None
 
@@ -191,7 +191,7 @@ def test_truncate_to_token_limit_under_limit():
         "deet.utils.tokenisation.litellm.encode",
         return_value=[1, 2, 3],
     ):
-        result = truncate_to_token_limit(text, "gpt-4o-mini", max_tokens=100)
+        result = truncate_to_token_limit(text, "gpt-5.6-luna", max_tokens=100)
     assert result == text
 
 
@@ -209,6 +209,6 @@ def test_truncate_to_token_limit_over_limit():
             return_value=truncated,
         ),
     ):
-        result = truncate_to_token_limit(long_text, "gpt-4o-mini", max_tokens=5)
+        result = truncate_to_token_limit(long_text, "gpt-5.6-luna", max_tokens=5)
     assert result == truncated
     assert len(result) < len(long_text)
