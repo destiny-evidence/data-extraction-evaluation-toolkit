@@ -408,7 +408,7 @@ def test_call_llm_forwards_ollama_num_ctx(
     """Ollama requests should pass num_ctx matching max_context_tokens."""
     mock_settings.llm_provider = LLMProvider.OLLAMA
     config = DataExtractionConfig(
-        model=mock_settings.llm_model,
+        model="test-model",
         provider=LLMProvider.OLLAMA,
         max_context_tokens=16384,
     )
