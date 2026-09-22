@@ -4,18 +4,16 @@
 
 ## What is `deet`
 
-`deet` is a python framework to build reproducible and well-evaluated data extraction pipelines using LLMs.
+The Data Extraction Evaluation Toolkit (DEET) is an open-source toolkit designed to support the development and evaluation of AI-assisted data extraction for evidence synthesis.
 
-It is designed for use in an evidence synthesis context, where the documents from which data is extracted are scientific papers.
-In this context, [data extraction](concepts/data-extraction.md), is conceived in a broad sense, including:
+Extracting structured information from research studies is one of the most time-consuming stages of the evidence synthesis process. While large language models (LLMs) and other AI methods have the potential to reduce this workload, inaccurate extraction can introduce errors into reviews and ultimately affect evidence used for research and policy decisions. Robust evaluation is therefore essential to ensure that AI tools are reliable, transparent, and fit for purpose.
 
-1. the categorisation of documents as relevant or not relevant according to pre-defined inclusion/exclusion criteria (**screening**);
-2. the categorisation of documents according to a predefined taxonomy of classes (**coding**);
-3. the extraction of numeric or string information from documents, such as outcomes, effect sizes, or participant characteristics (**data extraction**);
-4. the evaluation of the research quality of studies (**critical appraisal**).
+DEET provides an end-to-end, modular workflow for configuring, running and evaluating automated data extraction methods. It enables users to compare AI-generated outputs against human-created reference (gold standard) datasets, helping to assess the accuracy, consistency and performance of different approaches. Designed around open and FAIR (Findable, Accessible, Interoperable and Reusable) principles, DEET supports reproducible evaluation through reusable code, APIs and standardised data models.
 
-`deet` is designed for data extraction for evidence synthesis in the narrower sense of **3.**,
-although in principle it can be used to extract any type of data from any type of document.
+DEET is intended for researchers, evidence synthesis teams, developers and organisations interested in evaluating or developing AI-enhanced evidence synthesis workflows. Users can expect structured extraction outputs, performance metrics and transparent evaluation results that support informed decisions about the use of AI in evidence synthesis.
+
+## Example of how DEET is used
+Within DESTINY, DEET will be used to evaluate an AI-powered data extraction workflow for intervention studies. Researchers will compare data extracted automatically by a large language model with manually extracted reference data, identify where the AI performs well or makes errors, and use these results to improve extraction methods before they are incorporated into evidence synthesis workflows.
 
 ## Using deet
 
