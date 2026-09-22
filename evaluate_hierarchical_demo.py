@@ -15,13 +15,14 @@ from deet.hierarchical_mvp.evaluation_helpers_hierarchical import (
 )
 
 #################################
-json_path = Path("misc/hierarchical_mvp/input/galenos/gold/GALENOS_LSR1_58studies.json")
-gold_xlsx_path = Path("misc/hierarchical_mvp/input/galenos/gold/GALENOS_LSR1_eppi_export.xlsx")
-mapping_csv_path = Path("misc/hierarchical_mvp/input/galenos/gold/reference_mapping_demo.csv")
+json_path = Path("misc/hierarchical_mvp/input/galenos/gold/GALENOS_LSR1_58studies.json")#must exist and be an export from EPPI reviewer
+gold_xlsx_path = Path("misc/hierarchical_mvp/input/galenos/gold/GALENOS_LSR1_eppi_export.xlsx")#this file will be created
+mapping_csv_path = Path("misc/hierarchical_mvp/input/galenos/gold/reference_mapping_demo.csv")# will be created if it does not exist. if it does exist, it will be read
 interventions_eval_csv_path = Path(
     "misc/hierarchical_mvp/output/galenos_demo/evaluation/interventions_evaluation.csv"
-)
-llm_model = "azure/gpt-5.6-luna"
+)#this file will be created
+llm_model = "azure/gpt-5.6-luna"#your judge model
+
 eval_map_dict: EvaluationMap = {
     "gold": {
         "sheet": "Arms",

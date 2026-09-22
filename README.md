@@ -6,12 +6,24 @@ The Data Extraction and Evaluation Toolkit (DEET) is a suite of tools, data mode
 
 ## .env when using hierarchical extraction
 
-The following information is expected for OpenAI models:
+For Azure OpenAI models (model names beginning with `azure/`), use:
 
 ```
 AZURE_API_KEY=yourkeyhere
 AZURE_API_BASE=https://yourprojecthere.openai.azure.com/
 ```
+
+For standard OpenAI models (model names beginning with `openai/`), use:
+
+```
+OPENAI_API_KEY=yourkeyhere
+# Optional, for an OpenAI-compatible custom endpoint:
+OPENAI_BASE=https://api.openai.com/v1
+```
+
+When using OpenAI's default endpoint, omit `OPENAI_BASE` or leave it empty. For
+example, set `"llm_model": "openai/gpt-5"` in extraction configs or pass
+`llm_model="openai/gpt-5"` to `evaluate_fields`.
 
 You can also use an Anthropic endpoint, by adding AZURE_API_BASE_ANTHROPIC:
 
@@ -89,8 +101,9 @@ You just need to edit the in/output paths and increase max_tokens if needed. If 
 
 Example Anthropic model parameters for this file are: `"anthropic/claude-sonnet-5"`, `"anthropic/claude-opus-5"`
 
-If you have given the OpenAI API Base:
-Example OpenAI models for this file are: `"azure/gpt-5.6-luna"`, `"azure/gpt-5.6-terra"`, 
+With Azure OpenAI credentials, example model names are `"azure/gpt-5.6-luna"`
+and `"azure/gpt-5.6-terra"`. With standard OpenAI credentials, use an
+`openai/` model name such as `"openai/gpt-5"`.
 
 Run from the repository root:
 

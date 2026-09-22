@@ -111,19 +111,34 @@ def get_api_base_for_model(model: str) -> str:
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
     """Initialise DSPy with the API base configured for the model provider."""
-    api_key = os.environ.get("AZURE_API_KEY")
-    if not api_key:
-        raise OSError(
-            "AZURE_API_KEY is not set. " "Copy .env.example to .env and add your key."
-        )
-    api_base = get_api_base_for_model(model)
-    lm = dspy.LM(
-        model=model,
-        api_key=api_key,
-        api_base=api_base,
-        max_tokens=max_tokens,
-        cache=cache,
-    )
+    lm_kwargs: dict[str, object] = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "cache": cache,
+    }
+    if model.startswith("openai/"):
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            message = (
+                "OPENAI_API_KEY is not set. Copy .env.example to .env and add "
+                "your key."
+            )
+            raise OSError(message)
+        lm_kwargs["api_key"] = api_key
+        if api_base := os.environ.get("OPENAI_BASE"):
+            lm_kwargs["api_base"] = api_base
+    else:
+        api_key = os.environ.get("AZURE_API_KEY")
+        if not api_key:
+            message = (
+                "AZURE_API_KEY is not set. Copy .env.example to .env and add "
+                "your key."
+            )
+            raise OSError(message)
+        lm_kwargs["api_key"] = api_key
+        lm_kwargs["api_base"] = get_api_base_for_model(model)
+
+    lm = dspy.LM(**lm_kwargs)
     dspy.configure(lm=lm)
 
 

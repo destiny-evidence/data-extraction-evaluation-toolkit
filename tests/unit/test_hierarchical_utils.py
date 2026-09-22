@@ -50,3 +50,37 @@ def test_configure_lm_uses_anthropic_endpoint(monkeypatch):
         cache=True,
     )
     configure.assert_called_once_with(lm=lm_class.return_value)
+
+
+@pytest.mark.parametrize(
+    ("openai_base", "expected_extra_kwargs"),
+    [
+        (None, {}),
+        (
+            "https://openai.example.test/v1",
+            {"api_base": "https://openai.example.test/v1"},
+        ),
+    ],
+)
+def test_configure_lm_uses_openai_credentials(
+    monkeypatch, openai_base, expected_extra_kwargs
+):
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
+    monkeypatch.delenv("OPENAI_BASE", raising=False)
+    if openai_base:
+        monkeypatch.setenv("OPENAI_BASE", openai_base)
+
+    with (
+        patch("deet.hierarchical_mvp.utils.dspy.LM") as lm_class,
+        patch("deet.hierarchical_mvp.utils.dspy.configure") as configure,
+    ):
+        configure_lm("openai/gpt-5", 4096, cache=True)
+
+    lm_class.assert_called_once_with(
+        model="openai/gpt-5",
+        api_key="openai-test-key",
+        max_tokens=4096,
+        cache=True,
+        **expected_extra_kwargs,
+    )
+    configure.assert_called_once_with(lm=lm_class.return_value)
