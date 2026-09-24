@@ -105,6 +105,14 @@ Then, from the root of the repository, run `mkdocs serve --strict` from the root
 
 The documentation website is available at [https://destiny-evidence.github.io/deet](https://destiny-evidence.github.io/deet).
 
+## Citation
+
+If you use `deet` in your work, please cite it as:
+
+> Loynes, N., Callaghan, M., Uprety, S. & Moss, H. (2026). Data Extraction Evaluation Toolkit (DEET), version 0.4.0-dev.2. <https://github.com/destiny-evidence/data-extraction-evaluation-toolkit>
+
+You can also cite the software metadata directly from the repository citation file.
+
 ## Acknowledgements
 
 We acknowledge with thanks funding from the following funders and projects:

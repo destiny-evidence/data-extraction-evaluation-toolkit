@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "Data Extraction Evaluation Toolkit"
+abstract: >
+  DEET is a modular toolkit for extracting structured data from documents
+  (for example academic papers) and evaluating the performance of extraction
+  workflows against gold-standard annotations.
+type: software
+authors:
+  - family-names: Loynes
+    given-names: Nik
+    email: n.loynes@ucl.ac.uk
+  - family-names: Callaghan
+    given-names: Max
+    email: max.callaghan@pik-potsdam.de
+  - family-names: Uprety
+    given-names: Sagar
+    email: s.uprety@ucl.ac.uk
+  - family-names: Moss
+    given-names: Harry
+    email: h.moss@ucl.ac.uk
+version: 0.4.0-dev.2
+url: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
+repository-code: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
+repository: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
+license: Apache-2.0
+keywords:
+  - data extraction
+  - evidence synthesis
+  - evaluation
+  - document processing
+  - llm

@@ -168,6 +168,7 @@ build_command = """
 """
 tag_format = "v{version}"
 version_toml = ["pyproject.toml:project.version"]
+version_variables = ["CITATION.cff:version"]
 
 [tool.semantic_release.branches.develop]
 match = "develop"
