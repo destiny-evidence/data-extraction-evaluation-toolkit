@@ -13,6 +13,7 @@ DEET provides an end-to-end, modular workflow for configuring, running and evalu
 DEET is intended for researchers, evidence synthesis teams, developers and organisations interested in evaluating or developing AI-enhanced evidence synthesis workflows. Users can expect structured extraction outputs, performance metrics and transparent evaluation results that support informed decisions about the use of AI in evidence synthesis.
 
 ## Example of how DEET is used
+
 Within DESTINY, DEET will be used to evaluate an AI-powered data extraction workflow for intervention studies. Researchers will compare data extracted automatically by a large language model with manually extracted reference data, identify where the AI performs well or makes errors, and use these results to improve extraction methods before they are incorporated into evidence synthesis workflows.
 
 ## Using deet
