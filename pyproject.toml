@@ -41,15 +41,12 @@ dependencies = [
     "jinja2>=3.1.6",
     "litellm>=1.96.2",
     "loguru>=0.7.3",
-    "marker-pdf>=1.9.1",
-    "nltk>=3.9.1",
     "openai>=1.0.0",
     "pdfminer.six>=20221105",
     "pillow>=10.4.0",
     "pydantic-extra-types>=2.10.5",
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
-    "pypandoc>=1.15",
     "python-dotenv>=1.1.1",
     "python-semantic-release>=10.6.1",
     "pyyaml>=6.0.2",
@@ -64,7 +61,16 @@ description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11,<3.14"
-version = "0.3.0-dev.5"
+version = "0.4.0-dev.2"
+
+[project.optional-dependencies]
+lang-quality = [
+    "nltk>=3.9.1",
+]
+parsers = [
+    "marker-pdf>=1.9.1",
+    "pypandoc>=1.15",
+]
 
 [project.scripts]
 deet = "deet.scripts.cli:main"

@@ -554,7 +554,7 @@ nvtx = [
 
 [[package]]
 name = "data-extraction-evaluation-toolkit"
-version = "0.3.0.dev5"
+version = "0.4.0.dev2"
 source = { editable = "." }
 dependencies = [
     { name = "clevercsv" },
@@ -564,15 +564,12 @@ dependencies = [
     { name = "jinja2" },
     { name = "litellm" },
     { name = "loguru" },
-    { name = "marker-pdf" },
-    { name = "nltk" },
     { name = "openai" },
     { name = "pdfminer-six" },
     { name = "pillow" },
     { name = "pydantic" },
     { name = "pydantic-extra-types" },
     { name = "pydantic-settings" },
-    { name = "pypandoc" },
     { name = "python-dotenv" },
     { name = "python-semantic-release" },
     { name = "pyyaml" },
@@ -582,6 +579,15 @@ dependencies = [
     { name = "tabulate" },
     { name = "toml" },
     { name = "typer" },
+]
+
+[package.optional-dependencies]
+lang-quality = [
+    { name = "nltk" },
+]
+parsers = [
+    { name = "marker-pdf" },
+    { name = "pypandoc" },
 ]
 
 [package.dev-dependencies]
@@ -617,15 +623,15 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "litellm", specifier = ">=1.96.2" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "marker-pdf", specifier = ">=1.9.1" },
-    { name = "nltk", specifier = ">=3.9.1" },
+    { name = "marker-pdf", marker = "extra == 'parsers'", specifier = ">=1.9.1" },
+    { name = "nltk", marker = "extra == 'lang-quality'", specifier = ">=3.9.1" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "pdfminer-six", specifier = ">=20221105" },
     { name = "pillow", specifier = ">=10.4.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-extra-types", specifier = ">=2.10.5" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
-    { name = "pypandoc", specifier = ">=1.15" },
+    { name = "pypandoc", marker = "extra == 'parsers'", specifier = ">=1.15" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "python-semantic-release", specifier = ">=10.6.1" },
     { name = "pyyaml", specifier = ">=6.0.2" },
@@ -636,6 +642,7 @@ requires-dist = [
     { name = "toml", specifier = ">=0.10.2" },
     { name = "typer", specifier = ">=0.21.2" },
 ]
+provides-extras = ["lang-quality", "parsers"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1552,7 +1559,7 @@ wheels = [
 
 [[package]]
 name = "mkdocs-material"
-version = "9.7.6"
+version = "9.7.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "babel" },
@@ -1567,9 +1574,9 @@ dependencies = [
     { name = "pymdown-extensions" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/29/6d2bcf41ae40802c4beda2432396fff97b8456fb496371d1bc7aad6512ec/mkdocs_material-9.7.6.tar.gz", hash = "sha256:00bdde50574f776d328b1862fe65daeaf581ec309bd150f7bff345a098c64a69", size = 4097959, upload-time = "2026-03-19T15:41:58.161Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/cd/c05d3a530ba7934f144fb45f7203cd236adc25c7bdcc34673d202f4b0278/mkdocs_material-9.7.7.tar.gz", hash = "sha256:c0649c065b1b0512d60aad8c10f947f8e455284475239b364b610f2deb4d0855", size = 4097923, upload-time = "2026-07-17T16:21:33.156Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/01/bc663630c510822c95c47a66af9fa7a443c295b47d5f041e5e6ae62ef659/mkdocs_material-9.7.6-py3-none-any.whl", hash = "sha256:71b84353921b8ea1ba84fe11c50912cc512da8fe0881038fcc9a0761c0e635ba", size = 9305470, upload-time = "2026-03-19T15:41:55.217Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/21/17c1bc9e6f47c972ad66fb2ac2568f99f90f1207eeb6fc3b34d094dba7b5/mkdocs_material-9.7.7-py3-none-any.whl", hash = "sha256:8ea9bb1737a5b524a5f9dcf2e1b4ebda8274ae3008aa7845720a97083bef708f", size = 9305438, upload-time = "2026-07-17T16:21:30.017Z" },
 ]
 
 [[package]]
@@ -1788,7 +1795,7 @@ wheels = [
 
 [[package]]
 name = "nltk"
-version = "3.10.0"
+version = "3.10.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -1797,9 +1804,9 @@ dependencies = [
     { name = "regex" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/02/df4f105b28a7c16b0e41423bc09cf0f1b8a305df4ef0b10ca74a2e4c648c/nltk-3.10.0.tar.gz", hash = "sha256:4fbac1d98203cbcd1b5d94a2877fb822300072d80604a5e7fae49d2c5f84e8c1", size = 3089244, upload-time = "2026-07-08T02:39:13.562Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e6/fe51d2bb1a3b446f59c5c8165999a9fee208bc346af90a7cbf7657bc0d75/nltk-3.10.3.tar.gz", hash = "sha256:bb9327a461c3811c2fa4900e03840401f2126adfb30c0072827c433bd2444ea4", size = 5137152, upload-time = "2026-08-12T23:46:37.258Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/89/a0b0f35e2820d6a99d75ea1c11977ee6d5c9e6658eceb45b0c7620881faa/nltk-3.10.0-py3-none-any.whl", hash = "sha256:54ff84d4916d3ef127e8953bee0023f6a6b320b75d634a19e06ef056d3d244bf", size = 1716144, upload-time = "2026-07-08T02:39:09.753Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/6d/ebd2af4640b12168fdf0cb74b6118df2f32a2f62ec7e0c06fbfd80706639/nltk-3.10.3-py3-none-any.whl", hash = "sha256:ff9598a8e20518ee0d557745890cc4435b9578489e2dcbc69c4f81fa060caf7c", size = 1798643, upload-time = "2026-08-12T23:44:13.478Z" },
 ]
 
 [[package]]

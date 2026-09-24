@@ -30,6 +30,7 @@ from deet.data_models.extraction import (
 )
 from deet.extractors.base_extractor import BaseDataExtractor, DataExtractionConfig
 from deet.settings import (
+    DataExtractionSettings,
     LLMProvider,
     get_settings,
 )
@@ -55,6 +56,7 @@ class LLMDataExtractor(BaseDataExtractor):
     def __init__(
         self,
         config: DataExtractionConfig,
+        settings: DataExtractionSettings = settings,
         custom_system_prompt_file: Path | None = None,
         *,
         show_litellm_debug_messages: bool = False,

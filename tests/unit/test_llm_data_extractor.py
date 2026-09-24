@@ -31,27 +31,48 @@ from deet.extractors.llm_data_extractor import (
 from deet.processors.csv_annotation_converter import CSVAnnotationConverter
 from deet.settings import LLMProvider
 
+# @pytest.fixture(autouse=True)
+# def mock_settings(monkeypatch):
+#     """
+#     Fixture to mock the module-level settings object in llm_data_extractor.
+#     This is necessary because the module loads settings at import time.
+#     `autouse=True` ensures it runs for every test in this file.
+#     """
+#     mock_settings_obj = MagicMock()
+#     mock_settings_obj.llm_model = "test-model"
+#     mock_settings_obj.llm_temperature = 0.1
+#     mock_settings_obj.llm_max_tokens = 1024
+#     mock_settings_obj.llm_max_context_tokens = None
+#     mock_settings_obj.azure_deployment = "test-deployment"
+#     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
+#     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
+#     mock_settings_obj.llm_provider = "ollama"
 
-@pytest.fixture(autouse=True)
-def mock_settings(monkeypatch):
+#     monkeypatch.setattr(
+#         "deet.extractors.llm_data_extractor.settings", mock_settings_obj
+#     )
+#     return mock_settings_obj
+
+
+@pytest.fixture
+def mock_settings() -> MagicMock:
     """
-    Fixture to mock the module-level settings object in llm_data_extractor.
-    This is necessary because the module loads settings at import time.
-    `autouse=True` ensures it runs for every test in this file.
+    Fixture providing a mock DataExtractionSettings instance.
+
+    Settings are now injected explicitly into LLMDataExtractor rather than
+    loaded at module import time, so this is passed directly to the
+    constructor in tests instead of being patched onto the module.
+
+    Note: no `spec=` is used here because the LLMDataExtractor constructor
+    accesses several nested attributes (e.g. `azure_api_key.get_secret_value`)
+    and a strict spec would reject any attribute not explicitly defined on
+    the real settings model, causing spurious AttributeErrors.
     """
     mock_settings_obj = MagicMock()
-    mock_settings_obj.llm_model = "test-model"
-    mock_settings_obj.llm_temperature = 0.1
-    mock_settings_obj.llm_max_tokens = 1024
-    mock_settings_obj.llm_max_context_tokens = None
     mock_settings_obj.azure_deployment = "test-deployment"
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
-    mock_settings_obj.llm_provider = "ollama"
-
-    monkeypatch.setattr(
-        "deet.extractors.llm_data_extractor.settings", mock_settings_obj
-    )
+    mock_settings_obj.ollama_api_base = "http://localhost:11434"
     return mock_settings_obj
 
 
@@ -100,7 +121,7 @@ def llm_extractor(request, default_config, mock_settings) -> LLMDataExtractor:
     """Fixture for an LLMDataExtractor instance."""
     # Patch file reads in the PromptConfig validator
     with patch("pathlib.Path.read_text", return_value="Default system prompt"):
-        return LLMDataExtractor(config=default_config)
+        return LLMDataExtractor(config=default_config, settings=mock_settings)
 
 
 def create_llm_extractor(default_config, mock_settings) -> LLMDataExtractor:
@@ -110,7 +131,7 @@ def create_llm_extractor(default_config, mock_settings) -> LLMDataExtractor:
     Useful when we want to test different configuration options.
     """
     with patch("pathlib.Path.read_text", return_value="Default system prompt"):
-        return LLMDataExtractor(config=default_config)
+        return LLMDataExtractor(config=default_config, settings=mock_settings)
 
 
 @pytest.fixture
@@ -182,13 +203,15 @@ def test_llm_extractor_logs_max_tokens_when_set(mock_settings):
     try:
         config = DataExtractionConfig(max_tokens=512)
         with patch("pathlib.Path.read_text", return_value="Default system prompt"):
-            LLMDataExtractor(config=config)
+            LLMDataExtractor(config=config, settings=mock_settings)
         assert "max_tokens=512" in log_buf.getvalue()
     finally:
         logger.remove(handler_id)
 
 
-def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
+def test_llm_extractor_init_custom_prompt(
+    default_config, tmp_path: Path, mock_settings
+):
     """Test LLMDataExtractor initialization with a custom system prompt."""
     custom_prompt_file = tmp_path / "custom.txt"
     custom_prompt_file.write_text("This is a custom prompt.")
@@ -198,7 +221,9 @@ def test_llm_extractor_init_custom_prompt(default_config, tmp_path: Path):
         config = DataExtractionConfig()
 
     extractor = LLMDataExtractor(
-        config=config, custom_system_prompt_file=custom_prompt_file
+        config=config,
+        settings=mock_settings,
+        custom_system_prompt_file=custom_prompt_file,
     )
     assert extractor.config.prompt_config.system_prompt == "This is a custom prompt."
 
@@ -344,13 +369,10 @@ def test_call_llm(
 ):
     """Test the _call_llm method."""
     prompt = '{"key": "value"}'
-    mock_settings.llm_provider = llm_provider
     response_model = build_llm_response_model(sample_eppi_attributes)
 
     if llm_provider in [member.value for member in LLMProvider]:
-        config = DataExtractionConfig(
-            model=mock_settings.llm_model, provider=mock_settings.llm_provider
-        )
+        config = DataExtractionConfig(model="test-model", provider=llm_provider)
 
         llm_extractor = create_llm_extractor(config, mock_settings)
         response, messages, output_tokens, input_tokens = llm_extractor._call_llm(
@@ -359,12 +381,12 @@ def test_call_llm(
 
         mock_litellm_completion.assert_called_once()
         call_args = mock_litellm_completion.call_args
-        if mock_settings.llm_provider == LLMProvider.AZURE:
+        if config.provider == LLMProvider.AZURE:
             assert call_args.kwargs["model"] == f"azure/{config.model}"
-        elif mock_settings.llm_provider == LLMProvider.OLLAMA:
+        elif config.provider == LLMProvider.OLLAMA:
             assert call_args.kwargs["model"] == f"ollama/{config.model}"
         else:
-            assert mock_settings.llm_provider in LLMProvider
+            assert config.provider in LLMProvider
         assert call_args.kwargs["response_format"]["type"] == "json_schema"
         assert (
             "llm_annotation_response"
@@ -377,9 +399,7 @@ def test_call_llm(
         assert input_tokens == 100
     else:
         with pytest.raises(ValidationError, match=r"provider"):
-            config = DataExtractionConfig(
-                model=mock_settings.llm_model, provider=mock_settings.llm_provider
-            )
+            DataExtractionConfig(model="test-model", provider=llm_provider)
 
 
 def test_parse_llm_response(
