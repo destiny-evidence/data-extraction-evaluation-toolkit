@@ -504,8 +504,8 @@ As a workaround for right now:
     Write-Host 'Done.' -ForegroundColor Green
     foreach ($line in $script:Report) { Write-Host "  - $line" }
     Write-Host ''
-    Write-Host 'You can use deet now, in this terminal -- no need to restart it.'
-    Write-Host 'Change to the folder holding your data and run:'
+    Write-Host 'You can now use deet'
+    Write-Host 'Change to the folder where you want to create a deet project and run:'
     Write-Host ''
     Write-Host '    deet --help'
     Write-Host ''
