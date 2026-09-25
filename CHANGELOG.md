@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v0.4.0-dev.4 (2026-09-25)
+
+### Features
+
+- Parallelise extract_from_documents
+  ([#409](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/409),
+  [`7288ac2`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/7288ac21a6697d87daf67e918f8aa1003df422c4))
+
+
 ## v0.4.0-dev.3 (2026-09-24)
 
 ### Chores
