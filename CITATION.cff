@@ -2,24 +2,56 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Data Extraction Evaluation Toolkit"
 abstract: >
-  DEET is a modular toolkit for extracting structured data from documents
-  (for example academic papers) and evaluating the performance of extraction
-  workflows against gold-standard annotations.
+ The Data Extraction Evaluation Toolkit (DEET) is an open-source toolkit designed to support the development and evaluation of AI-assisted data extraction for evidence synthesis.
 type: software
 authors:
+  - family-names: Finnerty Mutlu
+    given-names: Ailbhe
+    email: a.finnerty@ucl.ac.uk
   - family-names: Loynes
     given-names: Nik
     email: n.loynes@ucl.ac.uk
-  - family-names: Callaghan
-    given-names: Max
-    email: max.callaghan@pik-potsdam.de
   - family-names: Uprety
     given-names: Sagar
     email: s.uprety@ucl.ac.uk
+  - family-names: Callaghan
+    given-names: Max
+    email: max.callaghan@pik-potsdam.de
+  - family-names: Danilenko
+    given-names: Diana
+    email: dianada@pik-potsdam.de
+  - family-names: Gopal
+    given-names: Ishita
+    email: ishita.gopal@pik-potsdam.de
+  - family-names: Hair
+    given-names: Kaitlyn
+    email: kaitlyn.hair@ucl.ac.uk
+  - family-names: Molyneux
+    given-names: Sam
+    email: s.molyneux@ucl.ac.uk
   - family-names: Moss
     given-names: Harry
     email: h.moss@ucl.ac.uk
+  - family-names: Repke
+    given-names: Tim
+    email: tim.repke@pik-potsdam.de
+  - family-names: Schmidt
+    given-names: Lena
+    email: lena.schmidt@ucl.ac.uk
+  - family-names: Soliman
+    given-names: Nadia
+    email: n.soliman@ucl.ac.uk
+  - family-names: Tezok
+    given-names: Kinlabel Okwen Tetamiyaka
+    email: miyaka@ebaseafrica.org
+  - family-names: Varion
+    given-names: Jonah
+    email: jonah.vairon.21@ucl.ac.uk
+  - family-names: Thomas
+    given-names: James
+    email: james.thomas@ucl.ac.uk
 version: 0.4.0-dev.2
+doi: "https://doi.org/10.5281/zenodo.22897649"
 url: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
 repository-code: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
 repository: "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
