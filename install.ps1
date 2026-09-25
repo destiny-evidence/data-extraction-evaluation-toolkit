@@ -196,6 +196,27 @@ function Find-ExecutableDirectory {
     return $null
 }
 
+function Test-DirectoryWritable {
+    <#
+    .SYNOPSIS
+        True if a file can be created in the given directory.
+    .DESCRIPTION
+        deet writes its log into the working directory, so an unwritable one (classically
+        C:\WINDOWS\system32, where PowerShell sometimes opens) makes it fail on startup.
+    #>
+    param([Parameter(Mandatory)][string] $Path)
+
+    try {
+        $probe = Join-Path $Path (".deet-write-test-" + [guid]::NewGuid().ToString('N'))
+        [System.IO.File]::WriteAllText($probe, '')
+        Remove-Item -LiteralPath $probe -Force
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
 #endregion
 
 #region dependency installation
@@ -451,11 +472,26 @@ As a workaround for right now:
     `$env:PATH = "`$env:USERPROFILE\.local\bin;`$env:PATH"
 "@
     }
-    deet --help | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "``deet --help`` failed (exit code $LASTEXITCODE)."
+    # Run the check from a writable directory: deet creates its log in the working directory, which
+    # fails if PowerShell opened somewhere read-only (e.g. C:\WINDOWS\system32).
+    Push-Location $HOME
+    try {
+        deet --help | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "``deet --help`` failed (exit code $LASTEXITCODE)."
+        }
+    }
+    finally {
+        Pop-Location
     }
     Write-Good "deet is ready: $((Get-Command deet).Source)"
+
+    # If the terminal opened somewhere read-only, move to the home directory so the user's next
+    # `deet` command can write its log. Users who started in their own (writable) folder stay put.
+    if (-not (Test-DirectoryWritable (Get-Location).Path)) {
+        Set-Location $HOME
+        Write-Warn "Your terminal opened in a folder you cannot write to; moved you to $HOME."
+    }
 
     Write-Host ''
     Write-Host 'Done.' -ForegroundColor Green
