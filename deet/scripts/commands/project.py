@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Annotated
 if TYPE_CHECKING:
     from deet.data_models.project import DeetProject
 
-
 import typer
 from InquirerPy import inquirer
 

@@ -2,6 +2,68 @@
 
 <!-- version list -->
 
+## v0.4.0-dev.3 (2026-09-24)
+
+### Chores
+
+- **deps**: Update actions/deploy-pages action to v5.0.1
+  ([`17442a4`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/17442a485ab2b946c3bc53e6c41de0a10f774e76))
+
+- **deps**: Update astral-sh/setup-uv action to v10.1.0
+  ([`9f891f7`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9f891f7fcd663bfc78a5289090f70d6a55a96b12))
+
+- **deps**: Update astral-sh/setup-uv action to v10.1.0
+  ([`f60ad3b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/f60ad3ba6d43aa7ca0e8a32db0666a43c857956f))
+
+- **deps**: Update dependency astral-sh/uv to v0.12.16
+  ([`afc0d18`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/afc0d1891269d6aa222210b39a4d4d770c598892))
+
+- **deps**: Update dependency astral-sh/uv to v0.12.16
+  ([`917d184`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/917d1841f9e4db908940673903240f8e2afb8b35))
+
+- **deps**: Update dependency mkdocs-material to v9.7.7 [security]
+  ([`03a7f21`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/03a7f216670b20ee985f41c5a9206bd5a13df87f))
+
+- **deps**: Update dependency mkdocs-material to v9.7.7 [security]
+  ([`f261ac8`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/f261ac88fdcd56211e3449f79b01846788352ba1))
+
+- **deps**: Update dependency mkdocs-material to v9.7.7 [security]
+  ([`4098d86`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/4098d86c9b53121733dbf9ea24333506d269790b))
+
+- **deps**: Update dependency nltk to v3.10.3 [security]
+  ([`853fde3`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/853fde3786c5f8fa119a7468408222a625de8fc1))
+
+
+## v0.4.0-dev.2 (2026-09-18)
+
+### Documentation
+
+- Add git installation instructions to docs
+  ([#411](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/411),
+  [`c14a32d`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/c14a32d972ee51c843e2713c5287cd73e48f3329))
+
+### Features
+
+- Don't crash on meeting an eppiattribute that is unkown, but return unkown
+  ([`80de381`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/80de381ce9a07ad22795092d234b56cf8c2ca8bb))
+
+
+## v0.4.0-dev.1 (2026-09-18)
+
+
+## v0.3.0-dev.6 (2026-09-18)
+
+### Bug Fixes
+
+- Hoist importlib.metadata import to top-level in version CLI tests
+  ([`aed3c07`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/aed3c07abc9af03e64a3b40a0a016a277e8539d3))
+
+### Features
+
+- Add --version and -v flags to CLI
+  ([`0da7ae9`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/0da7ae9e0b52abf5acb64be6d5c96e399c4cc144))
+
+
 ## v0.3.0-dev.5 (2026-09-17)
 
 ### Features

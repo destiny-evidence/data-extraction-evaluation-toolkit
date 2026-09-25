@@ -122,7 +122,7 @@ class DataExtractionConfig(BaseModel):
     )
     model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
         Field(
-            default="gpt-4o-mini",
+            default="gpt-5.6-luna",
             description="LLM model identifier used for completions.",
         )
     )
@@ -130,7 +130,7 @@ class DataExtractionConfig(BaseModel):
         default=0.5, description="Threshold for matching sentences to prompt phrases"
     )
     temperature: float = Field(
-        default=0.1,
+        default=1.0,
         description="Sampling temperature for the LLM.",
         ge=0.0,
     )
@@ -151,9 +151,7 @@ class DataExtractionConfig(BaseModel):
 
     max_context_tokens: Annotated[
         int | None,
-        UI(
-            help=("Maximum input context length " "(Leave blank for provider default).")
-        ),
+        UI(help=("Maximum input context length (Leave blank for provider default).")),
     ] = Field(
         default=None,
         description=(

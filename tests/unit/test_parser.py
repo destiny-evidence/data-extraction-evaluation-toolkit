@@ -23,6 +23,9 @@ from deet.processors.parser import (
 )
 from deet.utils.assess_text_quality import check_language
 
+pytest.importorskip("marker", reason="marker-pdf not installed (optional dependency)")
+pytest.importorskip("pypandoc", reason="pypandoc not installed (optional dependency)")
+
 
 @pytest.fixture
 def fake_converter(monkeypatch):

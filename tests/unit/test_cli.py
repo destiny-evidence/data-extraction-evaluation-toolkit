@@ -1,5 +1,6 @@
 """Tests for deet/scripts/cli.py."""
 
+from importlib.metadata import version
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -132,7 +133,8 @@ def test_project_required_allows_when_project_exists():
     assert "This command works" in result.stdout
 
 
-def test_init_project_initialises_in_emptydir():
+def test_init_project_initialises_in_emptydir(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     fake_project = MagicMock(spec=DeetProject)
     fake_settings = MagicMock(spec=DataExtractionSettings)
 
@@ -406,7 +408,9 @@ def test_edit_warns_when_data_source_changes(valid_project_data, monkeypatch, tm
     )
 
 
-def test_init_project_noninteractive(tmp_path):
+def test_init_project_noninteractive(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
     data_file = tmp_path / "references.json"
     data_file.touch()
 
@@ -419,7 +423,10 @@ def test_init_project_noninteractive(tmp_path):
     assert result.exit_code == 0
 
 
-def test_init_project_noninteractive_fails_with_insufficient_args(tmp_path):
+def test_init_project_noninteractive_fails_with_insufficient_args(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
     with (
         patch("deet.data_models.project.DeetProject.load", return_value=None),
         patch("deet.data_models.project.DeetProject.setup", return_value=None),
@@ -573,3 +580,17 @@ def test_deprecated_commands_return_deprecation_warning(command):
     result = runner.invoke(app, [command])
     assert "deprecated" in result.stdout.lower()
     assert command in result.stdout.lower()
+
+
+def test_version_long_flag() -> None:
+    """Test --version outputs the package version."""
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert version("data-extraction-evaluation-toolkit") in result.output
+
+
+def test_version_short_flag() -> None:
+    """Test -v outputs the package version."""
+    result = runner.invoke(app, ["-v"])
+    assert result.exit_code == 0
+    assert version("data-extraction-evaluation-toolkit") in result.output
