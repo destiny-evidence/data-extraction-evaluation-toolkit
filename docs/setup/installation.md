@@ -2,6 +2,39 @@
 
 This page shows different ways to install `deet` across platforms and use-cases
 
+## Quick install (Windows)
+
+Windows users can install `deet` and everything it needs - [git](https://git-scm.com/),
+[uv](https://docs.astral.sh/uv/), [pandoc](https://pandoc.org/), and `deet` itself - with a single
+command. Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:
+
+```powershell
+irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/main/install.ps1 | iex
+```
+
+This should install deet, and all its dependencies (unless you already have them). When it finishes, run `deet --help` to check.
+
+It is a plain PowerShell script — you can
+[read it first](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/main/install.ps1)
+before piping it to `iex`.
+
+??? note "Options (branch, skipping pandoc, forcing a reinstall)"
+
+    To install from a specific branch or tag — for a feature that is not yet released — fetch the
+    script first so it can take arguments:
+
+    ```powershell
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/main/install.ps1))) -Ref development
+    ```
+
+    Other flags:
+
+    - `-SkipPandoc` — skip pandoc, if you only work with abstracts or pre-processed markdown.
+    - `-Force` — reinstall `deet` even if it is already present (use this to upgrade).
+
+If you would rather install each piece yourself — or you are on macOS or Linux — follow the manual
+steps below.
+
 ## Basic setup and dependencies
 
 ### Accessing the terminal
