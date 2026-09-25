@@ -46,6 +46,13 @@ $ErrorActionPreference = 'Stop'
 # Windows PowerShell 5.1 defaults to TLS 1.0/1.1, which the download hosts reject.
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# deet prints Unicode (an emoji) in its help; a legacy Windows console (cp1252) can't encode it and
+# crashes with UnicodeEncodeError. Force UTF-8 stdio, for this session and for future terminals.
+$env:PYTHONIOENCODING = 'utf-8'
+if (-not [Environment]::GetEnvironmentVariable('PYTHONIOENCODING', 'User')) {
+    [Environment]::SetEnvironmentVariable('PYTHONIOENCODING', 'utf-8', 'User')
+}
+
 $RepoUrl = 'https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git'
 $DocsUrl = 'https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/setup/installation/'
 $MinUvVersion = [version] '0.9.8'
