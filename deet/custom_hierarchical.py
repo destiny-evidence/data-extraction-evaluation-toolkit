@@ -14,9 +14,12 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
 from deet.hierarchical_mvp import AnimalRCTmodel as animal_models
-from deet.hierarchical_mvp import ClimateCarbonPricingmodel as climate_carbon_pricing_models
+from deet.hierarchical_mvp import (
+    ClimateCarbonPricingmodel as climate_carbon_pricing_models,
+)
 from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
 from deet.hierarchical_mvp import ObesityRCTmodel as obesity_models
+from deet.hierarchical_mvp import ProgrammeModel as programme_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.utils import (
@@ -73,6 +76,14 @@ ANIMAL_DYNAMIC_CLASSES = {
     "Study_Characteristics",
 }
 
+PROGRAMME_DYNAMIC_CLASSES = {
+    "Intervention",
+    "Learning",
+    "Outcome",
+    "Programme",
+    "Programme_Characteristics",
+}
+
 # Union of every shape's class names — used ONLY to decide which schema classes are
 # eligible for dynamic-model generation (see `_build_dynamic_models_from_schema`). This is
 # safe to keep as a flat union because that function silently skips any schema class not in
@@ -83,6 +94,7 @@ TARGET_DYNAMIC_CLASSES = (
     | PROGNOSTIC_DYNAMIC_CLASSES
     | CLIMATE_CARBON_PRICING_DYNAMIC_CLASSES
     | ANIMAL_DYNAMIC_CLASSES
+    | PROGRAMME_DYNAMIC_CLASSES
 )
 
 
@@ -260,6 +272,32 @@ def build_climate_carbon_pricing_hierarchical_prompt_rows() -> list[dict[str, st
     return rows
 
 
+def build_programme_hierarchical_prompt_rows() -> list[dict[str, str]]:
+    """Build prompt rows from classes defined in Programme models."""
+    rows: list[dict[str, str]] = []
+
+    for _, cls in programme_models.__dict__.items():
+        if not isinstance(cls, type):
+            continue
+        if cls.__module__ != programme_models.__name__:
+            continue
+        if not issubclass(cls, BaseModel):
+            continue
+
+        for field_name, field_info in cls.model_fields.items():
+            annotation = field_info.annotation
+            rows.append(
+                {
+                    "class": cls.__name__,
+                    "attribute": field_name,
+                    "prompt": field_info.description or "",
+                    "datatype": getattr(annotation, "__name__", str(annotation)),
+                }
+            )
+
+    return rows
+
+
 def write_hierarchical_prompts_csv(
     study_type: str = "RCT",
     csv_outpath: str | Path | None = None,
@@ -278,9 +316,11 @@ def write_hierarchical_prompts_csv(
             rows = build_animal_hierarchical_prompt_rows()
         case "ClimateCarbonPricing":
             rows = build_climate_carbon_pricing_hierarchical_prompt_rows()
+        case "Programme":
+            rows = build_programme_hierarchical_prompt_rows()
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing, Programme"
             )
 
     if csv_outpath is None:
@@ -321,7 +361,9 @@ def _resolve_dtype(
             if class_name not in nested_cache:
                 definitions: dict[str, tuple[Any, Field]] = {}
                 for field_def in schema[class_name]:
-                    inner_dtype = _resolve_dtype(field_def["datatype"], schema, nested_cache)
+                    inner_dtype = _resolve_dtype(
+                        field_def["datatype"], schema, nested_cache
+                    )
                     definitions[field_def["attribute"]] = (
                         inner_dtype,
                         Field(default="", description=field_def["prompt"]),
@@ -652,7 +694,9 @@ def _ensure_animal_runtime_models(
             ),
             induction_interventions=(
                 list[runtime_models["InductionIntervention"]],
-                Field(description="Induction intervention subpopulations in the trial."),
+                Field(
+                    description="Induction intervention subpopulations in the trial."
+                ),
             ),
             assessment_interventions=(
                 list[runtime_models["AssessmentIntervention"]],
@@ -687,7 +731,9 @@ def _build_dynamic_animal_pipeline(
             "assessment_interventions": list[runtime_models["AssessmentIntervention"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one animal RCT."
+            ),
             "study_characteristics": dspy.OutputField(
                 desc="Study-level metadata and characteristics."
             ),
@@ -718,7 +764,9 @@ def _build_dynamic_animal_pipeline(
             "dichotomous_outcomes": list[runtime_models["Dichotomous_Outcome"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one animal RCT."
+            ),
             "induction_interventions": dspy.InputField(
                 desc="Induction interventions (subpopulations) identified in step 1."
             ),
@@ -750,7 +798,9 @@ def _build_dynamic_animal_pipeline(
             "continuous_outcomes": list[runtime_models["Continuous_Outcome"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one animal RCT."
+            ),
             "induction_interventions": dspy.InputField(
                 desc="Induction interventions (subpopulations) identified in step 1."
             ),
@@ -784,7 +834,9 @@ def _build_dynamic_animal_pipeline(
             "flexible_outcomes": list[runtime_models["Other_Outcome"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one animal RCT."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one animal RCT."
+            ),
             "induction_interventions": dspy.InputField(
                 desc="Induction interventions (subpopulations) identified in step 1."
             ),
@@ -1023,7 +1075,9 @@ def _build_dynamic_prognostic_pipeline(
             "prognostic_factors": list[runtime_models["PrognosticFactor"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one prognostic study."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one prognostic study."
+            ),
             "study_characteristics": dspy.OutputField(
                 desc="Study-level metadata and characteristics."
             ),
@@ -1048,7 +1102,9 @@ def _build_dynamic_prognostic_pipeline(
             "hazard_ratio_outcomes": list[runtime_models["HazardRatioOutcome"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one prognostic study."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one prognostic study."
+            ),
             "prognostic_factors": dspy.InputField(
                 desc="Prognostic factors identified in step 1."
             ),
@@ -1062,7 +1118,7 @@ def _build_dynamic_prognostic_pipeline(
             "extract ALL outcomes reported as hazard ratios.\n\n"
             "For EVERY hazard ratio outcome found, attempt to extract all attributes in the schema.\n\n"
             "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
-            "If a value is not reported, use the string \"NR\"."
+            'If a value is not reported, use the string "NR".'
         ),
     )
 
@@ -1074,7 +1130,9 @@ def _build_dynamic_prognostic_pipeline(
             "other_prognostic_outcomes": list[runtime_models["OtherPrognosticOutcome"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one prognostic study."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one prognostic study."
+            ),
             "prognostic_factors": dspy.InputField(
                 desc="Prognostic factors identified in step 1."
             ),
@@ -1089,7 +1147,7 @@ def _build_dynamic_prognostic_pipeline(
             "odds ratios, percentages).\n\n"
             "For EVERY other prognostic outcome found, attempt to extract all attributes in the schema.\n\n"
             "Report values exactly as they appear in the source — do not calculate or impute.\n"
-            "If a value is not reported, use the string \"NR\"."
+            'If a value is not reported, use the string "NR".'
         ),
     )
 
@@ -1154,7 +1212,9 @@ def _ensure_climate_carbon_pricing_runtime_models(
             ),
             interventions=(
                 list[runtime_models["Intervention"]],
-                Field(description="Carbon pricing interventions identified in the study."),
+                Field(
+                    description="Carbon pricing interventions identified in the study."
+                ),
             ),
             effect_outcomes=(
                 list[runtime_models["Effect_Outcome"]],
@@ -1176,7 +1236,9 @@ def _build_dynamic_climate_carbon_pricing_pipeline(
             "interventions": list[runtime_models["Intervention"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one carbon pricing study."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one carbon pricing study."
+            ),
             "study_characteristics": dspy.OutputField(
                 desc="Study-level metadata and characteristics."
             ),
@@ -1202,7 +1264,9 @@ def _build_dynamic_climate_carbon_pricing_pipeline(
             "effect_outcomes": list[runtime_models["Effect_Outcome"]],
         },
         {
-            "context": dspy.InputField(desc="Concatenated markdown text for one carbon pricing study."),
+            "context": dspy.InputField(
+                desc="Concatenated markdown text for one carbon pricing study."
+            ),
             "interventions": dspy.InputField(
                 desc="Carbon pricing interventions identified in step 1."
             ),
@@ -1246,6 +1310,160 @@ def _build_dynamic_climate_carbon_pricing_pipeline(
     return DynamicClimateCarbonPricingExtractionPipeline
 
 
+def _ensure_programme_runtime_models(
+    schema: dict[str, list[dict[str, str]]],
+    dynamic_models: dict[str, type[BaseModel]],
+) -> dict[str, type[BaseModel]]:
+    runtime_models: dict[str, type[BaseModel]] = {}
+
+    for class_name in PROGRAMME_DYNAMIC_CLASSES:
+        model_cls = dynamic_models.get(class_name)
+        if model_cls is not None:
+            runtime_models[class_name] = model_cls
+            continue
+
+        fallback = getattr(programme_models, class_name, None)
+        if isinstance(fallback, type) and issubclass(fallback, BaseModel):
+            runtime_models[class_name] = fallback
+        else:
+            raise ValueError(
+                f"Class '{class_name}' is required by the pipeline but is missing."
+            )
+
+    if "Programme" in schema:
+        runtime_models["Programme"] = create_model(
+            "DynamicProgramme",
+            __base__=BaseModel,
+            programme_characteristics=(
+                runtime_models["Programme_Characteristics"],
+                Field(description="Programme-level metadata."),
+            ),
+            interventions=(
+                list[runtime_models["Intervention"]],
+                Field(description="Programme interventions."),
+            ),
+            outcomes=(
+                list[runtime_models["Outcome"]],
+                Field(default_factory=list, description="Programme outcomes."),
+            ),
+            learnings=(
+                list[runtime_models["Learning"]],
+                Field(default_factory=list, description="Programme learnings."),
+            ),
+        )
+
+    return runtime_models
+
+
+def _build_dynamic_programme_pipeline(
+    runtime_models: dict[str, type[BaseModel]],
+) -> type[dspy.Module]:
+    extract_programme_info_sig = _build_dynamic_signature(
+        "DynamicExtractProgrammeInfo",
+        {
+            "context": str,
+            "programme_characteristics": runtime_models["Programme_Characteristics"],
+            "interventions": list[runtime_models["Intervention"]],
+        },
+        {
+            "context": dspy.InputField(desc="UN programme evaluation report text."),
+            "programme_characteristics": dspy.OutputField(
+                desc="Programme-level metadata."
+            ),
+            "interventions": dspy.OutputField(
+                desc="All distinct programme interventions."
+            ),
+        },
+        "Extract programme characteristics and every distinct intervention from "
+        "the same UN evaluation report. Report only explicitly stated information.",
+    )
+    extract_outcomes_sig = _build_dynamic_signature(
+        "DynamicExtractProgrammeOutcomes",
+        {
+            "context": str,
+            "programme_characteristics": runtime_models["Programme_Characteristics"],
+            "interventions": list[runtime_models["Intervention"]],
+            "outcomes": list[runtime_models["Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="UN programme evaluation report text."),
+            "programme_characteristics": dspy.InputField(
+                desc="Programme characteristics from the first pass."
+            ),
+            "interventions": dspy.InputField(
+                desc="Programme interventions from the first pass."
+            ),
+            "outcomes": dspy.OutputField(
+                desc="All outcomes linked to identified interventions."
+            ),
+        },
+        "Extract every reported outcome using the previously identified programme "
+        "characteristics and interventions. Preserve exact intervention names and "
+        "do not infer links not stated in the source.",
+    )
+    extract_learnings_sig = _build_dynamic_signature(
+        "DynamicExtractProgrammeLearnings",
+        {
+            "context": str,
+            "programme_characteristics": runtime_models["Programme_Characteristics"],
+            "interventions": list[runtime_models["Intervention"]],
+            "outcomes": list[runtime_models["Outcome"]],
+            "learnings": list[runtime_models["Learning"]],
+        },
+        {
+            "context": dspy.InputField(desc="UN programme evaluation report text."),
+            "programme_characteristics": dspy.InputField(
+                desc="Programme characteristics from the first pass."
+            ),
+            "interventions": dspy.InputField(
+                desc="Programme interventions from the first pass."
+            ),
+            "outcomes": dspy.InputField(
+                desc="Programme outcomes from the second pass."
+            ),
+            "learnings": dspy.OutputField(
+                desc="Learnings linked to identified outcomes."
+            ),
+        },
+        "Extract barriers, enablers, lessons learned, achievements, and "
+        "recommendations using all prior outputs. Link each learning to an exact "
+        "outcome name.",
+    )
+
+    programme_model = runtime_models["Programme"]
+
+    class DynamicProgrammeExtractionPipeline(dspy.Module):
+        """Dynamic runtime variant of Programme extraction."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.extract_programme_info = dspy.Predict(extract_programme_info_sig)
+            self.extract_outcomes = dspy.Predict(extract_outcomes_sig)
+            self.extract_learnings = dspy.Predict(extract_learnings_sig)
+
+        def forward(self, context: str) -> BaseModel:
+            programme_pred = self.extract_programme_info(context=context)
+            outcomes_pred = self.extract_outcomes(
+                context=context,
+                programme_characteristics=programme_pred.programme_characteristics,
+                interventions=programme_pred.interventions,
+            )
+            learnings_pred = self.extract_learnings(
+                context=context,
+                programme_characteristics=programme_pred.programme_characteristics,
+                interventions=programme_pred.interventions,
+                outcomes=outcomes_pred.outcomes,
+            )
+            return programme_model(
+                programme_characteristics=programme_pred.programme_characteristics,
+                interventions=programme_pred.interventions,
+                outcomes=outcomes_pred.outcomes,
+                learnings=learnings_pred.learnings,
+            )
+
+    return DynamicProgrammeExtractionPipeline
+
+
 def _build_dynamic_pipeline_for_study_type(
     study_type: str,
     schema: dict[str, list[dict[str, str]]],
@@ -1258,12 +1476,18 @@ def _build_dynamic_pipeline_for_study_type(
         return _build_dynamic_prognostic_pipeline(runtime_models)
 
     if study_type == "ClimateCarbonPricing":
-        runtime_models = _ensure_climate_carbon_pricing_runtime_models(schema, dynamic_models)
+        runtime_models = _ensure_climate_carbon_pricing_runtime_models(
+            schema, dynamic_models
+        )
         return _build_dynamic_climate_carbon_pricing_pipeline(runtime_models)
 
     if study_type == "AnimalRCT":
         runtime_models = _ensure_animal_runtime_models(schema, dynamic_models)
         return _build_dynamic_animal_pipeline(runtime_models)
+
+    if study_type == "Programme":
+        runtime_models = _ensure_programme_runtime_models(schema, dynamic_models)
+        return _build_dynamic_programme_pipeline(runtime_models)
 
     runtime_models = _ensure_rct_runtime_models(schema, dynamic_models)
     return _build_dynamic_rct_pipeline(runtime_models)
@@ -1295,7 +1519,67 @@ def _write_dynamic_study_outputs(
     # always get a valid path back regardless of which export flags are set.
     output_path = output_parent_dir
 
-    if study_type == "PrognosticStudy":
+    if study_type == "Programme":
+        pc_schema = schema.get("Programme_Characteristics", [])
+        iv_schema = schema.get("Intervention", [])
+        outcome_schema = schema.get("Outcome", [])
+        learning_schema = schema.get("Learning", [])
+
+        programme_row = _project_instance_to_schema(
+            study.programme_characteristics, pc_schema
+        )
+        intervention_rows = [
+            _project_instance_to_schema(item, iv_schema) for item in study.interventions
+        ]
+        outcome_rows = [
+            _project_instance_to_schema(item, outcome_schema) for item in study.outcomes
+        ]
+        learning_rows = [
+            _project_instance_to_schema(item, learning_schema)
+            for item in study.learnings
+        ]
+
+        if export_json_file:
+            dynamic_payload = {
+                "programme_characteristics": programme_row,
+                "interventions": intervention_rows,
+                "outcomes": outcome_rows,
+                "learnings": learning_rows,
+            }
+            output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
+            output_path.write_text(
+                json.dumps(dynamic_payload, indent=2), encoding="utf-8"
+            )
+
+        if export_csv_files or export_xlsx_file:
+            table_inputs = {
+                "programme": (pc_schema, [programme_row]),
+                "interventions": (iv_schema, intervention_rows),
+                "outcomes": (outcome_schema, outcome_rows),
+                "learnings": (learning_schema, learning_rows),
+            }
+            tables = {}
+            for table_name, (table_schema, rows) in table_inputs.items():
+                if not table_schema:
+                    continue
+                flat_rows = [_flatten_row_for_export(row) for row in rows]
+                fieldnames = _fieldnames_union(flat_rows) or [
+                    item["attribute"] for item in table_schema
+                ]
+                tables[table_name] = (fieldnames, flat_rows)
+
+            if tables:
+                csv_dir.mkdir(parents=True, exist_ok=True)
+                _write_tables(
+                    tables,
+                    csv_dir,
+                    timestamp,
+                    suffix,
+                    write_csv=export_csv_files,
+                    write_xlsx=export_xlsx_file,
+                    study_name=study_name if flat_output else None,
+                )
+    elif study_type == "PrognosticStudy":
         sc_schema = schema.get("PrognosticStudy_Characteristics", [])
         pf_schema = schema.get("PrognosticFactor", [])
         hr_schema = schema.get("HazardRatioOutcome", [])
@@ -1323,7 +1607,9 @@ def _write_dynamic_study_outputs(
                 "other_prognostic_outcomes": op_rows,
             }
             output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+            output_path.write_text(
+                json.dumps(dynamic_payload, indent=2), encoding="utf-8"
+            )
 
         if export_csv_files or export_xlsx_file:
             raw_outcome_fieldnames: list[str] = []
@@ -1337,7 +1623,10 @@ def _write_dynamic_study_outputs(
             combined_outcomes = [
                 _flatten_row_for_export({"outcome_type": "hazard_ratio", **row})
                 for row in hr_rows
-            ] + [_flatten_row_for_export({"outcome_type": "other", **row}) for row in op_rows]
+            ] + [
+                _flatten_row_for_export({"outcome_type": "other", **row})
+                for row in op_rows
+            ]
 
             flat_study_row = _flatten_row_for_export(study_row)
             flat_pf_rows = [_flatten_row_for_export(row) for row in pf_rows]
@@ -1389,13 +1678,17 @@ def _write_dynamic_study_outputs(
                 "effect_outcomes": effect_outcome_rows,
             }
             output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+            output_path.write_text(
+                json.dumps(dynamic_payload, indent=2), encoding="utf-8"
+            )
 
         if export_csv_files or export_xlsx_file:
             # Only one outcome subtype exists for this study shape, so no
             # outcome_type column is added (unlike RCT-style/Prognostic-style).
             flat_study_row = _flatten_row_for_export(study_row)
-            flat_intervention_rows = [_flatten_row_for_export(row) for row in intervention_rows]
+            flat_intervention_rows = [
+                _flatten_row_for_export(row) for row in intervention_rows
+            ]
             flat_effect_outcome_rows = [
                 _flatten_row_for_export(row) for row in effect_outcome_rows
             ]
@@ -1451,7 +1744,8 @@ def _write_dynamic_study_outputs(
             for item in study.continuous_outcomes
         ]
         other_rows = [
-            _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
+            _project_instance_to_schema(item, oo_schema)
+            for item in study.other_outcomes
         ]
 
         if export_json_file:
@@ -1464,7 +1758,9 @@ def _write_dynamic_study_outputs(
                 "other_outcomes": other_rows,
             }
             output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+            output_path.write_text(
+                json.dumps(dynamic_payload, indent=2), encoding="utf-8"
+            )
 
         if export_csv_files or export_xlsx_file:
             raw_outcome_fieldnames = []
@@ -1489,8 +1785,12 @@ def _write_dynamic_study_outputs(
             )
 
             flat_study_row = _flatten_row_for_export(study_row)
-            flat_induction_rows = [_flatten_row_for_export(row) for row in induction_rows]
-            flat_assessment_rows = [_flatten_row_for_export(row) for row in assessment_rows]
+            flat_induction_rows = [
+                _flatten_row_for_export(row) for row in induction_rows
+            ]
+            flat_assessment_rows = [
+                _flatten_row_for_export(row) for row in assessment_rows
+            ]
 
             tables = {}
             if sc_schema:
@@ -1543,7 +1843,8 @@ def _write_dynamic_study_outputs(
             for item in study.continuous_outcomes
         ]
         other_rows = [
-            _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
+            _project_instance_to_schema(item, oo_schema)
+            for item in study.other_outcomes
         ]
 
         if export_json_file:
@@ -1555,7 +1856,9 @@ def _write_dynamic_study_outputs(
                 "other_outcomes": other_rows,
             }
             output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
-            output_path.write_text(json.dumps(dynamic_payload, indent=2), encoding="utf-8")
+            output_path.write_text(
+                json.dumps(dynamic_payload, indent=2), encoding="utf-8"
+            )
 
         if export_csv_files or export_xlsx_file:
             raw_outcome_fieldnames = []
@@ -1580,7 +1883,9 @@ def _write_dynamic_study_outputs(
             )
 
             flat_study_row = _flatten_row_for_export(study_row)
-            flat_intervention_rows = [_flatten_row_for_export(row) for row in intervention_rows]
+            flat_intervention_rows = [
+                _flatten_row_for_export(row) for row in intervention_rows
+            ]
 
             tables = {}
             if sc_schema:
@@ -1749,7 +2054,9 @@ def run_dynamic_batch_extraction_from_csv_schema(
             )
             json_paths.append(json_path)
         except Exception:
-            logger.exception(f"Failed to process {md_path.name}, continuing with remaining files.")
+            logger.exception(
+                f"Failed to process {md_path.name}, continuing with remaining files."
+            )
             continue
 
     logger.info(

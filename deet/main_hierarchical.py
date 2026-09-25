@@ -24,6 +24,8 @@ from deet.hierarchical_mvp.ObesityRCTextraction import ObesityRCTExtractionPipel
 from deet.hierarchical_mvp.ObesityRCTmodel import Study as ObesityStudy
 from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
 from deet.hierarchical_mvp.PrognosticModel import PrognosticStudy
+from deet.hierarchical_mvp.ProgrammeExtraction import ProgrammeExtractionPipeline
+from deet.hierarchical_mvp.ProgrammeModel import Programme
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTmodel import Study
 from deet.hierarchical_mvp.utils import (
@@ -34,6 +36,7 @@ from deet.hierarchical_mvp.utils import (
     export_csv,
     export_obesity_csv,
     export_prognostic_csv,
+    export_programme_csv,
     load_study_context,
 )
 from deet.logger import logger
@@ -264,7 +267,14 @@ def validate_create_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
 
 def extract(
     context: str, study_type: str
-) -> Study | PrognosticStudy | ObesityStudy | AnimalStudy | ClimateCarbonPricingStudy:
+) -> (
+    Study
+    | PrognosticStudy
+    | ObesityStudy
+    | AnimalStudy
+    | ClimateCarbonPricingStudy
+    | Programme
+):
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
     match study_type:
@@ -286,14 +296,22 @@ def extract(
         case "ClimateCarbonPricing":
             pipeline = ClimateCarbonPricingExtractionPipeline()
             return pipeline(context=context)
+        case "Programme":
+            pipeline = ProgrammeExtractionPipeline()
+            return pipeline(context=context)
         case _:
             raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing"
+                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing, Programme"
             )
 
 
 def save_data(
-    study: Study | PrognosticStudy | ObesityStudy | AnimalStudy | ClimateCarbonPricingStudy,
+    study: Study
+    | PrognosticStudy
+    | ObesityStudy
+    | AnimalStudy
+    | ClimateCarbonPricingStudy
+    | Programme,
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
@@ -303,7 +321,8 @@ def save_data(
     export_json_file: bool = False,
     flat_output: bool = False,
 ) -> None:
-    """Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested.
+    """
+    Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested.
 
     When `flat_output` is True (used by `predict_batch`), CSV/XLSX files are written
     directly into `output_parent_dir` with the study name embedded in each filename,
@@ -374,6 +393,17 @@ def save_data(
             )
         case "ClimateCarbonPricing":
             export_climate_carbon_pricing_csv(
+                study,
+                study_name,
+                output_dir,
+                timestamp,
+                model_suffix,
+                write_csv=export_csv_files,
+                write_xlsx=export_xlsx_file,
+                flat_output=flat_output,
+            )
+        case "Programme":
+            export_programme_csv(
                 study,
                 study_name,
                 output_dir,
@@ -486,7 +516,9 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
     input_folder, output_parent_dir = validate_create_batch_paths(config)
 
     md_paths = sorted(
-        p for p in Path(input_folder).iterdir() if p.is_file() and p.suffix.lower() == ".md"
+        p
+        for p in Path(input_folder).iterdir()
+        if p.is_file() and p.suffix.lower() == ".md"
     )
     if not md_paths:
         logger.warning(f"No markdown files found directly in {input_folder}.")
@@ -514,7 +546,9 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
                 flat_output=True,
             )
         except Exception:
-            logger.exception(f"Failed to process {md_path.name}, continuing with remaining files.")
+            logger.exception(
+                f"Failed to process {md_path.name}, continuing with remaining files."
+            )
             continue
 
 
