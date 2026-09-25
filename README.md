@@ -1,29 +1,14 @@
 # data-extraction-evaluation-toolkit
 
-The Data Extraction and Evaluation Toolkit (DEET) is a suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks.
+The Data Extraction Evaluation Toolkit (DEET) is an open-source toolkit designed to support the development and evaluation of AI-assisted data extraction for evidence synthesis.
 
-[Docs](https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/)
+Extracting structured information from research studies is one of the most time-consuming stages of the evidence synthesis process. While large language models (LLMs) and other AI methods have the potential to reduce this workload, inaccurate extraction can introduce errors into reviews and ultimately affect evidence used for research and policy decisions. Robust evaluation is therefore essential to ensure that AI tools are reliable, transparent, and fit for purpose.
 
-## tl, dr
+DEET provides an end-to-end, modular workflow for configuring, running and evaluating automated data extraction methods. It enables users to compare AI-generated outputs against human-created reference (gold standard) datasets, helping to assess the accuracy, consistency and performance of different approaches. Designed around open and FAIR (Findable, Accessible, Interoperable and Reusable) principles, DEET supports reproducible evaluation through reusable code, APIs and standardised data models.
 
-A key innovation of the [Destiny project](https://destiny-evidence.github.io/website/) is a toolkit for automating the extraction of attributes of interest from documents (e.g. academic papers). This way, large repositories of published research can have relevant data extracted to use for evidence synthesis, thereby freeing up researchers to dedicate time and resources to higher-value tasks.
+DEET is intended for researchers, evidence synthesis teams, developers and organisations interested in evaluating or developing AI-enhanced evidence synthesis workflows. Users can expect structured extraction outputs, performance metrics and transparent evaluation results that support informed decisions about the use of AI in evidence synthesis.
 
-This software enables this end-to-end process for data extraction and evaluation tasks. **`data-extraction-evaluation-toolkit`**; or **`deet`** is conceived of as a modular suite of tools, allowing users to include and exclude specific modules in line with their needs. For instance, while you may want to supply a pdf and extract structured information from it, you may have already parsed pdfs, or other file sources into a more processing-friendly format (markdown), and hence choose to omit the parser module from your data extraction pipeline.
-
-Currently, the app covers the following tools:
-
-- **Document parsing** (from a range of formats; typically into `markdown`)
-- **Gold standard data ingestion and standardisation** (currently only `eppi.json` datasets are supported out of the box, for other datasets, use the data models in `data_models/base.py` to ingest your gold standard references.)
-- **LLM-powered data extraction**
-- **Orchetration of tools into `Pipeline`s** (these tools can be existing `DEET` modules, custom python functions, or scripts (`R`, `python`, `bash` currently suppported.))
-- **Linking of gold standard references & pdf-derived parsed documents**
-- **A fully-fledged cli for typical `deet` tasks**
-- **Comparison & evaluation of LLM vs human annotations**
-
-Our roadmap for future development contains:
-
-- **A framework for repeatable pipeline runs with slight modifications for comparison**
-- **Support for prompt versioning tool**
+More detailed documentation can be found here [Docs](https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/)
 
 ## Quickstart
 
@@ -109,14 +94,14 @@ The documentation website is available at [https://destiny-evidence.github.io/de
 
 If you use `deet` in your work, please cite it as:
 
-> Loynes, N., Callaghan, M., Uprety, S. & Moss, H. (2026). Data Extraction Evaluation Toolkit (DEET), version 0.4.0-dev.2. <https://github.com/destiny-evidence/data-extraction-evaluation-toolkit>
-
-You can also cite the software metadata directly from the repository citation file.
+> Finnerty Mutlu, A. N., Loynes, N., Uprety, S., Callaghan, M., Danilenko, D., Gopal, I., Hair, K., Molyneux, S., Moss, H., Repke, T., Schmidt, L., Soliman, N., Tezok, K. O. T. (Miyaka)., Vairon, J., & Thomas, J. (2026). Data Extraction Evaluation Toolkit (version 0.4.0-dev.2.) [Computer software]. Zenodo. <https://doi.org/10.5281/zenodo.22897649>
 
 ## Acknowledgements
 
 We acknowledge with thanks funding from the following funders and projects:
 
-- **Wellcome Trust**
-- **Education Endowment Foundation**
-- **Economic and Social Research Council (ESRC)**
+- Digital Evidence Synthesis Tool INnovation for Yielding Improvements in Climate & Health (DESTINY) [313586/Z/24/Z]
+- Mobilising Evidence Through Artificial Intelligence and User-Informed Synthesis (METIUS) [UKRI3167]
+- Global Alliance for Living Evidence on aNxiety, depressiOn and pSychosis (GALENOS)
+- Living Evidence in Alzheimer's and Dementia (LEAD) [227443/Z/23/Z]
+- Education Endowment Foundation (EEF)
