@@ -118,6 +118,7 @@ class EppiAttributeSelectionType(StrEnum):
     INTERVENTION = "Intervention"
     NOT_SELECTABLE = "Not Selectable (no checkbox)"
     UNSPECIFIED = "Unspecified"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def _missing_(cls, value: object) -> "EppiAttributeSelectionType | None":
@@ -126,7 +127,7 @@ class EppiAttributeSelectionType(StrEnum):
             for member in cls:
                 if member.value.lower() == value.lower():
                     return member
-        return None
+        return cls.UNKNOWN
 
 
 class EppiAttribute(Attribute):

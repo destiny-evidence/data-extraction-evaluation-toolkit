@@ -57,8 +57,9 @@ def test_edit_distance_match_rate_rejects_length_mismatch() -> None:
 
 
 def test_edit_distance_match_rate_empty_lists() -> None:
-    """Empty aligned lists yield 0.0."""
-    assert edit_distance_match_rate([], []) == 0.0
+    """Empty aligned lists raise, matching sklearn empty-input behaviour."""
+    with pytest.raises(ValueError, match="non-empty"):
+        edit_distance_match_rate([], [])
 
 
 def test_mean_absolute_error_rounding_vs_hallucination() -> None:
@@ -118,7 +119,7 @@ def test_data_extraction_config_edit_distance_threshold_from_yaml(tmp_path) -> N
     """Config YAML omits threshold → 0.90; explicit value is honoured."""
     default_path = tmp_path / "default.yaml"
     default_path.write_text(
-        "provider: azure\nmodel: gpt-4o-mini\nmax_context_tokens: 1000\n",
+        "provider: azure\nmodel: gpt-5.6-luna\nmax_context_tokens: 1000\n",
         encoding="utf-8",
     )
     default_config = DataExtractionConfig.from_yaml(default_path)
@@ -126,7 +127,7 @@ def test_data_extraction_config_edit_distance_threshold_from_yaml(tmp_path) -> N
 
     custom_path = tmp_path / "custom.yaml"
     custom_path.write_text(
-        "provider: azure\nmodel: gpt-4o-mini\nmax_context_tokens: 1000\n"
+        "provider: azure\nmodel: gpt-5.6-luna\nmax_context_tokens: 1000\n"
         "edit_distance_match_threshold: 0.85\n",
         encoding="utf-8",
     )

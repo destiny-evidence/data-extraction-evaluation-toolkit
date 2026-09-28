@@ -164,6 +164,70 @@ def test_headers_normalized_to_lowercase(converter, mocker):
     assert "document_id" in colnames
 
 
+# new tests for clevercsv
+def test_loads_semicolon_delimited_csv(converter, mocker):
+    """CSV using semicolons as delimiter (common Excel export) loads correctly."""
+    content = (
+        "name;document_id;num_patients;about_adaptation\n"
+        "Paper A;1;42;t\n"
+        "Paper B;2;70;f\n"
+    )
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    colnames, _, _, rows = converter.load_csv("fake.csv")
+    assert "name" in colnames
+    assert "document_id" in colnames
+    assert len(rows) == 2
+    assert rows[0]["document_id"] == "1"
+
+
+def test_loads_tab_delimited_csv(converter, mocker):
+    """Tab-delimited CSV loads correctly."""
+    content = (
+        "name\tdocument_id\tnum_patients\tabout_adaptation\n"
+        "Paper A\t1\t42\tt\n"
+        "Paper B\t2\t70\tf\n"
+    )
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    colnames, _, _, rows = converter.load_csv("fake.csv")
+    assert "name" in colnames
+    assert len(rows) == 2
+
+
+def test_loads_quoted_fields_with_embedded_delimiter(converter, mocker):
+    """Fields quoted to escape embedded delimiter characters load correctly."""
+    content = (
+        "name,document_id,num_patients,about_adaptation\n"
+        '"Paper, A",1,42,t\n'
+        '"Paper; B",2,70,f\n'
+    )
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    colnames, _, _, rows = converter.load_csv("fake.csv")
+    assert len(rows) == 2
+    assert rows[0]["name"] == "Paper, A"
+    assert rows[1]["name"] == "Paper; B"
+
+
+def test_loads_pipe_delimited_csv(converter, mocker):
+    """Pipe-delimited CSV loads correctly."""
+    content = (
+        "name|document_id|num_patients|about_adaptation\n"
+        "Paper A|1|42|t\n"
+        "Paper B|2|70|f\n"
+    )
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    colnames, _, _, rows = converter.load_csv("fake.csv")
+    assert "name" in colnames
+    assert len(rows) == 2
+
+
+def test_short_rows_padded_with_empty_strings(converter, mocker):
+    """Rows shorter than header are padded with empty strings."""
+    content = "name,document_id,num_patients,about_adaptation\nPaper A,1,42\n"
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    _, _, _, rows = converter.load_csv("fake.csv")
+    assert rows[0]["about_adaptation"] == ""
+
+
 # --- build_attributes ---
 def test_infers_integer_attribute(converter):
     """Integer column inferred and attribute built correctly."""
