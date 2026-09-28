@@ -88,12 +88,12 @@ def test_document_extraction_result_computes_total_cost_usd(
     result = DocumentExtractionResult(
         annotations=[_sample_annotation()],
         messages=[{"role": "user", "content": "x"}],
-        model="gpt-4o-mini",
+        model="gpt-5.6-luna",
         input_tokens=10,
         output_tokens=5,
     )
     mock_estimate.assert_called_once_with(
-        "gpt-4o-mini",
+        "gpt-5.6-luna",
         prompt_tokens=10,
         completion_tokens=5,
     )
@@ -145,7 +145,7 @@ def test_extraction_run_metadata_defaults() -> None:
 def test_extraction_run_metadata_explicit_fields() -> None:
     """ExtractionRunMetadata stores aggregate batch fields."""
     meta = ExtractionRunMetadata(
-        model="gpt-4o-mini",
+        model="gpt-5.6-luna",
         total_input_tokens=100,
         total_output_tokens=50,
         total_cost_usd=0.05,
@@ -153,7 +153,7 @@ def test_extraction_run_metadata_explicit_fields() -> None:
             "1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
         },
     )
-    assert meta.model == "gpt-4o-mini"
+    assert meta.model == "gpt-5.6-luna"
     assert meta.total_input_tokens == 100
     assert meta.total_output_tokens == 50
     assert meta.total_cost_usd == pytest.approx(0.05)

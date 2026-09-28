@@ -31,7 +31,7 @@ def get_model_max_tokens(model: str) -> int | None:
     Uses litellm's model registry. Returns None if the model is unknown.
 
     Args:
-        model: Model identifier (e.g. "gpt-4o-mini", "azure/gpt-4o-mini").
+        model: Model identifier (e.g. "gpt-5.6-luna", "azure/gpt-5.6-luna").
 
     Returns:
         Maximum input tokens, or None if model not found.
@@ -107,7 +107,7 @@ def estimate_cost_usd(
     best-effort for callers.
 
     Args:
-        model: Model identifier (e.g. "gpt-4o-mini", "azure/gpt-4o-mini").
+        model: Model identifier (e.g. "gpt-5.6-luna", "azure/gpt-5.6-luna").
         prompt_tokens: Number of input/prompt tokens.
         completion_tokens: Number of output/completion tokens.
 

@@ -93,6 +93,11 @@ class DataExtractionSettings(BaseSettings):
         json_schema_extra={"skip_prompt": True},
     )
 
+    # whether or not to enforce text quality checking
+    # (requires import and install of nltk, which may not
+    # be required.)
+    enforce_language_quality_check: bool = False
+
     def dump_to_env(self, target_path: Path = Path(".env")) -> None:
         """Serialise settings object to a .env file."""
         target_path.parent.mkdir(parents=True, exist_ok=True)
