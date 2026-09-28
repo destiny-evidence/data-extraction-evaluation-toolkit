@@ -2,8 +2,11 @@
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from enum import StrEnum, auto
+from functools import partial
 from importlib.resources import files
 from pathlib import Path
 from typing import Annotated, Any, cast
@@ -109,6 +112,15 @@ class DataExtractionConfig(BaseModel):
     provider: Annotated[
         LLMProvider, UI(help="Choose from a list of supported LLM providers.")
     ] = Field(default=LLMProvider.AZURE, description="LLM Provider")
+    max_workers: int = Field(
+        default=1,
+        ge=1,
+        description=(
+            "Number of documents to process concurrently. 1 = sequential;"
+            " higher values parallelise the per-document"
+            " LLM calls via a thread pool."
+        ),
+    )
     model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
         Field(
             default="gpt-5.6-luna",
@@ -237,6 +249,42 @@ class DataExtractionConfig(BaseModel):
         return cls.model_validate(yaml.safe_load(path.read_text()))
 
 
+@dataclass(frozen=True)
+class _ProcessedDocument:
+    """One document's extraction result plus the fields the batch loop reassembles."""
+
+    document: Document
+    doc_id: str
+    result: DocumentExtractionResult
+    stats: PerDocumentExtractionStats
+
+
+def _iter_completed(
+    documents: list[Document],
+    max_workers: int,
+    process: Callable[[int, Document], tuple[int, _ProcessedDocument | None]],
+) -> Iterator[tuple[int, _ProcessedDocument | None]]:
+    """
+    Yield `(index, result)` pairs as each document finishes extraction.
+
+    With `max_workers == 1`, runs `process` sequentially in input order.
+    Otherwise submits every document to a `ThreadPoolExecutor` and yields
+    each pair as it completes — so completion order is non-deterministic,
+    and the caller uses `index` to restore input order.
+    """
+    if max_workers == 1:
+        for i, document in enumerate(documents):
+            yield process(i, document)
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = [
+                pool.submit(process, i, document)
+                for i, document in enumerate(documents)
+            ]
+            for future in as_completed(futures):
+                yield future.result()
+
+
 class BaseDataExtractor(ABC):
     """Abstract Base Class defining common methods for data extractors."""
 
@@ -280,6 +328,77 @@ class BaseDataExtractor(ABC):
 
         return context
 
+    def _process_document(  # noqa: PLR0913
+        self,
+        index: int,
+        document: Document,
+        *,
+        attributes: list[Attribute],
+        filter_attribute_ids: list[int] | None,
+        context_type: ContextType | None,
+        parsing_by_doc: dict[str, DocumentParsingStats],
+    ) -> tuple[int, _ProcessedDocument | None]:
+        """
+        Run one document through ``self.extract_from_document``.
+
+        Called once per document by ``_iter_completed`` sequentially when
+        ``max_workers == 1``, otherwise on a ``ThreadPoolExecutor`` worker.
+
+        Catches per-document errors so one bad document doesn't crash the whole batch.
+
+        Args:
+            index: Position of this document in the input list, echoed back in the
+                return so callers can restore input order when this != completion order.
+            document: The document to process; its `context` is set in place according
+                to `context_type` before extraction.
+            attributes: Attributes to extract.
+            filter_attribute_ids: Optional attribute IDs to filter by, or None.
+            context_type: How to build ``document.context``
+            parsing_by_doc: Per-document parsing stats keyed by document ID.
+
+        Returns:
+            `(index, result)`: `index` is echoed back unchanged so the caller
+            can restore input order from completion order; `result` is a
+            `_ProcessedDocument` on success, or `None` when the document is
+            skipped (no usable context) or extraction raises.
+
+        """
+        logger.info(f"Processing document: {document.name}")
+        try:
+            if context_type == ContextType.ABSTRACT_ONLY:
+                document.set_abstract_context()
+            elif context_type == ContextType.FULL_DOCUMENT:
+                document.context = document.safe_parsed_document.text
+
+            result = self.extract_from_document(
+                attributes=attributes,
+                filter_attribute_ids=filter_attribute_ids,
+                payload=document.context,
+                context_type=context_type,
+            )
+        except NoAbstractError as e:
+            logger.warning(f"Skipping {document.name}: {e}")
+            return index, None
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Failed to process {document.name}: {e}")
+            logger.debug("Error details", exc_info=True)
+            return index, None
+
+        doc_id_str = str(document.safe_identity.document_id)
+        parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
+        return index, _ProcessedDocument(
+            document=document,
+            doc_id=doc_id_str,
+            result=result,
+            stats=PerDocumentExtractionStats(
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                parsing_seconds=parsing.parsing_seconds,
+                parsing_skipped=parsing.parsing_skipped,
+                llm_call_seconds=result.llm_call_seconds,
+            ),
+        )
+
     def extract_from_documents(  # noqa: PLR0913
         self,
         attributes: list[Attribute],
@@ -295,10 +414,16 @@ class BaseDataExtractor(ABC):
         """
         Extract data from all documents.
 
-        Loops over documents and extracts data using list of attributes.
-        A document that's missing what it needs for the chosen context_type
-        (e.g. no abstract when using ABSTRACT_ONLY) is skipped with a warning,
-        not raised.
+        Each document is processed independently, either concurrently on a thread
+        pool sized to ``config.max_workers``, or sequentially when `max_workers==1`.
+        Results are collected back into input order
+        order regardless of completion order.
+        A document that's missing what it needs for the chosen context type is skipped
+        with a warning.
+        Failures to extract from documents
+        (e.g. because of misconfigured llm settings or content policy violations)
+        are warned about, so that they do not crash a whole run.
+
 
         Args:
             attributes: List of attributes to extract.
@@ -327,50 +452,40 @@ class BaseDataExtractor(ABC):
         total_output_tokens = 0
         total_cost: float | None = None
 
-        with optional_progress(
-            documents, show_progress=show_progress
-        ) as iterable_documents:
-            for document in iterable_documents:
-                logger.info(f"Processing document: {document.name}")
+        documents = list(documents)
+        max_workers = max(1, self.config.max_workers)
+        process = partial(
+            self._process_document,
+            attributes=attributes,
+            filter_attribute_ids=filter_attribute_ids,
+            context_type=context_type,
+            parsing_by_doc=parsing_by_doc,
+        )
 
-                try:
-                    if context_type == ContextType.ABSTRACT_ONLY:
-                        document.set_abstract_context()
-                    elif context_type == ContextType.FULL_DOCUMENT:
-                        document.context = document.safe_parsed_document.text
+        # Collect into input order regardless of completion order.
+        ordered: list[_ProcessedDocument | None] = [None] * len(documents)
+        completed = _iter_completed(documents, max_workers, process)
+        with optional_progress(documents, show_progress=show_progress) as tracked:
+            for _ in tracked:  # advance the bar once per finished document
+                index, bundle = next(completed)
+                ordered[index] = bundle
 
-                    result = self.extract_from_document(
-                        attributes=attributes,
-                        filter_attribute_ids=filter_attribute_ids,
-                        payload=document.context,
-                        context_type=context_type,
-                    )
-
-                    llm_annotated_docs.append(
-                        GoldStandardAnnotatedDocument(
-                            document=document, annotations=result.annotations
-                        )
-                    )
-                    doc_id_str = str(document.safe_identity.document_id)
-                    prompt_payloads[doc_id_str] = result.messages
-                    parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
-                    per_document[doc_id_str] = PerDocumentExtractionStats(
-                        input_tokens=result.input_tokens,
-                        output_tokens=result.output_tokens,
-                        parsing_seconds=parsing.parsing_seconds,
-                        parsing_skipped=parsing.parsing_skipped,
-                        llm_call_seconds=result.llm_call_seconds,
-                    )
-                    total_input_tokens += result.input_tokens
-                    total_output_tokens += result.output_tokens
-                    if result.total_cost_usd is not None:
-                        total_cost = (total_cost or 0.0) + result.total_cost_usd
-
-                except NoAbstractError as e:
-                    logger.warning(f"Skipping {document.name}: {e}")
-                except Exception as e:  # noqa: BLE001
-                    logger.error(f"Failed to process {document.name}: {e}")
-                    logger.debug("Error details", exc_info=True)
+        for bundle in ordered:
+            if bundle is None:
+                continue
+            result = bundle.result
+            doc_id_str = bundle.doc_id
+            llm_annotated_docs.append(
+                GoldStandardAnnotatedDocument(
+                    document=bundle.document, annotations=result.annotations
+                )
+            )
+            prompt_payloads[doc_id_str] = result.messages
+            per_document[doc_id_str] = bundle.stats
+            total_input_tokens += result.input_tokens
+            total_output_tokens += result.output_tokens
+            if result.total_cost_usd is not None:
+                total_cost = (total_cost or 0.0) + result.total_cost_usd
 
         run_metadata = ExtractionRunMetadata(
             model=self.config.model,
