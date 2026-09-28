@@ -46641,7 +46641,20 @@ customizable prompts.</p>
 <span class="normal">529</span>
 <span class="normal">530</span>
 <span class="normal">531</span>
-<span class="normal">532</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">(</span><span class="n">BaseDataExtractor</span><span class="p">):</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">(</span><span class="n">BaseDataExtractor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generalisable module for LLM-based data extraction from documents.</span>
 
@@ -46957,13 +46970,13 @@ customizable prompts.</p>
                 <span class="sa">f</span><span class="s2">&quot;Estimated input cost: $</span><span class="si">{</span><span class="n">prompt_cost</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> USD (</span><span class="si">{</span><span class="n">input_tokens</span><span class="si">}</span><span class="s2"> tokens)&quot;</span>
             <span class="p">)</span>
 
-        <span class="n">response</span> <span class="o">=</span> <span class="n">litellm</span><span class="o">.</span><span class="n">completion</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
-            <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llm_api_key</span><span class="p">,</span>
-            <span class="n">api_base</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span>
-            <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
-            <span class="n">temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
-            <span class="n">response_format</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">completion_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="s2">&quot;api_key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_api_key</span><span class="p">,</span>
+            <span class="s2">&quot;api_base&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span>
+            <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="n">messages</span><span class="p">,</span>
+            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="s2">&quot;response_format&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_schema&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;json_schema&quot;</span><span class="p">:</span> <span class="p">{</span>
                     <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;llm_annotation_response&quot;</span><span class="p">,</span>
@@ -46971,8 +46984,21 @@ customizable prompts.</p>
                     <span class="s2">&quot;strict&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="p">},</span>
             <span class="p">},</span>
-            <span class="n">max_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">,</span>
-        <span class="p">)</span>
+            <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Add provider-specific parameters for context window handling</span>
+        <span class="c1"># Note: Different parameters control context windows across providers:</span>
+        <span class="c1"># - max_tokens (OpenAI/Azure): Maximum output (completion) length</span>
+        <span class="c1"># - max_context_tokens (config): Application-level input budget, enforced</span>
+        <span class="c1">#   via truncation in _enforce_context_limit()</span>
+        <span class="c1"># - num_ctx (Ollama-only): Sets the model&#39;s total context window size.</span>
+        <span class="c1">#   Passed to Ollama via LiteLLM kwargs to allow tuning the model&#39;s</span>
+        <span class="c1">#   available context, separate from our input truncation budget.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span> <span class="o">==</span> <span class="n">LLMProvider</span><span class="o">.</span><span class="n">OLLAMA</span><span class="p">:</span>
+            <span class="n">completion_kwargs</span><span class="p">[</span><span class="s2">&quot;num_ctx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_context_tokens</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">litellm</span><span class="o">.</span><span class="n">completion</span><span class="p">(</span><span class="o">**</span><span class="n">completion_kwargs</span><span class="p">)</span>
 
         <span class="n">msg</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span>
 
