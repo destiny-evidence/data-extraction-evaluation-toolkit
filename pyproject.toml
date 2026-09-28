@@ -36,7 +36,7 @@ authors = [
 dependencies = [
     # Keep these pinned: DSPy's lazy-import behavior around anyio/litellm can
     # cause environment-dependent import failures in notebooks when versions float.
-    "anyio==4.13.0",
+    "anyio==4.14.2",
     "destiny-sdk[labs]>=0.9.1",
     "diskcache>=5.6.3",
     "dspy==3.2.1",
