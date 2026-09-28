@@ -229,3 +229,4 @@ data-extraction-experiments/*
 !examples/**/*.csv
 !tests/integration/datasets/**/*.csv
 !tests/integration/datasets/**/*.json
+project.yaml
