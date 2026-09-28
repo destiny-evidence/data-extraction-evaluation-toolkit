@@ -15,8 +15,10 @@ def test_deet_import_eagerly_loads_anyio_submodules(monkeypatch):
 
 
 def test_deet_import_loads_anyio_submodules_when_anyio_already_present(monkeypatch):
-    anyio_module = importlib.import_module("anyio")
     for module_name in ("anyio.lowlevel", "anyio.abc", "anyio", "deet"):
+        monkeypatch.delitem(sys.modules, module_name, raising=False)
+    anyio_module = importlib.import_module("anyio")
+    for module_name in ("anyio.lowlevel", "anyio.abc", "deet"):
         monkeypatch.delitem(sys.modules, module_name, raising=False)
     monkeypatch.setitem(sys.modules, "anyio", anyio_module)
 
