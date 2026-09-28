@@ -561,6 +561,7 @@ name = "data-extraction-evaluation-toolkit"
 version = "0.3.0.dev4"
 source = { editable = "." }
 dependencies = [
+    { name = "anyio" },
     { name = "destiny-sdk" },
     { name = "diskcache" },
     { name = "dspy" },
@@ -614,12 +615,13 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", specifier = "==4.13.0" },
     { name = "destiny-sdk", extras = ["labs"], specifier = ">=0.9.1" },
     { name = "diskcache", specifier = ">=5.6.3" },
-    { name = "dspy", specifier = ">=3.2.1" },
+    { name = "dspy", specifier = "==3.2.1" },
     { name = "inquirerpy", specifier = ">=0.3.4" },
     { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "litellm", specifier = ">=1.96.2" },
+    { name = "litellm", specifier = "==1.99.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "marker-pdf", specifier = ">=1.9.1" },
     { name = "nltk", specifier = ">=3.9.1" },

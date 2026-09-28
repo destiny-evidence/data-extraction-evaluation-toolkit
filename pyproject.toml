@@ -34,12 +34,15 @@ authors = [
     {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
 dependencies = [
+    # Keep these pinned: DSPy's lazy-import behavior around anyio/litellm can
+    # cause environment-dependent import failures in notebooks when versions float.
+    "anyio==4.13.0",
     "destiny-sdk[labs]>=0.9.1",
     "diskcache>=5.6.3",
-    "dspy>=3.2.1",
+    "dspy==3.2.1",
     "inquirerpy>=0.3.4",
     "jinja2>=3.1.6",
-    "litellm>=1.96.2",
+    "litellm==1.99.0",
     "loguru>=0.7.3",
     "marker-pdf>=1.9.1",
     "nltk>=3.9.1",

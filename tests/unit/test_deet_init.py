@@ -1,0 +1,13 @@
+import importlib
+import sys
+
+
+def test_deet_import_eagerly_loads_anyio_submodules(monkeypatch):
+    for module_name in ("anyio.lowlevel", "anyio.abc", "anyio", "deet"):
+        monkeypatch.delitem(sys.modules, module_name, raising=False)
+
+    importlib.import_module("deet")
+
+    assert "anyio" in sys.modules
+    assert "anyio.abc" in sys.modules
+    assert "anyio.lowlevel" in sys.modules
