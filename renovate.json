@@ -4,7 +4,9 @@
         "config:best-practices",
         "helpers:pinGitHubActionDigests"
     ],
-    "baseBranch": "development",
+    "baseBranchPatterns": [
+        "development"
+    ],
     "minimumReleaseAge": "5 days",
     "packageRules": [
         {
