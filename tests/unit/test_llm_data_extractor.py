@@ -73,6 +73,8 @@ def mock_settings() -> MagicMock:
     mock_settings_obj.azure_api_key.get_secret_value.return_value = "test-key"
     mock_settings_obj.azure_api_base.get_secret_value.return_value = "test-base"
     mock_settings_obj.ollama_api_base = "http://localhost:11434"
+    mock_settings_obj.openai_api_key.get_secret_value.return_value = "test-openai-key"
+    mock_settings_obj.huggingface_api_key.get_secret_value.return_value = "test-hf-key"
     return mock_settings_obj
 
 
@@ -385,6 +387,10 @@ def test_call_llm(
             assert call_args.kwargs["model"] == f"azure/{config.model}"
         elif config.provider == LLMProvider.OLLAMA:
             assert call_args.kwargs["model"] == f"ollama/{config.model}"
+        elif config.provider == LLMProvider.OPENAI:
+            assert call_args.kwargs["model"] == config.model
+        elif config.provider == LLMProvider.HUGGINGFACE:
+            assert call_args.kwargs["model"] == f"huggingface/{config.model}"
         else:
             assert config.provider in LLMProvider
         assert call_args.kwargs["response_format"]["type"] == "json_schema"

@@ -62,6 +62,10 @@ def _model_string_for_tokenisation(provider: LLMProvider, model: str) -> str:
             return f"azure/{model}"
         case LLMProvider.OLLAMA:
             return f"ollama/{model}"
+        case LLMProvider.OPENAI:
+            return model
+        case LLMProvider.HUGGINGFACE:
+            return f"huggingface/{model}"
         case _:
             msg = f"Unsupported LLM provider: {provider}"
             raise ValueError(msg)

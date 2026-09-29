@@ -27,6 +27,8 @@ class LLMProvider(StrEnum):
 
     AZURE = auto()
     OLLAMA = auto()
+    OPENAI = auto()
+    HUGGINGFACE = auto()
 
 
 class LogLevel(StrEnum):
@@ -85,7 +87,20 @@ class DataExtractionSettings(BaseSettings):
     azure_api_base: Annotated[
         SecretStr | None, UI(help="Press enter to leave this unchanged")
     ] = Field(default=None, description="Base URL for azure openAI.")
-
+    # OpenAI credentials
+    openai_api_key: Annotated[
+        SecretStr | None, UI(help="Press enter to leave this unchanged")
+    ] = Field(
+        default=None,
+        description="OpenAI API key if using OpenAI provider.",
+    )
+    # Hugging Face credentials
+    huggingface_api_key: Annotated[
+        SecretStr | None, UI(help="Press enter to leave this unchanged")
+    ] = Field(
+        default=None,
+        description="Hugging Face API token if using Hugging Face provider.",
+    )
     # disk cache folder
     base_disk_cache_dir: Path = Field(
         default=(Path.home() / ".deet_cache"),
