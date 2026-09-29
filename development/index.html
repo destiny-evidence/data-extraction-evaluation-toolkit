@@ -345,6 +345,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#example-of-how-deet-is-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example of how DEET is used
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-deet" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1088,6 +1099,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#example-of-how-deet-is-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example of how DEET is used
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-deet" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1127,17 +1149,12 @@
 
 <h1 id="deet-the-data-extraction-evaluation-toolkit">deet: the Data Extraction &amp; Evaluation Toolkit</h1>
 <h2 id="what-is-deet">What is <code>deet</code></h2>
-<p><code>deet</code> is a python framework to build reproducible and well-evaluated data extraction pipelines using LLMs.</p>
-<p>It is designed for use in an evidence synthesis context, where the documents from which data is extracted are scientific papers.
-In this context, <a href="concepts/data-extraction/">data extraction</a>, is conceived in a broad sense, including:</p>
-<ol>
-<li>the categorisation of documents as relevant or not relevant according to pre-defined inclusion/exclusion criteria (<strong>screening</strong>);</li>
-<li>the categorisation of documents according to a predefined taxonomy of classes (<strong>coding</strong>);</li>
-<li>the extraction of numeric or string information from documents, such as outcomes, effect sizes, or participant characteristics (<strong>data extraction</strong>);</li>
-<li>the evaluation of the research quality of studies (<strong>critical appraisal</strong>).</li>
-</ol>
-<p><code>deet</code> is designed for data extraction for evidence synthesis in the narrower sense of <strong>3.</strong>,
-although in principle it can be used to extract any type of data from any type of document.</p>
+<p>The Data Extraction Evaluation Toolkit (DEET) is an open-source toolkit designed to support the development and evaluation of AI-assisted data extraction for evidence synthesis.</p>
+<p>Extracting structured information from research studies is one of the most time-consuming stages of the evidence synthesis process. While large language models (LLMs) and other AI methods have the potential to reduce this workload, inaccurate extraction can introduce errors into reviews and ultimately affect evidence used for research and policy decisions. Robust evaluation is therefore essential to ensure that AI tools are reliable, transparent, and fit for purpose.</p>
+<p>DEET provides an end-to-end, modular workflow for configuring, running and evaluating automated data extraction methods. It enables users to compare AI-generated outputs against human-created reference (gold standard) datasets, helping to assess the accuracy, consistency and performance of different approaches. Designed around open and FAIR (Findable, Accessible, Interoperable and Reusable) principles, DEET supports reproducible evaluation through reusable code, APIs and standardised data models.</p>
+<p>DEET is intended for researchers, evidence synthesis teams, developers and organisations interested in evaluating or developing AI-enhanced evidence synthesis workflows. Users can expect structured extraction outputs, performance metrics and transparent evaluation results that support informed decisions about the use of AI in evidence synthesis.</p>
+<h2 id="example-of-how-deet-is-used">Example of how DEET is used</h2>
+<p>Within DESTINY, DEET will be used to evaluate an AI-powered data extraction workflow for intervention studies. Researchers will compare data extracted automatically by a large language model with manually extracted reference data, identify where the AI performs well or makes errors, and use these results to improve extraction methods before they are incorporated into evidence synthesis workflows.</p>
 <h2 id="using-deet">Using deet</h2>
 <p>Standard data extraction pipelines can be executed by using <code>deet</code> as a CLI tool.
 This doesn't require any familiarity with python.</p>
