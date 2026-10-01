@@ -251,6 +251,21 @@ def test_loads_comma_csv_with_exotic_punctuation(converter, mocker):
     assert rows[0]["document_id"] == "1"
 
 
+def test_loads_semicolon_csv_with_exotic_punctuation(converter, mocker):
+    """Nonstandard csv containing exotic punctuation also loads."""
+    content = (
+        "name;document_id;abstract;num_patients\n"
+        '"Study A";1;"Smith†; Jones‰; et al.; results improved.";42\n'
+        '"Study B";2;"Cohort†; baseline‰; 12-month follow-up.";70\n'
+        '"Study C";3;"Methods†; analysis‰; limitations noted.";15\n'
+    )
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    colnames, _, _, rows = converter.load_csv("fake.csv")
+    assert "document_id" in colnames
+    assert len(rows) == 3
+    assert rows[0]["document_id"] == "1"
+
+
 # --- build_attributes ---
 def test_infers_integer_attribute(converter):
     """Integer column inferred and attribute built correctly."""
