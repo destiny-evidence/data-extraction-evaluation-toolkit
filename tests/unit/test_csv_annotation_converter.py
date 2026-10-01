@@ -228,6 +228,29 @@ def test_short_rows_padded_with_empty_strings(converter, mocker):
     assert rows[0]["about_adaptation"] == ""
 
 
+def test_loads_comma_csv_with_exotic_punctuation(converter, mocker):
+    """
+    Comma CSV whose fields contain exotic punctuation (e.g. '†', '‰') loads.
+
+    clevercsv treats any Unicode "Po" character as a candidate escape character,
+    so two distinct ones appearing before a delimiter spawn phantom escape-char
+    dialects that tie for the top score and make dialect sniffing return None.
+    The converter must still load ordinary comma-separated files.
+    Regression test for the dialect-detection failure seen on real exports.
+    """
+    content = (
+        "name,document_id,abstract,num_patients\n"
+        '"Study A",1,"Smith†, Jones‰, et al.; results improved.",42\n'
+        '"Study B",2,"Cohort†, baseline‰, 12-month follow-up.",70\n'
+        '"Study C",3,"Methods†, analysis‰, limitations noted.",15\n'
+    )
+    mocker.patch.object(Path, "open", return_value=io.StringIO(content))
+    colnames, _, _, rows = converter.load_csv("fake.csv")
+    assert "document_id" in colnames
+    assert len(rows) == 3
+    assert rows[0]["document_id"] == "1"
+
+
 # --- build_attributes ---
 def test_infers_integer_attribute(converter):
     """Integer column inferred and attribute built correctly."""
