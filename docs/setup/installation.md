@@ -224,6 +224,8 @@ Now you are ready to use `deet`. To test this, run
 deet --help
 ```
 
+If you need an optional feature such as the semantic keyword extractor, see [Installing optional features](#installing-optional-features).
+
 ### Installing from a specific branch
 
 If a feature you want to use is being actively worked on, and is not yet merged into main, you can install a specific branch of deet by appending @branch to the previous command. For example
@@ -246,6 +248,51 @@ uv sync
 ```
 
 Append @branch to the uv add command to use a specific branch of deet.
+
+## Installing optional features
+
+Some of deet's features rely on heavier libraries that are not installed by
+default. These live behind optional *extras*, which you opt into by naming them
+in square brackets.
+
+| Extra          | Enables                                                  |
+| -------------- | -------------------------------------------------------- |
+| `semantic`     | the semantic keyword extractor (`sentence-transformers`) |
+| `parsers`      | extra document parsers (`marker-pdf`, `pypandoc`)        |
+| `lang-quality` | language-quality checks (`nltk`)                         |
+
+=== "CLI users"
+
+    Add the extra in brackets before the `@ git+...` source:
+
+    ```bash
+    uv tool install "data-extraction-evaluation-toolkit[semantic] @ git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git"
+    ```
+
+=== "Package users"
+
+    Enable the extra with `--extra` when you add deet:
+
+    ```bash
+    uv add --extra semantic git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+    uv sync
+    ```
+
+=== "Contributors"
+
+    In a cloned checkout, sync the extras you need (or `--all-extras`):
+
+    ```bash
+    uv sync --extra semantic
+    ```
+
+Combine multiple extras with commas, e.g. `[semantic,parsers]` (or repeat
+`--extra`). Append `@branch` to the git URL to install extras from a specific
+branch.
+
+!!! note "The `parsers` extra also needs pandoc"
+    `parsers` installs the Python wrappers; full-text PDF parsing additionally
+    needs the pandoc system binary — see [Installing pandoc](#installing-pandoc).
 
 ## Contributors
 

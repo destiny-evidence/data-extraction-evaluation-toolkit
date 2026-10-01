@@ -1,5 +1,6 @@
 """Tests for the semantic keyword data extractor module."""
 
+import sys
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -27,10 +28,9 @@ def _make_extractor(config, chunk_emb, keyword_emb) -> SemanticKeywordDataExtrac
     """Build an extractor whose model returns the supplied embeddings in order."""
     model = MagicMock()
     model.encode.side_effect = [np.array(chunk_emb), np.array(keyword_emb)]
-    with patch(
-        "deet.extractors.keyword.semantic_keyword_extractor.SentenceTransformer",
-        return_value=model,
-    ):
+    mock_module = MagicMock()
+    mock_module.SentenceTransformer.return_value = model
+    with patch.dict(sys.modules, {"sentence_transformers": mock_module}):
         return SemanticKeywordDataExtractor(config=config)
 
 
