@@ -2,6 +2,7 @@
 
 import csv
 import io
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -91,9 +92,8 @@ def _csv_shape_ok(all_rows: list[list[str]], min_cols: int = 2) -> bool:
 
 def _sniff_and_load_csv(raw_text: str, path: Path) -> list[list[str]]:
     """Sniff csv dialect and return parsed csv rows."""
-    # import re
-    # ascii_text = re.sub(r"[^\x00-\x7F]", "", raw_text)
-    dialect = clevercsv.Sniffer().sniff(raw_text, verbose=False)
+    ascii_text = re.sub(r"[^\x00-\x7F]", "", raw_text)
+    dialect = clevercsv.Sniffer().sniff(ascii_text, verbose=False)
     if dialect is None:
         msg = f"can't detect dialect for {path.name}"
         raise UnsupportedCsvDialectError(msg)
