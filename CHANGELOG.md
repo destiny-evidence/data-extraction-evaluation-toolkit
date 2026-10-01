@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.4.0-dev.5 (2026-09-28)
+
+### Bug Fixes
+
+- Forward num_ctx to Ollama via litellm kwargs
+  ([`8505601`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/850560153fdcef820e1ddad016cfd18356917626))
+
+### Documentation
+
+- Adding citation file, version update in citation file via semantic release, readme addition
+  ([`08f4a08`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/08f4a0830f31162bd1cfdeae46db8213c555e477))
+
+- Complete truncated num_ctx docstring in DataExtractionConfig
+  ([`2ffae7b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/2ffae7b37724f1995b619332c4cded4ad3ca5ba0))
+
+### Testing
+
+- Fix ollama num_ctx test to use literal model string
+  ([`9ce44d6`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9ce44d6440a1b2b92b2452110c39cce241e20415))
+
+
 ## v0.4.0-dev.4 (2026-09-25)
 
 ### Features

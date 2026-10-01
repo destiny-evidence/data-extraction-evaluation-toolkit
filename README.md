@@ -15,14 +15,14 @@ More detailed documentation can be found here [Docs](https://destiny-evidence.gi
 ### To use the `deet` CLI
 
 ```sh
-uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git`
+uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
 deet --help
 ```
 
 ### To use `deet` as a package
 
 ```sh
-uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git`
+uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
 ```
 
 ## Using `deet`
