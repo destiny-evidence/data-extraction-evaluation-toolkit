@@ -1,6 +1,7 @@
 """Tests for the LLM data extractor module."""
 
 import json
+import time
 from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -751,3 +752,42 @@ def test_extract_from_documents_aborts_on_unsupported_model_params(
     if max_workers == 1:
         # Sequential runs must stop at the first failing document.
         assert mock_litellm_completion.call_count == 1
+
+
+def test_extract_from_documents_cancels_queued_documents_on_unsupported_params(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """
+    On the thread pool, documents still queued when the error surfaces are
+    cancelled rather than processed before the run stops.
+    """
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in range(1, 21)
+    ]
+    llm_extractor.config.max_workers = 2
+
+    def slow_unsupported_params_error(**_kwargs):
+        # Keep each call busy briefly so most documents are still queued
+        # when the first error reaches the main thread.
+        time.sleep(0.05)
+        raise _unsupported_temperature_error()
+
+    mock_litellm_completion.side_effect = slow_unsupported_params_error
+
+    with pytest.raises(UnsupportedModelParamsError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert mock_litellm_completion.call_count < len(documents) // 2

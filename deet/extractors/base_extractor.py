@@ -285,8 +285,15 @@ def _iter_completed(
                 pool.submit(process, i, document)
                 for i, document in enumerate(documents)
             ]
-            for future in as_completed(futures):
-                yield future.result()
+            try:
+                for future in as_completed(futures):
+                    yield future.result()
+            except BaseException:
+                # Leaving the pool waits for every submitted future, so drop
+                # queued documents; only those already running will finish.
+                for future in futures:
+                    future.cancel()
+                raise
 
 
 class BaseDataExtractor(ABC):
