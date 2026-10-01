@@ -35,7 +35,11 @@ from deet.data_models.extraction import (
 )
 from deet.data_models.ui_schema import UI
 from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
-from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
+from deet.exceptions import (
+    LitellmModelNotMappedError,
+    NoAbstractError,
+    UnsupportedModelParamsError,
+)
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
     LLMProvider,
@@ -379,6 +383,9 @@ class BaseDataExtractor(ABC):
         except NoAbstractError as e:
             logger.warning(f"Skipping {document.name}: {e}")
             return index, None
+        except UnsupportedModelParamsError:
+            # Config-level error: every document would fail the same way.
+            raise
         except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to process {document.name}: {e}")
             logger.debug("Error details", exc_info=True)

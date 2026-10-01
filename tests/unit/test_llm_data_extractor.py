@@ -5,6 +5,7 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import litellm
 import pytest
 from loguru import logger
 from pydantic import ValidationError
@@ -24,6 +25,7 @@ from deet.data_models.eppi import (
     EppiDocument,
 )
 from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunOutput
+from deet.exceptions import UnsupportedModelParamsError
 from deet.extractors.base_extractor import DataExtractionConfig, PromptConfig
 from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
@@ -421,6 +423,40 @@ def test_call_llm_forwards_ollama_num_ctx(
     assert call_args.kwargs["num_ctx"] == 16384
 
 
+def _unsupported_temperature_error() -> litellm.UnsupportedParamsError:
+    """Build the error litellm raises for temperature != 1 on O-series models."""
+    return litellm.UnsupportedParamsError(
+        message=(
+            "O-series models don't support temperature=0.1. "
+            "Only temperature=1 is supported. To drop unsupported openai "
+            "params from the call, set `litellm.drop_params = True`"
+        ),
+        llm_provider="openai",
+        model="o4-mini",
+    )
+
+
+def test_call_llm_raises_unsupported_model_params_error(
+    mock_litellm_completion, mock_settings, sample_eppi_attributes
+):
+    """A param rejected by the model is re-raised with an actionable message."""
+    config = DataExtractionConfig(model="o4-mini", temperature=0.1)
+    llm_extractor = create_llm_extractor(config, mock_settings)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    mock_litellm_completion.side_effect = _unsupported_temperature_error()
+
+    with pytest.raises(UnsupportedModelParamsError) as exc_info:
+        llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    message = str(exc_info.value)
+    # litellm's message is shown in full ...
+    assert str(exc_info.value.__cause__) in message
+    # ... followed by deet's guidance on how to fix it.
+    assert "o4-mini" in message
+    assert "extraction config" in message
+    assert isinstance(exc_info.value.__cause__, litellm.UnsupportedParamsError)
+
+
 def test_parse_llm_response(
     llm_extractor, sample_eppi_attributes, sample_eppi_document
 ):
@@ -679,3 +715,39 @@ def test_extract_from_documents_continues_on_error(
     assert run_output.metadata.total_input_tokens == 0
     assert run_output.metadata.total_output_tokens == 0
     assert mock_litellm_completion.call_count == 1
+
+
+@pytest.mark.parametrize("max_workers", [1, 4])
+def test_extract_from_documents_aborts_on_unsupported_model_params(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    max_workers,
+):
+    """
+    Unsupported model params abort the whole run instead of being swallowed
+    per document, both sequentially and on the thread pool.
+    """
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in (1, 2, 3)
+    ]
+    llm_extractor.config.max_workers = max_workers
+    mock_litellm_completion.side_effect = _unsupported_temperature_error()
+
+    with pytest.raises(UnsupportedModelParamsError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    if max_workers == 1:
+        # Sequential runs must stop at the first failing document.
+        assert mock_litellm_completion.call_count == 1
