@@ -9,7 +9,6 @@ from os import PathLike
 from pathlib import Path
 from typing import Literal
 
-import pypandoc
 from diskcache import Cache
 from loguru import logger
 from pdfminer.converter import TextConverter
@@ -28,6 +27,12 @@ from deet.exceptions import (
 )
 from deet.settings import get_settings
 from deet.utils.assess_text_quality import check_language
+
+try:
+    import pypandoc
+except ImportError:
+    pypandoc = None
+
 
 # CACHE init
 CACHE_DIR = get_settings().base_disk_cache_dir / "marker_parser_cache"
@@ -104,6 +109,12 @@ class ParsedOutput(BaseModel):
             str: parsed text.
 
         """
+        if not get_settings().enforce_language_quality_check:
+            logger.debug(
+                "enforce_language_quality_check is set to False. not running check."
+            )
+            return value
+
         if not check_language(value):
             logger.debug("check lang failed")
             bad_language = "Supplied text didn't pass quality check."
@@ -248,6 +259,13 @@ class PandocParser(ParserLibrary):
         **kwargs,  # noqa: ARG003
     ) -> ParsedOutput:
         """Parse file using pandoc."""
+        if pypandoc is None:
+            missing_dep = (
+                "pypandoc is not installed. install with "
+                "`pip install data-extraction-evaluation-toolkit[parsers]`."
+            )
+            raise ImportError(missing_dep)
+
         if True in [return_images, return_metadata]:
             image_meta_erro = "PandocParser can't produce images or metadata."
             raise InvalidOutputFileTypeError(image_meta_erro)
