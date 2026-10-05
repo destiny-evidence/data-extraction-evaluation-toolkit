@@ -212,10 +212,10 @@ Git is a versioning tool that is used here to install the deet package, which is
 
 If you just want to use the CLI, we recommend you install the package globally into an isolated managed environment. You can do this using `uv tool install <package>`.
 
-To install `deet`
+To install `deet` from PyPI, where it is published as `destiny-deet`
 
 ```bash
-uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv tool install destiny-deet
 ```
 
 Now you are ready to use `deet`. To test this, run
@@ -226,7 +226,7 @@ deet --help
 
 ### Installing from a specific branch
 
-If a feature you want to use is being actively worked on, and is not yet merged into main, you can install a specific branch of deet by appending @branch to the previous command. For example
+If a feature you want to use is being actively worked on, and is not yet released, you can install a specific branch of deet directly from GitHub. For example
 
 ```bash
 uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@development
@@ -241,11 +241,11 @@ You can also use deet as a python package, within another project.
 Assuming you are using UV to manage dependencies within your project, you can add deet via
 
 ```bash
-uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv add destiny-deet
 uv sync
 ```
 
-Append @branch to the uv add command to use a specific branch of deet.
+or, with pip, `pip install destiny-deet`. To use a specific branch of deet, add `git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@branch` instead.
 
 ## Contributors
 

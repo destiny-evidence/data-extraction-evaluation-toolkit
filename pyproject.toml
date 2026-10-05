@@ -11,6 +11,7 @@ dev = [
     "pytest-mock>=3.14.1",
     "pytest-recording>=0.13.4",
     "pytest>=8.4.1",
+    "python-semantic-release>=10.6.1",
     "ruff>=0.12.11",
 ]
 docs = [
@@ -33,6 +34,15 @@ authors = [
     {email = "n.loynes@ucl.ac.uk", name = "Nik Loynes"},
     {email = "s.uprety@ucl.ac.uk", name = "Sagar Uprety"},
 ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "clevercsv>=0.8.5",
     "destiny-sdk[labs]>=0.9.1",
@@ -48,17 +58,18 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
     "python-dotenv>=1.1.1",
-    "python-semantic-release>=10.6.1",
     "pyyaml>=6.0.2",
     "rapidfuzz>=3.9.0",
     "scikit-learn>=1.7.1",
     "sentence-transformers>=5.5.1",
     "tabulate>=0.9.0",
-    "toml>=0.10.2",
     "typer>=0.21.2",
 ]
 description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data models, etc. for extracting data from documents (e.g. papers) and evaluating the performance of such extraction tasks"
-name = "data-extraction-evaluation-toolkit"
+keywords = ["data extraction", "evaluation", "evidence synthesis", "llm"]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+name = "destiny-deet"
 readme = "README.md"
 requires-python = ">=3.12.11,<3.14"
 version = "0.4.0-dev.5"
@@ -74,6 +85,12 @@ parsers = [
 
 [project.scripts]
 deet = "deet.scripts.cli:main"
+
+[project.urls]
+Changelog = "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/main/CHANGELOG.md"
+Documentation = "https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/"
+Issues = "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/issues"
+Repository = "https://github.com/destiny-evidence/data-extraction-evaluation-toolkit"
 
 [tool.coverage.report]
 # This section is optional but good practice
@@ -197,5 +214,5 @@ exclude-dependencies = [
     "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
 ]
 exclude-newer = "P5D"
-no-binary-package = ["data-extraction-evaluation-toolkit"]
+no-binary-package = ["destiny-deet"]
 no-build = true

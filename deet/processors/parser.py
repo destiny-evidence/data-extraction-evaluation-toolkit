@@ -262,7 +262,7 @@ class PandocParser(ParserLibrary):
         if pypandoc is None:
             missing_dep = (
                 "pypandoc is not installed. install with "
-                "`pip install data-extraction-evaluation-toolkit[parsers]`."
+                "`pip install destiny-deet[parsers]`."
             )
             raise ImportError(missing_dep)
 
