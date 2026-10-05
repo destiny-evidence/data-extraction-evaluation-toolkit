@@ -1433,18 +1433,18 @@ the content field <code>parsed_document</code> is used to store the results of d
 <span class="n">documents</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Document</span><span class="p">(</span>
         <span class="nb">id</span><span class="o">=</span><span class="mi">12345678</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;document_1&quot;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"document_1"</span><span class="p">,</span>
         <span class="n">parsed_document</span> <span class="o">=</span> <span class="n">ParsedOutput</span><span class="p">(</span>
-            <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Document 1 content&quot;</span><span class="p">,</span>
-            <span class="n">parser</span><span class="o">=</span><span class="s2">&quot;unknown&quot;</span>
+            <span class="n">text</span><span class="o">=</span><span class="s2">"Document 1 content"</span><span class="p">,</span>
+            <span class="n">parser</span><span class="o">=</span><span class="s2">"unknown"</span>
         <span class="p">)</span>
     <span class="p">),</span>
     <span class="n">Document</span><span class="p">(</span>
         <span class="nb">id</span><span class="o">=</span><span class="mi">87654321</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;document_2&quot;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"document_2"</span><span class="p">,</span>
         <span class="n">parsed_document</span> <span class="o">=</span> <span class="n">ParsedOutput</span><span class="p">(</span>
-            <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Document 2 content&quot;</span><span class="p">,</span>
-            <span class="n">parser</span><span class="o">=</span><span class="s2">&quot;unknown&quot;</span>
+            <span class="n">text</span><span class="o">=</span><span class="s2">"Document 2 content"</span><span class="p">,</span>
+            <span class="n">parser</span><span class="o">=</span><span class="s2">"unknown"</span>
         <span class="p">)</span>
     <span class="p">)</span>
 <span class="p">]</span>
@@ -1465,14 +1465,14 @@ The following represent valid boolean attributes:</p>
 <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Attribute</span><span class="p">(</span>
         <span class="n">attribute_id</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span>
-        <span class="n">attribute_label</span><span class="o">=</span><span class="s2">&quot;relevant&quot;</span><span class="p">,</span>
-        <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Does the article discuss the effects of climate change on human health?&quot;</span><span class="p">,</span>
+        <span class="n">attribute_label</span><span class="o">=</span><span class="s2">"relevant"</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="s2">"Does the article discuss the effects of climate change on human health?"</span><span class="p">,</span>
         <span class="n">output_data_type</span><span class="o">=</span><span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span>
     <span class="p">),</span>
     <span class="n">Attribute</span><span class="p">(</span>
         <span class="n">attribute_id</span><span class="o">=</span><span class="mi">321</span><span class="p">,</span>
-        <span class="n">attribute_label</span><span class="o">=</span><span class="s2">&quot;RCT&quot;</span><span class="p">,</span>
-        <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Is the article a randomised control trial?&quot;</span><span class="p">,</span>
+        <span class="n">attribute_label</span><span class="o">=</span><span class="s2">"RCT"</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="s2">"Is the article a randomised control trial?"</span><span class="p">,</span>
         <span class="n">output_data_type</span><span class="o">=</span><span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span>
     <span class="p">)</span>
 <span class="p">]</span>
@@ -1499,9 +1499,9 @@ see <a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 <h3 id="dict">dict</h3>
 <p>dict (dictionary) attributes describe anything that can be represented by key value pairs. This could be used, for example to extract and parse tables from a study:</p>
 <div class="highlight"><pre><span></span><code><span class="n">table_dictionary</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;effect_size&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s2">&quot;standard error&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
-    <span class="s2">&quot;intervention name&quot;</span><span class="p">:</span> <span class="s2">&quot;Paracetemol&quot;</span>
+    <span class="s2">"effect_size"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">"standard error"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+    <span class="s2">"intervention name"</span><span class="p">:</span> <span class="s2">"Paracetemol"</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="admonition warning">
@@ -1519,8 +1519,8 @@ see <a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 
 <span class="n">attribute_relevance</span> <span class="o">=</span> <span class="n">Attribute</span><span class="p">(</span>
     <span class="n">attribute_id</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span>
-    <span class="n">attribute_label</span><span class="o">=</span><span class="s2">&quot;relevant&quot;</span><span class="p">,</span>
-    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Does the article discuss the effects of climate change on human health?&quot;</span><span class="p">,</span>
+    <span class="n">attribute_label</span><span class="o">=</span><span class="s2">"relevant"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Does the article discuss the effects of climate change on human health?"</span><span class="p">,</span>
     <span class="n">output_data_type</span><span class="o">=</span><span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -1538,7 +1538,7 @@ see <a href="../evaluation/#metrics-by-attribute-type">Evaluation</a>.</p>
 
 <span class="n">document</span> <span class="o">=</span> <span class="n">Document</span><span class="p">(</span>
     <span class="nb">id</span><span class="o">=</span><span class="mi">12345678</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;document 1&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"document 1"</span><span class="p">,</span>
     <span class="o">...</span>
 <span class="p">)</span>
 
@@ -1569,8 +1569,8 @@ if any of its phrases appears in the document, and matching is case-insensitive.
 Thus</p>
 <div class="highlight"><pre><span></span><code><span class="n">Attribute</span><span class="p">(</span>
     <span class="n">attribute_id</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span>
-    <span class="n">attribute_label</span><span class="o">=</span><span class="s2">&quot;relevant&quot;</span><span class="p">,</span>
-    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;climate change;global warming;greenhouse gas&quot;</span><span class="p">,</span>
+    <span class="n">attribute_label</span><span class="o">=</span><span class="s2">"relevant"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"climate change;global warming;greenhouse gas"</span><span class="p">,</span>
     <span class="n">output_data_type</span><span class="o">=</span><span class="n">AttributeType</span><span class="o">.</span><span class="n">BOOL</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
