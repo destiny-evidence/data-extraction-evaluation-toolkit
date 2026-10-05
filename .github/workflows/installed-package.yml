@@ -14,37 +14,44 @@ on:
 jobs:
   installed-package:
     # Every other job runs from a checkout, where config.yaml is findable and dev
-    # dependencies are present. This one imports the built wheel in a clean
+    # dependencies are present. This one installs the built distributions in a clean
     # environment, which is the only way packaging faults surface before release.
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout source
-        uses: actions/checkout@v7
-
-      - name: Set up python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: "0.12.3"
+          version: "0.12.21"
 
       - name: Build both distributions
         # The release builds both, and package-data reaching the sdist is
         # setuptools-version-dependent, so neither is safe to assume.
         run: uv build --out-dir dist --no-config
 
-      - name: Write the import probe
+      - name: Check distribution metadata
+        # The same check PyPI applies on upload, e.g. that the README renders.
+        run: uvx twine check --strict dist/*
+
+      - name: Write the probe
         run: |
           cat > /tmp/probe.py << 'EOF'
+          from importlib.metadata import version
+          from importlib.resources import files
+
           import deet
-          print("Import OK")
+
+          assert (files("deet.prompts") / "system_prompt.txt").is_file()
+          templates = files("deet.ui.terminal.templates")
+          assert any(templates.joinpath("project").iterdir())
+          assert any(templates.joinpath("extraction").iterdir())
+          print(f"destiny-deet {version('destiny-deet')}: import and package data OK")
           EOF
 
-      - name: Import each distribution from outside the source tree
+      - name: Install each distribution outside the source tree
         working-directory: /tmp
         run: |
           for artifact in "$GITHUB_WORKSPACE"/dist/*; do
@@ -53,5 +60,7 @@ jobs:
             uv venv "/tmp/venv-$name" --python 3.12
             uv pip install --python "/tmp/venv-$name/bin/python" "$artifact"
             "/tmp/venv-$name/bin/python" /tmp/probe.py
+            "/tmp/venv-$name/bin/deet" --version
+            "/tmp/venv-$name/bin/deet" --help
             echo "::endgroup::"
           done
