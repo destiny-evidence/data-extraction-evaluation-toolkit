@@ -57,7 +57,7 @@ jobs:
           for artifact in "$GITHUB_WORKSPACE"/dist/*; do
             name=$(basename "$artifact")
             echo "::group::$name"
-            uv venv "/tmp/venv-$name" --python 3.12
+            uv venv "/tmp/venv-$name" --python 3.12.11
             uv pip install --python "/tmp/venv-$name/bin/python" "$artifact"
             "/tmp/venv-$name/bin/python" /tmp/probe.py
             "/tmp/venv-$name/bin/deet" --version
