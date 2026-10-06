@@ -718,6 +718,62 @@ def test_extract_from_documents_continues_on_error(
     assert mock_litellm_completion.call_count == 1
 
 
+def test_call_llm_leaves_unknown_errors_unchanged(
+    llm_extractor, mock_litellm_completion, sample_eppi_attributes
+):
+    """An error that is not in the registry is re-raised as it is."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    error = ValueError("LLM call failed")
+    mock_litellm_completion.side_effect = error
+
+    with pytest.raises(ValueError, match="LLM call failed") as exc_info:
+        llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    assert exc_info.value is error
+
+
+def test_extract_from_documents_warns_and_continues_on_skipped_document(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """A known per-document error skips that document with a warning."""
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in (1, 2)
+    ]
+    content_filter_error = litellm.ContentPolicyViolationError(
+        message="The response was filtered.",
+        model="gpt-4o",
+        llm_provider="azure",
+    )
+    mock_litellm_completion.side_effect = [
+        content_filter_error,
+        mock_litellm_completion.return_value,
+    ]
+
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=documents,
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert [d.document.name for d in run_output.annotated_documents] == ["Doc 2"]
+    skipped = [m for m in messages if "Skipping Doc 1" in str(m)]
+    assert len(skipped) == 1
+    assert skipped[0].record["level"].name == "WARNING"
+    assert "content filter" in str(skipped[0])
+
+
 @pytest.mark.parametrize("max_workers", [1, 4])
 def test_extract_from_documents_aborts_on_unsupported_model_params(
     llm_extractor,

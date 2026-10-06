@@ -28,8 +28,8 @@ from deet.data_models.documents import (
 from deet.data_models.extraction import (
     DocumentExtractionResult,
 )
-from deet.exceptions import UnsupportedModelParamsError
 from deet.extractors.base_extractor import BaseDataExtractor, DataExtractionConfig
+from deet.extractors.llm_errors import translate_llm_error
 from deet.settings import (
     DataExtractionSettings,
     LLMProvider,
@@ -391,17 +391,11 @@ class LLMDataExtractor(BaseDataExtractor):
 
         try:
             response = litellm.completion(**completion_kwargs)
-        except litellm.UnsupportedParamsError as e:
-            # Show litellm's message verbatim (no parsing, so it survives
-            # wording changes) and follow it with deet-specific guidance.
-            error_msg = (
-                f"{e}\n\n"
-                f"Model '{self.model}' does not support one of the configured "
-                "parameters (see the error above). Change that value in your "
-                "extraction config and re-run. (litellm's `drop_params` option "
-                "is not exposed by deet.)"
-            )
-            raise UnsupportedModelParamsError(error_msg) from e
+        except Exception as e:
+            known_error = translate_llm_error(e, model=self.model)
+            if known_error is None:
+                raise
+            raise known_error from e
 
         msg = response.choices[0].message
 

@@ -3,7 +3,33 @@
 from deet.data_models.base import AttributeType
 
 
-class MissingDocumentError(Exception):
+class KnownError(Exception):
+    """
+    Base for errors deet recognises and has a user-facing message for.
+
+    Subclass one of the two labels below rather than this class directly.
+    Third-party errors are mapped onto these in
+    ``deet.extractors.llm_errors.KNOWN_LLM_ERRORS``.
+    """
+
+
+class RunAbortingError(KnownError):
+    """
+    A known error caused by the setup, so every document would fail the same way.
+
+    The run is stopped and the message is shown to the user.
+    """
+
+
+class DocumentSkippedError(KnownError):
+    """
+    A known error caused by a single document.
+
+    The document is skipped with a warning and the run continues.
+    """
+
+
+class MissingDocumentError(DocumentSkippedError):
     """
     Raise when looking up a document by id fails.
 
@@ -13,7 +39,7 @@ class MissingDocumentError(Exception):
     """
 
 
-class DuplicateAnnotationError(Exception):
+class DuplicateAnnotationError(DocumentSkippedError):
     """
     Raise when multiple annotations for a single attribute are present.
 
@@ -23,7 +49,7 @@ class DuplicateAnnotationError(Exception):
     """
 
 
-class InvalidInputFileTypeError(Exception):
+class InvalidInputFileTypeError(RunAbortingError):
     """
     Raise when user supplies a not permitted input file type.
 
@@ -33,7 +59,7 @@ class InvalidInputFileTypeError(Exception):
     """
 
 
-class InvalidOutputFileTypeError(Exception):
+class InvalidOutputFileTypeError(RunAbortingError):
     """
     Raise when user supplies a not permitted output file.
 
@@ -43,7 +69,7 @@ class InvalidOutputFileTypeError(Exception):
     """
 
 
-class InvalidFileTypeError(Exception):
+class InvalidFileTypeError(RunAbortingError):
     """
     Raise when user supplies a not permitted file.
 
@@ -53,7 +79,7 @@ class InvalidFileTypeError(Exception):
     """
 
 
-class FileParserMismatchError(Exception):
+class FileParserMismatchError(RunAbortingError):
     """
     Raise when we have an input-file <> parser mismatch.
 
@@ -73,7 +99,7 @@ class MalformedLanguageError(Exception):
     """
 
 
-class EmptyPdfExtractionError(Exception):
+class EmptyPdfExtractionError(DocumentSkippedError):
     """
     Raise when PDF parsing yields no extractable text.
 
@@ -109,7 +135,7 @@ class BadDocumentIdError(Exception):
     """
 
 
-class JsonStyleError(Exception):
+class JsonStyleError(RunAbortingError):
     """
     Raise when a json containing document-reference-linkages
     is incorrectly formatted.
@@ -120,7 +146,7 @@ class JsonStyleError(Exception):
     """
 
 
-class NoAbstractError(Exception):
+class NoAbstractError(DocumentSkippedError):
     """
     Raise when we can't find an abstract in our citation info.
 
@@ -168,7 +194,7 @@ class LitellmModelNotMappedError(Exception):
     """
 
 
-class UnsupportedModelParamsError(Exception):
+class UnsupportedModelParamsError(RunAbortingError):
     """
     Raised when the configured model rejects a configured LLM parameter.
 
@@ -178,5 +204,29 @@ class UnsupportedModelParamsError(Exception):
     """
 
 
-class SplitsValidationError(Exception):
+class LLMAuthenticationError(RunAbortingError):
+    """Raised when the provider rejects the configured credentials or access."""
+
+
+class LLMModelNotFoundError(RunAbortingError):
+    """Raised when the provider does not know the configured model or deployment."""
+
+
+class LLMContentFilterError(DocumentSkippedError):
+    """Raised when the provider's content filter rejects a document."""
+
+
+class LLMContextWindowExceededError(DocumentSkippedError):
+    """Raised when a document does not fit in the model's context window."""
+
+
+class LLMRateLimitError(DocumentSkippedError):
+    """Raised when the provider rate-limits the request for a document."""
+
+
+class LLMTimeoutError(DocumentSkippedError):
+    """Raised when the request for a document times out."""
+
+
+class SplitsValidationError(RunAbortingError):
     """Raised when invalid allocation of documents to splits is attemped."""

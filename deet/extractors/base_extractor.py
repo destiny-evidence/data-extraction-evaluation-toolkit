@@ -36,9 +36,9 @@ from deet.data_models.extraction import (
 from deet.data_models.ui_schema import UI
 from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import (
+    DocumentSkippedError,
     LitellmModelNotMappedError,
-    NoAbstractError,
-    UnsupportedModelParamsError,
+    RunAbortingError,
 )
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
@@ -356,6 +356,7 @@ class BaseDataExtractor(ABC):
         ``max_workers == 1``, otherwise on a ``ThreadPoolExecutor`` worker.
 
         Catches per-document errors so one bad document doesn't crash the whole batch.
+        A ``RunAbortingError`` is re-raised, since it would fail every document.
 
         Args:
             index: Position of this document in the input list, echoed back in the
@@ -387,12 +388,12 @@ class BaseDataExtractor(ABC):
                 payload=document.context,
                 context_type=context_type,
             )
-        except NoAbstractError as e:
-            logger.warning(f"Skipping {document.name}: {e}")
-            return index, None
-        except UnsupportedModelParamsError:
+        except RunAbortingError:
             # Config-level error: every document would fail the same way.
             raise
+        except DocumentSkippedError as e:
+            logger.warning(f"Skipping {document.name}: {e}")
+            return index, None
         except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to process {document.name}: {e}")
             logger.debug("Error details", exc_info=True)
@@ -434,9 +435,12 @@ class BaseDataExtractor(ABC):
         order regardless of completion order.
         A document that's missing what it needs for the chosen context type is skipped
         with a warning.
-        Failures to extract from documents
-        (e.g. because of misconfigured llm settings or content policy violations)
+        Failures to extract from a single document
+        (e.g. because of content policy violations)
         are warned about, so that they do not crash a whole run.
+        Failures that would affect every document
+        (e.g. because of misconfigured llm settings)
+        stop the run with a ``RunAbortingError``.
 
 
         Args:

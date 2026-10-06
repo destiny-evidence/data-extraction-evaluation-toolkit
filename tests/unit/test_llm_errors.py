@@ -1,0 +1,129 @@
+"""Tests for the registry of known litellm errors."""
+
+import httpx
+import litellm
+import pytest
+
+from deet.exceptions import (
+    DocumentSkippedError,
+    LLMAuthenticationError,
+    LLMContentFilterError,
+    LLMContextWindowExceededError,
+    LLMModelNotFoundError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+    RunAbortingError,
+    UnsupportedModelParamsError,
+)
+from deet.extractors.llm_errors import (
+    KNOWN_LLM_ERRORS,
+    UNSUPPORTED_PARAM_CODES,
+    translate_llm_error,
+)
+
+_COMMON = {"message": "provider said no", "model": "o4-mini", "llm_provider": "openai"}
+_FORBIDDEN_RESPONSE = httpx.Response(
+    403, request=httpx.Request("POST", "https://example.invalid")
+)
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_type", "expected_label"),
+    [
+        (
+            litellm.UnsupportedParamsError(**_COMMON),
+            UnsupportedModelParamsError,
+            RunAbortingError,
+        ),
+        (
+            litellm.AuthenticationError(**_COMMON),
+            LLMAuthenticationError,
+            RunAbortingError,
+        ),
+        (
+            litellm.PermissionDeniedError(**_COMMON, response=_FORBIDDEN_RESPONSE),
+            LLMAuthenticationError,
+            RunAbortingError,
+        ),
+        (
+            litellm.NotFoundError(**_COMMON),
+            LLMModelNotFoundError,
+            RunAbortingError,
+        ),
+        (
+            litellm.ContentPolicyViolationError(**_COMMON),
+            LLMContentFilterError,
+            DocumentSkippedError,
+        ),
+        (
+            litellm.ContextWindowExceededError(**_COMMON),
+            LLMContextWindowExceededError,
+            DocumentSkippedError,
+        ),
+        (
+            litellm.RateLimitError(**_COMMON),
+            LLMRateLimitError,
+            DocumentSkippedError,
+        ),
+        (
+            litellm.Timeout(**_COMMON),
+            LLMTimeoutError,
+            DocumentSkippedError,
+        ),
+    ],
+)
+def test_translate_llm_error_known_errors(error, expected_type, expected_label):
+    """Each known litellm error becomes its deet error with the right label."""
+    translated = translate_llm_error(error, model="o4-mini")
+
+    assert type(translated) is expected_type
+    assert isinstance(translated, expected_label)
+    # litellm's message is shown in full, followed by deet's guidance.
+    message = str(translated)
+    assert message.startswith(f"{error}\n\n")
+    assert len(message) > len(f"{error}\n\n")
+    assert "{model}" not in message
+
+
+@pytest.mark.parametrize("code", sorted(UNSUPPORTED_PARAM_CODES))
+def test_translate_llm_error_provider_side_unsupported_param(code):
+    """A provider 400 with an unsupported-parameter code stops the run."""
+    error = litellm.BadRequestError(
+        **_COMMON, body={"code": code, "param": "temperature"}
+    )
+
+    translated = translate_llm_error(error, model="my-deployment")
+
+    assert type(translated) is UnsupportedModelParamsError
+    assert "my-deployment" in str(translated)
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        ValueError("LLM call failed"),
+        litellm.BadRequestError(**_COMMON),
+        litellm.BadRequestError(**_COMMON, body={"code": "something_else"}),
+        litellm.APIConnectionError(**_COMMON),
+    ],
+)
+def test_translate_llm_error_unknown_errors(error):
+    """Errors that are not in the registry are left for the caller to handle."""
+    assert translate_llm_error(error, model="o4-mini") is None
+
+
+def test_known_llm_errors_have_a_label():
+    """Every entry resolves to exactly one of the stop/skip labels."""
+    for known in KNOWN_LLM_ERRORS:
+        assert issubclass(known.target, RunAbortingError | DocumentSkippedError)
+
+
+def test_known_llm_errors_are_all_reachable():
+    """No entry is shadowed by an earlier unconditional entry for a parent type."""
+    unconditional = KNOWN_LLM_ERRORS[0].matches
+    for position, known in enumerate(KNOWN_LLM_ERRORS):
+        for earlier in KNOWN_LLM_ERRORS[:position]:
+            shadowed = earlier.matches is unconditional and issubclass(
+                known.source, earlier.source
+            )
+            assert not shadowed, f"{known.source.__name__} is unreachable"

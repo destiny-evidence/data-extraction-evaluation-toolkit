@@ -18,7 +18,7 @@ from deet.data_models.extraction import (
 from deet.data_models.processed_gold_standard_annotations import ProcessedAnnotationData
 from deet.data_models.project import DeetProject, ExperimentArtefacts
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
-from deet.exceptions import UnsupportedModelParamsError
+from deet.exceptions import RunAbortingError
 from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.extractor_registry import get_data_extractor
 from deet.processors.directory_processor import create_documents_from_directory
@@ -236,7 +236,7 @@ def run_extraction_pipeline(  # noqa: PLR0913
                 document_parsing=document_parsing,
                 show_progress=True,
             )
-        except UnsupportedModelParamsError as e:
+        except RunAbortingError as e:
             fail_with_message(str(e))
     stage_durations[ExtractionPipelineStage.llm_extraction] = stage_timer.seconds
 

@@ -10,9 +10,10 @@ import yaml  # type:ignore[import-untyped]
 from typer.testing import CliRunner
 
 from deet.data_models.project import DeetProject
+from deet.exceptions import JsonStyleError
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import SupportedImportFormat
-from deet.scripts.cli import app
+from deet.scripts.cli import app, main
 from deet.scripts.typer_context import CLIState, project_required
 from deet.settings import DataExtractionSettings
 from deet.utils.text import slugify
@@ -594,3 +595,15 @@ def test_version_short_flag() -> None:
     result = runner.invoke(app, ["-v"])
     assert result.exit_code == 0
     assert version("data-extraction-evaluation-toolkit") in result.output
+
+
+def test_main_reports_run_aborting_error_without_traceback(capsys) -> None:
+    """A RunAbortingError escaping a command is printed and exits with code 1."""
+    with (
+        patch("deet.scripts.cli.app", side_effect=JsonStyleError("bad link map")),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main()
+
+    assert exc_info.value.code == 1
+    assert "bad link map" in capsys.readouterr().err
