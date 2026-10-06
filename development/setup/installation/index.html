@@ -590,6 +590,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#installing-optional-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing optional features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#contributors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1465,6 +1476,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#installing-optional-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing optional features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#contributors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1740,6 +1762,7 @@ This is a test of *pandoc*.
 <p>Now you are ready to use <code>deet</code>. To test this, run</p>
 <div class="highlight"><pre><span></span><code>deet<span class="w"> </span>--help
 </code></pre></div>
+<p>If you need an optional feature such as the semantic keyword extractor, see <a href="#installing-optional-features">Installing optional features</a>.</p>
 <h3 id="installing-from-a-specific-branch">Installing from a specific branch</h3>
 <p>If a feature you want to use is being actively worked on, and is not yet merged into main, you can install a specific branch of deet by appending @branch to the previous command. For example</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@development
@@ -1752,6 +1775,60 @@ This is a test of *pandoc*.
 uv<span class="w"> </span>sync
 </code></pre></div>
 <p>Append @branch to the uv add command to use a specific branch of deet.</p>
+<h2 id="installing-optional-features">Installing optional features</h2>
+<p>Some of deet's features rely on heavier libraries that are not installed by
+default. These live behind optional <em>extras</em>, which you opt into by naming them
+in square brackets.</p>
+<table>
+<thead>
+<tr>
+<th>Extra</th>
+<th>Enables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>semantic</code></td>
+<td>the semantic keyword extractor (<code>sentence-transformers</code>)</td>
+</tr>
+<tr>
+<td><code>parsers</code></td>
+<td>extra document parsers (<code>marker-pdf</code>, <code>pypandoc</code>)</td>
+</tr>
+<tr>
+<td><code>lang-quality</code></td>
+<td>language-quality checks (<code>nltk</code>)</td>
+</tr>
+</tbody>
+</table>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><input id="__tabbed_6_3" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">CLI users</label><label for="__tabbed_6_2">Package users</label><label for="__tabbed_6_3">Contributors</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Add the extra in brackets before the <code>@ git+...</code> source:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s2">"data-extraction-evaluation-toolkit[semantic] @ git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git"</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Enable the extra with <code>--extra</code> when you add deet:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>--extra<span class="w"> </span>semantic<span class="w"> </span>git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv<span class="w"> </span>sync
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>In a cloned checkout, sync the extras you need (or <code>--all-extras</code>):</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>semantic
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Combine multiple extras with commas, e.g. <code>[semantic,parsers]</code> (or repeat
+<code>--extra</code>). Append <code>@branch</code> to the git URL to install extras from a specific
+branch.</p>
+<div class="admonition note">
+<p class="admonition-title">The <code>parsers</code> extra also needs pandoc</p>
+<p><code>parsers</code> installs the Python wrappers; full-text PDF parsing additionally
+needs the pandoc system binary — see <a href="#installing-pandoc">Installing pandoc</a>.</p>
+</div>
 <h2 id="contributors">Contributors</h2>
 <p>If you want to contribute to deet, you will want to clone the repository.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:destiny-evidence/data-extraction-evaluation-toolkit.git<span class="w"> </span><span class="c1"># SSH</span>
@@ -1763,7 +1840,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://github.com/desti
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync
 </code></pre></div>
 <h3 id="activate-your-virtual-environment">Activate your virtual environment</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Windows</label><label for="__tabbed_6_2">Mac/Linux</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Windows</label><label for="__tabbed_7_2">Mac/Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>.venv/Scripts/activate
