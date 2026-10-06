@@ -70,6 +70,8 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
         """
         payload = self._resolve_payload(payload=payload, md_path=md_path)
 
+        self._select_attributes(attributes, filter_attribute_ids)
+
         context = self._prepare_context(payload=payload, context_type=context_type)
 
         all_annotations = []
