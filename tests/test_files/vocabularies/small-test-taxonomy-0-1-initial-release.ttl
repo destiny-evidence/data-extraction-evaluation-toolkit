@@ -9,7 +9,9 @@
 <https://vocab.evidence-repository.org/minitest/subj/MINT000004> a skos:Concept ;
     skos:broader <https://vocab.evidence-repository.org/minitest/subj/MINT000003> ;
     skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
-    skos:prefLabel "Malaria" .
+    skos:prefLabel "Malaria" ;
+    skos:altLabel "Plasmodium infection" ;
+    skos:altLabel "mosquito-borne fever" .
 
 <https://vocab.evidence-repository.org/minitest/subj/MINT000005> a skos:Concept ;
     skos:broader <https://vocab.evidence-repository.org/minitest/subj/MINT000003> ;
@@ -25,7 +27,9 @@
     skos:inScheme <https://vocab.evidence-repository.org/minitest/subj> ;
     skos:narrower <https://vocab.evidence-repository.org/minitest/subj/MINT000004>,
         <https://vocab.evidence-repository.org/minitest/subj/MINT000005> ;
-    skos:prefLabel "Infectious diseases" .
+    skos:prefLabel "Infectious diseases" ;
+    skos:definition "Diseases caused by pathogenic microorganisms transmitted between humans or from animals." ;
+    skos:scopeNote "Includes vector-borne, waterborne, and airborne infectious diseases." .
 
 <https://vocab.evidence-repository.org/minitest/subj> a skos:ConceptScheme ;
     dct:description "Top-level research subject areas and their sub-topics" ;

@@ -125,7 +125,7 @@ class Concept(BaseModel):
                 f" from fields: {fields}"
             )
             raise ValueError(empty)
-        return ". ".join(parts)
+        return "\n ".join(parts)
 
 
 class ConceptMappingRow(BaseModel):
