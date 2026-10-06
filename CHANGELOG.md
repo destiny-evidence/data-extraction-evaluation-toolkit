@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v0.4.0-dev.7 (2026-10-06)
+
+### Features
+
+- Add Windows one-line installer
+  ([#428](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/428),
+  [`7ad0851`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/7ad0851e58d0ef7ef19fbd731ea8f7794ae0efa0))
+
+
 ## v0.4.0-dev.6 (2026-10-06)
 
 ### Bug Fixes
