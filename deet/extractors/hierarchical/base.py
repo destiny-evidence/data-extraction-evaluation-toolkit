@@ -5,7 +5,7 @@ from pathlib import Path
 
 from deet.data_models.base import Attribute
 from deet.data_models.documents import ContextType, Document
-from deet.data_models.extraction import ExtractionRunOutput
+from deet.data_models.extraction import DocumentParsingStats, ExtractionRunOutput
 from deet.data_models.taxonomy import ConceptScheme
 from deet.extractors.llm_data_extractor import LLMDataExtractor
 
@@ -29,6 +29,7 @@ class VocabularyLLMExtractor(LLMDataExtractor):
         output_file: Path | None = None,
         context_type: ContextType | None = None,
         prompt_outfile: Path | None = None,
+        document_parsing: dict[str, DocumentParsingStats] | None = None,
         *,
         show_progress: bool = False,
     ) -> ExtractionRunOutput:

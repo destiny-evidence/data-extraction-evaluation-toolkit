@@ -7,6 +7,9 @@ from rich.pretty import pretty_repr
 
 from deet.data_models.base import (
     Attribute,
+    BaseLLMResponse,
+    LLMResponseSchema,
+    build_llm_response_model,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -94,13 +97,15 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                 else:
                     response_model = LLMResponseSchema
                 llm_response, messages, output_tokens, input_tokens = self._call_llm(
-                    prompt=prompt
+                    prompt=prompt, response_model=response_model
                 )
                 all_messages.extend(messages)
                 total_input_tokens += input_tokens
                 total_output_tokens += output_tokens
                 annotations = self._parse_llm_response(
-                    response_content=llm_response, attributes=level_attributes
+                    response_content=llm_response,
+                    attributes=level_attributes,
+                    response_model=response_model,
                 )
                 logger.debug(
                     "Model returned the following annotations:\n{}",
