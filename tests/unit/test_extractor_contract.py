@@ -1,6 +1,7 @@
 """Test that all extractors implement desired behaviour."""
 
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -12,9 +13,7 @@ from deet.extractors.extractor_registry import get_data_extractor
 def extractor(request):
     """Each registered extractor, constructed via the registry."""
     config = DataExtractionConfig(method=request.param)
-    with patch(
-        "deet.extractors.keyword.semantic_keyword_extractor.SentenceTransformer"
-    ):
+    with patch.dict(sys.modules, {"sentence_transformers": MagicMock()}):
         return get_data_extractor(config=config)
 
 
