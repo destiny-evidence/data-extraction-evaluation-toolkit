@@ -412,6 +412,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#quick-install-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick install (Windows)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#basic-setup-and-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1298,6 +1309,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#quick-install-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick install (Windows)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#basic-setup-and-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1563,6 +1585,30 @@
 
 <h1 id="installation">Installation</h1>
 <p>This page shows different ways to install <code>deet</code> across platforms and use-cases</p>
+<h2 id="quick-install-windows">Quick install (Windows)</h2>
+<p>Windows users can install <code>deet</code> and everything it needs - <a href="https://git-scm.com/">git</a>,
+<a href="https://docs.astral.sh/uv/">uv</a>, <a href="https://pandoc.org/">pandoc</a>, and <code>deet</code> itself - with a single
+command. Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">irm </span><span class="n">https</span><span class="p">://</span><span class="n">raw</span><span class="p">.</span><span class="n">githubusercontent</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">destiny-evidence</span><span class="p">/</span><span class="n">data-extraction-evaluation-toolkit</span><span class="p">/</span><span class="n">development</span><span class="p">/</span><span class="n">install</span><span class="p">.</span><span class="n">ps1</span> <span class="p">|</span> <span class="nb">iex</span>
+</code></pre></div>
+<p>This should install deet, and all its dependencies (unless you already have them). When it finishes, run <code>deet --help</code> to check.</p>
+<p>It is a plain PowerShell script — you can
+<a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/development/install.ps1">read it first</a>
+before piping it to <code>iex</code>.</p>
+<details class="note">
+<summary>Options (branch, skipping pandoc, forcing a reinstall)</summary>
+<p>To install from a specific branch or tag — for a feature that is not yet released — fetch the
+script first so it can take arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="p">&amp;</span> <span class="p">(</span><span class="no">[scriptblock]</span><span class="p">::</span><span class="n">Create</span><span class="p">((</span><span class="nb">irm </span><span class="n">https</span><span class="p">://</span><span class="n">raw</span><span class="p">.</span><span class="n">githubusercontent</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">destiny-evidence</span><span class="p">/</span><span class="n">data-extraction-evaluation-toolkit</span><span class="p">/</span><span class="n">development</span><span class="p">/</span><span class="n">install</span><span class="p">.</span><span class="n">ps1</span><span class="p">)))</span> <span class="n">-Ref</span> <span class="n">development</span>
+</code></pre></div>
+<p>Other flags:</p>
+<ul>
+<li><code>-SkipPandoc</code> — skip pandoc, if you only work with abstracts or pre-processed markdown.</li>
+<li><code>-Force</code> — reinstall <code>deet</code> even if it is already present (use this to upgrade).</li>
+</ul>
+</details>
+<p>If you would rather install each piece yourself — or you are on macOS or Linux — follow the manual
+steps below.</p>
 <h2 id="basic-setup-and-dependencies">Basic setup and dependencies</h2>
 <h3 id="accessing-the-terminal">Accessing the terminal</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">Mac/Linux</label></div>
