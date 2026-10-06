@@ -215,7 +215,6 @@ class DataExtractionConfig(BaseModel):
         description="Concept fields used to set prompts from vocabulary.",
     )
 
-
     # Evaluation
     edit_distance_match_threshold: float = Field(
         default=DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD,
