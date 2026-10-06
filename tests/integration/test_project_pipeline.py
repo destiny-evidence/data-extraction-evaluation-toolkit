@@ -50,6 +50,7 @@ def runner():
 INTEGRATION_DATASETS = [
     Path(__file__).parent / "datasets/ebmnlp_with_metadata",
     Path(__file__).parent / "datasets/alzped",
+    Path(__file__).parent / "datasets/climate_health_taxonomy",
 ]
 
 
@@ -94,14 +95,29 @@ def initialised_project_workspace(
     project_dir.mkdir(parents=True)
     os.chdir(project_dir)
 
+    # Copy everything from the dataset folder into the project dir so that
+    # relative paths in extraction_config.yaml (vocab files, link_map, etc.)
+    # resolve correctly at runtime.
+    shutil.copytree(dataset_base_path, project_dir, dirs_exist_ok=True)
+
     # Programmatically mock a completed wizard setup matching the dataset
     project = DeetProject(
         name=project_name,
         gold_standard_data_path=dataset_base_path / dataset_config.gold_standard_file,
         gold_standard_data_format=dataset_config.gold_standard_format,
-        pdf_dir=dataset_base_path / dataset_config.pdf_dir,
+        pdf_dir=project_dir / dataset_config.pdf_dir
+        if dataset_config.pdf_dir
+        else None,
     )
     project.setup()
+
+    # setup() generates prompt_definitions.csv from the gold standard; overwrite
+    # with the dataset's custom prompts afterwards so they take effect.
+    if dataset_config.prompt_csv:
+        shutil.copy(
+            project_dir / dataset_config.prompt_csv,
+            project.prompt_csv_path,
+        )
 
     # Configure extraction to handle long documents
     config_path = project.config_path
@@ -189,8 +205,11 @@ def test_initialise_project_via_wizard(
             )
             virtual_keyboard.press("\r")
 
-            # She enters the path to her pdfs
-            virtual_keyboard.press(f"{dataset_base_path / dataset_config.pdf_dir}\r")
+            # She enters the path to her pdfs (or skips if dataset has none)
+            if dataset_config.pdf_dir:
+                virtual_keyboard.press(
+                    f"{dataset_base_path / dataset_config.pdf_dir}\r"
+                )
             virtual_keyboard.press("\r")
 
             # She then sees a splash screen informing her on the collection of API keys
@@ -245,13 +264,12 @@ def test_linking_with_map(
     initialised_project_workspace,
 ):
     """Test whether Alice can link documents."""
+    if not dataset_config.link_map:
+        pytest.skip("dataset has no link_map")
+
     # Alice makes sure she is in the project directory she created on project init
     project_dir = tmp_project_workspace / dataset_base_path.name
     os.chdir(project_dir)
-    #  Alice adds the necessary metadata for her files to be linked
-    shutil.copy(
-        dataset_base_path / dataset_config.link_map, project_dir / "link_map.csv"
-    )
 
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0
@@ -293,18 +311,6 @@ def test_extraction_without_evaluating(
     os.chdir(project_dir)
     deet_project = DeetProject.load()
 
-    #  Alice adds the necessary metadata for her files to be linked
-    if dataset_config.link_map:
-        shutil.copy(
-            dataset_base_path / dataset_config.link_map, deet_project.link_map_path
-        )
-
-    # Alice adds her own custom prompts for the attributes she wants to extract
-    if dataset_config.prompt_csv:
-        shutil.copy(
-            dataset_base_path / dataset_config.prompt_csv, deet_project.prompt_csv_path
-        )
-
     # Alice links her documents
     if dataset_config.link_map:
         result = runner.invoke(app, ["project", "link"])
@@ -314,7 +320,7 @@ def test_extraction_without_evaluating(
     # to generate extractions for those documents
     # without trying to evaluate these
     config_path = (
-        dataset_base_path / dataset_config.extraction_config
+        project_dir / dataset_config.extraction_config
         if dataset_config.extraction_config
         else deet_project.config_path
     )
@@ -372,18 +378,13 @@ def test_extraction_without_evaluating_or_linking(
     os.chdir(project_dir)
     deet_project = DeetProject.load()
 
-    # Alice adds her own custom prompts for the attributes she wants to extract
-    shutil.copy(
-        dataset_base_path / dataset_config.prompt_csv, deet_project.prompt_csv_path
-    )
-
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0
 
     # Alice doesn't want to bother linking yet, she just extracts directly
     # from her texts.
     config_path = (
-        dataset_base_path / dataset_config.extraction_config
+        project_dir / dataset_config.extraction_config
         if dataset_config.extraction_config
         else deet_project.config_path
     )
@@ -436,25 +437,13 @@ def test_extraction_with_evaluation(
     os.chdir(project_dir)
     deet_project = DeetProject.load()
 
-    #  Alice adds the necessary metadata for her files to be linked
-    if dataset_config.link_map:
-        shutil.copy(
-            dataset_base_path / dataset_config.link_map, deet_project.link_map_path
-        )
-
-    # Alice adds her own custom prompts for the attributes she wants to extract
-    if dataset_config.prompt_csv:
-        shutil.copy(
-            dataset_base_path / dataset_config.prompt_csv, deet_project.prompt_csv_path
-        )
-
     # Alice links her documents
     if dataset_config.link_map:
         result = runner.invoke(app, ["project", "link"])
         assert result.exit_code == 0
 
     config_path = (
-        dataset_base_path / dataset_config.extraction_config
+        project_dir / dataset_config.extraction_config
         if dataset_config.extraction_config
         else deet_project.config_path
     )
