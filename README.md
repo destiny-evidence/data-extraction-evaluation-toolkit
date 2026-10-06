@@ -17,14 +17,14 @@ More detailed documentation can be found here [Docs](https://destiny-evidence.gi
 ### To use the `deet` CLI
 
 ```sh
-uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git`
+uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
 deet --help
 ```
 
 ### To use `deet` as a package
 
 ```sh
-uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git`
+uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
 ```
 
 ## Using `deet`
@@ -92,10 +92,18 @@ Then, from the root of the repository, run `mkdocs serve --strict` from the root
 
 The documentation website is available at [https://destiny-evidence.github.io/deet](https://destiny-evidence.github.io/deet).
 
+## Citation
+
+If you use `deet` in your work, please cite it as:
+
+> Finnerty Mutlu, A. N., Loynes, N., Uprety, S., Callaghan, M., Danilenko, D., Gopal, I., Hair, K., Molyneux, S., Moss, H., Repke, T., Schmidt, L., Soliman, N., Tezok, K. O. T. (Miyaka)., Vairon, J., & Thomas, J. (2026). Data Extraction Evaluation Toolkit (version 0.4.0-dev.2.) [Computer software]. Zenodo. <https://doi.org/10.5281/zenodo.22897649>
+
 ## Acknowledgements
 
 We acknowledge with thanks funding from the following funders and projects:
 
-- **Wellcome Trust**
-- **Education Endowment Foundation**
-- **Economic and Social Research Council (ESRC)**
+- Digital Evidence Synthesis Tool INnovation for Yielding Improvements in Climate & Health (DESTINY) [313586/Z/24/Z]
+- Mobilising Evidence Through Artificial Intelligence and User-Informed Synthesis (METIUS) [UKRI3167]
+- Global Alliance for Living Evidence on aNxiety, depressiOn and pSychosis (GALENOS)
+- Living Evidence in Alzheimer's and Dementia (LEAD) [227443/Z/23/Z]
+- Education Endowment Foundation (EEF)
