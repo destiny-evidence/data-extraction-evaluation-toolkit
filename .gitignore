@@ -214,6 +214,7 @@ deet.log
 
 # Data files and outputs
 *.json
+!renovate.json
 output/
 deet/annotations/processed/
 deet/annotations/raw/

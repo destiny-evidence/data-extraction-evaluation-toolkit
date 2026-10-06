@@ -665,7 +665,7 @@ wheels = [
 
 [[package]]
 name = "destiny-deet"
-version = "0.4.0.dev5"
+version = "0.5.0.dev1"
 source = { editable = "." }
 dependencies = [
     { name = "clevercsv" },
@@ -685,7 +685,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "rapidfuzz" },
     { name = "scikit-learn" },
-    { name = "sentence-transformers" },
     { name = "tabulate" },
     { name = "typer" },
 ]
@@ -697,6 +696,9 @@ lang-quality = [
 parsers = [
     { name = "marker-pdf" },
     { name = "pypandoc" },
+]
+semantic = [
+    { name = "sentence-transformers" },
 ]
 
 [package.dev-dependencies]
@@ -746,11 +748,11 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "rapidfuzz", specifier = ">=3.9.0" },
     { name = "scikit-learn", specifier = ">=1.7.1" },
-    { name = "sentence-transformers", specifier = ">=5.5.1" },
+    { name = "sentence-transformers", marker = "extra == 'semantic'", specifier = ">=5.5.1" },
     { name = "tabulate", specifier = ">=0.9.0" },
     { name = "typer", specifier = ">=0.21.2" },
 ]
-provides-extras = ["lang-quality", "parsers"]
+provides-extras = ["lang-quality", "parsers", "semantic"]
 
 [package.metadata.requires-dev]
 dev = [

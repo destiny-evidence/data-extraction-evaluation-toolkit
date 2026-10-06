@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v0.5.0-dev.1 (2026-10-06)
+
+
+## v0.4.0-dev.7 (2026-10-06)
+
+### Features
+
+- Add Windows one-line installer
+  ([#428](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/428),
+  [`7ad0851`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/7ad0851e58d0ef7ef19fbd731ea8f7794ae0efa0))
+
+
+## v0.4.0-dev.6 (2026-10-06)
+
+### Bug Fixes
+
+- Attempt to load csv before sniffing dialect as a fallback.
+  ([#449](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/449),
+  [`9906f1b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9906f1baa26f4a9b8c0fdc9d13e0a6ae7940093c))
+
+### Chores
+
+- **deps**: Move sentence-transformers into semantic extra
+  ([`e484860`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/e484860e0ebf7c550b2d925cdff12a6d444e63d8))
+
+### Documentation
+
+- Remove stray backticks from install commands in README
+  ([`72d2fe8`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/72d2fe880eeb7b6e686f80a2868142199d23ac28))
+
+
 ## v0.4.0-dev.5 (2026-09-28)
 
 ### Bug Fixes
