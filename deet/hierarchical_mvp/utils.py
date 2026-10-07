@@ -119,7 +119,11 @@ def get_api_base_for_model(model: str) -> str:
 
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
-    """Initialise DSPy with the API base configured for the model provider."""
+    """Initialise DSPy with provider credentials and compatible token limits.
+
+    DSPy 3.2.x does not recognise GPT-6 models as requiring
+    max_completion_tokens, so normalise their request kwargs explicitly.
+    """
     lm_kwargs: dict[str, object] = {
         "model": model,
         "max_tokens": max_tokens,
@@ -148,6 +152,10 @@ def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
         lm_kwargs["api_base"] = get_api_base_for_model(model)
 
     lm = dspy.LM(**lm_kwargs)
+    model_family = model.rsplit("/", 1)[-1].lower()
+    if model_family == "gpt-6" or model_family.startswith(("gpt-6-", "gpt-6.")):
+        lm.kwargs.pop("max_tokens", None)
+        lm.kwargs["max_completion_tokens"] = max_tokens
     dspy.configure(lm=lm)
 
 

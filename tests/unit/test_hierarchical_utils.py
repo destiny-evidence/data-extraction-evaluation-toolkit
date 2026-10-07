@@ -53,6 +53,35 @@ def test_configure_lm_uses_anthropic_endpoint(monkeypatch):
 
 
 @pytest.mark.parametrize(
+    ("model", "limit_parameter"),
+    [
+        ("gpt-5.6-luna", "max_tokens"),
+        ("gpt-6-astra", "max_completion_tokens"),
+        ("azure/gpt-6-astra", "max_completion_tokens"),
+        ("openai/gpt-6-astra", "max_completion_tokens"),
+        ("anthropic/claude-sonnet", "max_tokens"),
+    ],
+)
+def test_configure_lm_token_parameter(monkeypatch, model, limit_parameter):
+    monkeypatch.setenv("AZURE_API_KEY", "test-key")
+    monkeypatch.setenv("AZURE_API_BASE", "https://openai.example.test")
+    monkeypatch.setenv("AZURE_API_BASE_ANTHROPIC", "https://anthropic.example.test")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    with patch("deet.hierarchical_mvp.utils.dspy.configure") as configure:
+        configure_lm(model, 60000, cache=False)
+
+    lm = configure.call_args.kwargs["lm"]
+    assert lm.kwargs[limit_parameter] == 60000
+    other_parameter = (
+        "max_tokens"
+        if limit_parameter == "max_completion_tokens"
+        else "max_completion_tokens"
+    )
+    assert other_parameter not in lm.kwargs
+
+
+@pytest.mark.parametrize(
     ("openai_base", "expected_extra_kwargs"),
     [
         (None, {}),
