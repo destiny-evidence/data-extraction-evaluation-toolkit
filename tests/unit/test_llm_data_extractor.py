@@ -402,6 +402,49 @@ def test_call_llm(
             DataExtractionConfig(model="test-model", provider=llm_provider)
 
 
+@pytest.mark.parametrize("output_limit", [60000, None])
+@pytest.mark.parametrize(
+    ("provider", "model", "limit_parameter"),
+    [
+        (LLMProvider.AZURE, "gpt-6-astra", "max_completion_tokens"),
+        (LLMProvider.AZURE, "gpt-5.6-luna", "max_tokens"),
+        (LLMProvider.AZURE, "gpt-4o", "max_tokens"),
+        (LLMProvider.OLLAMA, "gpt-6-astra", "max_tokens"),
+    ],
+)
+def test_call_llm_output_limit_parameter(
+    *,
+    mock_litellm_completion,
+    mock_settings,
+    sample_eppi_attributes,
+    provider,
+    model,
+    limit_parameter,
+    output_limit,
+):
+    """Only Azure Astra uses max_completion_tokens instead of max_tokens."""
+    config = DataExtractionConfig(
+        provider=provider,
+        model=model,
+        max_tokens=output_limit,
+        max_context_tokens=16384,
+    )
+    extractor = create_llm_extractor(config, mock_settings)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+
+    extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    mock_litellm_completion.assert_called_once()
+    request_kwargs = mock_litellm_completion.call_args.kwargs
+    assert request_kwargs[limit_parameter] == output_limit
+    assert {"max_tokens", "max_completion_tokens"}.intersection(request_kwargs) == {
+        limit_parameter
+    }
+    assert config.max_tokens == output_limit
+    if provider == LLMProvider.OLLAMA:
+        assert request_kwargs["num_ctx"] == config.max_context_tokens
+
+
 def test_call_llm_forwards_ollama_num_ctx(
     mock_litellm_completion, mock_settings, sample_eppi_attributes
 ):
