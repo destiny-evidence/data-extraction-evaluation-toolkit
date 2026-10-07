@@ -222,6 +222,7 @@ deet/annotations/raw/
 .keys
 
 # Files created by CLI
+/gpt6-test/
 default_extraction_config.yaml
 pdfs/*
 data-extraction-experiments/*
