@@ -379,7 +379,7 @@ class LLMDataExtractor(BaseDataExtractor):
 
         if (
             self.config.provider == LLMProvider.AZURE
-            and self.config.model == "gpt-6-astra"
+            and self.config.model.startswith(("gpt-6-", "gpt-6."))
         ):
             completion_kwargs["max_completion_tokens"] = completion_kwargs.pop(
                 "max_tokens"
