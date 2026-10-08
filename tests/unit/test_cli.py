@@ -586,11 +586,11 @@ def test_version_long_flag() -> None:
     """Test --version outputs the package version."""
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert version("data-extraction-evaluation-toolkit") in result.output
+    assert version("destiny-deet") in result.output
 
 
 def test_version_short_flag() -> None:
     """Test -v outputs the package version."""
     result = runner.invoke(app, ["-v"])
     assert result.exit_code == 0
-    assert version("data-extraction-evaluation-toolkit") in result.output
+    assert version("destiny-deet") in result.output
