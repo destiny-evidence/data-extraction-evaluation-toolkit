@@ -665,7 +665,7 @@ wheels = [
 
 [[package]]
 name = "destiny-deet"
-version = "0.5.0.dev2"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
     { name = "clevercsv" },
