@@ -299,7 +299,7 @@ in square brackets.
     Add the extra in brackets before the `@ git+...` source:
 
     ```bash
-    uv tool install "data-extraction-evaluation-toolkit[semantic] @ git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git"
+    uv tool install destiny-deet[semantic]
     ```
 
 === "Package users"
