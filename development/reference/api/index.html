@@ -60502,7 +60502,7 @@ if out_path is a file, we write remaining files to parent dir.</p>
         <span class="k">if</span> <span class="n">pypandoc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">missing_dep</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">"pypandoc is not installed. install with "</span>
-                <span class="s2">"`pip install data-extraction-evaluation-toolkit[parsers]`."</span>
+                <span class="s2">"`pip install destiny-deet[parsers]`."</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">missing_dep</span><span class="p">)</span>
 
@@ -60631,7 +60631,7 @@ if out_path is a file, we write remaining files to parent dir.</p>
     <span class="k">if</span> <span class="n">pypandoc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">missing_dep</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">"pypandoc is not installed. install with "</span>
-            <span class="s2">"`pip install data-extraction-evaluation-toolkit[parsers]`."</span>
+            <span class="s2">"`pip install destiny-deet[parsers]`."</span>
         <span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">missing_dep</span><span class="p">)</span>
 
@@ -61773,7 +61773,7 @@ Intentionelly left blank as this should be populated in sub-classes.</p>
 <span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">version_callback</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Print version and exit if --version is passed."""</span>
     <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
-        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">"deet </span><span class="si">{</span><span class="n">get_version</span><span class="p">(</span><span class="s1">'data-extraction-evaluation-toolkit'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">"deet </span><span class="si">{</span><span class="n">get_version</span><span class="p">(</span><span class="s1">'destiny-deet'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">typer</span><span class="o">.</span><span class="n">Exit</span>
 </code></pre></div></td></tr></table></div>
             </details>

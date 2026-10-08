@@ -1802,25 +1802,25 @@ This is a test of *pandoc*.
 </div>
 <h2 id="cli-users">CLI users</h2>
 <p>If you just want to use the CLI, we recommend you install the package globally into an isolated managed environment. You can do this using <code>uv tool install &lt;package&gt;</code>.</p>
-<p>To install <code>deet</code></p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+<p>To install <code>deet</code> from PyPI, where it is published as <code>destiny-deet</code></p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>destiny-deet
 </code></pre></div>
 <p>Now you are ready to use <code>deet</code>. To test this, run</p>
 <div class="highlight"><pre><span></span><code>deet<span class="w"> </span>--help
 </code></pre></div>
 <p>If you need an optional feature such as the semantic keyword extractor, see <a href="#installing-optional-features">Installing optional features</a>.</p>
 <h3 id="installing-from-a-specific-branch">Installing from a specific branch</h3>
-<p>If a feature you want to use is being actively worked on, and is not yet merged into main, you can install a specific branch of deet by appending @branch to the previous command. For example</p>
+<p>If a feature you want to use is being actively worked on, and is not yet released, you can install a specific branch of deet directly from GitHub. For example</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@development
 </code></pre></div>
 <p>will install deet from the development branch.</p>
 <h2 id="package-users">Package users</h2>
 <p>You can also use deet as a python package, within another project.</p>
 <p>Assuming you are using UV to manage dependencies within your project, you can add deet via</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>destiny-deet
 uv<span class="w"> </span>sync
 </code></pre></div>
-<p>Append @branch to the uv add command to use a specific branch of deet.</p>
+<p>or, with pip, <code>pip install destiny-deet</code>. To use a specific branch of deet, add <code>git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@branch</code> instead.</p>
 <h2 id="installing-optional-features">Installing optional features</h2>
 <p>Some of deet's features rely on heavier libraries that are not installed by
 default. These live behind optional <em>extras</em>, which you opt into by naming them
@@ -1851,7 +1851,7 @@ in square brackets.</p>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Add the extra in brackets before the <code>@ git+...</code> source:</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s2">"data-extraction-evaluation-toolkit[semantic] @ git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git"</span>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>destiny-deet<span class="o">[</span>semantic<span class="o">]</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
