@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from deet.data_models.base import AnnotationType, Attribute, GoldStandardAnnotation
@@ -12,6 +11,7 @@ from deet.data_models.documents import ContextType
 from deet.data_models.extraction import DocumentExtractionResult
 from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.keyword.base_keyword_extractor import BaseKeywordDataExtractor
+from deet.ui.messenger import fail_with_message
 
 
 class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
@@ -26,6 +26,16 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         """Initialise, set the similarity threshold, and load the model."""
         super().__init__(config)
         self.similarity_threshold: float = config.semantic_similarity_threshold
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            msg = (
+                "The semantic keyword extractor requires the 'semantic' extra."
+                " For help installing deet with extras, see the docs page:"
+                " https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/"
+                "development/setup/installation#installing-optional-features"
+            )
+            fail_with_message(msg)
         self.model = SentenceTransformer(config.model)
 
     def _split_into_sentences(self, text: str) -> list[str]:

@@ -5,12 +5,10 @@ on:
     branches:
       - main
       - development
-      - v0.3.0-dev
   pull_request:
     branches:
       - main
       - development
-      - v0.3.0-dev
 
 permissions:
   contents: read
@@ -30,9 +28,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: "0.12.16"
+          version: "0.12.21"
 
       - name: Restore uv cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -61,13 +59,13 @@ jobs:
         env:
           PYTHONUTF8: "1" # fix encoding issues relating to GH windows runner using an outdated terminal
         run: |
-          uv tool install --python ${{ matrix.python-version }} --no-build --no-binary-package data-extraction-evaluation-toolkit .
+          uv tool install --python ${{ matrix.python-version }} --no-build --no-binary-package destiny-deet .
           deet --help
 
       - name: "Test: uv sync (development)"
         if: matrix.scenario == 'develop-sync'
         run: |
-          uv sync --locked --all-extras --all-groups --no-build --no-binary-package data-extraction-evaluation-toolkit
+          uv sync --locked --all-extras --all-groups --no-build --no-binary-package destiny-deet
           uv run deet --help
           uv run python -c "import deet; print('Import OK')"
 
@@ -77,5 +75,5 @@ jobs:
           cd ${{ runner.temp }}
           mkdir test-consumer && cd test-consumer
           uv init --name test-consumer --no-readme  --python ${{ matrix.python-version }}
-          uv add ${{ github.workspace }} --no-build --no-binary-package data-extraction-evaluation-toolkit --no-binary-package test-consumer
+          uv add ${{ github.workspace }} --no-build --no-binary-package destiny-deet --no-binary-package test-consumer
           uv run python -c "import deet; print('Import OK')"

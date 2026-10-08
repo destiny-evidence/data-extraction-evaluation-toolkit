@@ -2,7 +2,59 @@
 
 <!-- version list -->
 
-## v0.4.0 (2026-09-28)
+## v0.5.0-dev.2 (2026-10-08)
+
+
+## v0.5.0-dev.1 (2026-10-06)
+
+
+## v0.4.0-dev.7 (2026-10-06)
+
+### Features
+
+- Add Windows one-line installer
+  ([#428](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/428),
+  [`7ad0851`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/7ad0851e58d0ef7ef19fbd731ea8f7794ae0efa0))
+
+
+## v0.4.0-dev.6 (2026-10-06)
+
+### Bug Fixes
+
+- Attempt to load csv before sniffing dialect as a fallback.
+  ([#449](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/449),
+  [`9906f1b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9906f1baa26f4a9b8c0fdc9d13e0a6ae7940093c))
+
+### Chores
+
+- **deps**: Move sentence-transformers into semantic extra
+  ([`e484860`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/e484860e0ebf7c550b2d925cdff12a6d444e63d8))
+
+### Documentation
+
+- Remove stray backticks from install commands in README
+  ([`72d2fe8`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/72d2fe880eeb7b6e686f80a2868142199d23ac28))
+
+
+## v0.4.0-dev.5 (2026-09-28)
+
+### Bug Fixes
+
+- Forward num_ctx to Ollama via litellm kwargs
+  ([`8505601`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/850560153fdcef820e1ddad016cfd18356917626))
+
+### Documentation
+
+- Adding citation file, version update in citation file via semantic release, readme addition
+  ([`08f4a08`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/08f4a0830f31162bd1cfdeae46db8213c555e477))
+
+- Complete truncated num_ctx docstring in DataExtractionConfig
+  ([`2ffae7b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/2ffae7b37724f1995b619332c4cded4ad3ca5ba0))
+
+### Testing
+
+- Fix ollama num_ctx test to use literal model string
+  ([`9ce44d6`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9ce44d6440a1b2b92b2452110c39cce241e20415))
 
 
 ## v0.4.0-dev.4 (2026-09-25)

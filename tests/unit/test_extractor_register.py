@@ -1,4 +1,5 @@
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -14,9 +15,7 @@ from deet.extractors.extractor_registry import extractor_mapping, get_data_extra
 def test_extraction_methods_return_extractor(extraction_method):
     """Test that each member of ExtractionMethod returns a valid extractor."""
     config = DataExtractionConfig(method=extraction_method)
-    with patch(
-        "deet.extractors.keyword.semantic_keyword_extractor.SentenceTransformer"
-    ):
+    with patch.dict(sys.modules, {"sentence_transformers": MagicMock()}):
         extractor = get_data_extractor(config=config)
     assert isinstance(extractor, BaseDataExtractor)
 

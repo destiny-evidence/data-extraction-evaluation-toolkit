@@ -1,0 +1,89 @@
+name: Windows Install Script
+
+# Tests the one-line Windows installer (install.ps1).
+#
+# CAVEAT: windows-latest runners are NOT clean machines (git, chocolatey, etc. are preinstalled),
+# so this proves the script's logic -- PATH recovery, same-session availability, idempotency --
+# but NOT a true from-nothing install.
+
+on:
+  pull_request:
+    paths:
+      - install.ps1
+      - .github/workflows/install-script.yml
+  schedule:
+    # Biweekly (1st and 15th): the script leans on third-party installers (scoop, uv, astral) that
+    # can drift even when our code does not. Cron has no native "every 14 days".
+    - cron: "0 6 1,15 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1" # the GH Windows runner uses an outdated terminal; force UTF-8
+
+jobs:
+  lint:
+    name: Parse & lint (Windows PowerShell 5.1)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # 5.1 is what ships with Windows -- the script must parse there, not just under pwsh (7).
+      - name: Parse under 5.1 and lint
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $errs = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path .\install.ps1), [ref]$null, [ref]$errs) | Out-Null
+          if ($errs) { $errs | ForEach-Object { Write-Host $_ }; throw "install.ps1 has parse errors" }
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $issues = Invoke-ScriptAnalyzer -Path .\install.ps1 -Severity Warning,Error
+          $issues | Format-Table -AutoSize
+          if ($issues | Where-Object Severity -eq 'Error') { throw "PSScriptAnalyzer found errors" }
+
+  install-and-verify:
+    name: Install (git+uv missing) and verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Strip git AND uv from PATH so the installer must recover both,
+      # dot-source it, then run deet.
+      - name: Install with git+uv stripped, then use deet in the same shell
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          $env:PATH = ($env:PATH -split ';' | Where-Object {
+            $_ -and -not (Test-Path (Join-Path $_ 'git.exe')) -and -not (Test-Path (Join-Path $_ 'uv.exe'))
+          }) -join ';'
+          . ./install.ps1 -Source $env:GITHUB_WORKSPACE
+          deet --help
+
+      # A fresh step is a new process that re-reads PATH from the registry -- deet resolving here
+      # proves the installer PERSISTED ~\.local\bin to the user PATH (so new terminals see it too).
+      - name: deet is available in a new shell
+        shell: pwsh
+        run: deet --help
+
+      # Re-running must succeed as a fast no-op (git, uv and deet are all present now)
+      - name: Re-run is idempotent
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          # Capture the run (Write-Host lands in the transcript) while still letting a real
+          # failure terminate the step.
+          Start-Transcript -Path second-run.log | Out-Null
+          ./install.ps1 -Source $env:GITHUB_WORKSPACE
+          Stop-Transcript | Out-Null
+          # A genuine no-op means nothing had to be installed: every dependency-install branch in
+          # install.ps1 prints "not found, installing", so on a second run that string must be
+          # absent -- git, uv and pandoc should all be detected as already present. (deet's own
+          # reinstall is a no-op handled by `uv tool install` without --force.)
+          if (Select-String -Path second-run.log -Pattern 'not found, installing' -Quiet) {
+            Get-Content second-run.log
+            throw "Second run reinstalled a dependency -- not idempotent."
+          }
+          deet --help
