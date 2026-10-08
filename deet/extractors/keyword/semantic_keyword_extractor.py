@@ -12,6 +12,7 @@ from deet.data_models.documents import ContextType
 from deet.data_models.extraction import DocumentExtractionResult
 from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.keyword.base_keyword_extractor import BaseKeywordDataExtractor
+from deet.ui.messenger import fail_with_message
 
 
 class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):

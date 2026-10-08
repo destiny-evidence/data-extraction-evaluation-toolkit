@@ -61,7 +61,7 @@ description = "Data Extraction Evaluation Toolkit (DEET): A suite of tools, data
 name = "data-extraction-evaluation-toolkit"
 readme = "README.md"
 requires-python = ">=3.12.11,<3.14"
-version = "0.4.0-dev.4"
+version = "0.5.0-dev.1"
 
 [project.optional-dependencies]
 lang-quality = [
@@ -70,6 +70,9 @@ lang-quality = [
 parsers = [
     "marker-pdf>=1.9.1",
     "pypandoc>=1.15",
+]
+semantic = [
+    "sentence-transformers>=5.5.1",
 ]
 
 [project.scripts]
@@ -113,6 +116,10 @@ module = "loguru.*"
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "tabulate.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "sentence_transformers.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
@@ -169,6 +176,7 @@ build_command = """
 """
 tag_format = "v{version}"
 version_toml = ["pyproject.toml:project.version"]
+version_variables = ["CITATION.cff:version"]
 
 [tool.semantic_release.branches.develop]
 match = "develop"

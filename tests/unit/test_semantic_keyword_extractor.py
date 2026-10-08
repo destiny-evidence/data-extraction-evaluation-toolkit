@@ -1,5 +1,6 @@
 """Tests for the semantic keyword data extractor module."""
 
+import sys
 from typing import cast
 from unittest.mock import MagicMock, patch
 

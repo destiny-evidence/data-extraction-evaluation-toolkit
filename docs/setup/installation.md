@@ -2,6 +2,39 @@
 
 This page shows different ways to install `deet` across platforms and use-cases
 
+## Quick install (Windows)
+
+Windows users can install `deet` and everything it needs - [git](https://git-scm.com/),
+[uv](https://docs.astral.sh/uv/), [pandoc](https://pandoc.org/), and `deet` itself - with a single
+command. Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:
+
+```powershell
+irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1 | iex
+```
+
+This should install deet, and all its dependencies (unless you already have them). When it finishes, run `deet --help` to check.
+
+It is a plain PowerShell script — you can
+[read it first](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/development/install.ps1)
+before piping it to `iex`.
+
+??? note "Options (branch, skipping pandoc, forcing a reinstall)"
+
+    To install from a specific branch or tag — for a feature that is not yet released — fetch the
+    script first so it can take arguments:
+
+    ```powershell
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1))) -Ref development
+    ```
+
+    Other flags:
+
+    - `-SkipPandoc` — skip pandoc, if you only work with abstracts or pre-processed markdown.
+    - `-Force` — reinstall `deet` even if it is already present (use this to upgrade).
+
+If you would rather install each piece yourself — or you are on macOS or Linux — follow the manual
+steps below.
+
 ## Basic setup and dependencies
 
 ### Accessing the terminal
@@ -224,6 +257,8 @@ Now you are ready to use `deet`. To test this, run
 deet --help
 ```
 
+If you need an optional feature such as the semantic keyword extractor, see [Installing optional features](#installing-optional-features).
+
 ### Installing from a specific branch
 
 If a feature you want to use is being actively worked on, and is not yet merged into main, you can install a specific branch of deet by appending @branch to the previous command. For example
@@ -246,6 +281,51 @@ uv sync
 ```
 
 Append @branch to the uv add command to use a specific branch of deet.
+
+## Installing optional features
+
+Some of deet's features rely on heavier libraries that are not installed by
+default. These live behind optional *extras*, which you opt into by naming them
+in square brackets.
+
+| Extra          | Enables                                                  |
+| -------------- | -------------------------------------------------------- |
+| `semantic`     | the semantic keyword extractor (`sentence-transformers`) |
+| `parsers`      | extra document parsers (`marker-pdf`, `pypandoc`)        |
+| `lang-quality` | language-quality checks (`nltk`)                         |
+
+=== "CLI users"
+
+    Add the extra in brackets before the `@ git+...` source:
+
+    ```bash
+    uv tool install "data-extraction-evaluation-toolkit[semantic] @ git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git"
+    ```
+
+=== "Package users"
+
+    Enable the extra with `--extra` when you add deet:
+
+    ```bash
+    uv add --extra semantic git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+    uv sync
+    ```
+
+=== "Contributors"
+
+    In a cloned checkout, sync the extras you need (or `--all-extras`):
+
+    ```bash
+    uv sync --extra semantic
+    ```
+
+Combine multiple extras with commas, e.g. `[semantic,parsers]` (or repeat
+`--extra`). Append `@branch` to the git URL to install extras from a specific
+branch.
+
+!!! note "The `parsers` extra also needs pandoc"
+    `parsers` installs the Python wrappers; full-text PDF parsing additionally
+    needs the pandoc system binary — see [Installing pandoc](#installing-pandoc).
 
 ## Contributors
 

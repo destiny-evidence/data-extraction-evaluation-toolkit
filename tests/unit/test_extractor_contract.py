@@ -1,6 +1,7 @@
 """Test that all extractors implement desired behaviour."""
 
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 

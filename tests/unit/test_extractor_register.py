@@ -1,4 +1,5 @@
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 
