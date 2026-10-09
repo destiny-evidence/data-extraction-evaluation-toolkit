@@ -14,18 +14,24 @@ More detailed documentation can be found here [Docs](https://destiny-evidence.gi
 
 ## Quickstart
 
+`deet` is published on PyPI as [`destiny-deet`](https://pypi.org/project/destiny-deet/).
+
 ### To use the `deet` CLI
 
 ```sh
-uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv tool install destiny-deet
 deet --help
 ```
 
 ### To use `deet` as a package
 
 ```sh
-uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv add destiny-deet  # or: pip install destiny-deet
 ```
+
+Optional extras are available for document parsing (`destiny-deet[parsers]`) and text quality checks (`destiny-deet[lang-quality]`).
+
+To install the latest unreleased code instead, replace `destiny-deet` with `git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git`.
 
 ## Using `deet`
 
@@ -36,7 +42,7 @@ Typical pipelines can be run using the CLI app `deet --help`
 ## Contributing
 
 If you want to contribute to this project -- awesome, everyone's welcome.
-Please see the [contributing guidelines](CONTRIBUTING.md) for details on how best to contribute.
+Please see the [contributing guidelines](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/main/CONTRIBUTING.md) for details on how best to contribute.
 
 A few important steps when contributing:
 
@@ -49,7 +55,7 @@ This will force you to use [conventional commits](https://www.conventionalcommit
 
 ## Commit message format
 
-All commits must use [**conventional commits**](conventionalcommits.org). The pre-commit hook will reject any commit that doesn't.
+All commits must use [**conventional commits**](https://www.conventionalcommits.org/en/v1.0.0/). The pre-commit hook will reject any commit that doesn't.
 
 | prefix | example | version effect |
 |---|---|---|
