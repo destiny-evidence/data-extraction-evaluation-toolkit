@@ -10,15 +10,36 @@ import yaml
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
+from pydantic import BaseModel
 from typer.testing import CliRunner
 
 from deet.data_models.documents import Document
+from deet.data_models.enums import CustomPromptPopulationMethod
 from deet.data_models.project import DeetProject, ExperimentArtefacts
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
 from deet.settings import get_settings
 
 settings = get_settings()
+
+
+class DatasetTestConfig(BaseModel):
+    """Defines configuration options for integration tests."""
+
+    gold_standard_file: Path
+    gold_standard_format: SupportedImportFormat
+    link_map: Path | None = None
+    prompt_csv: Path | None = None
+    prompt_population: CustomPromptPopulationMethod = CustomPromptPopulationMethod.FILE
+    pdf_dir: Path | None = None
+    extraction_config: Path | None = None
+
+    @classmethod
+    def load(cls, dataset_path: Path) -> "DatasetTestConfig":
+        """Load an integration test configuration file."""
+        return cls.model_validate(
+            yaml.safe_load((dataset_path / "test_config.yaml").read_text())
+        )
 
 
 @pytest.fixture
@@ -29,6 +50,7 @@ def runner():
 INTEGRATION_DATASETS = [
     Path(__file__).parent / "datasets/ebmnlp_with_metadata",
     Path(__file__).parent / "datasets/alzped",
+    Path(__file__).parent / "datasets/climate_health_taxonomy",
 ]
 
 
@@ -45,8 +67,13 @@ def tmp_project_workspace(tmp_path_factory):
 
 
 @pytest.fixture
+def dataset_config(dataset_base_path) -> DatasetTestConfig:
+    return DatasetTestConfig.load(dataset_base_path)
+
+
+@pytest.fixture
 def initialised_project_workspace(
-    tmp_project_workspace, dataset_base_path, monkeypatch
+    tmp_project_workspace, dataset_base_path, dataset_config, monkeypatch
 ):
     """Set up an initialised project, on which other tests depend."""
     previous_cwd = Path.cwd()
@@ -68,14 +95,29 @@ def initialised_project_workspace(
     project_dir.mkdir(parents=True)
     os.chdir(project_dir)
 
+    # Copy everything from the dataset folder into the project dir so that
+    # relative paths in extraction_config.yaml (vocab files, link_map, etc.)
+    # resolve correctly at runtime.
+    shutil.copytree(dataset_base_path, project_dir, dirs_exist_ok=True)
+
     # Programmatically mock a completed wizard setup matching the dataset
     project = DeetProject(
         name=project_name,
-        gold_standard_data_path=dataset_base_path / "reports.json",
-        gold_standard_data_format=SupportedImportFormat.EPPI_JSON,
-        pdf_dir=dataset_base_path / "pdfs",
+        gold_standard_data_path=dataset_base_path / dataset_config.gold_standard_file,
+        gold_standard_data_format=dataset_config.gold_standard_format,
+        pdf_dir=project_dir / dataset_config.pdf_dir
+        if dataset_config.pdf_dir
+        else None,
     )
     project.setup()
+
+    # setup() generates prompt_definitions.csv from the gold standard; overwrite
+    # with the dataset's custom prompts afterwards so they take effect.
+    if dataset_config.prompt_csv:
+        shutil.copy(
+            project_dir / dataset_config.prompt_csv,
+            project.prompt_csv_path,
+        )
 
     # Configure extraction to handle long documents
     config_path = project.config_path
@@ -121,7 +163,7 @@ def virtual_keyboard():
 
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_initialise_project_via_wizard(
-    runner, dataset_base_path, tmp_project_workspace, virtual_keyboard
+    runner, dataset_base_path, dataset_config, tmp_project_workspace, virtual_keyboard
 ):
     """Test whether Alice can initialise a project with her data using the wizard."""
     # Alice's project name is the last bit of the path to her dataset
@@ -151,15 +193,23 @@ def test_initialise_project_via_wizard(
             # Alice sees an informative splash screen informing her on how to
             # use the wizard. She presses enter to continue
             virtual_keyboard.press("\r")
-            # She selects the default dataset type option (eppijson)
+            # She selects the dataset type matching her data
+            formats = list(SupportedImportFormat)
+            for _ in range(formats.index(dataset_config.gold_standard_format)):
+                virtual_keyboard.press("\x1b[B")  # down arrow
             virtual_keyboard.press("\r")
 
             # Then she enters path to her dataset
-            virtual_keyboard.press(f"{dataset_base_path / 'reports.json'}\r")
+            virtual_keyboard.press(
+                f"{dataset_base_path / dataset_config.gold_standard_file}\r"
+            )
             virtual_keyboard.press("\r")
 
-            # She enters the path to her pdfs
-            virtual_keyboard.press(f"{dataset_base_path / 'pdfs'}\r")
+            # She enters the path to her pdfs (or skips if dataset has none)
+            if dataset_config.pdf_dir:
+                virtual_keyboard.press(
+                    f"{dataset_base_path / dataset_config.pdf_dir}\r"
+                )
             virtual_keyboard.press("\r")
 
             # She then sees a splash screen informing her on the collection of API keys
@@ -207,14 +257,19 @@ def test_initialise_project_via_wizard(
 
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_linking_with_map(
-    runner, dataset_base_path, tmp_project_workspace, initialised_project_workspace
+    runner,
+    dataset_base_path,
+    tmp_project_workspace,
+    dataset_config,
+    initialised_project_workspace,
 ):
     """Test whether Alice can link documents."""
+    if not dataset_config.link_map:
+        pytest.skip("dataset has no link_map")
+
     # Alice makes sure she is in the project directory she created on project init
     project_dir = tmp_project_workspace / dataset_base_path.name
     os.chdir(project_dir)
-    #  Alice adds the necessary metadata for her files to be linked
-    shutil.copy(dataset_base_path / "link_map.csv", project_dir / "link_map.csv")
 
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0
@@ -247,6 +302,7 @@ def test_extraction_without_evaluating(
     dataset_base_path,
     tmp_project_workspace,
     initialised_project_workspace,
+    dataset_config,
     request,
 ):
     """Test whether Alice can extract data using the LLM."""
@@ -255,23 +311,29 @@ def test_extraction_without_evaluating(
     os.chdir(project_dir)
     deet_project = DeetProject.load()
 
-    #  Alice adds the necessary metadata for her files to be linked
-    shutil.copy(dataset_base_path / "link_map.csv", deet_project.link_map_path)
-
-    # Alice adds her own custom prompts for the attributes she wants to extract
-    shutil.copy(
-        dataset_base_path / "prompt_definitions.csv", deet_project.prompt_csv_path
-    )
-
     # Alice links her documents
-    result = runner.invoke(app, ["project", "link"])
-    assert result.exit_code == 0
+    if dataset_config.link_map:
+        result = runner.invoke(app, ["project", "link"])
+        assert result.exit_code == 0
 
     # And then she runs deet experiments predict
     # to generate extractions for those documents
     # without trying to evaluate these
+    config_path = (
+        project_dir / dataset_config.extraction_config
+        if dataset_config.extraction_config
+        else deet_project.config_path
+    )
     result = runner.invoke(
-        app, ["experiments", "predict", "--config-path", deet_project.config_path]
+        app,
+        [
+            "experiments",
+            "predict",
+            "--config-path",
+            config_path,
+            "--prompt-population",
+            dataset_config.prompt_population,
+        ],
     )
     assert result.exit_code == 0
 
@@ -303,31 +365,36 @@ def test_extraction_without_evaluating_or_linking(
     runner,
     dataset_base_path,
     tmp_project_workspace,
+    dataset_config,
     initialised_project_workspace,
 ):
     """Test whether Alice can extract data using the LLM."""
+    # If Alice doesn't have pdfs, then this path doesn't make sense for her
+    if not dataset_config.pdf_dir:
+        pytest.skip("dataset has no pdf_dir, ignore-references path not applicable.")
+
     # Alice makes sure she is in the project directory she created on project init
     project_dir = tmp_project_workspace / dataset_base_path.name
     os.chdir(project_dir)
     deet_project = DeetProject.load()
-
-    # Alice adds her own custom prompts for the attributes she wants to extract
-    shutil.copy(
-        dataset_base_path / "prompt_definitions.csv", deet_project.prompt_csv_path
-    )
 
     result = runner.invoke(app, ["project", "link"])
     assert result.exit_code == 0
 
     # Alice doesn't want to bother linking yet, she just extracts directly
     # from her texts.
+    config_path = (
+        project_dir / dataset_config.extraction_config
+        if dataset_config.extraction_config
+        else deet_project.config_path
+    )
     result = runner.invoke(
         app,
         [
             "experiments",
             "predict",
             "--config-path",
-            deet_project.config_path,
+            config_path,
             "--ignore-references",
         ],
     )
@@ -358,7 +425,11 @@ def test_extraction_without_evaluating_or_linking(
 @pytest.mark.vcr
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_extraction_with_evaluation(
-    runner, dataset_base_path, tmp_project_workspace, initialised_project_workspace
+    runner,
+    dataset_base_path,
+    dataset_config,
+    tmp_project_workspace,
+    initialised_project_workspace,
 ):
     """Test whether Alice can extract data using the LLM."""
     # Alice makes sure she is in the project directory she created on project init
@@ -366,23 +437,30 @@ def test_extraction_with_evaluation(
     os.chdir(project_dir)
     deet_project = DeetProject.load()
 
-    #  Alice adds the necessary metadata for her files to be linked
-    shutil.copy(dataset_base_path / "link_map.csv", deet_project.link_map_path)
-
-    # Alice adds her own custom prompts for the attributes she wants to extract
-    shutil.copy(
-        dataset_base_path / "prompt_definitions.csv", deet_project.prompt_csv_path
-    )
-
     # Alice links her documents
-    result = runner.invoke(app, ["project", "link"])
-    assert result.exit_code == 0
+    if dataset_config.link_map:
+        result = runner.invoke(app, ["project", "link"])
+        assert result.exit_code == 0
+
+    config_path = (
+        project_dir / dataset_config.extraction_config
+        if dataset_config.extraction_config
+        else deet_project.config_path
+    )
 
     # And runs deet experiments evaluate to extract
     # data and compare it to her own gold-standard
     # data
     result = runner.invoke(
-        app, ["experiments", "evaluate", "--config-path", deet_project.config_path]
+        app,
+        [
+            "experiments",
+            "evaluate",
+            "--config-path",
+            config_path,
+            "--prompt-population",
+            dataset_config.prompt_population,
+        ],
     )
     assert result.exit_code == 0
 

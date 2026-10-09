@@ -1,0 +1,1223 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix evrepo: <https://vocab.evidence-repository.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+evrepo:hasAppliedConcept a owl:ObjectProperty ;
+    rdfs:label "has applied concept" ;
+    rdfs:domain evrepo:Investigation ;
+    rdfs:range skos:Concept ;
+    evrepo:allowMultiple true .
+
+evrepo:hasInvestigation a owl:ObjectProperty ;
+    rdfs:label "has investigation" ;
+    rdfs:domain evrepo:LinkedDataEnhancement ;
+    rdfs:range evrepo:Investigation .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000595> a skos:Concept ;
+    skos:altLabel "Atmospheric warming",
+        "Climate breakdown",
+        "Climate crisis",
+        "Climate disruption",
+        "Climate emergency",
+        "Earth warming",
+        "General climate change",
+        "Global heating",
+        "Global warming",
+        "Planetary warming",
+        "Rising global temperatures",
+        "Unspecified climate change" ;
+    skos:definition "Climate change where the specific driver or mechanism is not identified or distinguished, used when studies refer to climate change in general terms." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "(Unspecified) climate change" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000596> a skos:Concept ;
+    skos:altLabel "Unspecified weather change",
+        "Weather pattern shifts",
+        "Weather variability" ;
+    skos:definition "General changes in weather patterns not attributed to a specific meteorological variable, used when studies refer to weather variability in broad terms." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "(Unspecified) changes in weather" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000597> a skos:Concept ;
+    skos:altLabel "Cryosphere change",
+        "Glacial mass loss",
+        "Glacier melt",
+        "Glacier retreat",
+        "Snow cover changes",
+        "Snowmelt" ;
+    skos:definition "Accelerated melting of glaciers and snowpack due to rising temperatures, affecting freshwater supply, sea levels, and downstream ecosystems." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in glacier / snow melt" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000598> a skos:Concept ;
+    skos:altLabel "Atmospheric moisture change",
+        "Humidity change",
+        "Humidity variability",
+        "Relative humidity shifts" ;
+    skos:definition "Shifts in atmospheric moisture levels that affect thermal comfort, respiratory health, and the prevalence of moisture-related diseases." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in humidity" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000599> a skos:Concept ;
+    skos:altLabel "Altered precipitation patterns",
+        "Changes in rainfall",
+        "Precipitation anomalies",
+        "Precipitation variability",
+        "Rainfall change" ;
+    skos:definition "Alterations in the amount, timing, or intensity of rainfall and snowfall, affecting water availability, flood risk, and drought conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in precipitation" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000600> a skos:Concept ;
+    skos:altLabel "Coastal inundation",
+        "Ocean level rise",
+        "Sea level change",
+        "Sea level rise",
+        "Sea level variability" ;
+    skos:definition "The increase in mean sea level resulting from thermal expansion of seawater and melting ice, threatening coastal communities, infrastructure, and freshwater resources." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in sea level" ;
+    skos:scopeNote "Main drivers: Thermal expansion of oceans, melting glaciers/ice sheets, ocean circulation changes." .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000601> a skos:Concept ;
+    skos:altLabel "Phenological change",
+        "Season length change",
+        "Seasonal shift" ;
+    skos:definition "Shifts in the duration of seasons, including earlier spring onset and extended summers, with consequences for agriculture, vector biology, and human health." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in season length" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000602> a skos:Concept ;
+    skos:altLabel "Temperature anomalies",
+        "Temperature change",
+        "Temperature shift",
+        "Temperature trends",
+        "Temperature variability",
+        "Warming" ;
+    skos:definition "Long-term shifts in average or extreme temperature conditions, including warming trends, that affect human health, ecosystems, and society." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in temperature" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000603> a skos:Concept ;
+    skos:altLabel "Wind pattern change",
+        "Wind regime changes",
+        "Wind variability" ;
+    skos:definition "Alterations in wind patterns and velocity that can affect air quality, energy systems, and the spread of airborne pathogens and pollutants." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in wind speed" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000623> a skos:Concept ;
+    skos:altLabel "Cimate trends",
+        "Climate alteration",
+        "Climate anomalies",
+        "Climate fluctuations",
+        "Climate instability",
+        "Climate shifts",
+        "Climate variation",
+        "Climatic oscillations",
+        "Climatic variation",
+        "El Niño ((Southern Oscillation/ENSO)",
+        "La Niña",
+        "North Atlantic Oscillation" ;
+    skos:definition "Climate variability refers to fluctuations in climate conditions (temperature, precipitation, wind patterns, etc.) over months, years, or decades around a longer-term average. Climate variability is influenced by multiple climate drivers." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Climate variability" ;
+    skos:scopeNote "Refers to variations in the mean state and other climate statistics (standard deviations, the occurrence of extremes, etc.) on all temporal and spatial scales beyond those of individual weather events." .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000632> a skos:Concept ;
+    skos:altLabel "Changes in freshwater systems",
+        "Changes in inland hydrology",
+        "Freshwater systems change",
+        "Inland water dynamics" ;
+    skos:definition "Climate-driven changes in freshwater systems, including altered lake and river levels, reduced or increased water availability, and changes in hydrological patterns that affect ecosystems, livelihoods, and human health." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> ;
+    skos:prefLabel "Changes in inland water bodies" ;
+    skos:scopeNote "E.g. declining water levels in Lake Chad Basin, shrinking lakes, changing river flows. Main drivers: Changes in precipitation, evaporation, drought, water withdrawals, watershed changes, land-use change." .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000611> a skos:Concept ;
+    skos:altLabel "CO2-equivalent emissions",
+        "GHGs",
+        "Heat-trapping gases",
+        "Unspecified greenhouse gases" ;
+    skos:definition "Atmospheric gases that trap heat and contribute to the greenhouse effect, referred to collectively without specifying the individual gas type." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "(Unspecified) greenhouse gases" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000612> a skos:Concept ;
+    skos:altLabel "CO2",
+        "CO2 emissions",
+        "Carbon dioxide emissions",
+        "Carbon emissions",
+        "Fossil carbon dioxide" ;
+    skos:definition "The primary long-lived greenhouse gas produced by fossil fuel combustion, deforestation, and industrial processes, responsible for the majority of anthropogenic radiative forcing." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Carbon dioxide (CO₂)" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000613> a skos:Concept ;
+    skos:altLabel "Aerosols",
+        "Air pollutant particulates",
+        "Black carbon",
+        "Fine particles",
+        "PM10",
+        "PM2.5",
+        "Particulate air pollution",
+        "Soot" ;
+    skos:definition "Airborne particles of 10 or 2.5 micrometres or less in diameter. Fine particulate matter can include components such as black carbon and sulfate aerosols, that affect both climate and human health through respiratory and cardiovascular pathways." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Particulate matter (PM10) / fine particulate matter (PM2.5) / black/organic carbon / sulfate/nitrate aerosols" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000614> a skos:Concept ;
+    skos:altLabel "F-gases",
+        "Fluorinated greenhouse gases",
+        "HFCs",
+        "NF3",
+        "PFCs",
+        "SF6",
+        "Synthetic greenhouse gases" ;
+    skos:definition "A group of potent synthetic greenhouse gases used in industrial applications, refrigeration, and electronics manufacturing, with very high global warming potentials and long atmospheric lifetimes." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Fluorinated gases / hydrofluorocarbons / perfluorocarbons / sulfur hexafluoride / nitrogen trifluoride" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000615> a skos:Concept ;
+    skos:altLabel "CH4",
+        "Methane emissions",
+        "Natural gas emissions" ;
+    skos:definition "A potent short-lived greenhouse gas emitted from livestock, rice cultivation, landfills, and fossil fuel extraction, with a global warming potential far exceeding that of CO₂ over 20 years." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Methane (CH₄)" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000616> a skos:Concept ;
+    skos:altLabel "Agricultural greenhouse gas",
+        "N2O",
+        "Nitrous oxide emissions" ;
+    skos:definition "A greenhouse gas and ozone-depleting substance emitted primarily from agricultural soils, livestock, and nitrogen fertilisers, with a high global warming potential." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Nitrous oxide (N₂O)" ;
+    skos:scopeNote "Not to be confused with nitrogen dioxide (NO2)." .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000617> a skos:Concept ;
+    skos:altLabel "CFCs",
+        "HCFCs",
+        "Halons",
+        "ODSs",
+        "Ozone-depleting chemicals",
+        "Stratospheric ozone depleters" ;
+    skos:definition "Chemical compounds that destroy stratospheric ozone and act as potent greenhouse gases, regulated under the Montreal Protocol due to their combined climate and health impacts." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Ozone-depleting substances / chlorofluorocarbons / hydrochlorofluorocarbons / halons / carbon tetrachloride / methyl chloroform" .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000618> a skos:Concept ;
+    skos:altLabel "Ground-level ozone",
+        "O3",
+        "Ozone pollution",
+        "Smog-forming ozone",
+        "Surface Ozone" ;
+    skos:definition "A short-lived climate pollutant and air quality hazard formed by photochemical reactions between nitrogen oxides and volatile organic compounds, harmful to respiratory health." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> ;
+    skos:prefLabel "Tropospheric ozone (O₃)" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000604> a skos:Concept ;
+    skos:altLabel "General climate extremes",
+        "Non-specific extreme weather",
+        "Unspecified extreme weather" ;
+    skos:definition "Extreme weather events where the specific type is not identified, used when studies refer to climate extremes without distinguishing between event types." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Z_(Unspecified) extreme weather events" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000605> a skos:Concept ;
+    skos:altLabel "Arid conditions",
+        "Drought conditions",
+        "Water scarcity events" ;
+    skos:definition "Prolonged periods of water deficit, often driven by abnormally low rainfall and/or increased evapotranspiration, resulting in reduced soil moisture and water availability, with consequences including crop and livestock losses, increased wildfire risk, and impacts on human health, nutrition, and livelihoods." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Droughts" ;
+    skos:scopeNote "Needs to be differentiated from \"Water quality and quantity\" as a health exposure (here: \"Health - Exposure\" > \"Water quality and quantity\")" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000606> a skos:Concept ;
+    skos:altLabel "Cold snaps",
+        "Cold spells",
+        "Cold waves",
+        "Extreme low temperture events",
+        "Freezing events",
+        "Severe cold events" ;
+    skos:definition "Episodes of abnormally low temperatures, including cold snaps and blizzards, associated with increased risk of hypothermia, cardiovascular events, and respiratory illness." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Extreme cold" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000607> a skos:Concept ;
+    skos:altLabel "Heat events",
+        "Heat waves",
+        "Heatwaves",
+        "High temperature extremes",
+        "Severe heat events" ;
+    skos:definition "Periods of abnormally high temperatures, including heatwaves, that pose direct health risks such as heat exhaustion, heat stroke, and excess mortality." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Extreme heat" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000608> a skos:Concept ;
+    skos:altLabel "Coastal floods",
+        "Flash floods",
+        "Flood events",
+        "Flooding",
+        "Inundation",
+        "Riverine floods" ;
+    skos:definition "Temporary inundation of normally dry land caused by excessive rainfall, river overflow, storm surges, coastal flooding, rapid snowmelt, or other hydrological processes, including riverine, pluvial, coastal, and flash floods, with direct and indirect consequences for human health, displacement, infrastructure, livelihoods, and ecosystems." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Floods" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000609> a skos:Concept ;
+    skos:altLabel "Cyclones",
+        "Hailstorms",
+        "High wind events",
+        "Hurricanes",
+        "Severe storms",
+        "Thunderstorms",
+        "Tornadoes",
+        "Tropical cyclones",
+        "Typhoons",
+        "Windstorms" ;
+    skos:definition "Intense meteorological events including tropical cyclones, hurricanes, typhoons, and severe thunderstorms or hailstorms, causing damage, flooding, and displacement." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Storms and severe wind" ;
+    skos:scopeNote "Do not use for sand storms or dust storms, which are a distinct concept in this scheme (\"Sand and dust storms\")." .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000610> a skos:Concept ;
+    skos:altLabel "Bushfires",
+        "Fire events",
+        "Forest fires",
+        "Landscape fires" ;
+    skos:definition "Uncontrolled fires in natural vegetation, increasingly associated with drought and heat, producing smoke and air pollution with severe respiratory and cardiovascular health impacts." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Wildfires" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000633> a skos:Concept ;
+    skos:altLabel "Extreme precipitation events",
+        "Extreme rainfall",
+        "Heavy rainfall" ;
+    skos:definition "Unusually intense or prolonged episodes of rainfall, snowfall, or other precipitation that exceed typical conditions and can cause flooding, water-related hazards, disruption of essential services, and adverse impacts on human health, ecosystems, and livelihoods." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Extreme precipitation" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000634> a skos:Concept ;
+    skos:altLabel "Blizzards",
+        "Extreme icing",
+        "Freezing rain",
+        "Heavy snowfall",
+        "Ice storms",
+        "Severe snow storms" ;
+    skos:definition "Severe or unusual snow and ice conditions, including heavy snowfall, blizzards, freezing rain, and ice storms, that disrupt normal activities and can result in infrastructure damage, transport disruption, injuries, and adverse impacts on human health, ecosystems, and livelihoods." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Extreme snow/ice events" ;
+    skos:scopeNote "Driven by cold temperatures and frozen precipitation." .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000635> a skos:Concept ;
+    skos:altLabel "Dust aerosol events",
+        "Dust events",
+        "Dust storms",
+        "Sand storms",
+        "Sandstorms" ;
+    skos:definition "Wind-driven events that mobilize and transport airborne sand and dust particles, reducing air quality and visibility and posing risks to human health, ecosystems, infrastructure, and livelihoods." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> ;
+    skos:prefLabel "Sand and dust storms" .
+
+<https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000619> a skos:Concept ;
+    skos:altLabel "Carbon fuels",
+        "General fossil fuels",
+        "Unspecified fossil fuels",
+        "carbon-based fuels",
+        "conventional fuels",
+        "fossil energy sources",
+        "mineral fuels",
+        "solid fuels" ;
+    skos:definition "Fossil fuel use or combustion where the specific fuel type is not identified, used when studies refer to fossil fuels in general without distinguishing between coal, oil, or gas." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels> ;
+    skos:prefLabel "(Unspecified) fossil fuels" .
+
+<https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000620> a skos:Concept ;
+    skos:altLabel "Anthracite",
+        "Brown coal",
+        "Hard coal",
+        "Lignite",
+        "Thermal coal" ;
+    skos:definition "A solid fossil fuel formed from ancient plant matter, the most carbon-intensive energy source and a major contributor to greenhouse gas emissions and air pollution." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels> ;
+    skos:prefLabel "Coal" .
+
+<https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000621> a skos:Concept ;
+    skos:altLabel "CNG",
+        "Fossil gas",
+        "Gas",
+        "LNG",
+        "LPG",
+        "Methane gas",
+        "Methane-based fuel",
+        "fracking gas",
+        "fuel gas" ;
+    skos:definition "A fossil fuel composed primarily of methane, used for heating, electricity generation, and industrial processes, with lower CO₂ emissions than coal but significant methane leakage risks." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels> ;
+    skos:prefLabel "Natural gas" .
+
+<https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000622> a skos:Concept ;
+    skos:altLabel "Crude oil",
+        "Petrol",
+        "Petroleum",
+        "diesel",
+        "gasoline",
+        "kerosene" ;
+    skos:definition "A liquid fossil fuel refined into petroleum products including petrol, diesel, and jet fuel, a major source of greenhouse gas emissions from transport and industry." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels> ;
+    skos:prefLabel "Oil" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000297> a skos:Concept ;
+    skos:altLabel "All-cause death",
+        "Overall mortality",
+        "Total deaths" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000296> ;
+    skos:definition "Deaths from any cause combined, used as an overall measure of fatal burden without attribution to a specific disease or condition." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "1.1. Total / all-cause mortality (Outcome)" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000298> a skos:Concept ;
+    skos:altLabel "NCD mortality",
+        "Non-communicable disease deaths" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000296> ;
+    skos:definition "Deaths attributable to non-communicable diseases, including cardiovascular, respiratory, metabolic, and neoplastic conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "1.3. Non-communicable mortality" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000305> a skos:Concept ;
+    skos:altLabel "CMNN mortality",
+        "Communicable disease mortality",
+        "Infectious disease mortality" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000296> ;
+    skos:definition "Deaths attributable to communicable diseases, maternal conditions, neonatal disorders, and nutritional deficiencies." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "1.2. Communicable, maternal, neonatal, and nutritional mortality" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000315> a skos:Concept ;
+    skos:altLabel "HIV",
+        "HIV and STIs",
+        "STDs",
+        "STIs",
+        "Sexually transmitted diseases" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "Infections transmitted through sexual contact or blood-borne routes, including HIV/AIDS and bacterial and viral sexually transmitted infections." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "HIV/AIDS and sexually transmitted infections" ;
+    skos:scopeNote "GBD ref: 955" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000318> a skos:Concept ;
+    skos:altLabel "Airway infections",
+        "Lung infections",
+        "Respiratory infections",
+        "Tuberculosis" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "Acute and chronic infections of the respiratory tract, including tuberculosis, pneumonia, and upper respiratory infections." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Respiratory infections and tuberculosis" ;
+    skos:scopeNote "GBD ref: 956" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000324> a skos:Concept ;
+    skos:altLabel "Foodborne infections",
+        "Gastrointestinal infections",
+        "Gut infections",
+        "Waterborne infections" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "Infections of the gastrointestinal tract transmitted via contaminated food or water, including diarrhoeal diseases, typhoid, and cholera." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Enteric infections" ;
+    skos:scopeNote "GBD ref: 957" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000330> a skos:Concept ;
+    skos:altLabel "NTDs",
+        "Neglected tropical diseases",
+        "Tropical diseases",
+        "Vector-borne diseases" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "A diverse group of infectious diseases that disproportionately affect populations in tropical and subtropical low-income settings, including parasitic, bacterial, and viral conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Neglected tropical diseases and malaria" ;
+    skos:scopeNote "GBD ref: 344" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000353> a skos:Concept ;
+    skos:altLabel "Miscellaneous infections",
+        "Other infections",
+        "Other infectious diseases" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "Infectious diseases not classified under respiratory, enteric, or vector-borne categories, including bacterial, viral, and prion conditions of diverse transmission routes." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Z_Other infectious diseases" ;
+    skos:scopeNote "GBD ref: 961" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000364> a skos:Concept ;
+    skos:altLabel "Maternal and neonatal conditions",
+        "Perinatal conditions",
+        "Pregnancy complications" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "Conditions arising during pregnancy, childbirth, or the neonatal period, including obstetric complications and disorders of the newborn." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Maternal and neonatal disorders" ;
+    skos:scopeNote "GBD ref: 962" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000370> a skos:Concept ;
+    skos:altLabel "Hunger",
+        "Malnutrition",
+        "Micronutrient deficiency",
+        "Undernutrition" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> ;
+    skos:definition "Conditions arising from insufficient intake of macro- or micronutrients, including protein-energy malnutrition and deficiencies in key vitamins and minerals." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Nutritional deficiencies" ;
+    skos:scopeNote "GBD ref: 386" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000378> a skos:Concept ;
+    skos:altLabel "Cancer",
+        "Malignancies",
+        "Oncological conditions",
+        "Tumours" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Diseases characterised by the uncontrolled growth of abnormal cells, including malignant cancers and benign tumours across all anatomical sites." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Neoplasms" ;
+    skos:scopeNote "GBD ref: 410" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000384> a skos:Concept ;
+    skos:altLabel "CVD",
+        "Cardiac diseases",
+        "Circulatory diseases",
+        "Heart disease",
+        "Vascular disease" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Diseases of the heart and blood vessels, including ischemic heart disease, stroke, heart failure, and other circulatory conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Cardiovascular diseases" ;
+    skos:scopeNote "GBD ref: 491" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000397> a skos:Concept ;
+    skos:altLabel "Chronic lung disease",
+        "Obstructive lung disease",
+        "Respiratory disease" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Long-term diseases affecting the airways and lung parenchyma, including obstructive, restrictive, and inflammatory conditions causing progressive respiratory impairment." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Chronic respiratory diseases" ;
+    skos:scopeNote "GBD ref: 508" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000404> a skos:Concept ;
+    skos:altLabel "Bowel diseases",
+        "GI diseases",
+        "Gastrointestinal diseases",
+        "Gut diseases" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Non-infectious diseases of the gastrointestinal tract and related organs, including the liver, gallbladder, and pancreas." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Digestive diseases" ;
+    skos:scopeNote "GBD ref: 526" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000415> a skos:Concept ;
+    skos:altLabel "Brain diseases",
+        "Nervous system disorders",
+        "Neurodegenerative diseases" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Diseases affecting the brain, spinal cord, and peripheral nervous system, including degenerative, inflammatory, and functional neurological conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Neurological disorders" ;
+    skos:scopeNote "GBD ref: 542" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000423> a skos:Concept ;
+    skos:altLabel "Mental health conditions",
+        "Psychiatric conditions",
+        "Psychiatric disorders",
+        "Psychological disorders" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Conditions characterised by clinically significant disturbances in cognition, emotion regulation, or behaviour, reflecting dysfunction in psychological or biological processes." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Mental disorders" ;
+    skos:scopeNote "GBD ref: 558" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000435> a skos:Concept ;
+    skos:altLabel "Addiction",
+        "Drug and alcohol disorders",
+        "Substance abuse" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Disorders characterised by compulsive use of psychoactive substances despite adverse consequences, including alcohol and drug use disorders." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Substance use disorders" ;
+    skos:scopeNote "GBD ref: 973" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000438> a skos:Concept ;
+    skos:altLabel "Cardiometabolic disease",
+        "Diabetes and renal disease",
+        "Metabolic and kidney disease" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "A GBD grouping encompassing diabetes mellitus and kidney diseases, which share common metabolic risk factors and frequently co-occur." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Diabetes and kidney diseases" ;
+    skos:scopeNote "GBD ref: 974" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000444> a skos:Concept ;
+    skos:altLabel "Cutaneous disease",
+        "Dermatological conditions",
+        "Skin conditions",
+        "Skin diseases" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Diseases affecting the skin and subcutaneous tissue, including inflammatory, infectious, allergic, and degenerative conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Skin and subcutaneous diseases" ;
+    skos:scopeNote "GBD ref: 653" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000457> a skos:Concept ;
+    skos:altLabel "Eye and ear diseases",
+        "Sensory diseases",
+        "Visual and hearing disorders" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Diseases affecting the organs of vision and hearing, including conditions causing visual impairment, blindness, and hearing loss." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Sense organ diseases" ;
+    skos:scopeNote "GBD ref: 669" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000461> a skos:Concept ;
+    skos:altLabel "Arthritis",
+        "Back pain",
+        "Bone and joint disease",
+        "Osteoarthritis",
+        "Osteoporosis",
+        "Rheumatic disease" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Diseases of bones, joints, muscles, and connective tissue, including osteoarthritis, rheumatoid arthritis, osteoporosis, and low back and neck pain." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Musculoskeletal disorders" ;
+    skos:scopeNote "GBD ref: 626" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000462> a skos:Concept ;
+    skos:altLabel "Other NCDs",
+        "Other chronic diseases",
+        "Residual NCDs" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> ;
+    skos:definition "Non-communicable diseases not classified under the major GBD NCD categories, including congenital, genitourinary, haematological, and other miscellaneous conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Z_Other non-communicable diseases" ;
+    skos:scopeNote "GBD ref: 640" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000471> a skos:Concept ;
+    skos:altLabel "MVA",
+        "Motor vehicle accidents",
+        "RTI",
+        "Road traffic accidents",
+        "Road traffic injuries" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000470> ;
+    skos:definition "Injuries sustained in road traffic crashes involving motor vehicles, motorcycles, cyclists, and pedestrians." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Transport injuries" ;
+    skos:scopeNote "GBD ref: 688" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000472> a skos:Concept ;
+    skos:altLabel "Accidental harm",
+        "Accidental injuries",
+        "Unintentional harm" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000470> ;
+    skos:definition "Injuries that occur without intent to cause harm, including falls, drowning, burns, poisonings, and environmental exposures." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Unintentional injuries" ;
+    skos:scopeNote "GBD ref: 696" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000485> a skos:Concept ;
+    skos:altLabel "Intentional injury",
+        "Interpersonal violence",
+        "Self-inflicted injury",
+        "Violence" ;
+    skos:broader <https://vocab.destiny-evidence.org/health-outcomes/DSNY000470> ;
+    skos:definition "Intentional injuries caused by violence directed at oneself or others, including self-harm, assault, sexual violence, and conflict-related injuries." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:prefLabel "Self-harm and interpersonal violence" ;
+    skos:scopeNote "GBD ref: 717" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000201> a skos:Concept ;
+    skos:altLabel "SR",
+        "Systematic literature review" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000198> ;
+    skos:definition "A review that uses explicit, reproducible methods to systematically search, select, appraise, and synthesise evidence from primary studies on a defined research question." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Systematic reviews" ;
+    skos:scopeNote "Concept describes different systematic review types, such as evidence gap maps, mixed-methods reviews, rapid reviews, etc. For \"Systematic review\", please use child concept \"Full systematic review\"." .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000206> a skos:Concept ;
+    skos:altLabel "Literature review",
+        "Non-systematic review",
+        "Review",
+        "Traditional review" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000198> ;
+    skos:definition "A non-systematic review that summarises and interprets the literature on a topic based on the author's expertise and judgement, without exhaustive or reproducible search methods." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Narrative review" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000207> a skos:Concept ;
+    skos:altLabel "Clinical guideline",
+        "Clinical practice guideline (CPG)",
+        "Evidence-based guideline",
+        "Health guideline",
+        "Public health guideline" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000198> ;
+    skos:definition "A systematically developed statement providing recommendations to guide clinical or public health practice, typically based on a synthesis of the available evidence. Often with systematic methods, but sometimes also based on expert consensus." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Guideline (clinical or public health)" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000208> a skos:Concept ;
+    skos:altLabel "HTA",
+        "Health technology assessment" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000198> ;
+    skos:definition "A comprehensive policy-relevant evaluation of a health technology that typically includes clinical effectiveness, cost-effectiveness, and broader social and ethical considerations." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Health technology assessment (HTA)" ;
+    skos:scopeNote "A broader evaluation of a health technology (drug, device, or intervention) used for policy and decision-making. Typically includes: clinical effectiveness (often via a systematic review), cost-effectiveness (economic modelling), ethical, legal, and social implications, and organisational impact." .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000515> a skos:Concept ;
+    skos:altLabel "Descriptive designs",
+        "Descriptive study design",
+        "Single-group study" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Study designs that describe characteristics, frequency, or distribution of outcomes in a single group without a comparison group or temporal manipulation." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Descriptive / single-group designs" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000519> a skos:Concept ;
+    skos:altLabel "Observational single-group study",
+        "Single-group observational study",
+        "Uncontrolled observational design" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Observational study designs that track outcomes over time in a single group without a concurrent comparison group, relying on temporal patterns to infer associations." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Observational / single-group designs" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000522> a skos:Concept ;
+    skos:altLabel "Analytic observational design",
+        "Comparative observational design",
+        "Observational comparative study" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Observational study designs that compare health outcomes between two or more groups defined by exposure status, without random allocation." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Observational / group comparison designs" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000527> a skos:Concept ;
+    skos:altLabel "Single-arm experimental design",
+        "Uncontrolled experimental design" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Experimental study designs in which an intervention is applied to a single group without a concurrent control group, limiting but not eliminating causal inference." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "(Quasi-)Experimental / single-group designs" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000529> a skos:Concept ;
+    skos:altLabel "Comparative experimental design",
+        "Controlled experimental design",
+        "Group comparison experiment" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Experimental study designs that compare outcomes between an intervention group and one or more control or comparison groups, with or without randomisation." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "(Quasi-)Experimental / group comparison designs" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000541> a skos:Concept ;
+    skos:altLabel "Mixed-methods design",
+        "Qualitative design",
+        "Qualitative research",
+        "Qualitative study" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Study designs using qualitative data collection and analysis to explore meanings, experiences, and contextual factors." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Qualitative designs" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000544> a skos:Concept ;
+    skos:altLabel "Mixed-methods study",
+        "Multi-method study",
+        "Quantitative and qualitative combined" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "A research design that integrates quantitative and qualitative data collection and analysis within a single study, combining the strengths of both approaches to address research questions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Mixed-methods" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000545> a skos:Concept ;
+    skos:altLabel "Computational modelling",
+        "Mathematical modelling",
+        "Modelling study",
+        "Simulation study" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Study designs using mathematical, statistical, or computational models to simulate real-world systems, project future outcomes, or estimate impacts under defined scenarios." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Modelling / simulation" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000551> a skos:Concept ;
+    skos:altLabel "Other design",
+        "Other primary study design",
+        "Unclassified study design" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000167> ;
+    skos:definition "Primary research study designs not captured by the specific categories of descriptive, observational, experimental, qualitative, or modelling designs." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Z_Other study design" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000555> a skos:Concept ;
+    skos:altLabel "Other review type",
+        "Other synthesis type",
+        "Unclassified evidence synthesis" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000198> ;
+    skos:definition "Evidence synthesis types not captured by the specific categories of systematic review, umbrella review, narrative review, guideline, or health technology assessment." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Z_Other evidence synthesis type" .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000637> a skos:Concept ;
+    skos:altLabel "Meta-analysis without systematic review" ;
+    skos:broader <https://vocab.destiny-evidence.org/methods/DSNY000198> ;
+    skos:definition """Advanced quantitative synthesis of existing studies conducted without systematic review methods for searching, selecting, and assessing evidence.
+""" ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:prefLabel "Meta-analysis (unsystematic)" ;
+    skos:scopeNote "Typically distinguished from systematic reviews with meta-analyses because the statistical methods may be rigorous, but the evidence identification and selection process is not systematic or reproducible. Often occuring in Economics." .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000115> a skos:Concept ;
+    skos:altLabel "Farming",
+        "Food production",
+        "Forestry and fisheries" ;
+    skos:definition "The sector encompassing crop cultivation, livestock rearing, aquaculture, fishing, and forest management." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Agriculture, fishing, and forestry (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000116> a skos:Concept ;
+    skos:altLabel "Built environment",
+        "Construction",
+        "Housing",
+        "Residential sector" ;
+    skos:definition "The sector covering residential and commercial buildings, housing provision, and construction." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Buildings / housing (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000117> a skos:Concept ;
+    skos:altLabel "Academic institutions",
+        "Learning sector",
+        "Schools" ;
+    skos:definition "The sector encompassing formal and informal education systems, including schools, universities, and vocational institutions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Education (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000118> a skos:Concept ;
+    skos:altLabel "Energy sector",
+        "Extractive industries",
+        "Mining",
+        "Power and resource extraction",
+        "Power generation" ;
+    skos:definition "The sector covering electricity generation, fuel production, and resource extraction, including both fossil fuel and renewable energy systems." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Energy and extractives (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000119> a skos:Concept ;
+    skos:altLabel "Banking",
+        "Financial sector",
+        "Financial services",
+        "Investment" ;
+    skos:definition "The sector encompassing banking, insurance, investment, and financial services, including public and private finance mechanisms." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Finance (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000120> a skos:Concept ;
+    skos:altLabel "Care facilities",
+        "Health sector",
+        "Health services",
+        "Health systems",
+        "Hospitals",
+        "Medical services" ;
+    skos:definition "The sector providing medical care, public health services, and health infrastructure, including hospitals, primary care, and preventive health services." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Healthcare (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000121> a skos:Concept ;
+    skos:altLabel "Safety nets",
+        "Social security",
+        "Social services",
+        "Social welfare",
+        "Welfare",
+        "Welfare systems" ;
+    skos:definition "The sector providing social safety nets, welfare services, and support systems that protect vulnerable populations from economic and social risks." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Social protection (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000122> a skos:Concept ;
+    skos:altLabel "Commerce",
+        "Industry",
+        "Manufacturing",
+        "Trade" ;
+    skos:definition "The sector encompassing manufacturing, retail, wholesale trade, and commercial services." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Industry, trade, and services (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000123> a skos:Concept ;
+    skos:altLabel "Digital infrastructure",
+        "Digital sector",
+        "ICT sector",
+        "Tech sector",
+        "Technology sector",
+        "Telecommunications" ;
+    skos:definition "The sector covering telecommunications, digital infrastructure, and information technology, including hardware, software, and connectivity systems." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Information and communications technologies (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000124> a skos:Concept ;
+    skos:altLabel "Civil service",
+        "Government",
+        "Public sector",
+        "Public services" ;
+    skos:definition "The sector encompassing government agencies, civil services, and public institutions responsible for policy-making, regulation, and the delivery of public services in the context of climate change." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Public administration (Sector)" ;
+    skos:scopeNote "Assign only when the public-administration sector's own operations, services, or workforce are a subject of the study — i.e. public administration is the sector being examined (e.g. emergency-management or civil-service functions as the study's focus). Do not assign merely because a government is mentioned or acts, because policy or regulation is discussed, or because a public institution conducts or funds the study." .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000125> a skos:Concept ;
+    skos:altLabel "Logistics",
+        "Mobility",
+        "Transport" ;
+    skos:definition "The sector covering road, rail, air, and maritime transport systems, including infrastructure, vehicles, and logistics operations." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Transportation (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000126> a skos:Concept ;
+    skos:altLabel "Sanitation",
+        "WASH sector",
+        "Waste management",
+        "Water sector" ;
+    skos:definition "The sector responsible for water supply, sewage treatment, and solid waste management." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Water, sanitation, and waste management (Sector)" .
+
+<https://vocab.destiny-evidence.org/sectors/DSNY000224> a skos:Concept ;
+    skos:altLabel "Armed forces",
+        "Army",
+        "Defense industry",
+        "Defense infrastructure",
+        "Defense sector",
+        "Security sector" ;
+    skos:definition """The military sector is the part of a country’s economy and government responsible for producing, organizing, and maintaining armed forces and defense capabilities, including personnel, equipment, operations, and infrastrucutre.
+""" ;
+    skos:inScheme <https://vocab.destiny-evidence.org/sectors> ;
+    skos:prefLabel "Military (Sector)" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000054> a skos:Concept ;
+    skos:altLabel "Causal attribution",
+        "Climate attribution",
+        "Event attribution" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000053> ;
+    skos:definition "The process of establishing the causal contribution of climate change to observed changes in physical, ecological, or human systems, including specific extreme weather events or health outcomes." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Attribution" ;
+    skos:scopeNote "Refers to attribution as a high-level thematic area of climate research, encompassing the field of climate and health attribution broadly. Distinct from 'Attribution' in the Methods scheme, which classifies attribution as a specific study aim within primary research." .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000490> a skos:Concept ;
+    skos:altLabel "Adaptive failure",
+        "Counterproductive adaptation",
+        "Failed adaptation",
+        "Mal-adaptation",
+        "Maladaptive action",
+        "Negative adaptation outcomes",
+        "Unintended adaptation consequences" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000052> ;
+    skos:definition "Adaptation actions that inadvertently increase vulnerability or exposure to harm, reduce adaptive capacity, or create new risks for human or natural systems, often as an unintended consequence of well-intentioned interventions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Maladaptation" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000491> a skos:Concept ;
+    skos:altLabel "Ancillary benefits",
+        "Co-benefits of mitigation",
+        "Health co-benefits",
+        "Mitigation co-benefits",
+        "Side benefits",
+        "Triple wins" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000051> ;
+    skos:definition "Positive health, social, or environmental benefits arising from mitigation actions that are additional to the primary goal of reducing greenhouse gas emissions, such as improved air quality or increased physical activity." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Co-Benefits" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000492> a skos:Concept ;
+    skos:altLabel "Climate-related losses",
+        "Irreversible impacts",
+        "L&D",
+        "NELD",
+        "Non-economic loss and damage",
+        "Residual impact",
+        "Unavoidable impacts" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000053> ;
+    skos:definition "Negative consequences of climate change that cannot be avoided through mitigation or adaptation, including irreversible harm to lives, livelihoods, cultural heritage, ecosystems, and infrastructure." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Loss and damage" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000493> a skos:Concept ;
+    skos:altLabel "Anticipated impact",
+        "Climate projections",
+        "Future climate impact",
+        "Future risk",
+        "Projected climate effects",
+        "Projected impact",
+        "Scenario-based impact" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000053> ;
+    skos:definition "Projected effects on human health, ecosystems, and societies arising from anticipated changes in climate over coming decades, typically derived from climate modelling and scenario analysis." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Future impact" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000638> a skos:Concept ;
+    skos:altLabel "Ability to recover",
+        "Adaptive capacity",
+        "Bounce-back capability",
+        "Climate-readiness",
+        "Coping capacity",
+        "Robustness",
+        "Transformative capacity" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000052> ;
+    skos:definition "The capacity of individuals, communities, ecosystems, or systems to anticipate, withstand, recover from, and adapt to climate-related shocks and stresses. It is generally considered an adaptation outcome or objective." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Resilience" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000639> a skos:Concept ;
+    skos:altLabel "Adaptation strategy",
+        "Anticipatory action",
+        "Disaster preparedness",
+        "Emergency preparedness",
+        "Emergency response plans",
+        "Readiness",
+        "Risk preparedness",
+        "Warning systems" ;
+    skos:broader <https://vocab.destiny-evidence.org/topic/DSNY000052> ;
+    skos:definition "Planning, developing capacities, and implementing measures in advance to enable effective responses to climate-related events and reduce their impacts." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:prefLabel "Preparedness" .
+
+evrepo:LinkedDataEnhancement a owl:Class ;
+    rdfs:label "Linked Data Enhancement" ;
+    dct:description "A structured linked-data annotation attached to a Reference in the repository. Contains one or more Investigations." .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000051> a skos:Concept ;
+    skos:altLabel "Climate mitigation",
+        "Emissions reduction",
+        "GHG mitigation",
+        "GHG reduction" ;
+    skos:definition "Actions and strategies aimed at reducing or preventing greenhouse gas emissions in order to limit the magnitude of future climate change and its associated health and environmental impacts." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:narrower <https://vocab.destiny-evidence.org/topic/DSNY000491> ;
+    skos:prefLabel "Mitigation" ;
+    skos:scopeNote "Assign when the study concerns greenhouse-gas emissions or fossil fuels — either (a) actions or strategies to reduce them (e.g. food-system, agricultural, transport, energy, or industrial measures that cut emissions), or (b) cases where emissions or fossil fuels are the source of the health or environmental harm being studied (e.g. health effects of coal power-plant emissions or fossil-fuel combustion), since these imply potential mitigation actions. The study need not itself describe a mitigation action, and need not use the word 'mitigation'." .
+
+evrepo:Investigation a owl:Class ;
+    rdfs:label "Investigation" ;
+    dct:description "A study reported within a Reference. An Investigation produces one or more Findings." .
+
+<https://vocab.destiny-evidence.org/climate-factors-fossil-fuels> a skos:ConceptScheme ;
+    dct:description "Carbon-based energy sources formed from ancient organic matter, whose combustion is the dominant source of anthropogenic greenhouse gas emissions and a major driver of air pollution and associated health burdens." ;
+    dct:title "Climate factors - Fossil fuels" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000619>,
+        <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000620>,
+        <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000621>,
+        <https://vocab.destiny-evidence.org/climate-factors-fossil-fuels/DSNY000622> .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000296> a skos:Concept ;
+    skos:altLabel "Death",
+        "Fatal outcomes",
+        "Mortality outcomes" ;
+    skos:definition "The occurrence of death as a health outcome, classified by cause, age group, and population to characterise the fatal burden of disease." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:narrower <https://vocab.destiny-evidence.org/health-outcomes/DSNY000297>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000298>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000305> ;
+    skos:prefLabel "1. Mortality (Outcome)" .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000470> a skos:Concept ;
+    skos:altLabel "Harm",
+        "Physical injury",
+        "Trauma",
+        "Wounds" ;
+    skos:definition "Physical harm to the body resulting from external causes, including unintentional injuries, self-harm, interpersonal violence, and conflict." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:narrower <https://vocab.destiny-evidence.org/health-outcomes/DSNY000471>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000472>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000485> ;
+    skos:prefLabel "4. Injuries" ;
+    skos:scopeNote "GBD ref: 687" .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000052> a skos:Concept ;
+    skos:altLabel "Adaptation action",
+        "Adaptive capacity",
+        "Adaptive response",
+        "Climate adaptation",
+        "Climate adjustment",
+        "Coping capacity",
+        "Preparedness",
+        "Resilience",
+        "Vulnerability reduction" ;
+    skos:definition "Adjustments in natural or human systems in response to actual or anticipated climate change, intended to moderate harm or exploit beneficial opportunities arising from climate variability." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:narrower <https://vocab.destiny-evidence.org/topic/DSNY000490>,
+        <https://vocab.destiny-evidence.org/topic/DSNY000638>,
+        <https://vocab.destiny-evidence.org/topic/DSNY000639> ;
+    skos:prefLabel "Adaptation" ;
+    skos:scopeNote "Assign when the study concerns adjusting to, managing, forecasting, monitoring, or coping with climate variables or climate-related extreme events — including early-warning or prediction systems, risk management, and infrastructural or agricultural measures (e.g. irrigation optimisation for water stress, flood modelling for planning, disaster preparedness). The paper need not frame these explicitly as responses to 'climate change'. Resilience is the capacity of individuals, communities, ecosystems, or systems to anticipate, withstand, recover from, and adapt to climate-related shocks and stresses. It is generally considered an adaptation outcome or objective." .
+
+<https://vocab.destiny-evidence.org/topic/DSNY000053> a skos:Concept ;
+    skos:altLabel "Climate consequences",
+        "Climate effects",
+        "Climate impact",
+        "Effects of climate change" ;
+    skos:definition "The effects of climate change on natural and human systems, including consequences for health, ecosystems, economies, and societies resulting from climate variability and change." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/topic> ;
+    skos:narrower <https://vocab.destiny-evidence.org/topic/DSNY000054>,
+        <https://vocab.destiny-evidence.org/topic/DSNY000492>,
+        <https://vocab.destiny-evidence.org/topic/DSNY000493> ;
+    skos:prefLabel "Impact" ;
+    skos:scopeNote "Assign when the study characterises, measures, models, or reviews the effects, harms, hazards, or risks arising from a climate variable (e.g. changes in temperature, precipitation, humidity, sea level, or wind) or a climate-related extreme event (e.g. heatwave, flood, drought, storm, wildfire, extreme cold) on human health, ecosystems, economies, or societies. This includes cases where a climate variable or extreme event modifies exposure to another hazard (e.g. temperature or drought altering air-pollution, wildfire-smoke, or infectious-disease exposure). Do not assign for the health effects of a non-climate exposure on its own (e.g. air pollution or chemicals with no climatic driver in the causal pathway). The paper need not use the words 'climate change' — the presence of a climate variable or extreme climate-related event as the driver is what matters." .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000198> a skos:Concept ;
+    skos:altLabel "Research synthesis",
+        "Review",
+        "Secondary research" ;
+    skos:definition "Research whose own design is a review or synthesis of existing studies or literature rather than the collection of new primary data — spanning systematic reviews and their variants (scoping, rapid, realist, umbrella, living, qualitative, mixed-methods), narrative reviews, meta-analyses, evidence and gap maps, health technology assessments, and clinical or public-health guidelines." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:narrower <https://vocab.destiny-evidence.org/methods/DSNY000201>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000206>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000207>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000208>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000555>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000637> ;
+    skos:prefLabel "2. Evidence synthesis" ;
+    skos:scopeNote "Assign when the study is itself a review or synthesis of prior work — it aggregates, reviews, maps, or synthesises findings, publications, or evidence from existing studies or literature. This includes narrative and non-systematic reviews, scoping and mapping exercises, bibliometric or publication analyses, meta-analyses, guidelines, and health technology assessments; a formal systematic method is NOT required. Do not assign to a primary study merely because it cites or discusses prior literature — assign only when reviewing or synthesising existing evidence is the study's own design or output." .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents> a skos:ConceptScheme ;
+    dct:description "Substances that alter the Earth's energy balance by trapping heat or affecting atmospheric chemistry, including greenhouse gases, aerosols, and ozone-depleting substances." ;
+    dct:title "Climate factors - Climate forcing agents" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000611>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000612>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000613>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000614>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000615>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000616>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000617>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-forcing-agents/DSNY000618> .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000314> a skos:Concept ;
+    skos:altLabel "CMNN diseases",
+        "Communicable diseases",
+        "Infectious and nutritional diseases" ;
+    skos:definition "The broad category of diseases caused by infectious agents or related to maternal, neonatal, and nutritional conditions, as defined in the GBD cause hierarchy." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:narrower <https://vocab.destiny-evidence.org/health-outcomes/DSNY000315>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000318>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000324>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000330>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000353>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000364>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000370> ;
+    skos:prefLabel "2. Communicable, maternal, neonatal, and nutritional diseases" ;
+    skos:scopeNote "GBD ref: 295" .
+
+<https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events> a skos:ConceptScheme ;
+    dct:description "Acute and intense meteorological, climatic, or hydrometeorological events, including heatwaves, floods, droughts, storms, cold waves, extreme precipitation, tropical cyclones, and wildfires, that cause significant impacts on human health, infrastructure, livelihoods, and ecosystems." ;
+    dct:title "Climate factors - Extreme weather events" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000604>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000605>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000606>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000607>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000608>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000609>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000610>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000633>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000634>,
+        <https://vocab.destiny-evidence.org/climate-factors-extreme-weather-events/DSNY000635> .
+
+<https://vocab.destiny-evidence.org/methods/DSNY000167> a skos:Concept ;
+    skos:altLabel "Empirical research",
+        "Original research",
+        "Primary study" ;
+    skos:definition "Original research studies that collect and analyse data directly, as distinct from evidence syntheses that aggregate findings from existing studies." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/methods> ;
+    skos:narrower <https://vocab.destiny-evidence.org/methods/DSNY000515>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000519>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000522>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000527>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000529>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000541>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000544>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000545>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000551> ;
+    skos:prefLabel "1. Primary research" .
+
+<https://vocab.destiny-evidence.org/topic> a skos:ConceptScheme ;
+    dct:description "High-level thematic areas of climate change research, covering mitigation, adaptation, and the study of climate impacts and their attribution." ;
+    dct:title "Topic" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/topic/DSNY000051>,
+        <https://vocab.destiny-evidence.org/topic/DSNY000052>,
+        <https://vocab.destiny-evidence.org/topic/DSNY000053> .
+
+<https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability> a skos:ConceptScheme ;
+    dct:description "Gradual and long-term changes in climatic conditions, including temperature, precipitation, humidity, sea level, and other physical variables that shape baseline environmental exposures relevant to health and ecological systems. Climate variability is influenced by multiple climate drivers." ;
+    dct:title "Climate factors - Climate drivers / variability" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000595>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000596>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000597>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000598>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000599>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000600>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000601>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000602>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000603>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000623>,
+        <https://vocab.destiny-evidence.org/climate-factors-climate-drivers-variability/DSNY000632> .
+
+<https://vocab.destiny-evidence.org/health-outcomes/DSNY000377> a skos:Concept ;
+    skos:altLabel "Chronic conditions",
+        "Chronic diseases",
+        "NCDs",
+        "Non-infectious diseases" ;
+    skos:definition "Chronic, non-infectious diseases of long duration including cardiovascular, respiratory, metabolic, neurological, and neoplastic conditions." ;
+    skos:inScheme <https://vocab.destiny-evidence.org/health-outcomes> ;
+    skos:narrower <https://vocab.destiny-evidence.org/health-outcomes/DSNY000378>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000384>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000397>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000404>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000415>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000423>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000435>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000438>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000444>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000457>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000461>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000462> ;
+    skos:prefLabel "3. Non-communicable diseases" ;
+    skos:scopeNote "GBD ref: 409" .
+
+<https://vocab.destiny-evidence.org/sectors> a skos:ConceptScheme ;
+    dct:description "Economic and social sectors relevant to climate change research, mitigation, adaptation, and health impact assessment." ;
+    dct:title "Sectors" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/sectors/DSNY000115>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000116>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000117>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000118>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000119>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000120>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000121>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000122>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000123>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000124>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000125>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000126>,
+        <https://vocab.destiny-evidence.org/sectors/DSNY000224> .
+
+<https://vocab.destiny-evidence.org/methods> a skos:ConceptScheme ;
+    dct:description "Research methods and study design concepts used to classify the methodological characteristics of primary research and evidence synthesis in the DESTINY evidence repository." ;
+    dct:title "Methods" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/methods/DSNY000167>,
+        <https://vocab.destiny-evidence.org/methods/DSNY000198> .
+
+<https://vocab.destiny-evidence.org/health-outcomes> a skos:ConceptScheme ;
+    dct:description "Diseases, injuries, and health conditions used to classify the health effects studied in research, organised according to the Global Burden of Disease (GBD) cause hierarchy." ;
+    dct:title "Health - Outcomes" ;
+    skos:hasTopConcept <https://vocab.destiny-evidence.org/health-outcomes/DSNY000296>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000314>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000377>,
+        <https://vocab.destiny-evidence.org/health-outcomes/DSNY000470> .
+
+skos:Concept a owl:Class ;
+    rdfs:label "Concept" .
+
