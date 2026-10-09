@@ -377,6 +377,13 @@ class LLMDataExtractor(BaseDataExtractor):
             "max_tokens": self.config.max_tokens,
         }
 
+        if self.config.provider == LLMProvider.AZURE and self.config.model.startswith(
+            ("gpt-6-", "gpt-6.")
+        ):
+            completion_kwargs["max_completion_tokens"] = completion_kwargs.pop(
+                "max_tokens"
+            )
+
         # Add provider-specific parameters for context window handling
         # Note: Different parameters control context windows across providers:
         # - max_tokens (OpenAI/Azure): Maximum output (completion) length
