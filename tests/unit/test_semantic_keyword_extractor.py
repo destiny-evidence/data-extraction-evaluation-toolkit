@@ -27,10 +27,11 @@ def semantic_config() -> DataExtractionConfig:
 def _make_extractor(config, chunk_emb, keyword_emb) -> SemanticKeywordDataExtractor:
     """Build an extractor whose model returns the supplied embeddings in order."""
     model = MagicMock()
-    model.encode.side_effect = [np.array(chunk_emb), np.array(keyword_emb)]
-    mock_module = MagicMock()
-    mock_module.SentenceTransformer.return_value = model
-    with patch.dict(sys.modules, {"sentence_transformers": mock_module}):
+    model.embed.side_effect = [np.array(chunk_emb), np.array(keyword_emb)]
+    with patch(
+        "deet.extractors.keyword.semantic_keyword_extractor.TextEmbedding",
+        return_value=model,
+    ):
         return SemanticKeywordDataExtractor(config=config)
 
 
@@ -82,7 +83,7 @@ def test_empty_document_yields_no_annotations(semantic_config, make_attr):
         payload="",
     )
     assert result.annotations == []
-    cast("MagicMock", extractor.model).encode.assert_not_called()
+    cast("MagicMock", extractor.model).embed.assert_not_called()
 
 
 def test_attribute_without_prompt_raises(semantic_config, make_attr):

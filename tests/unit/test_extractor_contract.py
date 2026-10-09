@@ -13,7 +13,7 @@ from deet.extractors.extractor_registry import get_data_extractor
 def extractor(request):
     """Each registered extractor, constructed via the registry."""
     config = DataExtractionConfig(method=request.param)
-    with patch.dict(sys.modules, {"sentence_transformers": MagicMock()}):
+    with patch("deet.extractors.keyword.semantic_keyword_extractor.TextEmbedding"):
         return get_data_extractor(config=config)
 
 

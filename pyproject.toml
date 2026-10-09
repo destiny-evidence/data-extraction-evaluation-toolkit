@@ -47,6 +47,7 @@ dependencies = [
     "clevercsv>=0.8.5",
     "destiny-sdk[labs]>=0.9.1",
     "diskcache>=5.6.3",
+    "fastembed>=0.8.1",
     "inquirerpy>=0.3.4",
     "jinja2>=3.1.6",
     "litellm>=1.96.2",
@@ -222,3 +223,6 @@ exclude-dependencies = [
 exclude-newer = "P5D"
 no-binary-package = ["destiny-deet"]
 no-build = true
+# fastembed 0.8 asks for pillow>=11 on Python 3.13. marker-pdf requires pillow<11.
+# Pillow is only imported by fastembed's image models; text embeddings do not need it.
+override-dependencies = ["pillow>=10.4.0,<11"]
