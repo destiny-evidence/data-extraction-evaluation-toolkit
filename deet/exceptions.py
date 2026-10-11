@@ -168,5 +168,15 @@ class LitellmModelNotMappedError(Exception):
     """
 
 
+class UnsupportedModelParamsError(Exception):
+    """
+    Raised when the configured model rejects a configured LLM parameter.
+
+    Wraps ``litellm.UnsupportedParamsError`` (e.g. ``temperature=0.1`` on an
+    O-series model) so the run is aborted with an actionable message instead
+    of failing silently on every document.
+    """
+
+
 class SplitsValidationError(Exception):
     """Raised when invalid allocation of documents to splits is attemped."""
