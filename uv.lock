@@ -3,14 +3,14 @@ revision = 3
 requires-python = ">=3.12.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
-    "python_full_version < '3.13' and sys_platform == 'darwin'",
     "python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "python_full_version < '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
     "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version >= '3.13' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "(python_full_version >= '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
+    "python_full_version < '3.13' and sys_platform == 'darwin'",
+    "python_full_version < '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "(python_full_version < '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 
@@ -656,7 +656,6 @@ dependencies = [
     { name = "clevercsv" },
     { name = "destiny-sdk" },
     { name = "diskcache" },
-    { name = "fastembed" },
     { name = "inquirerpy" },
     { name = "jinja2" },
     { name = "litellm" },
@@ -686,7 +685,7 @@ parsers = [
     { name = "pypandoc" },
 ]
 semantic = [
-    { name = "sentence-transformers" },
+    { name = "fastembed" },
 ]
 
 [package.dev-dependencies]
@@ -718,7 +717,7 @@ requires-dist = [
     { name = "clevercsv", specifier = ">=0.8.5" },
     { name = "destiny-sdk", extras = ["labs"], specifier = ">=0.9.1" },
     { name = "diskcache", specifier = ">=5.6.3" },
-    { name = "fastembed", specifier = ">=0.8.1" },
+    { name = "fastembed", marker = "extra == 'semantic'", specifier = ">=0.8.1" },
     { name = "inquirerpy", specifier = ">=0.3.4" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "litellm", specifier = ">=1.96.2" },
