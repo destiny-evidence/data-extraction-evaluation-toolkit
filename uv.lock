@@ -19,7 +19,7 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P5D"
 
 [manifest]
-overrides = [{ name = "pillow", specifier = ">=10.4.0,<11" }]
+overrides = [{ package = { name = "fastembed" }, dependencies = [{ name = "pillow" }] }]
 excludes = ["ecdsa"]
 
 [[package]]

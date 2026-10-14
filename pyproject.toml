@@ -205,6 +205,8 @@ exclude-dependencies = [
 exclude-newer = "P5D"
 no-binary-package = ["data-extraction-evaluation-toolkit"]
 no-build = true
-# fastembed 0.8 asks for pillow>=11 on Python 3.13. marker-pdf requires pillow<11.
-# Pillow is only imported by fastembed's image models; text embeddings do not need it.
-override-dependencies = ["pillow>=10.4.0,<11"]
+# fastembed 0.8 asks for pillow>=11 on Python 3.13. Text embeddings do not use
+# Pillow; drop that pin so marker-pdf (and our direct pillow dep) choose the version.
+override-dependencies = [
+    {dependencies = ["pillow"], package = {name = "fastembed"}},
+]
