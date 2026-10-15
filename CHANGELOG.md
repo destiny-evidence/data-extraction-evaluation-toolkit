@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v0.5.0-dev.3 (2026-10-15)
+
+### Features
+
+- Replace sentence-transformers with fastembed
+  ([`587889d`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/587889dfc5f0cb3974ea3a84ba0089a3d53fcda9))
+
+
+## v0.5.0-dev.2 (2026-10-08)
+
+
 ## v0.5.0-dev.1 (2026-10-06)
 
 

@@ -44,7 +44,7 @@ app.command(name="test-llm-config", hidden=True)(test_llm_config_legacy)
 def version_callback(value: Annotated[bool, typer.Option(hidden=True)]) -> None:
     """Print version and exit if --version is passed."""
     if value:
-        typer.echo(f"deet {get_version('data-extraction-evaluation-toolkit')}")
+        typer.echo(f"deet {get_version('destiny-deet')}")
         raise typer.Exit
 
 
