@@ -82,7 +82,7 @@ parsers = [
     "pypandoc>=1.15",
 ]
 semantic = [
-    "sentence-transformers>=5.5.1",
+    "fastembed>=0.8.1",
 ]
 
 [project.scripts]
@@ -218,6 +218,9 @@ overrides."tool.coverage.paths.source".inline_arrays = false
 [tool.uv]
 exclude-dependencies = [
     "ecdsa", # Required until https://github.com/mpdavis/python-jose/issues/390 is resolved
+    # fastembed 0.8 asks for pillow>=11 on Python 3.13. Text embeddings do not use
+    # Pillow; drop that edge so marker-pdf (and our direct pillow dep) choose the version.
+    {dependencies = ["pillow"], package = {name = "fastembed"}},
 ]
 exclude-newer = "P5D"
 no-binary-package = ["destiny-deet"]
