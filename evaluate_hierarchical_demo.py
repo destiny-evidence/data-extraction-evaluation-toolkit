@@ -36,7 +36,7 @@ eval_map_dict: EvaluationMap = {
     # "support_columns": [
     #     {
     #         "gold_column": "reported_mean",
-    #         "prediction_column": "group_mean",
+    #         "prediction_column": "group_summary_statistics",
     #     },
     #     {
     #         "gold_column": "reported_sd",

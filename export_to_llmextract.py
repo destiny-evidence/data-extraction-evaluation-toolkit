@@ -21,24 +21,17 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from pydantic import BaseModel
 
-from deet.hierarchical_mvp import (
-    AnimalRCTmodel,
-    CochraneRCTmodel,
-    ObesityRCTmodel,
-    PrognosticModel,
-    RCTmodel,
-)
+from deet.hierarchical_mvp import PrognosticModel
+from deet.hierarchical_mvp.continuous_statistics import ReportedStatistic
+from deet.hierarchical_mvp.rct_registry import RCT_MODEL_MODULES
 
 OUTPUT_DIR = Path("misc/hierarchical_mvp/output/templates")
 
 # study_type label -> model module, matching the study_type values used across
 # main_hierarchical.py / custom_hierarchical.py.
 STUDY_TYPE_MODULES = {
-    "RCT": RCTmodel,
+    **RCT_MODEL_MODULES,
     "PrognosticStudy": PrognosticModel,
-    "ObesityRCT": ObesityRCTmodel,
-    "CochraneRCT": CochraneRCTmodel,
-    "AnimalRCT": AnimalRCTmodel,
 }
 
 # Excel sheet titles are limited to 31 characters.
@@ -51,7 +44,7 @@ def _module_classes(module: object) -> dict[str, type[BaseModel]]:
     for name, obj in vars(module).items():
         if (
             isinstance(obj, type)
-            and obj.__module__ == module.__name__
+            and (obj.__module__ == module.__name__ or obj is ReportedStatistic)
             and issubclass(obj, BaseModel)
         ):
             classes[name] = obj

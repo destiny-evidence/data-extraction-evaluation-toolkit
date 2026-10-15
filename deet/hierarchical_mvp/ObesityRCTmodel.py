@@ -8,6 +8,13 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from .continuous_statistics import (
+    ReportedStatistic,
+    statistics_json,
+    summary_statistics_field,
+    variability_statistics_field,
+)
+
 
 class OutcomeTypes(
     BaseModel
@@ -34,7 +41,7 @@ class InterventionType(BaseModel):
 
 class Intervention(BaseModel):
     group_name: str = Field(
-        description="Identify and extract the name of the intervention group or groups from this study. This could be in the form of abbreviations. For example, mindfulness-based group, beverage-only intervention. "
+        description="Identify and extract the name of the experimental groups from this study. This could be in the form of abbreviations. For example, mindfulness-based group, beverage-only intervention. "
     )
     intervention_type: InterventionType = Field(description="Assign the best fitting intervention type defined in the classification scheme.")
     description: str = Field(
@@ -126,14 +133,10 @@ class Dichotomous_Outcome(BaseModel):
     outcome_time_point: OutcomeTimePoint = Field(
         description="Assign the best fitting outcome time point defined in this classification scheme."
     )
-    group_a_N: str = Field(
-        description="Total number of participants analysed in group A for this outcome"
+    group_N: str = Field(
+        description="Total number of participants analysed in this group for this outcome"
     )
-    group_b_N: str = Field(
-        description="Total number of participants analysed in group B for this outcome"
-    )
-    group_a_Events: str = Field(description="Number of events observed in group A")
-    group_b_Events: str = Field(description="Number of events observed in group B")
+    group_Events: str = Field(description="Number of events observed in this group")
     baseline_imbalances: str = Field(
         description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
     )
@@ -155,11 +158,8 @@ class Dichotomous_Outcome(BaseModel):
     unit_of_analysis: str = Field(
         description="What was the unit of analysis for this outcome? For example, by individuals, clusters, groups)? Note that a cluster RCT can have outcomes analysed at an individual level. Leave blank if not reported."
     )
-    group_labels: dict[str, str] = Field(
-        description=(
-            "Maps 'group_a' and 'group_b' to the intervention group name each set of "
-            "data corresponds to. Example: {'group_a': 'Intervention X', 'group_b': 'Placebo'}"
-        )
+    group_label: str = Field(
+        description="Name of this group for this outcome (intervention or control)."
     )
     supplementary_info: str = Field(
         description="If applicable, brief description of additional context. Flag up if any of the extracted numbers for this outcomes are percentages or otherwise not raw counts."
@@ -174,12 +174,9 @@ class Dichotomous_Outcome(BaseModel):
             "outcome_type",
             "outcome_name",
             "outcome_definition",
-            "group_a_label",
-            "group_b_label",
-            "group_a_N",
-            "group_b_N",
-            "group_a_Events",
-            "group_b_Events",
+            "group_label",
+            "group_N",
+            "group_Events",
             "imputation_of_missing_data",
             "power",
             "is_outcome_tool_validated",
@@ -199,12 +196,9 @@ class Dichotomous_Outcome(BaseModel):
             "outcome_type": "dichotomous",
             "outcome_name": self.outcome_name,
             "outcome_definition": self.outcome_definition,
-            "group_a_label": self.group_labels.get("group_a", ""),
-            "group_b_label": self.group_labels.get("group_b", ""),
-            "group_a_N": self.group_a_N,
-            "group_b_N": self.group_b_N,
-            "group_a_Events": self.group_a_Events,
-            "group_b_Events": self.group_b_Events,
+            "group_label": self.group_label,
+            "group_N": self.group_N,
+            "group_Events": self.group_Events,
             "imputation_of_missing_data": self.imputation_of_missing_data,
             "power": self.power,
             "is_outcome_tool_validated": self.is_outcome_tool_validated,
@@ -231,19 +225,14 @@ class Continuous_Outcome(BaseModel):
     outcome_time_point: OutcomeTimePoint = Field(
         description="Assign the best fitting outcome time point defined in this classification scheme."
     )
-    group_a_N: str = Field(
-        description="Total number of participants analysed in group A for this outcome"
+    group_N: str = Field(
+        description="Total number of participants analysed in this group for this outcome"
     )
-    group_b_N: str = Field(
-        description="Total number of participants analysed in group B for this outcome"
+    group_summary_statistics: list[ReportedStatistic] = summary_statistics_field(
+        "this arm"
     )
-    group_a_mean: str = Field(description="Mean value for group A")
-    group_b_mean: str = Field(description="Mean value for group B")
-    group_a_standard_deviation: str = Field(
-        description="Standard deviation for group A"
-    )
-    group_b_standard_deviation: str = Field(
-        description="Standard deviation for group B"
+    group_variability_statistics: list[ReportedStatistic] = (
+        variability_statistics_field("this arm")
     )
     baseline_imbalances: str = Field(
         description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
@@ -278,11 +267,8 @@ class Continuous_Outcome(BaseModel):
     unit_of_analysis: str = Field(
         description="What was the unit of analysis for this outcome? For example, by individuals, clusters, groups)? Note that a cluster RCT can have outcomes analysed at an individual level. Leave blank if not reported."
     )
-    group_labels: dict[str, str] = Field(
-        description=(
-            "Maps 'group_a' and 'group_b' to the intervention group name each set of "
-            "data corresponds to. Example: {'group_a': 'Drug X', 'group_b': 'Placebo'}"
-        )
+    group_label: str = Field(
+        description="Name of this group for this outcome (intervention or control)."
     )
     supplementary_info: str = Field(
         description="If applicable, brief description of additional context. Flag up if any of the extracted numbers for this outcomes are percentages or otherwise not raw counts."
@@ -297,14 +283,10 @@ class Continuous_Outcome(BaseModel):
             "outcome_type",
             "outcome_name",
             "outcome_definition",
-            "group_a_label",
-            "group_b_label",
-            "group_a_N",
-            "group_b_N",
-            "group_a_mean",
-            "group_b_mean",
-            "group_a_standard_deviation",
-            "group_b_standard_deviation",
+            "group_label",
+            "group_N",
+            "group_summary_statistics",
+            "group_variability_statistics",
             "unit_of_measurement",
             "scales_upper_and_lower_limits",
             "is_outcome_tool_validated",
@@ -328,14 +310,12 @@ class Continuous_Outcome(BaseModel):
             "outcome_type": "continuous",
             "outcome_name": self.outcome_name,
             "outcome_definition": self.outcome_definition,
-            "group_a_label": self.group_labels.get("group_a", ""),
-            "group_b_label": self.group_labels.get("group_b", ""),
-            "group_a_N": self.group_a_N,
-            "group_b_N": self.group_b_N,
-            "group_a_mean": self.group_a_mean,
-            "group_b_mean": self.group_b_mean,
-            "group_a_standard_deviation": self.group_a_standard_deviation,
-            "group_b_standard_deviation": self.group_b_standard_deviation,
+            "group_label": self.group_label,
+            "group_N": self.group_N,
+            "group_summary_statistics": statistics_json(self.group_summary_statistics),
+            "group_variability_statistics": statistics_json(
+                self.group_variability_statistics
+            ),
             "unit_of_measurement": self.unit_of_measurement,
             "scales_upper_and_lower_limits": self.scales_upper_and_lower_limits,
             "is_outcome_tool_validated": self.is_outcome_tool_validated,
@@ -366,8 +346,7 @@ class Other_Outcome(BaseModel):
     outcome_time_point: OutcomeTimePoint = Field(
         description="Assign the best fitting outcome time point defined in this classification scheme."
     )
-    group_a_result: str = Field(description="Outcome results reported for group a")
-    group_b_result: str = Field(description="Outcome results reported for group b")
+    group_result: str = Field(description="Outcome results reported for this group")
     effect_estimates: str = Field(
         description="Extract results on confidence intervals, p-values, or any other relevanteffect estimates related to this outcome if available. Leave blank if not reported. "
     )
@@ -401,11 +380,8 @@ class Other_Outcome(BaseModel):
     unit_of_analysis: str = Field(
         description="What was the unit of analysis for this outcome? For example, by individuals, clusters, groups)? Note that a cluster RCT can have outcomes analysed at an individual level. Leave blank if not reported."
     )
-    group_labels: dict[str, str] = Field(
-        description=(
-            "Maps 'group_a' and 'group_b' to the intervention group name each set of "
-            "data corresponds to. Example: {'group_a': 'Drug X', 'group_b': 'Placebo'}"
-        )
+    group_label: str = Field(
+        description="Name of this group for this outcome (intervention or control)."
     )
     supplementary_info: str = Field(
         description="If applicable, brief description of additional context."
@@ -428,10 +404,8 @@ class Other_Outcome(BaseModel):
             "minimally_important_difference",
             "measurement_reporting",
             "statistical_methods_used",
-            "group_a_label",
-            "group_b_label",
-            "group_a_result",
-            "group_b_result",
+            "group_label",
+            "group_result",
             "effect_estimates",
             "unit_of_analysis",
             "supplementary_info",
@@ -455,10 +429,8 @@ class Other_Outcome(BaseModel):
             "minimally_important_difference": self.minimally_important_difference,
             "measurement_reporting": self.measurement_reporting,
             "statistical_methods_used": self.statistical_methods_used,
-            "group_a_label": self.group_labels.get("group_a", ""),
-            "group_b_label": self.group_labels.get("group_b", ""),
-            "group_a_result": self.group_a_result,
-            "group_b_result": self.group_b_result,
+            "group_label": self.group_label,
+            "group_result": self.group_result,
             "effect_estimates": self.effect_estimates,
             "unit_of_analysis": self.unit_of_analysis,
             "supplementary_info": self.supplementary_info,

@@ -43,7 +43,89 @@ The pre-defined hierarchical extraction pipeline (`deet/main_hierarchical.py`) s
 - `AnimalRCT`
 - `ClimateCarbonPricing`
 
-The dynamic, CSV-schema-driven pipeline (`deet/custom_hierarchical.py`) supports the same values. `PrognosticStudy` and `ClimateCarbonPricing` each have their own dedicated dynamic pipeline; every other value (e.g. `RCT`, `CochraneRCT`, `ObesityRCT`, `AnimalRCT`) is treated as RCT-style extraction.
+The RCT types also have preserved pairwise variants: `RCT_pairwise`,
+`CochraneRCT_pairwise`, `ObesityRCT_pairwise`, and `AnimalRCT_pairwise`.
+The dynamic, CSV-schema-driven pipeline (`deet/custom_hierarchical.py`) supports
+the same study types, including the pairwise variants and the distinct animal
+induction/assessment intervention structure.
+
+### One arm per RCT outcome
+
+`RCT`, `CochraneRCT`, `ObesityRCT`, and `AnimalRCT` extract one intervention arm
+per outcome object. Create a separate object for each reported outcome, time
+point, and group, including controls and baseline results. A three-arm trial
+reporting MADRS at one follow-up therefore produces three continuous outcome
+objects, not one object containing multiple arms or repeated pairwise contrasts.
+Each has a `group_label` identifying its intervention and only that group's
+result fields (for example, `group_N`, `group_summary_statistics`, and
+`group_variability_statistics`). Animal outcomes retain the induction subgroup.
+Cochrane outcomes produce one RevMan row per object.
+No unreported arm results are invented from a
+between-arm estimate.
+
+JSON keeps each arm in a separate list entry; CSV and XLSX exports keep a
+separate row per arm. Cochrane post-processing supports both formats.
+To continue using two-arm outcomes, select a `_pairwise` study type.
+Their models and extraction modules are retained with the same suffix; continuous
+statistics use the named-statistic representation described below in all variants.
+Existing pairwise JSON is not automatically converted into single-arm records.
+Regenerate prompt CSVs for the selected study type. Custom single-arm
+pipelines reject old two-arm prompt schemas instead of silently mixing formats.
+
+### Named continuous statistics
+
+All `Continuous_Outcome` models, including the `_pairwise` variants, extract
+lists of named summary and variability statistics instead of fixed mean/SD
+fields. This preserves studies reporting medians, geometric means, within-arm
+changes, standard errors, interquartile ranges, ranges, confidence intervals,
+or multiple measures together.
+
+For single-arm outcomes (and the animal induction/assessment structure):
+
+```json
+{
+  "group_summary_statistics": [
+    {"measure": "Median", "value": "12", "basis": "Endpoint", "details": ""}
+  ],
+  "group_variability_statistics": [
+    {"measure": "Interquartile range", "value": "8-17", "basis": "Endpoint", "details": "Q1-Q3 for median"}
+  ]
+}
+```
+
+Two-arm human RCT variants use `group_a_summary_statistics`,
+`group_b_summary_statistics`, `group_a_variability_statistics`, and
+`group_b_variability_statistics`. Animal variants retain their induction and
+assessment metadata and use the single-group statistic lists.
+
+Each statistic has string fields `measure`, `value`, `basis`, and `details`.
+Suggested measure names are prompt guidance, not enums: edit the
+`ReportedStatistic` rows in generated prompt CSVs to customize them.
+`basis` distinguishes endpoint values from change-from-baseline statistics;
+`details` records confidence levels, the corresponding summary measure,
+adjustment, or other reported context. Preserve values and interval bounds as
+reported, without converting or calculating missing statistics. Use an empty
+list when no statistic is reported. A between-arm mean difference is not an
+arm-level average; preserve it in `effect_estimates` (or Cochrane `footnotes`),
+not as a group's summary statistic.
+
+JSON preserves these lists as objects. CSV/XLSX encode each list as JSON in its
+own cell without duplicating the arm's outcome row. Cochrane exports add the
+full statistic-list columns alongside the RevMan columns. They populate
+`Mean`, `SD`, `SE`, and `Variance` only for an unambiguous matching endpoint
+statistic with no additional context. Medians, change scores, confidence
+intervals, adjusted estimates, unknown bases, and ambiguous repeated measures
+remain in the full lists rather than being coerced into those numeric columns.
+The fixed `CI level`, `CI start`, and `CI end` columns remain blank for the
+new representation; interval bounds and confidence levels are preserved in
+the statistic's `value` and `details`. When importing into software requiring
+the exact RevMan template, review/map the full lists and remove supplemental
+columns as appropriate.
+
+This is a schema change: regenerate prompt CSVs and migrate existing continuous
+outcome JSON/gold standards before reuse. Old mean/SD prompt CSVs are explicitly
+rejected rather than silently used. Existing JSON is not automatically migrated.
+The standalone Cochrane postprocessor still supports legacy two-arm JSON.
 
 ## Hierarchical RCT extraction (pre-defined schema)
 
@@ -221,6 +303,23 @@ python -m deet.custom_hierarchical write_hierarchical_prompts_csv --study-type R
 ~~~
 
 This generates a CSV with columns class, attribute, prompt, and datatype. You can review and edit prompts in this file before extraction.
+
+For `RCT` and `PrognosticStudy`, outcomes use an `OutcomeTimePoint` object
+containing `time_point_category`, `time_point_detail`, `time_point_value`, and
+`time_point_unit`. The value is text, so reported ranges such as `6-12` are
+preserved. The unit is a plain string, with the prompt suggesting `seconds`,
+`minutes`, `hours`, `days`, `weeks`, `months`, `years`, or `NR`. Users can change
+these options by editing the prompt CSV without changing the datatype.
+Unreported values and units should use `NR`.
+JSON exports retain the nested object; CSV and XLSX exports expose the value and
+unit as separate columns. Static exports retain `outcome_time_point` (category)
+and `outcome_time_point_detail`; custom exports flatten these as
+`time_point_category` and `time_point_detail`.
+
+Regenerate existing RCT and prognostic prompt CSVs to include the new fields.
+The generated unit datatype is `str`. Prognostic JSON now uses the structured object rather
+than a free-text `outcome_time_point` string; existing JSON inputs must be
+updated to that structure.
 
 `deet/custom_hierarchical.py` also exposes `parse_pdfs`, `predict_single_study`, and `predict_batch` subcommands, mirroring `main_hierarchical.py` but taking the prompt CSV as an additional argument.
 

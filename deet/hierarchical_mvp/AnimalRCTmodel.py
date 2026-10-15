@@ -2,14 +2,20 @@
 
 Unlike RCTmodel.py/ObesityRCTmodel.py, this study type has two distinct
 intervention lists (InductionIntervention, AssessmentIntervention) instead of
-a single Intervention list, and outcomes are reported for a unique
-combination of induction and assessment intervention rather than for a
-group_a/group_b comparison.
+a single Intervention list. Each outcome reports one intervention arm, defined
+by its induction and assessment intervention combination.
 """
 
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
+
+from .continuous_statistics import (
+    ReportedStatistic,
+    statistics_json,
+    summary_statistics_field,
+    variability_statistics_field,
+)
 
 
 class OutcomeTypes(BaseModel):
@@ -29,7 +35,7 @@ class OutcomeTimePoint(BaseModel):
 
 class InductionIntervention(BaseModel):
     intervention_to_induce_name: str = Field(
-        description="Identify and extract the name of the intervention used to induce the condition, injury, disease model, or subpopulation in this study arm. This could be in the form of abbreviations."
+        description="Identify and extract the name of the experimental groups from this study. For this induction group, identify the intervention used to induce the condition, injury, disease model, or subpopulation in this study arm. This could be in the form of abbreviations."
     )
     intervention_to_induce_description: str = Field(
         description="Describe this induction intervention. Note the frequency, duration, and amount or dose used to induce the condition or model. Be as precise as possible and report as written in the text."
@@ -106,7 +112,7 @@ class InductionIntervention(BaseModel):
 
 class AssessmentIntervention(BaseModel):
     intervention_to_assess_name: str = Field(
-        description="Identify and extract the name of the intervention being assessed (e.g. treatment, drug, procedure) in this study arm. This could be in the form of abbreviations."
+        description="Identify and extract the name of the experimental groups from this study. For this assessment group, identify the intervention being assessed (e.g. treatment, drug, procedure) in this study arm. This could be in the form of abbreviations."
     )
     intervention_to_assess_description: str = Field(
         description="Describe this assessment intervention. Note the frequency, duration, and amount or dose of the intervention. Be as precise as possible: if duration, frequency or dose are mentioned, they need to be in the answer."
@@ -189,16 +195,19 @@ class Dichotomous_Outcome(BaseModel):
     outcome_time_point: OutcomeTimePoint = Field(
         description="Assign the best fitting outcome time point defined in this classification scheme."
     )
+    group_label: str = Field(
+        description="Name of this group (intervention or control) for this outcome, corresponding to the specified induction and assessment intervention combination."
+    )
     intervention_to_induce_name: str = Field(
         description="The name of the induction intervention (subpopulation) that this outcome data corresponds to."
     )
     intervention_to_assess_name: str = Field(
         description="The name of the assessment intervention that this outcome data corresponds to."
     )
-    N: str = Field(
+    group_N: str = Field(
         description="Total number of animals or units analysed for this outcome, for this combination of induction and assessment intervention."
     )
-    Events: str = Field(
+    group_Events: str = Field(
         description="Number of events observed for this outcome, for this combination of induction and assessment intervention."
     )
     baseline_imbalances: str = Field(
@@ -235,10 +244,11 @@ class Dichotomous_Outcome(BaseModel):
             "outcome_type",
             "outcome_name",
             "outcome_definition",
+            "group_label",
             "intervention_to_induce_name",
             "intervention_to_assess_name",
-            "N",
-            "Events",
+            "group_N",
+            "group_Events",
             "imputation_of_missing_data",
             "power",
             "is_outcome_tool_validated",
@@ -258,10 +268,11 @@ class Dichotomous_Outcome(BaseModel):
             "outcome_type": "dichotomous",
             "outcome_name": self.outcome_name,
             "outcome_definition": self.outcome_definition,
+            "group_label": self.group_label,
             "intervention_to_induce_name": self.intervention_to_induce_name,
             "intervention_to_assess_name": self.intervention_to_assess_name,
-            "N": self.N,
-            "Events": self.Events,
+            "group_N": self.group_N,
+            "group_Events": self.group_Events,
             "imputation_of_missing_data": self.imputation_of_missing_data,
             "power": self.power,
             "is_outcome_tool_validated": self.is_outcome_tool_validated,
@@ -288,20 +299,23 @@ class Continuous_Outcome(BaseModel):
     outcome_time_point: OutcomeTimePoint = Field(
         description="Assign the best fitting outcome time point defined in this classification scheme."
     )
+    group_label: str = Field(
+        description="Name of this group (intervention or control) for this outcome, corresponding to the specified induction and assessment intervention combination."
+    )
     intervention_to_induce_name: str = Field(
         description="The name of the induction intervention (subpopulation) that this outcome data corresponds to."
     )
     intervention_to_assess_name: str = Field(
         description="The name of the assessment intervention that this outcome data corresponds to."
     )
-    N: str = Field(
+    group_N: str = Field(
         description="Total number of animals or units analysed for this outcome, for this combination of induction and assessment intervention."
     )
-    mean: str = Field(
-        description="Mean value for this outcome, for this combination of induction and assessment intervention."
+    group_summary_statistics: list[ReportedStatistic] = summary_statistics_field(
+        "this induction/assessment arm"
     )
-    standard_deviation: str = Field(
-        description="Standard deviation for this outcome, for this combination of induction and assessment intervention."
+    group_variability_statistics: list[ReportedStatistic] = (
+        variability_statistics_field("this induction/assessment arm")
     )
     baseline_imbalances: str = Field(
         description="Identify if there were any baseline differences between this group and others. Do not extrapolate. This information is often presented in tables."
@@ -349,11 +363,12 @@ class Continuous_Outcome(BaseModel):
             "outcome_type",
             "outcome_name",
             "outcome_definition",
+            "group_label",
             "intervention_to_induce_name",
             "intervention_to_assess_name",
-            "N",
-            "mean",
-            "standard_deviation",
+            "group_N",
+            "group_summary_statistics",
+            "group_variability_statistics",
             "unit_of_measurement",
             "scales_upper_and_lower_limits",
             "is_outcome_tool_validated",
@@ -377,11 +392,14 @@ class Continuous_Outcome(BaseModel):
             "outcome_type": "continuous",
             "outcome_name": self.outcome_name,
             "outcome_definition": self.outcome_definition,
+            "group_label": self.group_label,
             "intervention_to_induce_name": self.intervention_to_induce_name,
             "intervention_to_assess_name": self.intervention_to_assess_name,
-            "N": self.N,
-            "mean": self.mean,
-            "standard_deviation": self.standard_deviation,
+            "group_N": self.group_N,
+            "group_summary_statistics": statistics_json(self.group_summary_statistics),
+            "group_variability_statistics": statistics_json(
+                self.group_variability_statistics
+            ),
             "unit_of_measurement": self.unit_of_measurement,
             "scales_upper_and_lower_limits": self.scales_upper_and_lower_limits,
             "is_outcome_tool_validated": self.is_outcome_tool_validated,
@@ -418,7 +436,10 @@ class Other_Outcome(BaseModel):
     outcome_time_point: OutcomeTimePoint = Field(
         description="Assign the best fitting outcome time point defined in this classification scheme."
     )
-    result: str = Field(
+    group_label: str = Field(
+        description="Name of this group (intervention or control) for this outcome, corresponding to the specified induction and assessment intervention combination."
+    )
+    group_result: str = Field(
         description="Outcome results reported for this combination of induction and assessment intervention."
     )
     effect_estimates: str = Field(
@@ -467,6 +488,7 @@ class Other_Outcome(BaseModel):
             "outcome_type",
             "outcome_name",
             "outcome_definition",
+            "group_label",
             "unit_of_measurement",
             "scales_upper_and_lower_limits",
             "is_outcome_tool_validated",
@@ -477,7 +499,7 @@ class Other_Outcome(BaseModel):
             "statistical_methods_used",
             "intervention_to_induce_name",
             "intervention_to_assess_name",
-            "result",
+            "group_result",
             "effect_estimates",
             "unit_of_analysis",
             "supplementary_info",
@@ -493,6 +515,7 @@ class Other_Outcome(BaseModel):
             "outcome_type": "other",
             "outcome_name": self.outcome_name,
             "outcome_definition": self.outcome_definition,
+            "group_label": self.group_label,
             "unit_of_measurement": self.unit_of_measurement,
             "scales_upper_and_lower_limits": self.scales_upper_and_lower_limits,
             "is_outcome_tool_validated": self.is_outcome_tool_validated,
@@ -503,7 +526,7 @@ class Other_Outcome(BaseModel):
             "statistical_methods_used": self.statistical_methods_used,
             "intervention_to_induce_name": self.intervention_to_induce_name,
             "intervention_to_assess_name": self.intervention_to_assess_name,
-            "result": self.result,
+            "group_result": self.group_result,
             "effect_estimates": self.effect_estimates,
             "unit_of_analysis": self.unit_of_analysis,
             "supplementary_info": self.supplementary_info,

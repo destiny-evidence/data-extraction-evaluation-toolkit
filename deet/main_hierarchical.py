@@ -7,25 +7,30 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dotenv import load_dotenv
 
 from deet.hierarchical_mvp.AnimalRCTextraction import AnimalRCTExtractionPipeline
-from deet.hierarchical_mvp.AnimalRCTmodel import Study as AnimalStudy
+from deet.hierarchical_mvp.AnimalRCTextraction_pairwise import (
+    AnimalRCTExtractionPipeline as AnimalRCTExtractionPipeline_pairwise,
+)
 from deet.hierarchical_mvp.ClimateCarbonPricingextraction import (
     ClimateCarbonPricingExtractionPipeline,
 )
-from deet.hierarchical_mvp.ClimateCarbonPricingmodel import (
-    Study as ClimateCarbonPricingStudy,
-)
 from deet.hierarchical_mvp.CochraneRCTextraction import CochraneRCTExtractionPipeline
+from deet.hierarchical_mvp.CochraneRCTextraction_pairwise import (
+    CochraneRCTExtractionPipeline as CochraneRCTExtractionPipeline_pairwise,
+)
 from deet.hierarchical_mvp.ObesityRCTextraction import ObesityRCTExtractionPipeline
-from deet.hierarchical_mvp.ObesityRCTmodel import Study as ObesityStudy
+from deet.hierarchical_mvp.ObesityRCTextraction_pairwise import (
+    ObesityRCTExtractionPipeline as ObesityRCTExtractionPipeline_pairwise,
+)
 from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
-from deet.hierarchical_mvp.PrognosticModel import PrognosticStudy
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
-from deet.hierarchical_mvp.RCTmodel import Study
+from deet.hierarchical_mvp.RCTextraction_pairwise import (
+    RCTExtractionPipeline as RCTExtractionPipeline_pairwise,
+)
 from deet.hierarchical_mvp.utils import (
     configure_lm,
     export_animal_csv,
@@ -38,6 +43,20 @@ from deet.hierarchical_mvp.utils import (
 )
 from deet.logger import logger
 from deet.processors.parser import parse_folder_to_markdown
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
+
+RCT_PIPELINES = {
+    "RCT": RCTExtractionPipeline,
+    "CochraneRCT": CochraneRCTExtractionPipeline,
+    "ObesityRCT": ObesityRCTExtractionPipeline,
+    "AnimalRCT": AnimalRCTExtractionPipeline,
+    "RCT_pairwise": RCTExtractionPipeline_pairwise,
+    "CochraneRCT_pairwise": CochraneRCTExtractionPipeline_pairwise,
+    "ObesityRCT_pairwise": ObesityRCTExtractionPipeline_pairwise,
+    "AnimalRCT_pairwise": AnimalRCTExtractionPipeline_pairwise,
+}
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -264,36 +283,28 @@ def validate_create_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
 
 def extract(
     context: str, study_type: str
-) -> Study | PrognosticStudy | ObesityStudy | AnimalStudy | ClimateCarbonPricingStudy:
+) -> BaseModel:
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
+    if study_type in RCT_PIPELINES:
+        return RCT_PIPELINES[study_type]()(context=context)
     match study_type:
-        case "RCT":
-            pipeline = RCTExtractionPipeline()
-            return pipeline(context=context)
-        case "CochraneRCT":
-            pipeline = CochraneRCTExtractionPipeline()
-            return pipeline(context=context)
         case "PrognosticStudy":
             pipeline = PrognosticExtractionPipeline()
-            return pipeline(context=context)
-        case "ObesityRCT":
-            pipeline = ObesityRCTExtractionPipeline()
-            return pipeline(context=context)
-        case "AnimalRCT":
-            pipeline = AnimalRCTExtractionPipeline()
             return pipeline(context=context)
         case "ClimateCarbonPricing":
             pipeline = ClimateCarbonPricingExtractionPipeline()
             return pipeline(context=context)
         case _:
-            raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing"
+            error_message = (
+                f"Unsupported study_type '{study_type}'. Supported: "
+                f"{', '.join(RCT_PIPELINES)}, PrognosticStudy, ClimateCarbonPricing"
             )
+            raise ValueError(error_message)
 
 
 def save_data(
-    study: Study | PrognosticStudy | ObesityStudy | AnimalStudy | ClimateCarbonPricingStudy,
+    study: BaseModel,
     input_paths: list[str],
     output_parent_dir: str,
     study_type: str = "RCT",
@@ -327,73 +338,30 @@ def save_data(
     if not (export_csv_files or export_xlsx_file):
         return
 
-    match study_type:
-        case "CochraneRCT":
-            export_cochrane_csv(
-                study,
-                study_name,
-                output_dir,
-                timestamp,
-                model_suffix,
-                write_csv=export_csv_files,
-                write_xlsx=export_xlsx_file,
-                flat_output=flat_output,
-            )
-        case "PrognosticStudy":
-            export_prognostic_csv(
-                study,
-                study_name,
-                output_dir,
-                timestamp,
-                model_suffix,
-                write_csv=export_csv_files,
-                write_xlsx=export_xlsx_file,
-                flat_output=flat_output,
-            )
-        case "ObesityRCT":
-            export_obesity_csv(
-                study,
-                study_name,
-                output_dir,
-                timestamp,
-                model_suffix,
-                write_csv=export_csv_files,
-                write_xlsx=export_xlsx_file,
-                flat_output=flat_output,
-            )
-        case "AnimalRCT":
-            export_animal_csv(
-                study,
-                study_name,
-                output_dir,
-                timestamp,
-                model_suffix,
-                write_csv=export_csv_files,
-                write_xlsx=export_xlsx_file,
-                flat_output=flat_output,
-            )
-        case "ClimateCarbonPricing":
-            export_climate_carbon_pricing_csv(
-                study,
-                study_name,
-                output_dir,
-                timestamp,
-                model_suffix,
-                write_csv=export_csv_files,
-                write_xlsx=export_xlsx_file,
-                flat_output=flat_output,
-            )
-        case _:
-            export_csv(
-                study,
-                study_name,
-                output_dir,
-                timestamp,
-                model_suffix,
-                write_csv=export_csv_files,
-                write_xlsx=export_xlsx_file,
-                flat_output=flat_output,
-            )
+    exporters = {
+        "RCT": export_csv,
+        "CochraneRCT": export_cochrane_csv,
+        "ObesityRCT": export_obesity_csv,
+        "AnimalRCT": export_animal_csv,
+        "PrognosticStudy": export_prognostic_csv,
+        "ClimateCarbonPricing": export_climate_carbon_pricing_csv,
+    }
+    base_type = study_type.removesuffix("_pairwise")
+    if study_type not in RCT_PIPELINES and study_type not in {
+        "PrognosticStudy", "ClimateCarbonPricing"
+    }:
+        error_message = f"Unsupported study_type '{study_type}'."
+        raise ValueError(error_message)
+    exporters[base_type](
+        study,
+        study_name,
+        output_dir,
+        timestamp,
+        model_suffix,
+        write_csv=export_csv_files,
+        write_xlsx=export_xlsx_file,
+        flat_output=flat_output,
+    )
 
 
 def run_parse_pdfs(input_folder: str) -> None:

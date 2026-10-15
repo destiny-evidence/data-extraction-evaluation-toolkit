@@ -6,9 +6,8 @@ CSV that matches the Study+results template format:
 
     Study | Outcome | Data type | Arm | Sample size | Cases | Mean | … | Footnotes
 
-Each outcome in the JSON is stored with both arms' data.  This module
-splits every outcome into *two rows* — one per arm — so that the output
-is ready to be imported directly into RevMan / the Cochrane pipeline.
+Single-arm outcomes produce one row each. Preserved pairwise JSON is also
+supported and produces two rows per outcome, one per arm.
 
 CLI usage (standalone):
     python -m deet.hierarchical_mvp.cochrane_postprocessing <json_path> [<output_csv>]
@@ -23,6 +22,9 @@ from pathlib import Path
 
 from deet.hierarchical_mvp.utils import _open_csv_for_write
 from deet.logger import logger
+
+from .CochraneRCTmodel import Continuous_Outcome, Dichotomous_Outcome
+from .CochraneRCTmodel_pairwise import Continuous_Outcome as PairwiseContinuousOutcome
 
 # ---------------------------------------------------------------------------
 # Column order for the output CSV (matches Study+results template)
@@ -45,6 +47,8 @@ OUTPUT_FIELDNAMES: list[str] = [
     "t-test",
     "P value",
     "Footnotes",
+    "group_summary_statistics",
+    "group_variability_statistics",
 ]
 
 
@@ -170,8 +174,8 @@ def postprocess_cochrane_outcomes(
 ) -> Path:
     """Read a Cochrane extraction JSON and write a split-row outcomes CSV.
 
-    Each dichotomous and continuous outcome in the JSON is expanded into
-    two rows (one per arm).  Arm names in the output are validated against
+    Single-arm outcomes produce one row; pairwise outcomes produce two.
+    Arm names in the output are validated against
     the ``interventions`` list in the JSON and a warning is logged when
     they do not match.
 
@@ -209,10 +213,27 @@ def postprocess_cochrane_outcomes(
     rows: list[dict[str, str]] = []
 
     for outcome in study_dict.get("dichotomous_outcomes", []):
-        rows.extend(_split_dichotomous(outcome, study_id, known_arms))
+        if "group_label" in outcome:
+            model = Dichotomous_Outcome.model_validate(outcome)
+            _warn_unknown_arms(model.outcome_name, model.group_label, "", known_arms)
+            rows.extend(model.to_csv_rows(study=study_id))
+        else:
+            rows.extend(_split_dichotomous(outcome, study_id, known_arms))
 
     for outcome in study_dict.get("continuous_outcomes", []):
-        rows.extend(_split_continuous(outcome, study_id, known_arms))
+        if "group_label" in outcome:
+            model = Continuous_Outcome.model_validate(outcome)
+            _warn_unknown_arms(model.outcome_name, model.group_label, "", known_arms)
+            rows.extend(model.to_csv_rows(study=study_id))
+        elif "group_a_summary_statistics" in outcome:
+            pairwise_model = PairwiseContinuousOutcome.model_validate(outcome)
+            _warn_unknown_arms(
+                pairwise_model.outcome_name, pairwise_model.arm_a,
+                pairwise_model.arm_b, known_arms,
+            )
+            rows.extend(pairwise_model.to_csv_rows(study=study_id))
+        else:
+            rows.extend(_split_continuous(outcome, study_id, known_arms))
 
     if output_csv is None:
         output_csv = json_path.with_name(f"{json_path.stem}_outcomes.csv")

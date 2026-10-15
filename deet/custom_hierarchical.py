@@ -7,18 +7,26 @@ import csv
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 import dspy
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, create_model
 
 from deet.hierarchical_mvp import AnimalRCTmodel as animal_models
-from deet.hierarchical_mvp import ClimateCarbonPricingmodel as climate_carbon_pricing_models
+from deet.hierarchical_mvp import (
+    ClimateCarbonPricingmodel as climate_carbon_pricing_models,
+)
 from deet.hierarchical_mvp import CochraneRCTmodel as cochrane_models
 from deet.hierarchical_mvp import ObesityRCTmodel as obesity_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
+from deet.hierarchical_mvp.continuous_statistics import ReportedStatistic
+from deet.hierarchical_mvp.outcome_prompts import (
+    continuous_outcome_signature,
+    single_arm_outcome_signature,
+)
+from deet.hierarchical_mvp.rct_registry import RCT_MODEL_MODULES
 from deet.hierarchical_mvp.utils import (
     _open_csv_for_write,
     _write_tables,
@@ -27,6 +35,9 @@ from deet.hierarchical_mvp.utils import (
 )
 from deet.logger import logger
 from deet.processors.parser import parse_folder_to_markdown
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 DEFAULT_PROMPT_CSV_FILENAME = "hierarchical_prompts.csv"
 DEFAULT_CONFIG_FILENAME = "hierarchical_config.json"
@@ -86,6 +97,12 @@ TARGET_DYNAMIC_CLASSES = (
 )
 
 
+def _prompt_datatype(annotation: object) -> str:
+    if get_origin(annotation) is list:
+        return f"list[{_prompt_datatype(get_args(annotation)[0])}]"
+    return getattr(annotation, "__name__", str(annotation))
+
+
 def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
     """Build prompt rows from classes defined in hierarchical models."""
     rows: list[dict[str, str]] = []
@@ -93,7 +110,7 @@ def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
     for _, cls in hierarchical_models.__dict__.items():
         if not isinstance(cls, type):
             continue
-        if cls.__module__ != hierarchical_models.__name__:
+        if cls.__module__ != hierarchical_models.__name__ and cls is not ReportedStatistic:
             continue
         if not issubclass(cls, BaseModel):
             continue
@@ -101,7 +118,7 @@ def build_hierarchical_prompt_rows() -> list[dict[str, str]]:
         for field_name, field_info in cls.model_fields.items():
             description = field_info.description or ""
             annotation = field_info.annotation
-            datatype = getattr(annotation, "__name__", str(annotation))
+            datatype = _prompt_datatype(annotation)
 
             rows.append(
                 {
@@ -122,7 +139,7 @@ def build_cochrane_hierarchical_prompt_rows() -> list[dict[str, str]]:
     for _, cls in cochrane_models.__dict__.items():
         if not isinstance(cls, type):
             continue
-        if cls.__module__ != cochrane_models.__name__:
+        if cls.__module__ != cochrane_models.__name__ and cls is not ReportedStatistic:
             continue
         if not issubclass(cls, BaseModel):
             continue
@@ -130,7 +147,7 @@ def build_cochrane_hierarchical_prompt_rows() -> list[dict[str, str]]:
         for field_name, field_info in cls.model_fields.items():
             description = field_info.description or ""
             annotation = field_info.annotation
-            datatype = getattr(annotation, "__name__", str(annotation))
+            datatype = _prompt_datatype(annotation)
 
             rows.append(
                 {
@@ -180,7 +197,7 @@ def build_obesity_hierarchical_prompt_rows() -> list[dict[str, str]]:
     for _, cls in obesity_models.__dict__.items():
         if not isinstance(cls, type):
             continue
-        if cls.__module__ != obesity_models.__name__:
+        if cls.__module__ != obesity_models.__name__ and cls is not ReportedStatistic:
             continue
         if not issubclass(cls, BaseModel):
             continue
@@ -188,7 +205,7 @@ def build_obesity_hierarchical_prompt_rows() -> list[dict[str, str]]:
         for field_name, field_info in cls.model_fields.items():
             description = field_info.description or ""
             annotation = field_info.annotation
-            datatype = getattr(annotation, "__name__", str(annotation))
+            datatype = _prompt_datatype(annotation)
 
             rows.append(
                 {
@@ -209,7 +226,7 @@ def build_animal_hierarchical_prompt_rows() -> list[dict[str, str]]:
     for _, cls in animal_models.__dict__.items():
         if not isinstance(cls, type):
             continue
-        if cls.__module__ != animal_models.__name__:
+        if cls.__module__ != animal_models.__name__ and cls is not ReportedStatistic:
             continue
         if not issubclass(cls, BaseModel):
             continue
@@ -217,7 +234,7 @@ def build_animal_hierarchical_prompt_rows() -> list[dict[str, str]]:
         for field_name, field_info in cls.model_fields.items():
             description = field_info.description or ""
             annotation = field_info.annotation
-            datatype = getattr(annotation, "__name__", str(annotation))
+            datatype = _prompt_datatype(annotation)
 
             rows.append(
                 {
@@ -265,23 +282,23 @@ def write_hierarchical_prompts_csv(
     csv_outpath: str | Path | None = None,
 ) -> Path:
     """Write hierarchical prompt metadata to a CSV at a fixed location."""
-    match study_type:
-        case "RCT":
-            rows = build_hierarchical_prompt_rows()
-        case "CochraneRCT":
-            rows = build_cochrane_hierarchical_prompt_rows()
-        case "PrognosticStudy":
-            rows = build_prognostic_hierarchical_prompt_rows()
-        case "ObesityRCT":
-            rows = build_obesity_hierarchical_prompt_rows()
-        case "AnimalRCT":
-            rows = build_animal_hierarchical_prompt_rows()
-        case "ClimateCarbonPricing":
-            rows = build_climate_carbon_pricing_hierarchical_prompt_rows()
-        case _:
-            raise ValueError(
-                f"Unsupported study_type '{study_type}'. Supported: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing"
-            )
+    if study_type in RCT_MODEL_MODULES:
+        module = RCT_MODEL_MODULES[study_type]
+        rows = [
+            {
+                "class": cls.__name__,
+                "attribute": field_name,
+                "prompt": field.description or "",
+                "datatype": _prompt_datatype(field.annotation),
+            }
+            for cls in vars(module).values()
+            if isinstance(cls, type)
+            and (cls.__module__ == module.__name__ or cls is ReportedStatistic)
+            and issubclass(cls, BaseModel)
+            for field_name, field in cls.model_fields.items()
+        ]
+    else:
+        rows = _prompt_rows_for_non_rct(study_type)
 
     if csv_outpath is None:
         output_csv_path = Path.cwd() / DEFAULT_PROMPT_CSV_FILENAME
@@ -303,12 +320,31 @@ def write_hierarchical_prompts_csv(
     return output_csv_path
 
 
+def _prompt_rows_for_non_rct(study_type: str) -> list[dict[str, str]]:
+    match study_type:
+        case "PrognosticStudy":
+            rows = build_prognostic_hierarchical_prompt_rows()
+        case "ClimateCarbonPricing":
+            rows = build_climate_carbon_pricing_hierarchical_prompt_rows()
+        case _:
+            error_message = (
+                f"Unsupported study_type '{study_type}'. Supported: "
+                f"{', '.join(RCT_MODEL_MODULES)}, PrognosticStudy, ClimateCarbonPricing"
+            )
+            raise ValueError(error_message)
+
+    return rows
+
+
 def _resolve_dtype(
     datatype: str,
     schema: dict[str, list[dict[str, str]]] | None = None,
     nested_cache: dict[str, type[BaseModel]] | None = None,
 ) -> Any:
     normalized = datatype.strip().lower()
+    if normalized.startswith("list[") and normalized.endswith("]"):
+        inner = _resolve_dtype(datatype.strip()[5:-1], schema, nested_cache)
+        return list[inner]
 
     # If the datatype names another class that itself has rows in the CSV schema
     # (e.g. a nested/enum-like class like InterventionType), build it dynamically
@@ -324,7 +360,9 @@ def _resolve_dtype(
                     inner_dtype = _resolve_dtype(field_def["datatype"], schema, nested_cache)
                     definitions[field_def["attribute"]] = (
                         inner_dtype,
-                        Field(default="", description=field_def["prompt"]),
+                        Field(default_factory=list, description=field_def["prompt"])
+                        if get_origin(inner_dtype) is list
+                        else Field(default="", description=field_def["prompt"]),
                     )
                 nested_cache[class_name] = create_model(
                     f"Dynamic{class_name}",
@@ -396,7 +434,9 @@ def _build_dynamic_models_from_schema(
             description = field_def["prompt"]
             definitions[field_def["attribute"]] = (
                 dtype,
-                Field(default="", description=description),
+                Field(default_factory=list, description=description)
+                if get_origin(dtype) is list
+                else Field(default="", description=description),
             )
 
         dynamic_models[class_name] = create_model(
@@ -411,16 +451,19 @@ def _build_dynamic_models_from_schema(
 def _ensure_rct_runtime_models(
     schema: dict[str, list[dict[str, str]]],
     dynamic_models: dict[str, type[BaseModel]],
+    model_module: ModuleType = hierarchical_models,
 ) -> dict[str, type[BaseModel]]:
     runtime_models: dict[str, type[BaseModel]] = {}
 
     for class_name in RCT_DYNAMIC_CLASSES:
+        if class_name == "Other_Outcome" and not hasattr(model_module, class_name):
+            continue
         model_cls = dynamic_models.get(class_name)
         if model_cls is not None:
             runtime_models[class_name] = model_cls
             continue
 
-        fallback = getattr(hierarchical_models, class_name, None)
+        fallback = getattr(model_module, class_name, None)
         if isinstance(fallback, type) and issubclass(fallback, BaseModel):
             runtime_models[class_name] = fallback
         else:
@@ -429,6 +472,12 @@ def _ensure_rct_runtime_models(
             )
 
     if "Study" in schema:
+        outcome_fields = {}
+        if "Other_Outcome" in runtime_models:
+            outcome_fields["other_outcomes"] = (
+                list[runtime_models["Other_Outcome"]],
+                Field(default_factory=list, description="Other outcomes."),
+            )
         runtime_models["Study"] = create_model(
             "DynamicStudy",
             __base__=BaseModel,
@@ -448,10 +497,7 @@ def _ensure_rct_runtime_models(
                 list[runtime_models["Continuous_Outcome"]],
                 Field(default_factory=list, description="Continuous outcomes."),
             ),
-            other_outcomes=(
-                list[runtime_models["Other_Outcome"]],
-                Field(default_factory=list, description="Other outcomes."),
-            ),
+            **outcome_fields,
         )
 
     return runtime_models
@@ -470,6 +516,8 @@ def _build_dynamic_signature(
 
 def _build_dynamic_rct_pipeline(
     runtime_models: dict[str, type[BaseModel]],
+    *,
+    pairwise: bool = False,
 ) -> type[dspy.Module]:
     extract_study_info_sig = _build_dynamic_signature(
         "DynamicExtractStudyInfo",
@@ -539,14 +587,73 @@ def _build_dynamic_rct_pipeline(
         (
             "You are a systematic review assistant.\n\n"
             "Given the same RCT context and the already-identified intervention groups,\n"
-            "extract ALL continuous outcome data (mean ± SD) reported in the text.\n\n"
+            "extract ALL continuous summary and variability statistics reported in the text.\n\n"
             "For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
             "Report numbers exactly as they appear in the source — do not calculate or impute.\n"
             'If a value is not reported, use the string "NR".'
         ),
     )
 
-    extract_other_sig = _build_dynamic_signature(
+    extract_other_sig = _build_dynamic_other_rct_signature(runtime_models)
+    if not pairwise:
+        extract_dichotomous_sig = single_arm_outcome_signature(extract_dichotomous_sig)
+        extract_continuous_sig = single_arm_outcome_signature(extract_continuous_sig)
+        if extract_other_sig is not None:
+            extract_other_sig = single_arm_outcome_signature(extract_other_sig)
+    extract_continuous_sig = continuous_outcome_signature(extract_continuous_sig)
+
+    study_model = runtime_models["Study"]
+
+    class DynamicRCTExtractionPipeline(dspy.Module):
+        """Dynamic runtime variant of RCT extraction pipeline."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.extract_study_info = dspy.Predict(extract_study_info_sig)
+            self.extract_dichotomous = dspy.Predict(extract_dichotomous_sig)
+            self.extract_continuous = dspy.Predict(extract_continuous_sig)
+            self.extract_other = (
+                dspy.Predict(extract_other_sig)
+                if extract_other_sig is not None
+                else None
+            )
+
+        def forward(self, context: str) -> BaseModel:
+            study_pred = self.extract_study_info(context=context)
+            dichot_pred = self.extract_dichotomous(
+                context=context,
+                interventions=study_pred.interventions,
+            )
+            cont_pred = self.extract_continuous(
+                context=context,
+                interventions=study_pred.interventions,
+            )
+            extra_outcomes = {}
+            if self.extract_other is not None:
+                other_pred = self.extract_other(
+                    context=context,
+                    interventions=study_pred.interventions,
+                    dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+                    continuous_outcomes=cont_pred.continuous_outcomes,
+                )
+                extra_outcomes["other_outcomes"] = other_pred.flexible_outcomes
+            return study_model(
+                study_characteristics=study_pred.study_characteristics,
+                interventions=study_pred.interventions,
+                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
+                continuous_outcomes=cont_pred.continuous_outcomes,
+                **extra_outcomes,
+            )
+
+    return DynamicRCTExtractionPipeline
+
+
+def _build_dynamic_other_rct_signature(
+    runtime_models: dict[str, type[BaseModel]],
+) -> type[dspy.Signature] | None:
+    if "Other_Outcome" not in runtime_models:
+        return None
+    return _build_dynamic_signature(
         "DynamicExtractOtherOutcomes",
         {
             "context": str,
@@ -582,49 +689,10 @@ def _build_dynamic_rct_pipeline(
         ),
     )
 
-    study_model = runtime_models["Study"]
-
-    class DynamicRCTExtractionPipeline(dspy.Module):
-        """Dynamic runtime variant of RCT extraction pipeline."""
-
-        def __init__(self) -> None:
-            super().__init__()
-            self.extract_study_info = dspy.Predict(extract_study_info_sig)
-            self.extract_dichotomous = dspy.Predict(extract_dichotomous_sig)
-            self.extract_continuous = dspy.Predict(extract_continuous_sig)
-            self.extract_other = dspy.Predict(extract_other_sig)
-
-        def forward(self, context: str) -> BaseModel:
-            study_pred = self.extract_study_info(context=context)
-            dichot_pred = self.extract_dichotomous(
-                context=context,
-                interventions=study_pred.interventions,
-            )
-            cont_pred = self.extract_continuous(
-                context=context,
-                interventions=study_pred.interventions,
-            )
-            other_pred = self.extract_other(
-                context=context,
-                interventions=study_pred.interventions,
-                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
-                continuous_outcomes=cont_pred.continuous_outcomes,
-            )
-
-            return study_model(
-                study_characteristics=study_pred.study_characteristics,
-                interventions=study_pred.interventions,
-                dichotomous_outcomes=dichot_pred.dichotomous_outcomes,
-                continuous_outcomes=cont_pred.continuous_outcomes,
-                other_outcomes=other_pred.flexible_outcomes,
-            )
-
-    return DynamicRCTExtractionPipeline
-
-
 def _ensure_animal_runtime_models(
     schema: dict[str, list[dict[str, str]]],
     dynamic_models: dict[str, type[BaseModel]],
+    model_module: ModuleType = animal_models,
 ) -> dict[str, type[BaseModel]]:
     runtime_models: dict[str, type[BaseModel]] = {}
 
@@ -634,7 +702,7 @@ def _ensure_animal_runtime_models(
             runtime_models[class_name] = model_cls
             continue
 
-        fallback = getattr(animal_models, class_name, None)
+        fallback = getattr(model_module, class_name, None)
         if isinstance(fallback, type) and issubclass(fallback, BaseModel):
             runtime_models[class_name] = fallback
         else:
@@ -677,6 +745,8 @@ def _ensure_animal_runtime_models(
 
 def _build_dynamic_animal_pipeline(
     runtime_models: dict[str, type[BaseModel]],
+    *,
+    pairwise: bool = False,
 ) -> type[dspy.Module]:
     extract_study_info_sig = _build_dynamic_signature(
         "DynamicExtractAnimalStudyInfo",
@@ -764,7 +834,7 @@ def _build_dynamic_animal_pipeline(
         (
             "You are a systematic review assistant.\n\n"
             "Given the same animal RCT context and the already-identified induction and\n"
-            "assessment interventions, extract ALL continuous outcome data (mean ± SD)\n"
+            "assessment interventions, extract ALL continuous summary and variability statistics\n"
             "reported in the text, for every unique combination of induction and assessment\n"
             "intervention.\n\n"
             "For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.\n\n"
@@ -814,6 +884,11 @@ def _build_dynamic_animal_pipeline(
         ),
     )
 
+    if not pairwise:
+        extract_dichotomous_sig = single_arm_outcome_signature(extract_dichotomous_sig)
+        extract_continuous_sig = single_arm_outcome_signature(extract_continuous_sig)
+        extract_other_sig = single_arm_outcome_signature(extract_other_sig)
+    extract_continuous_sig = continuous_outcome_signature(extract_continuous_sig)
     study_model = runtime_models["Study"]
 
     class DynamicAnimalRCTExtractionPipeline(dspy.Module):
@@ -915,8 +990,6 @@ def _serialize_value(value: Any) -> Any:
     if value is None:
         return ""
     if isinstance(value, BaseModel):
-        if hasattr(value, "value"):
-            return value.value
         value_dump = value.model_dump()
         if len(value_dump) == 1:
             return _serialize_value(next(iter(value_dump.values())))
@@ -1246,6 +1319,49 @@ def _build_dynamic_climate_carbon_pricing_pipeline(
     return DynamicClimateCarbonPricingExtractionPipeline
 
 
+def _validate_continuous_statistics_schema(
+    schema: dict[str, list[dict[str, str]]],
+    model_cls: type[BaseModel],
+) -> None:
+    continuous_schema = schema.get("Continuous_Outcome")
+    if continuous_schema is not None:
+        fields = {field["attribute"]: field for field in continuous_schema}
+        expected = {
+            name for name in model_cls.model_fields
+            if name.endswith("_statistics")
+        }
+        legacy = {
+            "group_mean", "group_standard_deviation", "mean", "standard_deviation",
+            "group_a_mean", "group_b_mean",
+            "group_a_standard_deviation", "group_b_standard_deviation",
+            "mean_a", "mean_b", "sd_a", "sd_b",
+            "group_se", "group_variance", "group_ci_level",
+            "group_ci_start", "group_ci_end",
+            "se_a", "se_b", "variance_a", "variance_b",
+            "ci_level_a", "ci_level_b", "ci_start_a", "ci_start_b", "ci_end_a", "ci_end_b",
+        }
+        statistic_fields = {
+            field["attribute"]: field["datatype"].strip()
+            for field in schema.get("ReportedStatistic", [])
+        }
+        if (
+            not expected.issubset(fields)
+            or legacy.intersection(fields)
+            or any(
+                statistic_fields.get(name) != "str" for name in ("measure", "value")
+            )
+            or any(
+                fields[name]["datatype"].strip() != "list[ReportedStatistic]"
+                for name in expected if name in fields
+            )
+        ):
+            error_message = (
+                "Continuous_Outcome requires named statistic lists. "
+                "Regenerate the prompt CSV for this study type and reapply prompt edits."
+            )
+            raise ValueError(error_message)
+
+
 def _build_dynamic_pipeline_for_study_type(
     study_type: str,
     schema: dict[str, list[dict[str, str]]],
@@ -1261,12 +1377,43 @@ def _build_dynamic_pipeline_for_study_type(
         runtime_models = _ensure_climate_carbon_pricing_runtime_models(schema, dynamic_models)
         return _build_dynamic_climate_carbon_pricing_pipeline(runtime_models)
 
-    if study_type == "AnimalRCT":
-        runtime_models = _ensure_animal_runtime_models(schema, dynamic_models)
-        return _build_dynamic_animal_pipeline(runtime_models)
+    if study_type not in RCT_MODEL_MODULES:
+        error_message = f"Unsupported study_type '{study_type}'."
+        raise ValueError(error_message)
+    model_module = RCT_MODEL_MODULES[study_type]
+    pairwise = study_type.endswith("_pairwise")
+    _validate_continuous_statistics_schema(schema, model_module.Continuous_Outcome)
+    if not pairwise:
+        pairwise_module = RCT_MODEL_MODULES[f"{study_type}_pairwise"]
+        for class_name in (
+            "Dichotomous_Outcome", "Continuous_Outcome", "Other_Outcome"
+        ):
+            if class_name not in schema:
+                continue
+            if not hasattr(model_module, class_name):
+                error_message = f"{class_name} is not supported for {study_type}."
+                raise ValueError(error_message)
+            attributes = {field["attribute"] for field in schema[class_name]}
+            current_fields = getattr(model_module, class_name).model_fields
+            previous_fields = getattr(pairwise_module, class_name).model_fields
+            pairwise_only = previous_fields.keys() - current_fields.keys()
+            if attributes & pairwise_only or "group_label" not in attributes:
+                error_message = (
+                    f"{class_name} must describe one arm with group_label "
+                    f"for {study_type}. "
+                    "Regenerate the prompt CSV or use the matching _pairwise "
+                    "study type "
+                    "for an existing pairwise schema."
+                )
+                raise ValueError(error_message)
+    if study_type in {"AnimalRCT", "AnimalRCT_pairwise"}:
+        runtime_models = _ensure_animal_runtime_models(
+            schema, dynamic_models, model_module
+        )
+        return _build_dynamic_animal_pipeline(runtime_models, pairwise=pairwise)
 
-    runtime_models = _ensure_rct_runtime_models(schema, dynamic_models)
-    return _build_dynamic_rct_pipeline(runtime_models)
+    runtime_models = _ensure_rct_runtime_models(schema, dynamic_models, model_module)
+    return _build_dynamic_rct_pipeline(runtime_models, pairwise=pairwise)
 
 
 def _write_dynamic_study_outputs(
@@ -1425,7 +1572,7 @@ def _write_dynamic_study_outputs(
                     write_xlsx=export_xlsx_file,
                     study_name=study_name if flat_output else None,
                 )
-    elif study_type == "AnimalRCT":
+    elif study_type in {"AnimalRCT", "AnimalRCT_pairwise"}:
         sc_schema = schema.get("Study_Characteristics", [])
         ii_schema = schema.get("InductionIntervention", [])
         ai_schema = schema.get("AssessmentIntervention", [])
@@ -1451,7 +1598,8 @@ def _write_dynamic_study_outputs(
             for item in study.continuous_outcomes
         ]
         other_rows = [
-            _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
+            _project_instance_to_schema(item, oo_schema)
+            for item in study.other_outcomes
         ]
 
         if export_json_file:
@@ -1543,7 +1691,8 @@ def _write_dynamic_study_outputs(
             for item in study.continuous_outcomes
         ]
         other_rows = [
-            _project_instance_to_schema(item, oo_schema) for item in study.other_outcomes
+            _project_instance_to_schema(item, oo_schema)
+            for item in (study.other_outcomes if oo_schema else [])
         ]
 
         if export_json_file:
@@ -1772,7 +1921,10 @@ def parse_custom_hierarchical_args() -> argparse.Namespace:
     write_parser.add_argument(
         "--study-type",
         default="RCT",
-        help="Study type used for prompt CSV generation. Currently supports: RCT, CochraneRCT, PrognosticStudy, ObesityRCT, AnimalRCT, ClimateCarbonPricing.",
+        help=(
+            "Study type for prompt CSV generation: RCT, CochraneRCT, ObesityRCT, "
+            "AnimalRCT (also with _pairwise), PrognosticStudy, ClimateCarbonPricing."
+        ),
     )
     write_parser.add_argument(
         "--csv-outpath",

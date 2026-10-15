@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 # Import anyio eagerly before DSPy so the real anyio module is registered in
 # sys.modules before dspy's LazyImport machinery can install a placeholder.
@@ -12,7 +13,6 @@ from pathlib import Path
 import anyio  # noqa: F401
 import anyio.abc  # noqa: F401
 import anyio.lowlevel  # noqa: F401
-
 import dspy
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -31,6 +31,12 @@ from .ObesityRCTmodel import Intervention as ObesityIntervention
 from .ObesityRCTmodel import Study as ObesityStudy
 from .PrognosticModel import PrognosticFactor, PrognosticStudy
 from .RCTmodel import Intervention, Study
+
+if TYPE_CHECKING:
+    from .AnimalRCTmodel_pairwise import Study as AnimalStudy_pairwise
+    from .CochraneRCTmodel_pairwise import Study as CochraneStudy_pairwise
+    from .ObesityRCTmodel_pairwise import Study as ObesityStudy_pairwise
+    from .RCTmodel_pairwise import Study as Study_pairwise
 
 # Excel on Windows misreads plain "utf-8" CSVs (special chars like bullet/en-dash
 # turn into mojibake, e.g. "â€¢") unless a byte-order mark is present.
@@ -176,7 +182,7 @@ def load_study_context(markdown_paths: list[str]) -> str:
 
 
 def export_csv(
-    study: Study,
+    study: Study | Study_pairwise,
     study_name: str,
     predictions_dir: Path,
     timestamp: str,
@@ -208,7 +214,7 @@ def export_csv(
             [arm.to_csv_row() for arm in study.interventions],
         ),
         "outcomes": (
-            Study.outcome_csv_fieldnames(),
+            type(study).outcome_csv_fieldnames(),
             [
                 outcome.to_csv_row()
                 for outcome in (
@@ -231,7 +237,7 @@ def export_csv(
 
 
 def export_obesity_csv(
-    study: ObesityStudy,
+    study: ObesityStudy | ObesityStudy_pairwise,
     study_name: str,
     predictions_dir: Path,
     timestamp: str,
@@ -257,7 +263,7 @@ def export_obesity_csv(
             [arm.to_csv_row() for arm in study.interventions],
         ),
         "outcomes": (
-            ObesityStudy.outcome_csv_fieldnames(),
+            type(study).outcome_csv_fieldnames(),
             [
                 outcome.to_csv_row()
                 for outcome in (
@@ -280,7 +286,7 @@ def export_obesity_csv(
 
 
 def export_animal_csv(
-    study: AnimalStudy,
+    study: AnimalStudy | AnimalStudy_pairwise,
     study_name: str,
     predictions_dir: Path,
     timestamp: str,
@@ -311,7 +317,7 @@ def export_animal_csv(
             [arm.to_csv_row() for arm in study.assessment_interventions],
         ),
         "outcomes": (
-            AnimalStudy.outcome_csv_fieldnames(),
+            type(study).outcome_csv_fieldnames(),
             [
                 outcome.to_csv_row()
                 for outcome in (
@@ -334,7 +340,7 @@ def export_animal_csv(
 
 
 def export_cochrane_csv(
-    study: CochraneStudy,
+    study: CochraneStudy | CochraneStudy_pairwise,
     study_name: str,
     predictions_dir: Path,
     timestamp: str,
@@ -363,7 +369,7 @@ def export_cochrane_csv(
         {"Study": study_id, **arm.to_csv_row()} for arm in study.interventions
     ]
 
-    # Each outcome object holds data for both arms and produces two rows.
+    # Single-arm objects produce one row; preserved pairwise objects produce two.
     outcomes_rows: list[dict[str, object]] = []
     for outcome in study.dichotomous_outcomes + study.continuous_outcomes:
         outcomes_rows.extend(outcome.to_csv_rows(study=study_id))
@@ -371,7 +377,7 @@ def export_cochrane_csv(
     tables = {
         "study": (CochraneStudy.csv_fieldnames(), [study.to_csv_row()]),
         "interventions": (iv_fieldnames, interventions_rows),
-        "outcomes": (CochraneStudy.outcome_csv_fieldnames(), outcomes_rows),
+        "outcomes": (type(study).outcome_csv_fieldnames(), outcomes_rows),
     }
     _write_tables(
         tables,

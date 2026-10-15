@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from deet.hierarchical_mvp.RCTmodel import OutcomeTimePoint as RCTOutcomeTimePoint
+
+
+class OutcomeTimePoint(RCTOutcomeTimePoint):
+    """Structured assessment time point for prognostic outcomes."""
+
 
 class PrognosticStudy_Characteristics(BaseModel):
     study_author_contact_details: str = Field(
@@ -161,8 +167,8 @@ class HazardRatioOutcome(BaseModel):
     outcome_category: str = Field(
         description="Category of the outcome. Choose one of: 'Survival', 'Recurrence/Relapse', 'Functional', 'Quality of Life', 'Biomarker', 'Other'."
     )
-    outcome_time_point: str = Field(
-        description="The time point at which the outcome was assessed (e.g. '5-year', '10-year', 'end of follow-up'). Leave blank if not specified."
+    outcome_time_point: OutcomeTimePoint = Field(
+        description="The outcome assessment time point, including category, verbatim detail, value and unit. Use 'NR' for unreported values and units."
     )
     group_n: str = Field(
         description="Number of participants in the group or subgroup for which this hazard ratio is reported. Leave blank if not reported."
@@ -202,6 +208,9 @@ class HazardRatioOutcome(BaseModel):
             "outcome_name",
             "outcome_category",
             "outcome_time_point",
+            "outcome_time_point_detail",
+            "time_point_value",
+            "time_point_unit",
             "group_label",
             "group_n",
             "group_hazard_ratio",
@@ -219,7 +228,10 @@ class HazardRatioOutcome(BaseModel):
             "outcome_type": "hazard_ratio",
             "outcome_name": self.outcome_name,
             "outcome_category": self.outcome_category,
-            "outcome_time_point": self.outcome_time_point,
+            "outcome_time_point": self.outcome_time_point.time_point_category,
+            "outcome_time_point_detail": self.outcome_time_point.time_point_detail,
+            "time_point_value": self.outcome_time_point.time_point_value,
+            "time_point_unit": self.outcome_time_point.time_point_unit,
             "group_label": self.group_label,
             "group_n": self.group_n,
             "group_hazard_ratio": self.group_hazard_ratio,
@@ -240,8 +252,8 @@ class OtherPrognosticOutcome(BaseModel):
     outcome_category: str = Field(
         description="Category of the outcome. Choose one of: 'Survival', 'Recurrence/Relapse', 'Functional', 'Quality of Life', 'Biomarker', 'Other'."
     )
-    outcome_time_point: str = Field(
-        description="The time point at which the outcome was assessed. Leave blank if not specified."
+    outcome_time_point: OutcomeTimePoint = Field(
+        description="The outcome assessment time point, including category, verbatim detail, value and unit. Use 'NR' for unreported values and units."
     )
     group_n: str = Field(
         description="Number of participants in the group for which this outcome is reported. Leave blank if not reported."
@@ -290,6 +302,9 @@ class OtherPrognosticOutcome(BaseModel):
             "outcome_name",
             "outcome_category",
             "outcome_time_point",
+            "outcome_time_point_detail",
+            "time_point_value",
+            "time_point_unit",
             "group_label",
             "group_n",
             "effect_estimate_average",
@@ -310,7 +325,10 @@ class OtherPrognosticOutcome(BaseModel):
             "outcome_type": "other_prognostic",
             "outcome_name": self.outcome_name,
             "outcome_category": self.outcome_category,
-            "outcome_time_point": self.outcome_time_point,
+            "outcome_time_point": self.outcome_time_point.time_point_category,
+            "outcome_time_point_detail": self.outcome_time_point.time_point_detail,
+            "time_point_value": self.outcome_time_point.time_point_value,
+            "time_point_unit": self.outcome_time_point.time_point_unit,
             "group_label": self.group_label,
             "group_n": self.group_n,
             "effect_estimate_average": self.effect_estimate_average,

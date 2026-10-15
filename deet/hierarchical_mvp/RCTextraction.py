@@ -4,13 +4,14 @@ DSPy signatures and extraction pipeline for RCT outcome data extraction.
 Pipeline steps:
   1. ExtractStudyInfo   — extract study-level metadata and identify all intervention groups
   2. ExtractDichotomousOutcomes — extract binary event outcomes per identified group
-  3. ExtractContinuousOutcomes  — extract mean/SD outcomes per identified group
+  3. ExtractContinuousOutcomes  — extract named continuous statistics per group
 """
 
 from __future__ import annotations
 
 import dspy
 
+from .outcome_prompts import continuous_outcome_signature, single_arm_outcome_signature
 from .RCTmodel import (
     Continuous_Outcome,
     Dichotomous_Outcome,
@@ -56,6 +57,7 @@ class ExtractDichotomousOutcomes(dspy.Signature):
 
     Given the same RCT context and the already-identified intervention groups,
     extract ALL dichotomous (binary event) outcome data reported in the text.
+    This could be outcomes at baseline or outcomes measured during the study.
 
     For EVERY dichotomous outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -79,7 +81,8 @@ class ExtractContinuousOutcomes(dspy.Signature):
     You are a systematic review assistant.
 
     Given the same RCT context and the already-identified intervention groups,
-    extract ALL continuous outcome data (mean ± SD) reported in the text.
+    extract ALL continuous outcome data reported in the text.
+    This could be outcomes at baseline or outcomes measured during the study.
 
     For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -103,7 +106,10 @@ class ExtractOtherOutcomes(dspy.Signature):
     You are a systematic review assistant.
 
     Given the same RCT context and the already-identified intervention groups,
-    extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text. Do not re-extract a dichotomous or continuous outcome unless you can identify new data for it that wasn't extracted in the previous steps.
+    extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text. 
+    This could be outcomes at baseline or outcomes measured during the study.
+    
+    Do not re-extract a dichotomous or continuous outcome unless you can identify new data for it that wasn't extracted in the previous steps.
 
     For EVERY other outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -148,9 +154,17 @@ class RCTExtractionPipeline(dspy.Module):
     def __init__(self) -> None:
         super().__init__()
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
-        self.extract_dichotomous = dspy.Predict(ExtractDichotomousOutcomes)
-        self.extract_continuous = dspy.Predict(ExtractContinuousOutcomes)
-        self.extract_other = dspy.Predict(ExtractOtherOutcomes)
+        self.extract_dichotomous = dspy.Predict(
+            single_arm_outcome_signature(ExtractDichotomousOutcomes)
+        )
+        self.extract_continuous = dspy.Predict(
+            continuous_outcome_signature(
+                single_arm_outcome_signature(ExtractContinuousOutcomes)
+            )
+        )
+        self.extract_other = dspy.Predict(
+            single_arm_outcome_signature(ExtractOtherOutcomes)
+        )
 
     def forward(self, context: str) -> Study:
         # Step 1: study characteristics + intervention groups

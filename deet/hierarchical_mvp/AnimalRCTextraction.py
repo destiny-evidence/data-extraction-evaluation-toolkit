@@ -5,7 +5,7 @@ Pipeline steps:
   1. ExtractStudyInfo             — extract study-level metadata and identify all
                                      induction and assessment intervention subpopulations
   2. ExtractDichotomousOutcomes   — extract binary event outcomes per induction/assessment combination
-  3. ExtractContinuousOutcomes    — extract mean/SD outcomes per induction/assessment combination
+  3. ExtractContinuousOutcomes    — extract named statistics per induction/assessment combination
   4. ExtractOtherOutcomes         — extract all other outcomes per induction/assessment combination
 """
 
@@ -22,6 +22,7 @@ from .AnimalRCTmodel import (
     Study,
     Study_Characteristics,
 )
+from .outcome_prompts import continuous_outcome_signature, single_arm_outcome_signature
 
 # ---------------------------------------------------------------------------
 # Signatures
@@ -95,7 +96,7 @@ class ExtractContinuousOutcomes(dspy.Signature):
     You are a systematic review assistant.
 
     Given the same animal RCT context and the already-identified induction and
-    assessment interventions, extract ALL continuous outcome data (mean ± SD)
+    assessment interventions, extract ALL continuous summary and variability statistics
     reported in the text, for every unique combination of induction and
     assessment intervention.
 
@@ -175,9 +176,17 @@ class AnimalRCTExtractionPipeline(dspy.Module):
     def __init__(self) -> None:
         super().__init__()
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
-        self.extract_dichotomous = dspy.Predict(ExtractDichotomousOutcomes)
-        self.extract_continuous = dspy.Predict(ExtractContinuousOutcomes)
-        self.extract_other = dspy.Predict(ExtractOtherOutcomes)
+        self.extract_dichotomous = dspy.Predict(
+            single_arm_outcome_signature(ExtractDichotomousOutcomes)
+        )
+        self.extract_continuous = dspy.Predict(
+            continuous_outcome_signature(
+                single_arm_outcome_signature(ExtractContinuousOutcomes)
+            )
+        )
+        self.extract_other = dspy.Predict(
+            single_arm_outcome_signature(ExtractOtherOutcomes)
+        )
 
     def forward(self, context: str) -> Study:
         # Step 1: study characteristics + induction/assessment intervention groups

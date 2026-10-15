@@ -10,6 +10,12 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from .continuous_statistics import (
+    ReportedStatistic,
+    revman_statistics,
+    summary_statistics_field,
+    variability_statistics_field,
+)
 
 # ---------------------------------------------------------------------------
 # Study characteristics (Cochrane-specific)
@@ -116,7 +122,8 @@ class Study_Characteristics(BaseModel):
 class Intervention(BaseModel):
     arm: str = Field(
         description=(
-            "Name or label of the intervention arm "
+            "Identify and extract the name of the experimental groups from this study. "
+            "Use the name or label of this group "
             "(e.g. 'Treatment A', 'Control', 'Placebo')."
         )
     )
@@ -150,9 +157,8 @@ class Intervention(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Outcomes — arm-level fields matching Study+results CSV template
+# Outcomes — single-arm fields matching the Study+results CSV template.
 # Columns marked "Contrast level results only" in the template are omitted.
-# Each outcome object holds data for both arms and emits two CSV rows.
 # ---------------------------------------------------------------------------
 
 # Column name constants matching the CSV template exactly
@@ -162,15 +168,12 @@ _CONTINUOUS_EXTRA: list[str] = [
     "Mean", "SD", "SE", "Variance",
     "CI level", "CI start", "CI end",
     "t-test", "P value", "Footnotes",
+    "group_summary_statistics", "group_variability_statistics",
 ]
 
 
 class Dichotomous_Outcome(BaseModel):
-    """One dichotomous outcome with arm-level data for both arms.
-
-    Produces two CSV rows (one per arm) whose column names match the
-    Study+results CSV template.
-    """
+    """One dichotomous outcome with data for one group."""
 
     outcome_name: str = Field(
         description=(
@@ -178,33 +181,18 @@ class Dichotomous_Outcome(BaseModel):
             "Use the exact name as reported in the study. Must be unique within the study."
         )
     )
-    arm_a: str = Field(
-        description="Name of the first arm (e.g. the intervention group) exactly as identified in the study."
+    group_label: str = Field(
+        description="Name of this group (intervention or control) exactly as identified in the study."
     )
-    arm_b: str = Field(
-        description="Name of the second arm (e.g. the control/comparator group) exactly as identified in the study."
-    )
-    sample_size_a: str = Field(
+    group_N: str = Field(
         description=(
-            "Number of participants analysed in arm A for this outcome "
+            "Number of participants analysed in this group for this outcome "
             "('Sample size' column). Leave blank if not reported."
         )
     )
-    sample_size_b: str = Field(
+    group_Events: str = Field(
         description=(
-            "Number of participants analysed in arm B for this outcome "
-            "('Sample size' column). Leave blank if not reported."
-        )
-    )
-    cases_a: str = Field(
-        description=(
-            "Number of cases (events) in arm A — labeled 'events' in RevMan "
-            "('Cases' column). Arm-level, dichotomous outcomes only. Leave blank if not reported."
-        )
-    )
-    cases_b: str = Field(
-        description=(
-            "Number of cases (events) in arm B — labeled 'events' in RevMan "
+            "Number of cases (events) in this group — labeled 'events' in RevMan "
             "('Cases' column). Arm-level, dichotomous outcomes only. Leave blank if not reported."
         )
     )
@@ -222,23 +210,26 @@ class Dichotomous_Outcome(BaseModel):
         """Exact column names from the Study+results CSV template (arm-level, dichotomous)."""
         return _ARM_LEVEL_SHARED + _DICHOTOMOUS_EXTRA
 
+    def to_csv_row(self, study: str = "") -> dict[str, str]:
+        """Return one arm-level row ready for csv.DictWriter."""
+        return {
+            "Study": study,
+            "Outcome": self.outcome_name,
+            "Data type": "Arm level",
+            "Arm": self.group_label,
+            "Sample size": self.group_N,
+            "Cases": self.group_Events,
+            "P value": self.p_value,
+            "Footnotes": self.footnotes,
+        }
+
     def to_csv_rows(self, study: str = "") -> list[dict[str, str]]:
-        """Return two dicts — one row per arm — ready for csv.DictWriter."""
-        base = {"Study": study, "Outcome": self.outcome_name, "Data type": "Arm level"}
-        return [
-            {**base, "Arm": self.arm_a, "Sample size": self.sample_size_a,
-             "Cases": self.cases_a, "P value": self.p_value, "Footnotes": self.footnotes},
-            {**base, "Arm": self.arm_b, "Sample size": self.sample_size_b,
-             "Cases": self.cases_b, "P value": "", "Footnotes": ""},
-        ]
+        """Keep the exporter API while emitting only this arm."""
+        return [self.to_csv_row(study=study)]
 
 
 class Continuous_Outcome(BaseModel):
-    """One continuous outcome with arm-level data for both arms.
-
-    Produces two CSV rows (one per arm) whose column names match the
-    Study+results CSV template.
-    """
+    """One continuous outcome with data for one group."""
 
     outcome_name: str = Field(
         description=(
@@ -246,85 +237,25 @@ class Continuous_Outcome(BaseModel):
             "Use the exact name as reported in the study. Must be unique within the study."
         )
     )
-    arm_a: str = Field(
-        description="Name of the first arm (e.g. the intervention group) exactly as identified in the study."
+    group_label: str = Field(
+        description="Name of this group (intervention or control) exactly as identified in the study."
     )
-    arm_b: str = Field(
-        description="Name of the second arm (e.g. the control/comparator group) exactly as identified in the study."
+    group_N: str = Field(
+        description="Number of participants analysed in this group for this outcome. Leave blank if not reported."
     )
-    sample_size_a: str = Field(
-        description="Number of participants analysed in arm A for this outcome. Leave blank if not reported."
+    group_summary_statistics: list[ReportedStatistic] = summary_statistics_field(
+        "this arm"
     )
-    sample_size_b: str = Field(
-        description="Number of participants analysed in arm B for this outcome. Leave blank if not reported."
+    group_variability_statistics: list[ReportedStatistic] = (
+        variability_statistics_field("this arm")
     )
-    mean_a: str = Field(
-        description="Mean effect size in arm A ('Mean' column). Leave blank if not reported."
-    )
-    mean_b: str = Field(
-        description="Mean effect size in arm B ('Mean' column). Leave blank if not reported."
-    )
-    sd_a: str = Field(
-        description="Standard deviation of the effect size in arm A ('SD' column). Leave blank if not reported."
-    )
-    sd_b: str = Field(
-        description="Standard deviation of the effect size in arm B ('SD' column). Leave blank if not reported."
-    )
-    se_a: str = Field(
+    group_t_test: str = Field(
         default="",
-        description="Standard error of the effect size in arm A ('SE' column). Leave blank if not reported.",
+        description="Student-T test statistic for this group ('t-test' column). Leave blank if not reported.",
     )
-    se_b: str = Field(
+    group_p_value: str = Field(
         default="",
-        description="Standard error of the effect size in arm B ('SE' column). Leave blank if not reported.",
-    )
-    variance_a: str = Field(
-        default="",
-        description="Variance of the effect size in arm A ('Variance' column). Leave blank if not reported.",
-    )
-    variance_b: str = Field(
-        default="",
-        description="Variance of the effect size in arm B ('Variance' column). Leave blank if not reported.",
-    )
-    ci_level_a: str = Field(
-        default="",
-        description="Confidence level for the CI in arm A, e.g. 0.95 ('CI level' column). Leave blank if not reported.",
-    )
-    ci_level_b: str = Field(
-        default="",
-        description="Confidence level for the CI in arm B, e.g. 0.95 ('CI level' column). Leave blank if not reported.",
-    )
-    ci_start_a: str = Field(
-        default="",
-        description="Lower bound of the confidence interval in arm A ('CI start' column). Leave blank if not reported.",
-    )
-    ci_start_b: str = Field(
-        default="",
-        description="Lower bound of the confidence interval in arm B ('CI start' column). Leave blank if not reported.",
-    )
-    ci_end_a: str = Field(
-        default="",
-        description="Upper bound of the confidence interval in arm A ('CI end' column). Leave blank if not reported.",
-    )
-    ci_end_b: str = Field(
-        default="",
-        description="Upper bound of the confidence interval in arm B ('CI end' column). Leave blank if not reported.",
-    )
-    t_test_a: str = Field(
-        default="",
-        description="Student-T test statistic for arm A ('t-test' column). Leave blank if not reported.",
-    )
-    t_test_b: str = Field(
-        default="",
-        description="Student-T test statistic for arm B ('t-test' column). Leave blank if not reported.",
-    )
-    p_value_a: str = Field(
-        default="",
-        description="P-value for arm A ('P value' column). Leave blank if not reported.",
-    )
-    p_value_b: str = Field(
-        default="",
-        description="P-value for arm B ('P value' column). Leave blank if not reported.",
+        description="P-value for this group ('P value' column). Leave blank if not reported.",
     )
     footnotes: str = Field(
         default="",
@@ -336,29 +267,34 @@ class Continuous_Outcome(BaseModel):
         """Exact column names from the Study+results CSV template (arm-level, continuous)."""
         return _ARM_LEVEL_SHARED + _CONTINUOUS_EXTRA
 
+    def to_csv_row(self, study: str = "") -> dict[str, str]:
+        """Return one arm-level row ready for csv.DictWriter."""
+        statistics = revman_statistics(
+            self.group_summary_statistics, self.group_variability_statistics
+        )
+        return {
+            "Study": study,
+            "Outcome": self.outcome_name,
+            "Data type": "Arm level",
+            "Arm": self.group_label,
+            "Sample size": self.group_N,
+            "Mean": statistics["Mean"],
+            "SD": statistics["SD"],
+            "SE": statistics["SE"],
+            "Variance": statistics["Variance"],
+            "CI level": "",
+            "CI start": "",
+            "CI end": "",
+            "t-test": self.group_t_test,
+            "P value": self.group_p_value,
+            "Footnotes": self.footnotes,
+            "group_summary_statistics": statistics["group_summary_statistics"],
+            "group_variability_statistics": statistics["group_variability_statistics"],
+        }
+
     def to_csv_rows(self, study: str = "") -> list[dict[str, str]]:
-        """Return two dicts — one row per arm — ready for csv.DictWriter."""
-        base = {"Study": study, "Outcome": self.outcome_name, "Data type": "Arm level"}
-        return [
-            {
-                **base,
-                "Arm": self.arm_a, "Sample size": self.sample_size_a,
-                "Mean": self.mean_a, "SD": self.sd_a, "SE": self.se_a,
-                "Variance": self.variance_a, "CI level": self.ci_level_a,
-                "CI start": self.ci_start_a, "CI end": self.ci_end_a,
-                "t-test": self.t_test_a, "P value": self.p_value_a,
-                "Footnotes": self.footnotes,
-            },
-            {
-                **base,
-                "Arm": self.arm_b, "Sample size": self.sample_size_b,
-                "Mean": self.mean_b, "SD": self.sd_b, "SE": self.se_b,
-                "Variance": self.variance_b, "CI level": self.ci_level_b,
-                "CI start": self.ci_start_b, "CI end": self.ci_end_b,
-                "t-test": self.t_test_b, "P value": self.p_value_b,
-                "Footnotes": "",
-            },
-        ]
+        """Keep the exporter API while emitting only this arm."""
+        return [self.to_csv_row(study=study)]
 
 
 # ---------------------------------------------------------------------------
@@ -398,4 +334,3 @@ class Study(BaseModel):
                 + Continuous_Outcome.csv_fieldnames()
             )
         )
-

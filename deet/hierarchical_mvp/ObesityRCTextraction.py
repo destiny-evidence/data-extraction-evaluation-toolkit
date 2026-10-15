@@ -7,7 +7,7 @@ classes. Fields are expected to be adapted later for obesity-specific extraction
 Pipeline steps:
   1. ExtractStudyInfo   — extract study-level metadata and identify all intervention groups
   2. ExtractDichotomousOutcomes — extract binary event outcomes per identified group
-  3. ExtractContinuousOutcomes  — extract mean/SD outcomes per identified group
+  3. ExtractContinuousOutcomes  — extract named continuous statistics per group
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from .ObesityRCTmodel import (
     Study,
     Study_Characteristics,
 )
+from .outcome_prompts import continuous_outcome_signature, single_arm_outcome_signature
 
 # ---------------------------------------------------------------------------
 # Signatures
@@ -82,7 +83,7 @@ class ExtractContinuousOutcomes(dspy.Signature):
     You are a systematic review assistant.
 
     Given the same RCT context and the already-identified intervention groups,
-    extract ALL continuous outcome data (mean ± SD) reported in the text.
+    extract ALL continuous summary and variability statistics reported in the text.
 
     For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -142,9 +143,17 @@ class ObesityRCTExtractionPipeline(dspy.Module):
     def __init__(self) -> None:
         super().__init__()
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
-        self.extract_dichotomous = dspy.Predict(ExtractDichotomousOutcomes)
-        self.extract_continuous = dspy.Predict(ExtractContinuousOutcomes)
-        self.extract_other = dspy.Predict(ExtractOtherOutcomes)
+        self.extract_dichotomous = dspy.Predict(
+            single_arm_outcome_signature(ExtractDichotomousOutcomes)
+        )
+        self.extract_continuous = dspy.Predict(
+            continuous_outcome_signature(
+                single_arm_outcome_signature(ExtractContinuousOutcomes)
+            )
+        )
+        self.extract_other = dspy.Predict(
+            single_arm_outcome_signature(ExtractOtherOutcomes)
+        )
 
     def forward(self, context: str) -> Study:
         # Step 1: study characteristics + intervention groups
