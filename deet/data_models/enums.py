@@ -13,6 +13,7 @@ class CustomPromptPopulationMethod(StrEnum):
 
     FILE = auto()
     CLI = auto()
+    TAXONOMY = auto()
 
 
 class EvaluationStrategyName(StrEnum):
