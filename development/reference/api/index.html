@@ -45553,7 +45553,7 @@ is contained in the document.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Semantic keyword extractor using sentence-transformer embeddings.</p>
+        <p>Semantic keyword extractor using fastembed embeddings.</p>
 
 
 
@@ -45592,7 +45592,7 @@ is contained in the document.</p>
 
 
         <p>Keyword extractor matching attribute phrases to document sentences.</p>
-<p>Uses sentence-transformer embeddings and cosine similarity rather than
+<p>Uses fastembed embeddings and cosine similarity rather than
 exact string matching, so semantically related wording still matches.</p>
 
 
@@ -45758,7 +45758,7 @@ exact string matching, so semantically related wording still matches.</p>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Keyword extractor matching attribute phrases to document sentences.</span>
 
-<span class="sd">    Uses sentence-transformer embeddings and cosine similarity rather than</span>
+<span class="sd">    Uses fastembed embeddings and cosine similarity rather than</span>
 <span class="sd">    exact string matching, so semantically related wording still matches.</span>
 <span class="sd">    """</span>
 
@@ -45767,7 +45767,7 @@ exact string matching, so semantically related wording still matches.</p>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">similarity_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">semantic_similarity_threshold</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">sentence_transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceTransformer</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">fastembed</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextEmbedding</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">"The semantic keyword extractor requires the 'semantic' extra."</span>
@@ -45776,7 +45776,7 @@ exact string matching, so semantically related wording still matches.</p>
                 <span class="s2">"development/setup/installation#installing-optional-features"</span>
             <span class="p">)</span>
             <span class="n">fail_with_message</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">TextEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_split_into_sentences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Split text into sentences on terminal punctuation followed by a space."""</span>
@@ -45785,7 +45785,7 @@ exact string matching, so semantically related wording still matches.</p>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Embed a list of texts into a (len(texts), dim) array of vectors."""</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">show_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">convert_to_numpy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">texts</span><span class="p">)))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_phrases_per_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Attribute</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -45956,7 +45956,7 @@ exact string matching, so semantically related wording still matches.</p>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">similarity_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">semantic_similarity_threshold</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">sentence_transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceTransformer</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">fastembed</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextEmbedding</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">"The semantic keyword extractor requires the 'semantic' extra."</span>
@@ -45965,7 +45965,7 @@ exact string matching, so semantically related wording still matches.</p>
             <span class="s2">"development/setup/installation#installing-optional-features"</span>
         <span class="p">)</span>
         <span class="n">fail_with_message</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">TextEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
