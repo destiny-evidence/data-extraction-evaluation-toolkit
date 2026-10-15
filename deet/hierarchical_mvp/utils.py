@@ -27,6 +27,7 @@ from .ClimateCarbonPricingmodel import Intervention as ClimateCarbonPricingInter
 from .ClimateCarbonPricingmodel import Study as ClimateCarbonPricingStudy
 from .CochraneRCTmodel import Intervention as CochraneIntervention
 from .CochraneRCTmodel import Study as CochraneStudy
+from .continuous_statistics import expand_statistics_columns
 from .ObesityRCTmodel import Intervention as ObesityIntervention
 from .ObesityRCTmodel import Study as ObesityStudy
 from .PrognosticModel import PrognosticFactor, PrognosticStudy
@@ -70,6 +71,10 @@ def _write_tables(
     When `study_name` is given, it is inserted into every output filename (used for
     flat/batch output layouts where files aren't nested under a per-study directory).
     """
+    tables = {
+        name: expand_statistics_columns(fieldnames, rows)
+        for name, (fieldnames, rows) in tables.items()
+    }
     name_infix = f"_{study_name}" if study_name else ""
     if write_csv:
         for name, (fieldnames, rows) in tables.items():

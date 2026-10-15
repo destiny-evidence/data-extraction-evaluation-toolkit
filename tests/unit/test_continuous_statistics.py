@@ -1,23 +1,33 @@
 import csv
 import json
-from typing import get_args
+from typing import get_args, get_origin
 
 import pytest
-from pydantic import ValidationError
+from openpyxl import load_workbook
+from pydantic import BaseModel, ValidationError
 
 from deet.custom_hierarchical import (
     _build_dynamic_models_from_schema,
     _build_dynamic_pipeline_for_study_type,
     _load_prompt_schema,
     _serialize_value,
+    _write_dynamic_study_outputs,
     write_hierarchical_prompts_csv,
 )
 from deet.hierarchical_mvp.cochrane_postprocessing import postprocess_cochrane_outcomes
 from deet.hierarchical_mvp.continuous_statistics import (
     ReportedStatistic,
+    expand_statistics_columns,
     revman_statistics,
 )
 from deet.hierarchical_mvp.rct_registry import RCT_MODEL_MODULES
+from deet.hierarchical_mvp.utils import (
+    _write_tables,
+    export_animal_csv,
+    export_cochrane_csv,
+    export_csv,
+    export_obesity_csv,
+)
 
 
 def test_named_statistic_serialization_preserves_measure_and_context():
@@ -201,8 +211,180 @@ def test_cochrane_exports_and_postprocessing_preserve_non_mean_statistics(
     with output.open(encoding="utf-8-sig", newline="") as source:
         processed = list(csv.DictReader(source))
     assert len(processed) == len(rows)
-    for expected, actual in zip(rows, processed, strict=True):
+    _, expected_rows = expand_statistics_columns(
+        list(rows[0]), [dict(row) for row in rows]
+    )
+    for expected, actual in zip(expected_rows, processed, strict=True):
         assert all(actual[key] == value for key, value in expected.items())
+
+
+@pytest.mark.parametrize("prefix", ["group", "group_a", "group_b"])
+def test_statistics_columns_preserve_all_values_and_avoid_collisions(prefix):
+    field = f"{prefix}_summary_statistics"
+    collision = f"{field}_1_value"
+    statistics = [
+        ReportedStatistic(
+            measure="Mean change", value="-8.6", basis="Change from baseline"
+        ),
+        ReportedStatistic(measure="Median", value="12", details="Adjusted"),
+    ]
+    rows = [
+        {field: [], collision: "custom", f"{field}_1_VALUE_2": "also custom"},
+        {field: json.dumps([item.model_dump() for item in statistics])},
+        {field: statistics},
+    ]
+    headers, expanded = expand_statistics_columns(list(rows[0]), rows)
+    assert len(headers) == len({name.casefold() for name in headers})
+    assert field not in headers
+    assert expanded[0][collision] == "custom"
+    assert expanded[0][f"{field}_1_VALUE_2"] == "also custom"
+    assert expanded[0][f"{field}_1_value_3"] == ""
+    for row in expanded[1:]:
+        assert row[f"{field}_1_measure"] == "Mean change"
+        assert row[f"{field}_1_value_3"] == "-8.6"
+        assert row[f"{field}_1_basis"] == "Change from baseline"
+        assert row[f"{field}_1_details"] == ""
+        assert row[f"{field}_2_measure"] == "Median"
+        assert row[f"{field}_2_details"] == "Adjusted"
+    assert rows[0][field] == []
+    assert isinstance(rows[1][field], str)
+
+
+def test_empty_statistic_tables_have_flat_headers():
+    headers, rows = expand_statistics_columns(["group_summary_statistics"], [])
+    assert headers == [
+        "group_summary_statistics_1_measure",
+        "group_summary_statistics_1_value",
+        "group_summary_statistics_1_basis",
+        "group_summary_statistics_1_details",
+    ]
+    assert rows == []
+
+
+def test_shared_writer_expands_statistics_without_touching_other_lists(tmp_path):
+    statistic = {
+        "measure": "Mean change",
+        "value": "-8.6",
+        "basis": "Change from baseline",
+    }
+    rows = [
+        {"outcome": "empty", "group_summary_statistics": "[]", "notes": '["note"]'},
+        {"outcome": "reported", "group_summary_statistics": [statistic, statistic]},
+    ]
+    _write_tables(
+        {"outcomes": (list(rows[0]), rows)},
+        tmp_path,
+        "test",
+        "",
+        write_csv=True,
+        write_xlsx=True,
+    )
+    with (tmp_path / "outcomes_test.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as source:
+        reader = csv.DictReader(source)
+        csv_rows = list(reader)
+        headers = reader.fieldnames
+    assert csv_rows[0]["notes"] == '["note"]'
+    assert csv_rows[0]["group_summary_statistics_2_value"] == ""
+    assert csv_rows[1]["group_summary_statistics_2_value"] == "-8.6"
+    workbook = load_workbook(tmp_path / "study_test.xlsx", read_only=True)
+    try:
+        values = list(workbook["outcomes"].values)
+        assert list(values[0]) == headers
+        assert len(headers) == len(set(headers))
+        assert (
+            dict(zip(headers, values[2], strict=True))[
+                "group_summary_statistics_2_value"
+            ]
+            == "-8.6"
+        )
+    finally:
+        workbook.close()
+
+
+def _sample_statistics_model(model_cls):
+    payload = {}
+    for name, field in model_cls.model_fields.items():
+        annotation = field.annotation
+        if get_origin(annotation) is list:
+            payload[name] = []
+        elif get_origin(annotation) is dict:
+            payload[name] = {}
+        elif isinstance(annotation, type) and issubclass(annotation, BaseModel):
+            payload[name] = _sample_statistics_model(annotation)
+        else:
+            payload[name] = "NR"
+    return model_cls.model_validate(payload)
+
+
+@pytest.mark.parametrize("study_type", RCT_MODEL_MODULES)
+@pytest.mark.parametrize("dynamic", [False, True])
+def test_static_and_dynamic_statistic_exports(tmp_path, study_type, dynamic):
+    module = RCT_MODEL_MODULES[study_type]
+    study = _sample_statistics_model(module.Study)
+    outcome = _sample_statistics_model(module.Continuous_Outcome)
+    for name in type(outcome).model_fields:
+        if name.endswith("_statistics"):
+            setattr(
+                outcome, name, [ReportedStatistic(measure="Trimmed mean", value="-8.6")]
+            )
+    study.continuous_outcomes.append(outcome)
+    original = study.model_dump()
+    if dynamic:
+        path = write_hierarchical_prompts_csv(study_type, tmp_path / "prompts.csv")
+        schema = _load_prompt_schema(path)
+        measure = next(
+            field
+            for field in schema["ReportedStatistic"]
+            if field["attribute"] == "measure"
+        )
+        measure["prompt"] = "Extract trimmed means without converting them."
+        models = _build_dynamic_models_from_schema(schema)
+        study = models["Study"].model_validate(original)
+        _write_dynamic_study_outputs(
+            study,
+            schema,
+            study_type,
+            tmp_path,
+            "example",
+            "test",
+            "",
+            export_csv_files=True,
+            export_xlsx_file=True,
+            export_json_file=True,
+        )
+    else:
+        exports = {
+            "RCT": export_csv,
+            "AnimalRCT": export_animal_csv,
+            "CochraneRCT": export_cochrane_csv,
+            "ObesityRCT": export_obesity_csv,
+        }
+        exports[study_type.removesuffix("_pairwise")](
+            study, "example", tmp_path, "test", write_csv=True, write_xlsx=True
+        )
+    directory = tmp_path / "example"
+    with (directory / "outcomes_test.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as source:
+        reader = csv.DictReader(source)
+        rows = list(reader)
+        headers = reader.fieldnames
+    assert len(headers) == len({name.casefold() for name in headers})
+    assert not any(name.endswith("_statistics") for name in headers)
+    assert any(
+        row[key] == "-8.6"
+        for row in rows
+        for key in headers
+        if key.endswith("_1_value")
+    )
+    workbook = load_workbook(directory / "study_test.xlsx", read_only=True)
+    try:
+        assert list(next(workbook["outcomes"].values)) == headers
+    finally:
+        workbook.close()
+    assert study.model_dump() == original
 
 
 def test_cochrane_postprocessing_keeps_legacy_pairwise_mean_sd_json(tmp_path):

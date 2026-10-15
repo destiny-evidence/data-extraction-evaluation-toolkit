@@ -74,6 +74,78 @@ def statistics_json(statistics: list[ReportedStatistic]) -> str:
     return json.dumps([item.model_dump() for item in statistics], ensure_ascii=False)
 
 
+def _parse_statistics(value: object, name: str) -> list[ReportedStatistic]:
+    """Accept either model statistics or their serialized export representation."""
+    if value is None or value == "":
+        return []
+    if isinstance(value, str):
+        value = json.loads(value)
+    if not isinstance(value, list):
+        message = f"{name} must contain a list of reported statistics."
+        raise TypeError(message)
+    return [
+        item
+        if isinstance(item, ReportedStatistic)
+        else ReportedStatistic.model_validate(item)
+        for item in value
+    ]
+
+
+def expand_statistics_columns(
+    fieldnames: list[str], rows: list[dict[str, object]]
+) -> tuple[list[str], list[dict[str, object]]]:
+    """Expand statistic lists into indexed columns without changing input rows."""
+    statistic_fields = {
+        f"{group}_{kind}_statistics"
+        for group in ("group", "group_a", "group_b")
+        for kind in ("summary", "variability")
+    }
+    fields = list(dict.fromkeys([*fieldnames, *(key for row in rows for key in row)]))
+    selected = [name for name in fields if name in statistic_fields]
+    if not selected:
+        return fieldnames, rows
+
+    parsed_rows = [
+        {name: _parse_statistics(row.get(name), name) for name in selected}
+        for row in rows
+    ]
+
+    reserved = {name.casefold() for name in fields}
+    columns: dict[str, list[tuple[int, str, str]]] = {}
+    for name in selected:
+        count = max((len(row[name]) for row in parsed_rows), default=0)
+        columns[name] = []
+        for index in range(max(1, count)):
+            for key in ReportedStatistic.model_fields:
+                base = f"{name}_{index + 1}_{key}"
+                column = base
+                suffix = 2
+                while column.casefold() in reserved:
+                    column = f"{base}_{suffix}"
+                    suffix += 1
+                reserved.add(column.casefold())
+                columns[name].append((index, key, column))
+
+    expanded_fields = [
+        column
+        for name in fields
+        for column in (
+            [column for _, _, column in columns[name]] if name in columns else [name]
+        )
+    ]
+    expanded_rows = []
+    for row, parsed in zip(rows, parsed_rows, strict=True):
+        expanded = {key: value for key, value in row.items() if key not in selected}
+        for name in selected:
+            statistics = parsed[name]
+            for index, key, column in columns[name]:
+                expanded[column] = (
+                    getattr(statistics[index], key) if index < len(statistics) else ""
+                )
+        expanded_rows.append(expanded)
+    return expanded_fields, expanded_rows
+
+
 def revman_statistics(
     summary: list[ReportedStatistic],
     variability: list[ReportedStatistic],

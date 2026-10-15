@@ -25,6 +25,7 @@ from deet.logger import logger
 
 from .CochraneRCTmodel import Continuous_Outcome, Dichotomous_Outcome
 from .CochraneRCTmodel_pairwise import Continuous_Outcome as PairwiseContinuousOutcome
+from .continuous_statistics import expand_statistics_columns
 
 # ---------------------------------------------------------------------------
 # Column order for the output CSV (matches Study+results template)
@@ -240,15 +241,18 @@ def postprocess_cochrane_outcomes(
     output_csv = Path(output_csv)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
+    fieldnames, export_rows = expand_statistics_columns(
+        OUTPUT_FIELDNAMES, [dict(row) for row in rows]
+    )
     with _open_csv_for_write(output_csv) as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=OUTPUT_FIELDNAMES,
+            fieldnames=fieldnames,
             extrasaction="ignore",
             restval="",
         )
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(export_rows)
 
     logger.info(
         f"Post-processed {len(rows)} outcome rows "
