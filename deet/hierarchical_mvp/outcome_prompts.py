@@ -25,6 +25,12 @@ SINGLE_ARM_OUTCOME_INSTRUCTIONS = (
     "comparisons. For animal studies, retain the induction subgroup for each "
     "assessment arm. Do not invent unreported arm results or split a "
     "between-arm effect estimate into fabricated arm-level results."
+    " For continuous outcomes, include at most one summary statistic and one "
+    "corresponding variability statistic per outcome object. Create a new outcome "
+    "object for each additional statistic set, including endpoint versus change "
+    "scores, mean versus median, or multiple variability measures. Repeat a summary "
+    "statistic only when the source associates it with the additional variability "
+    "measure. Never pair unrelated statistics or discard reported measures."
 )
 
 

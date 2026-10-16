@@ -130,6 +130,24 @@ def _populate_arms(module, payload):
         payload[list_name] = arms
 
 
+def _single_statistic_outcomes(outcome):
+    return [
+        {
+            **outcome,
+            "group_summary_statistics": [
+                outcome["group_summary_statistics"][summary_index]
+            ],
+            "group_variability_statistics": (
+                [outcome["group_variability_statistics"][variability_index]]
+                if variability_index is not None else []
+            ),
+        }
+        for summary_index, variability_index in (
+            (0, 0), (1, 1), (2, None), (0, 2), (0, 3),
+        )
+    ]
+
+
 def _populate_outcomes(module, payload, *, pairwise):
     for list_name, class_name in (
         ("dichotomous_outcomes", "Dichotomous_Outcome"),
@@ -200,7 +218,10 @@ def _populate_outcomes(module, payload, *, pairwise):
                             "details": "",
                         },
                     ]
-            outcomes.append(outcome)
+            if not pairwise and class_name == "Continuous_Outcome":
+                outcomes.extend(_single_statistic_outcomes(outcome))
+            else:
+                outcomes.append(outcome)
         payload[list_name] = outcomes
 
 
@@ -217,8 +238,8 @@ def _assert_xlsx_statistics(directory, rows):
         assert len(values) == len(rows) + 1
         for csv_row, xlsx_row in zip(rows, values[1:], strict=True):
             for key, value in zip(values[0], xlsx_row, strict=True):
-                if key.endswith("_statistics") and csv_row[key]:
-                    assert json.loads(value) == json.loads(csv_row[key])
+                if "_statistics_" in key:
+                    assert (value or "") == csv_row[key]
     finally:
         workbook.close()
 
@@ -229,6 +250,8 @@ def _assert_tables(directory, study_type):
         rows = list(csv.DictReader(source))
     cochrane = study_type.startswith("Cochrane")
     expected = 6 if cochrane else 9
+    if not study_type.endswith("_pairwise"):
+        expected += 12
     if study_type == "CochraneRCT_pairwise":
         expected *= 2
     assert len(rows) == expected
@@ -259,15 +282,29 @@ def _assert_tables(directory, study_type):
             for row in rows
             if row.get("Outcome", row.get("outcome_name")) == "MADRS"
         ]
-        statistics = [json.loads(row["group_summary_statistics"]) for row in continuous]
-        assert [items[0]["value"] for items in statistics] == ["10", "11", "12"]
-        assert all(items[1]["measure"] == "Median" for items in statistics)
-        assert all(
-            json.loads(row["group_variability_statistics"])[1]["value"] == "8-17"
-            for row in continuous
-        )
+        assert len(continuous) == 15
+        assert [
+            row["group_summary_statistics_value"] for row in continuous[::5]
+        ] == ["10", "11", "12"]
+        for start in range(0, 15, 5):
+            arm_rows = continuous[start:start + 5]
+            assert [row["group_summary_statistics_measure"] for row in arm_rows] == [
+                "Mean", "Median", "Mean change", "Mean", "Mean",
+            ]
+            assert [
+                row["group_variability_statistics_measure"] for row in arm_rows
+            ] == [
+                "Standard deviation", "Interquartile range", "",
+                "Confidence interval", "Standard error",
+            ]
+            assert (
+                arm_rows[2]["group_summary_statistics_basis"] == "Change from baseline"
+            )
+            assert (
+                arm_rows[3]["group_variability_statistics_details"] == "95% CI for mean"
+            )
         if cochrane:
-            assert [row["Mean"] for row in continuous] == ["10", "11", "12"]
+            assert [row["Mean"] for row in continuous[::5]] == ["10", "11", "12"]
         assert not any(key.startswith(("group_a_", "group_b_")) for key in rows[0])
     _assert_xlsx_statistics(directory, rows)
 
@@ -307,6 +344,18 @@ def test_standard_pipeline_and_exports(tmp_path, study_type, flat_output):
     _assert_tables(tmp_path if flat_output else tmp_path / "three-arm", study_type)
 
 
+def _assert_statistic_columns(row, expected, *, pairwise):
+    for key, value in expected.items():
+        if key.endswith("_statistics"):
+            for index, statistic in enumerate(value):
+                for attribute, expected_value in statistic.items():
+                    column = (
+                        f"{key}_{index + 1}_{attribute}"
+                        if pairwise else f"{key}_{attribute}"
+                    )
+                    assert row[column] == expected_value
+
+
 @pytest.mark.parametrize("study_type", RCT_MODEL_MODULES)
 @pytest.mark.parametrize("flat_output", [False, True])
 def test_custom_pipeline_and_exports(tmp_path, study_type, flat_output):
@@ -318,7 +367,7 @@ def test_custom_pipeline_and_exports(tmp_path, study_type, flat_output):
         study = pipeline_cls()(context="Synthetic three-arm study.")
     for name in ("continuous_outcomes", "dichotomous_outcomes", "other_outcomes"):
         if name in payload:
-            assert len(getattr(study, name)) == 3
+            assert len(getattr(study, name)) == len(payload[name])
             assert [item.model_dump() for item in getattr(study, name)] == payload[name]
     pipeline = pipeline_cls()
     assert (
@@ -347,7 +396,7 @@ def test_custom_pipeline_and_exports(tmp_path, study_type, flat_output):
         flat_output=flat_output,
     )
     exported = json.loads(path.read_text(encoding="utf-8"))["continuous_outcomes"]
-    assert len(exported) == 3
+    assert len(exported) == len(payload["continuous_outcomes"])
     for actual, expected in zip(exported, payload["continuous_outcomes"], strict=True):
         for key in expected:
             if key.endswith("_statistics"):
@@ -357,27 +406,29 @@ def test_custom_pipeline_and_exports(tmp_path, study_type, flat_output):
         encoding="utf-8-sig", newline=""
     ) as source:
         rows = list(csv.DictReader(source))
-    assert len(rows) == (6 if study_type.startswith("Cochrane") else 9)
+    assert len(rows) == sum(len(payload.get(name, [])) for name in (
+        "dichotomous_outcomes", "continuous_outcomes", "other_outcomes",
+    ))
     continuous = [row for row in rows if row["outcome_name"] == "MADRS"]
     for row, expected in zip(
         continuous,
         payload["continuous_outcomes"],
         strict=True,
     ):
-        for key, value in expected.items():
-            if key.endswith("_statistics"):
-                assert json.loads(row[key]) == value
+        _assert_statistic_columns(
+            row, expected, pairwise=study_type.endswith("_pairwise")
+        )
     if not study_type.endswith("_pairwise"):
         assert [row["group_label"] for row in rows[:3]] == ARM_NAMES
         continuous = [row for row in rows if row["outcome_name"] == "MADRS"]
         assert [
-            json.loads(row["group_summary_statistics"])[0]["value"]
-            for row in continuous
+            row["group_summary_statistics_value"]
+            for row in continuous[::5]
         ] == ["10", "11", "12"]
         assert all(
-            json.loads(row["group_variability_statistics"])[2]["details"]
+            row["group_variability_statistics_details"]
             == "95% CI for mean"
-            for row in continuous
+            for row in continuous[3::5]
         )
     _assert_xlsx_statistics(table_dir, rows)
 
@@ -400,7 +451,7 @@ def test_cochrane_postprocessing_supports_both_shapes(tmp_path, study_type):
     output = postprocess_cochrane_outcomes(path)
     with output.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
-    assert len(rows) == (12 if study_type.endswith("_pairwise") else 6)
+    assert len(rows) == (12 if study_type.endswith("_pairwise") else 18)
     assert [row["Arm"] for row in rows[::2] if study_type.endswith("_pairwise")] == (
         ARM_NAMES * 2 if study_type.endswith("_pairwise") else []
     )

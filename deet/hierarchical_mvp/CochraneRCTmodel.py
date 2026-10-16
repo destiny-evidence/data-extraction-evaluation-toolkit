@@ -244,10 +244,10 @@ class Continuous_Outcome(BaseModel):
         description="Number of participants analysed in this group for this outcome. Leave blank if not reported."
     )
     group_summary_statistics: list[ReportedStatistic] = summary_statistics_field(
-        "this arm"
+        "this arm", single=True
     )
     group_variability_statistics: list[ReportedStatistic] = (
-        variability_statistics_field("this arm")
+        variability_statistics_field("this arm", single=True)
     )
     group_t_test: str = Field(
         default="",

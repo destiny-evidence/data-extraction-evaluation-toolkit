@@ -229,10 +229,10 @@ class Continuous_Outcome(BaseModel):
         description="Total number of participants analysed in this group for this outcome"
     )
     group_summary_statistics: list[ReportedStatistic] = summary_statistics_field(
-        "this arm"
+        "this arm", single=True
     )
     group_variability_statistics: list[ReportedStatistic] = (
-        variability_statistics_field("this arm")
+        variability_statistics_field("this arm", single=True)
     )
     baseline_imbalances: str = Field(
         description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."

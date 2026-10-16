@@ -242,7 +242,16 @@ def postprocess_cochrane_outcomes(
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
     fieldnames, export_rows = expand_statistics_columns(
-        OUTPUT_FIELDNAMES, [dict(row) for row in rows]
+        OUTPUT_FIELDNAMES, [dict(row) for row in rows],
+        single=any(
+            "group_label" in outcome
+            for name in ("continuous_outcomes", "dichotomous_outcomes")
+            for outcome in study_dict.get(name, [])
+        ) and not any(
+            "group_label" not in outcome
+            for name in ("continuous_outcomes", "dichotomous_outcomes")
+            for outcome in study_dict.get(name, [])
+        ),
     )
     with _open_csv_for_write(output_csv) as f:
         writer = csv.DictWriter(

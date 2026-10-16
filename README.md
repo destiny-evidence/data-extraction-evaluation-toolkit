@@ -99,6 +99,13 @@ Two-arm human RCT variants use `group_a_summary_statistics`,
 assessment metadata and use the single-group statistic lists.
 
 Each statistic has string fields `measure`, `value`, `basis`, and `details`.
+For non-pairwise study types, each list contains at most one statistic. Additional
+statistic sets must be separate outcome objects (and spreadsheet rows), retaining
+the same arm, outcome, time point, and other metadata. Pair a summary only with
+its reported variability measure; if the same summary has both SD and a confidence
+interval, repeat that summary on separate rows for the two variability measures.
+Unreported summaries or variability measures remain empty lists. These limits
+also apply to custom-prompt pipelines.
 Suggested measure names are prompt guidance, not enums: edit the
 `ReportedStatistic` rows in generated prompt CSVs to customize them.
 `basis` distinguishes endpoint values from change-from-baseline statistics;
@@ -109,9 +116,14 @@ list when no statistic is reported. A between-arm mean difference is not an
 arm-level average; preserve it in `effect_estimates` (or Cochrane `footnotes`),
 not as a group's summary statistic.
 
-JSON preserves these lists as objects. CSV/XLSX encode each list as JSON in its
-own cell without duplicating the arm's outcome row. Cochrane exports add the
-full statistic-list columns alongside the RevMan columns. They populate
+JSON preserves these lists as objects. Non-pairwise CSV/XLSX exports have exactly
+four `group_summary_statistics_*` columns (`measure`, `value`, `basis`, `details`)
+and four corresponding `group_variability_statistics_*` columns, without numbered
+blocks. Pairwise exports retain indexed columns for all statistics.
+Existing non-pairwise JSON containing multiple statistics per outcome must be
+re-extracted or explicitly migrated to separate outcome objects; it is rejected
+rather than silently truncating values or guessing associations.
+Cochrane exports add these statistic columns alongside the RevMan columns. They populate
 `Mean`, `SD`, `SE`, and `Variance` only for an unambiguous matching endpoint
 statistic with no additional context. Medians, change scores, confidence
 intervals, adjusted estimates, unknown bases, and ambiguous repeated measures

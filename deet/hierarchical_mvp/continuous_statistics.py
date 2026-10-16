@@ -41,8 +41,21 @@ class ReportedStatistic(BaseModel):
     )
 
 
-def summary_statistics_field(arm: str) -> FieldInfo:
+def summary_statistics_field(arm: str, *, single: bool = False) -> FieldInfo:
     """Describe a list of arm-level location or change statistics."""
+    if single:
+        return Field(
+            max_length=1,
+            description=(
+                f"One reported summary statistic for {arm}, such as mean, median, "
+                "geometric mean, or within-arm mean change. Return a list containing "
+                "at most one statistic. Create a separate outcome object for each "
+                "additional statistic set, with its corresponding variability "
+                "statistic. Keep endpoint/change in basis. Never infer arm results "
+                "from between-arm estimates; preserve comparisons in effect_estimates "
+                "or footnotes. Use [] if not reported."
+            ),
+        )
     return Field(
         description=(
             f"All reported summary statistics for {arm}, such as mean, median, "
@@ -55,8 +68,24 @@ def summary_statistics_field(arm: str) -> FieldInfo:
     )
 
 
-def variability_statistics_field(arm: str) -> FieldInfo:
+def variability_statistics_field(arm: str, *, single: bool = False) -> FieldInfo:
     """Describe a list of reported dispersion or uncertainty statistics."""
+    if single:
+        return Field(
+            max_length=1,
+            description=(
+                f"One reported variability/uncertainty statistic for {arm}: Standard "
+                "deviation, Standard error, Interquartile range, Range, Confidence "
+                "interval, Variance, or Other. Return at most one statistic, paired "
+                "with the summary statistic in this outcome. Create another outcome "
+                "object for each additional statistic set; repeat the summary only "
+                "when the source associates it with that variability measure. Keep "
+                "interval bounds, confidence level and related summary in "
+                "value/details, "
+                "and endpoint/change in basis. Do not calculate or convert. Use [] "
+                "if not reported."
+            ),
+        )
     return Field(
         description=(
             f"All reported variability/uncertainty statistics for {arm}: Standard "
@@ -92,9 +121,12 @@ def _parse_statistics(value: object, name: str) -> list[ReportedStatistic]:
 
 
 def expand_statistics_columns(
-    fieldnames: list[str], rows: list[dict[str, object]]
+    fieldnames: list[str],
+    rows: list[dict[str, object]],
+    *,
+    single: bool = False,
 ) -> tuple[list[str], list[dict[str, object]]]:
-    """Expand statistic lists into indexed columns without changing input rows."""
+    """Flatten statistics, using one unnumbered block for single-arm outcomes."""
     statistic_fields = {
         f"{group}_{kind}_statistics"
         for group in ("group", "group_a", "group_b")
@@ -109,6 +141,17 @@ def expand_statistics_columns(
         {name: _parse_statistics(row.get(name), name) for name in selected}
         for row in rows
     ]
+    if single and any(
+        len(statistics) > 1
+        for row in parsed_rows
+        for statistics in row.values()
+    ):
+        message = (
+            "Non-pairwise outcomes require at most one summary and one variability "
+            "statistic per outcome. Re-extract or migrate these results into separate "
+            "outcome objects with the corresponding statistics paired explicitly."
+        )
+        raise ValueError(message)
 
     reserved = {name.casefold() for name in fields}
     columns: dict[str, list[tuple[int, str, str]]] = {}
@@ -117,7 +160,7 @@ def expand_statistics_columns(
         columns[name] = []
         for index in range(max(1, count)):
             for key in ReportedStatistic.model_fields:
-                base = f"{name}_{index + 1}_{key}"
+                base = f"{name}_{key}" if single else f"{name}_{index + 1}_{key}"
                 column = base
                 suffix = 2
                 while column.casefold() in reserved:

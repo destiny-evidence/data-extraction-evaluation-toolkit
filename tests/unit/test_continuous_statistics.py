@@ -212,7 +212,8 @@ def test_cochrane_exports_and_postprocessing_preserve_non_mean_statistics(
         processed = list(csv.DictReader(source))
     assert len(processed) == len(rows)
     _, expected_rows = expand_statistics_columns(
-        list(rows[0]), [dict(row) for row in rows]
+        list(rows[0]), [dict(row) for row in rows],
+        single=not study_type.endswith("_pairwise"),
     )
     for expected, actual in zip(expected_rows, processed, strict=True):
         assert all(actual[key] == value for key, value in expected.items())
@@ -259,6 +260,99 @@ def test_empty_statistic_tables_have_flat_headers():
         "group_summary_statistics_1_details",
     ]
     assert rows == []
+
+
+@pytest.mark.parametrize("study_type", RCT_MODEL_MODULES)
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize("kind", ["summary", "variability"])
+def test_statistic_cardinality_is_enforced(tmp_path, study_type, dynamic, kind):
+    module = RCT_MODEL_MODULES[study_type]
+    payload = _sample_statistics_model(module.Continuous_Outcome).model_dump()
+    cls = module.Continuous_Outcome
+    if dynamic:
+        path = write_hierarchical_prompts_csv(study_type, tmp_path / "prompts.csv")
+        models = _build_dynamic_models_from_schema(_load_prompt_schema(path))
+        cls = models["Continuous_Outcome"]
+    field = next(
+        name for name in cls.model_fields if name.endswith(f"_{kind}_statistics")
+    )
+    statistic = {"measure": "Other", "value": "12"}
+    payload[field] = [statistic, statistic]
+    if study_type.endswith("_pairwise"):
+        assert len(getattr(cls.model_validate(payload), field)) == 2
+    else:
+        assert cls.model_json_schema()["properties"][field]["maxItems"] == 1
+        with pytest.raises(ValidationError, match="at most 1 item"):
+            cls.model_validate(payload)
+        study_payload = _sample_statistics_model(module.Study).model_dump()
+        study_payload["continuous_outcomes"] = [payload]
+        study_cls = models["Study"] if dynamic else module.Study
+        with pytest.raises(ValidationError, match="at most 1 item"):
+            study_cls.model_validate(study_payload)
+
+
+def test_single_statistic_columns_have_exactly_eight_fields():
+    fields = ["group_summary_statistics", "group_variability_statistics"]
+    statistic = {"measure": "Mean", "value": "12", "basis": "Endpoint", "details": ""}
+    original = [
+        {"group_label": "A", fields[0]: [statistic], fields[1]: []},
+        {"group_label": "B", fields[0]: [], fields[1]: [statistic]},
+    ]
+    headers, rows = expand_statistics_columns(
+        ["group_label", *fields], original, single=True
+    )
+    assert headers == ["group_label"] + [
+        f"{field}_{key}"
+        for field in fields
+        for key in ("measure", "value", "basis", "details")
+    ]
+    assert len(rows) == 2
+    assert rows[0]["group_summary_statistics_value"] == "12"
+    assert rows[0]["group_variability_statistics_value"] == ""
+    assert rows[1]["group_summary_statistics_value"] == ""
+    assert rows[1]["group_variability_statistics_value"] == "12"
+    empty_headers, empty_rows = expand_statistics_columns(
+        ["group_label", *fields], [], single=True
+    )
+    assert empty_headers == headers
+    assert empty_rows == []
+    assert original[0][fields[0]] == [statistic]
+    with pytest.raises(ValueError, match="separate outcome objects"):
+        expand_statistics_columns(
+            fields, [{fields[0]: [statistic, statistic]}], single=True
+        )
+
+
+def test_single_statistic_columns_avoid_custom_header_collisions():
+    field = "group_summary_statistics"
+    collision = f"{field}_VALUE"
+    headers, rows = expand_statistics_columns(
+        [field, collision],
+        [{field: [{"measure": "Median", "value": "12"}], collision: "custom"}],
+        single=True,
+    )
+    assert len(headers) == len({name.casefold() for name in headers})
+    assert rows[0][collision] == "custom"
+    assert rows[0][f"{field}_value_2"] == "12"
+
+
+@pytest.mark.parametrize("study_type", ["CochraneRCT", "CochraneRCT_pairwise"])
+def test_cochrane_dichotomous_only_postprocessing_preserves_export_mode(
+    tmp_path, study_type,
+):
+    module = RCT_MODEL_MODULES[study_type]
+    study = _sample_statistics_model(module.Study)
+    study.dichotomous_outcomes.append(
+        _sample_statistics_model(module.Dichotomous_Outcome)
+    )
+    path = tmp_path / "study.json"
+    path.write_text(study.model_dump_json(), encoding="utf-8")
+    output = postprocess_cochrane_outcomes(path)
+    with output.open(encoding="utf-8-sig", newline="") as source:
+        headers = csv.DictReader(source).fieldnames
+    index = "_1" if study_type.endswith("_pairwise") else ""
+    assert f"group_summary_statistics{index}_measure" in headers
+    assert f"group_variability_statistics{index}_measure" in headers
 
 
 def test_shared_writer_expands_statistics_without_touching_other_lists(tmp_path):
@@ -377,8 +471,17 @@ def test_static_and_dynamic_statistic_exports(tmp_path, study_type, dynamic):
         row[key] == "-8.6"
         for row in rows
         for key in headers
-        if key.endswith("_1_value")
+        if key.endswith("_value")
     )
+    if not study_type.endswith("_pairwise"):
+        for kind in ("summary", "variability"):
+            assert [
+                key for key in headers
+                if key.startswith(f"group_{kind}_statistics_")
+            ] == [
+                f"group_{kind}_statistics_{key}"
+                for key in ("measure", "value", "basis", "details")
+            ]
     workbook = load_workbook(directory / "study_test.xlsx", read_only=True)
     try:
         assert list(next(workbook["outcomes"].values)) == headers

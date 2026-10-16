@@ -312,10 +312,10 @@ class Continuous_Outcome(BaseModel):
         description="Total number of animals or units analysed for this outcome, for this combination of induction and assessment intervention."
     )
     group_summary_statistics: list[ReportedStatistic] = summary_statistics_field(
-        "this induction/assessment arm"
+        "this induction/assessment arm", single=True
     )
     group_variability_statistics: list[ReportedStatistic] = (
-        variability_statistics_field("this induction/assessment arm")
+        variability_statistics_field("this induction/assessment arm", single=True)
     )
     baseline_imbalances: str = Field(
         description="Identify if there were any baseline differences between this group and others. Do not extrapolate. This information is often presented in tables."

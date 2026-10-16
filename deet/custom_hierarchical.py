@@ -336,6 +336,20 @@ def _prompt_rows_for_non_rct(study_type: str) -> list[dict[str, str]]:
     return rows
 
 
+def _statistic_limit(
+    class_name: str,
+    attribute: str,
+    schema: dict[str, list[dict[str, str]]],
+) -> int | None:
+    if (
+        class_name == "Continuous_Outcome"
+        and attribute in {"group_summary_statistics", "group_variability_statistics"}
+        and any(field["attribute"] == "group_label" for field in schema[class_name])
+    ):
+        return 1
+    return None
+
+
 def _resolve_dtype(
     datatype: str,
     schema: dict[str, list[dict[str, str]]] | None = None,
@@ -360,7 +374,13 @@ def _resolve_dtype(
                     inner_dtype = _resolve_dtype(field_def["datatype"], schema, nested_cache)
                     definitions[field_def["attribute"]] = (
                         inner_dtype,
-                        Field(default_factory=list, description=field_def["prompt"])
+                        Field(
+                            default_factory=list,
+                            description=field_def["prompt"],
+                            max_length=_statistic_limit(
+                                class_name, field_def["attribute"], schema
+                            ),
+                        )
                         if get_origin(inner_dtype) is list
                         else Field(default="", description=field_def["prompt"]),
                     )
@@ -434,7 +454,13 @@ def _build_dynamic_models_from_schema(
             description = field_def["prompt"]
             definitions[field_def["attribute"]] = (
                 dtype,
-                Field(default_factory=list, description=description)
+                Field(
+                    default_factory=list,
+                    description=description,
+                    max_length=_statistic_limit(
+                        class_name, field_def["attribute"], schema
+                    ),
+                )
                 if get_origin(dtype) is list
                 else Field(default="", description=description),
             )
@@ -1670,6 +1696,7 @@ def _write_dynamic_study_outputs(
                     write_csv=export_csv_files,
                     write_xlsx=export_xlsx_file,
                     study_name=study_name if flat_output else None,
+                    single_statistics=study_type == "AnimalRCT",
                 )
     else:
         sc_schema = schema.get("Study_Characteristics", [])
@@ -1756,6 +1783,7 @@ def _write_dynamic_study_outputs(
                     write_csv=export_csv_files,
                     write_xlsx=export_xlsx_file,
                     study_name=study_name if flat_output else None,
+                    single_statistics=not study_type.endswith("_pairwise"),
                 )
 
     return output_path

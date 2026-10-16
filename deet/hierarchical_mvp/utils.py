@@ -64,6 +64,8 @@ def _write_tables(
     write_csv: bool = True,
     write_xlsx: bool = False,
     study_name: str | None = None,
+    *,
+    single_statistics: bool = False,
 ) -> None:
     """
     Write named tables as individual CSV files and/or as sheets in one xlsx workbook.
@@ -72,7 +74,7 @@ def _write_tables(
     flat/batch output layouts where files aren't nested under a per-study directory).
     """
     tables = {
-        name: expand_statistics_columns(fieldnames, rows)
+        name: expand_statistics_columns(fieldnames, rows, single=single_statistics)
         for name, (fieldnames, rows) in tables.items()
     }
     name_infix = f"_{study_name}" if study_name else ""
@@ -238,6 +240,7 @@ def export_csv(
         write_csv,
         write_xlsx,
         study_name=study_name if flat_output else None,
+        single_statistics=isinstance(study, Study),
     )
 
 
@@ -287,6 +290,7 @@ def export_obesity_csv(
         write_csv,
         write_xlsx,
         study_name=study_name if flat_output else None,
+        single_statistics=isinstance(study, ObesityStudy),
     )
 
 
@@ -341,6 +345,7 @@ def export_animal_csv(
         write_csv,
         write_xlsx,
         study_name=study_name if flat_output else None,
+        single_statistics=isinstance(study, AnimalStudy),
     )
 
 
@@ -392,6 +397,7 @@ def export_cochrane_csv(
         write_csv,
         write_xlsx,
         study_name=study_name if flat_output else None,
+        single_statistics=isinstance(study, CochraneStudy),
     )
 
 
