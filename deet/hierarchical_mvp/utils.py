@@ -22,7 +22,7 @@ from .ObesityRCTmodel import Intervention as ObesityIntervention
 from .ObesityRCTmodel import Study as ObesityStudy
 from .PrognosticModel import PrognosticFactor, PrognosticStudy
 from .ProgrammeModel import Intervention as ProgrammeIntervention
-from .ProgrammeModel import Outcome, Programme
+from .ProgrammeModel import Programme
 from .RCTmodel import Intervention, Study
 
 # Excel on Windows misreads plain "utf-8" CSVs (special chars like bullet/en-dash
@@ -482,8 +482,10 @@ def export_programme_csv(
             [item.to_csv_row() for item in programme.interventions],
         ),
         "outcomes": (
-            Outcome.csv_fieldnames(),
-            [item.to_csv_row() for item in programme.outcomes],
+            Programme.outcome_csv_fieldnames(),
+            [item.to_csv_row() for item in (
+                *programme.quantitative_outcomes, *programme.qualitative_outcomes
+            )],
         ),
     }
     _write_tables(

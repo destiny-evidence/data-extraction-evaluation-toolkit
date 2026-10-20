@@ -6,12 +6,15 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from openpyxl import load_workbook
+from pydantic import ValidationError
 
 from deet import custom_hierarchical, main_hierarchical
 from deet.hierarchical_mvp.programme_framework import (
     FRAMEWORK_COLUMNS,
-    OUTCOME_EXTRACTION_INSTRUCTIONS,
     PROGRAMME_EXTRACTION_INSTRUCTIONS,
+    QUALITATIVE_OUTCOME_INSTRUCTIONS,
+    QUANTITATIVE_OUTCOME_INSTRUCTIONS,
     SDG_CATEGORIES,
     load_indicator_framework,
     resolve_framework_config,
@@ -21,9 +24,10 @@ from deet.hierarchical_mvp.programme_framework import (
 from deet.hierarchical_mvp.ProgrammeExtraction import ProgrammeExtractionPipeline
 from deet.hierarchical_mvp.ProgrammeModel import (
     Intervention,
-    Outcome,
     Programme,
     Programme_Characteristics,
+    Qualitative_Outcome,
+    Quantitative_Outcome,
 )
 from deet.hierarchical_mvp.utils import export_programme_csv
 
@@ -44,19 +48,17 @@ def _programme() -> Programme:
             "Actual: 80% improved; the aim was not fully met."
         ),
     )
-    outcome = Outcome(
+    outcome = Quantitative_Outcome(
         name="Improved delivery capacity",
         description="Partners reported stronger delivery capacity",
         intervention_name=intervention.name,
         unit_of_analysis="Partner organisations",
         SDG_categories="Partnerships for the goals",
         baseline_data="Before training, 20% had adequate capacity; partners lacked skills.",
-        quantitative_outcome_results="80% of partners improved delivery capacity",
-        qualitative_outcome_results="Partners reported stronger delivery capacity",
+        results="80% of partners improved delivery capacity",
         source_paragraph=(
             'Quantitative: "80% of partners improved delivery capacity" '
-            '(Findings, p. 12). Qualitative: "stronger delivery capacity" '
-            "(Findings, p. 13)."
+            "(Findings, p. 12)."
         ),
         barrier="Staff turnover",
         enabler="Local ownership",
@@ -67,55 +69,57 @@ def _programme() -> Programme:
     return Programme(
         programme_characteristics=characteristics,
         interventions=[intervention],
-        outcomes=[outcome],
+        quantitative_outcomes=[outcome],
+        qualitative_outcomes=[Qualitative_Outcome(
+            **{
+                **outcome.model_dump(exclude={"outcome_type", "baseline_data"}),
+                "results": "Interviewed partners reported stronger delivery capacity",
+                "source_paragraph": '"Stronger delivery capacity" (Interviews, p. 13).',
+            }
+        )],
     )
 
 
-@pytest.mark.parametrize(
-    ("numeric_results", "qualitative_results"),
-    [
-        ("80% of partners improved delivery capacity", "Stronger delivery capacity"),
-        ("80% of partners improved delivery capacity", "NR"),
-        ("NR", "Stronger delivery capacity"),
-        ("NR", "NR"),
-    ],
-)
-def test_outcome_results_preserved_in_serialization(numeric_results, qualitative_results):
-    data = _programme().outcomes[0].model_dump()
-    data["quantitative_outcome_results"] = numeric_results
-    data["qualitative_outcome_results"] = qualitative_results
-
-    outcome = Outcome.model_validate(data)
-
+@pytest.mark.parametrize("kind", ["quantitative", "qualitative"])
+def test_outcome_results_preserved_in_serialization(kind):
+    outcome = getattr(_programme(), f"{kind}_outcomes")[0]
     for row in (outcome.model_dump(), outcome.to_csv_row()):
-        assert row["quantitative_outcome_results"] == numeric_results
-        assert row["qualitative_outcome_results"] == qualitative_results
+        assert row["results"] == outcome.results
+        assert row["outcome_type"] == kind
+        assert "quantitative_outcome_results" not in row
+        assert "qualitative_outcome_results" not in row
+        assert ("baseline_data" in row) == (kind == "quantitative")
+    with pytest.raises(ValidationError, match="outcome_type"):
+        type(outcome).model_validate({
+            **outcome.model_dump(), "outcome_type": "incorrect"
+        })
 
 
-def test_custom_programme_prompts_include_outcome_results():
+@pytest.mark.parametrize("model", [Quantitative_Outcome, Qualitative_Outcome])
+def test_custom_programme_prompts_include_outcome_results(model):
     rows = {
         row["attribute"]: row
         for row in custom_hierarchical.build_programme_hierarchical_prompt_rows()
-        if row["class"] == "Outcome"
+        if row["class"] == model.__name__
     }
 
-    for field in ("quantitative_outcome_results", "qualitative_outcome_results"):
+    for field in ("results", "outcome_type"):
         assert rows[field]["datatype"] == "str"
-        assert rows[field]["prompt"] == Outcome.model_fields[field].description
-        assert "'NR'" in rows[field]["prompt"]
-        assert "specific outcome" in rows[field]["prompt"]
+        assert rows[field]["prompt"] == model.model_fields[field].description
     for field in (
-        "baseline_data", "source_paragraph", "SDG_categories",
+        "source_paragraph", "SDG_categories",
         "outcome_category_classification"
     ):
         assert rows[field]["datatype"] == "str"
-        assert rows[field]["prompt"] == Outcome.model_fields[field].description
-    assert list(rows).index("baseline_data") + 1 == (
-        list(rows).index("quantitative_outcome_results")
-    )
+        assert rows[field]["prompt"] == model.model_fields[field].description
+    assert ("baseline_data" in rows) == (model is Quantitative_Outcome)
+    if model is Quantitative_Outcome:
+        assert list(rows).index("baseline_data") + 1 == list(rows).index("results")
     assert "intended_results" not in rows
     assert "sdg_belonging" not in rows
     assert "strategic_plan_belonging" not in rows
+    assert "quantitative_outcome_results" not in rows
+    assert "qualitative_outcome_results" not in rows
     intervention_rows = {
         row["attribute"]: row
         for row in custom_hierarchical.build_programme_hierarchical_prompt_rows()
@@ -160,32 +164,47 @@ def test_programme_pipeline_passes_prior_outputs_to_later_steps(
             + "\nX.1,Local goal,Local indicator,Delivery capacity,Training alone\n",
             encoding="utf-8",
         )
-        programme.outcomes[0].outcome_category_classification = "X.1: Local indicator"
+        for outcome in (
+            *programme.quantitative_outcomes, *programme.qualitative_outcomes
+        ):
+            outcome.outcome_category_classification = "X.1: Local indicator"
     pipeline = pipeline_class(classification_framework_path=framework_path)
-    assert len(pipeline.predictors()) == 2
+    assert len(pipeline.predictors()) == 3
     assert pipeline.extract_programme_info.signature.instructions == (
         PROGRAMME_EXTRACTION_INSTRUCTIONS.strip()
     )
-    assert pipeline.extract_outcomes.signature.instructions == (
-        OUTCOME_EXTRACTION_INSTRUCTIONS.strip()
+    assert pipeline.extract_quantitative.signature.instructions == (
+        QUANTITATIVE_OUTCOME_INSTRUCTIONS.strip()
+    )
+    assert pipeline.extract_qualitative.signature.instructions == (
+        QUALITATIVE_OUTCOME_INSTRUCTIONS.strip()
     )
     pipeline.extract_programme_info = lambda **kwargs: SimpleNamespace(
         programme_characteristics=programme.programme_characteristics,
         interventions=programme.interventions,
     )
     outcomes_calls = []
+    qualitative_calls = []
 
-    def extract_outcomes(**kwargs):
+    def extract_quantitative(**kwargs):
         outcomes_calls.append(kwargs)
-        return SimpleNamespace(outcomes=programme.outcomes)
+        assert not qualitative_calls
+        return SimpleNamespace(quantitative_outcomes=programme.quantitative_outcomes)
 
-    pipeline.extract_outcomes = extract_outcomes
+    def extract_qualitative(**kwargs):
+        assert outcomes_calls
+        qualitative_calls.append(kwargs)
+        return SimpleNamespace(qualitative_outcomes=programme.qualitative_outcomes)
+
+    pipeline.extract_quantitative = extract_quantitative
+    pipeline.extract_qualitative = extract_qualitative
 
     result = pipeline(context="report")
 
     assert result.model_dump() == programme.model_dump()
     assert set(result.model_dump()) == {
-        "programme_characteristics", "interventions", "outcomes"
+        "programme_characteristics", "interventions",
+        "quantitative_outcomes", "qualitative_outcomes"
     }
     assert outcomes_calls == [
         {
@@ -195,32 +214,41 @@ def test_programme_pipeline_passes_prior_outputs_to_later_steps(
             "interventions": programme.interventions,
         }
     ]
-    programme.outcomes[0].SDG_categories = "SDG 17"
+    assert qualitative_calls == [{
+        **outcomes_calls[0], "quantitative_outcomes": programme.quantitative_outcomes
+    }]
+    pipeline.extract_quantitative = lambda **_kwargs: SimpleNamespace(
+        quantitative_outcomes=programme.quantitative_outcomes
+    )
+    programme.quantitative_outcomes[0].SDG_categories = "SDG 17"
     with pytest.warns(UserWarning, match="SDG_categories"):
         cleaned = pipeline(context="report")
-    assert cleaned.outcomes[0].SDG_categories == ""
-    programme.outcomes[0].SDG_categories = "Partnerships for the goals"
-    programme.outcomes[0].outcome_category_classification = "unknown: Invented"
-    with pytest.warns(UserWarning, match="outcome_category_classification"):
+    assert cleaned.quantitative_outcomes[0].SDG_categories == ""
+    programme.qualitative_outcomes[0].SDG_categories = "Unknown"
+    programme.quantitative_outcomes[0].SDG_categories = "Partnerships for the goals"
+    programme.quantitative_outcomes[0].outcome_category_classification = "unknown: Invented"
+    with pytest.warns(UserWarning, match="removed invalid or duplicate") as warnings:
         cleaned = pipeline(context="report")
-    assert cleaned.outcomes[0].outcome_category_classification == ""
-    assert cleaned.outcomes[0].quantitative_outcome_results == (
-        programme.outcomes[0].quantitative_outcome_results
+    assert len(warnings) == 2
+    assert cleaned.quantitative_outcomes[0].outcome_category_classification == ""
+    assert cleaned.qualitative_outcomes[0].SDG_categories == ""
+    assert cleaned.quantitative_outcomes[0].results == (
+        programme.quantitative_outcomes[0].results
     )
     valid_category = (
         "X.1: Local indicator" if custom_framework else
         "1.1: Percentage of pregnant women receiving at least four antenatal visits"
     )
-    programme.outcomes[0].outcome_category_classification = (
+    programme.quantitative_outcomes[0].outcome_category_classification = (
         f"unknown: Invented; {valid_category}; {valid_category}"
     )
-    programme.outcomes[0].SDG_categories = (
+    programme.quantitative_outcomes[0].SDG_categories = (
         "No poverty; SDG 17; Partnerships for the goals; No poverty"
     )
     with pytest.warns(UserWarning) as warnings:
         cleaned = pipeline(context="report")
     assert len(warnings) == 2
-    row = cleaned.outcomes[0].model_dump()
+    row = cleaned.quantitative_outcomes[0].model_dump()
     assert row["outcome_category_classification"] == valid_category
     assert row["SDG_categories"] == "No poverty; Partnerships for the goals"
 
@@ -236,6 +264,98 @@ def test_main_extract_dispatches_programme_pipeline():
 
     pipeline_class.return_value.assert_called_once_with(context="report")
     assert result is expected
+
+
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize(
+    ("quantitative", "qualitative"),
+    [(True, True), (False, True), (True, False), (False, False)],
+)
+def test_pipeline_handles_empty_outcome_groups_and_cleans_before_qualitative(
+    dynamic, quantitative, qualitative
+):
+    programme = _programme()
+    pipeline_class = ProgrammeExtractionPipeline
+    if dynamic:
+        schema = defaultdict(list)
+        for row in custom_hierarchical.build_programme_hierarchical_prompt_rows():
+            schema[row["class"]].append(row)
+        models = custom_hierarchical._ensure_programme_runtime_models(
+            schema, custom_hierarchical._build_dynamic_models_from_schema(schema)
+        )
+        programme = models["Programme"].model_validate(programme.model_dump())
+        pipeline_class = custom_hierarchical._build_dynamic_programme_pipeline(models)
+    if not quantitative:
+        programme.quantitative_outcomes = []
+    if not qualitative:
+        programme.qualitative_outcomes = []
+    for outcome in programme.quantitative_outcomes:
+        outcome.SDG_categories = "Unknown; No poverty"
+    pipeline = pipeline_class()
+    calls = []
+
+    def extract_programme_info(**_kwargs):
+        calls.append("programme")
+        return SimpleNamespace(
+            programme_characteristics=programme.programme_characteristics,
+            interventions=programme.interventions,
+        )
+
+    def extract_quantitative(**_kwargs):
+        calls.append("quantitative")
+        return SimpleNamespace(quantitative_outcomes=programme.quantitative_outcomes)
+
+    def extract_qualitative(**kwargs):
+        calls.append("qualitative")
+        assert kwargs["quantitative_outcomes"] == programme.quantitative_outcomes
+        for outcome in kwargs["quantitative_outcomes"]:
+            assert outcome.SDG_categories == "No poverty"
+        return SimpleNamespace(qualitative_outcomes=programme.qualitative_outcomes)
+
+    pipeline.extract_programme_info = extract_programme_info
+    pipeline.extract_quantitative = extract_quantitative
+    pipeline.extract_qualitative = extract_qualitative
+    if quantitative:
+        with pytest.warns(UserWarning, match="SDG_categories"):
+            result = pipeline(context="report")
+    else:
+        result = pipeline(context="report")
+    assert calls == ["programme", "quantitative", "qualitative"]
+    assert result.model_dump() == programme.model_dump()
+
+
+def test_dynamic_programme_requires_migration_of_old_outcome_schema():
+    with pytest.raises(ValueError, match="Regenerate"):
+        custom_hierarchical._ensure_programme_runtime_models(
+            {"Outcome": []}, {}
+        )
+
+
+def test_dynamic_programme_without_container_rows_uses_custom_outcome_fields():
+    schema = defaultdict(list)
+    for row in custom_hierarchical.build_programme_hierarchical_prompt_rows():
+        if row["class"] != "Programme":
+            schema[row["class"]].append(row)
+    schema["Qualitative_Outcome"].append({
+        "attribute": "participant_group",
+        "prompt": "Identify the group giving feedback.",
+        "datatype": "str",
+    })
+    models = custom_hierarchical._ensure_programme_runtime_models(
+        schema, custom_hierarchical._build_dynamic_models_from_schema(schema)
+    )
+    programme = models["Programme"].model_validate(_programme().model_dump())
+    programme.qualitative_outcomes[0].participant_group = "Local partners"
+    assert programme.model_dump()["qualitative_outcomes"][0]["participant_group"] == (
+        "Local partners"
+    )
+    assert programme.quantitative_outcomes[0].outcome_type == "quantitative"
+    assert programme.qualitative_outcomes[0].outcome_type == "qualitative"
+    with pytest.raises(ValidationError, match="outcome_type"):
+        models["Qualitative_Outcome"].model_validate({
+            **programme.qualitative_outcomes[0].model_dump(),
+            "outcome_type": "quantitative",
+        })
 
 
 def test_custom_programme_schema_builds_programme_pipeline():
@@ -255,16 +375,26 @@ def test_custom_programme_schema_builds_programme_pipeline():
 
     assert pipeline_class.__name__ == "DynamicProgrammeExtractionPipeline"
     assert set(schema) == {
-        "Programme_Characteristics", "Intervention", "Outcome", "Programme"
+        "Programme_Characteristics", "Intervention", "Programme",
+        "Quantitative_Outcome", "Qualitative_Outcome"
     }
-    outcome_fields = {row["attribute"] for row in schema["Outcome"]}
-    assert {
-        "barrier", "enabler", "lessons_learned", "achievements", "recommendation"
-    } <= outcome_fields
-    assert "outcome_name" not in outcome_fields
+    for class_name in ("Quantitative_Outcome", "Qualitative_Outcome"):
+        outcome_fields = {row["attribute"] for row in schema[class_name]}
+        assert {
+            "barrier", "enabler", "lessons_learned", "achievements", "recommendation",
+            "results", "outcome_type",
+        } <= outcome_fields
+        assert "outcome_name" not in outcome_fields
 
 
-def test_custom_programme_output_writes_three_tables(tmp_path):
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize(
+    ("quantitative", "qualitative"),
+    [(True, True), (False, True), (True, False), (False, False)],
+)
+def test_programme_output_writes_combined_outcomes_sheet(
+    tmp_path, dynamic, quantitative, qualitative
+):
     schema = defaultdict(list)
     for row in custom_hierarchical.build_programme_hierarchical_prompt_rows():
         schema[row["class"]].append(
@@ -275,16 +405,31 @@ def test_custom_programme_output_writes_three_tables(tmp_path):
             }
         )
 
-    custom_hierarchical._write_dynamic_study_outputs(
-        _programme(),
-        dict(schema),
-        "Programme",
-        tmp_path,
-        "evaluation",
-        "20260925_120000",
-        "",
-        export_json_file=True,
-    )
+    programme = _programme()
+    if not quantitative:
+        programme.quantitative_outcomes = []
+    if not qualitative:
+        programme.qualitative_outcomes = []
+    if dynamic:
+        custom_hierarchical._write_dynamic_study_outputs(
+            programme,
+            dict(schema),
+            "Programme",
+            tmp_path,
+            "evaluation",
+            "20260925_120000",
+            "",
+            export_json_file=True,
+            export_xlsx_file=True,
+        )
+        payload = json.loads(
+            (tmp_path / "evaluation_20260925_120000.json").read_text(encoding="utf-8")
+        )
+        assert payload == programme.model_dump()
+    else:
+        export_programme_csv(
+            programme, "evaluation", tmp_path, "20260925_120000", write_xlsx=True
+        )
 
     output_dir = tmp_path / "evaluation"
     assert {
@@ -294,16 +439,32 @@ def test_custom_programme_output_writes_three_tables(tmp_path):
         "interventions_20260925_120000.csv",
         "outcomes_20260925_120000.csv",
     }
-    payload = json.loads(
-        (tmp_path / "evaluation_20260925_120000.json").read_text(encoding="utf-8")
-    )
-    assert payload == _programme().model_dump()
+    outcomes = [
+        *programme.quantitative_outcomes, *programme.qualitative_outcomes
+    ]
+    expected_rows = [
+        {field: row.model_dump().get(field, "") for field in Programme.outcome_csv_fieldnames()}
+        for row in outcomes
+    ]
     with (output_dir / "outcomes_20260925_120000.csv").open(
         encoding="utf-8-sig"
     ) as csv_file:
-        assert list(csv.DictReader(csv_file)) == [
-            _programme().outcomes[0].to_csv_row()
+        reader = csv.DictReader(csv_file)
+        assert reader.fieldnames == Programme.outcome_csv_fieldnames()
+        assert list(reader) == expected_rows
+    workbook = load_workbook(
+        output_dir / "study_20260925_120000.xlsx", read_only=True
+    )
+    try:
+        assert workbook.sheetnames == ["programme", "interventions", "outcomes"]
+        sheet_rows = list(workbook["outcomes"].values)
+        assert list(sheet_rows[0]) == Programme.outcome_csv_fieldnames()
+        assert sheet_rows[1:] == [
+            tuple(row[field] or None for field in Programme.outcome_csv_fieldnames())
+            for row in expected_rows
         ]
+    finally:
+        workbook.close()
 
 
 def test_export_programme_csv_writes_three_tables(tmp_path):
@@ -321,14 +482,12 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
             "name", "description", "time_frame", "resources_used", "intended_results"
         ],
         "outcomes": [
+            "outcome_type",
             "name",
             "description",
             "intervention_name",
             "unit_of_analysis",
             "SDG_categories",
-            "baseline_data",
-            "quantitative_outcome_results",
-            "qualitative_outcome_results",
             "source_paragraph",
             "outcome_category_classification",
             "barrier",
@@ -336,6 +495,8 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
             "lessons_learned",
             "achievements",
             "recommendation",
+            "baseline_data",
+            "results",
         ],
     }
     assert len(list(output_dir.glob("*.csv"))) == 3
@@ -346,23 +507,27 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
             assert reader.fieldnames == headers
             if table_name == "outcomes":
                 row = next(reader)
-                assert row == _programme().outcomes[0].to_csv_row()
-                assert row["quantitative_outcome_results"] == (
+                assert row == _programme().quantitative_outcomes[0].to_csv_row()
+                assert row["results"] == (
                     "80% of partners improved delivery capacity"
                 )
-                assert row["qualitative_outcome_results"] == (
-                    "Partners reported stronger delivery capacity"
+                assert row["outcome_type"] == "quantitative"
+                row = next(reader)
+                assert row["outcome_type"] == "qualitative"
+                assert row["baseline_data"] == ""
+                assert row["results"] == (
+                    "Interviewed partners reported stronger delivery capacity"
                 )
 
 
 def test_new_outcome_fields_are_backwards_compatible():
-    data = _programme().outcomes[0].model_dump()
+    data = _programme().quantitative_outcomes[0].model_dump()
     for field in (
         "baseline_data", "source_paragraph", "SDG_categories",
         "outcome_category_classification"
     ):
         del data[field]
-    outcome = Outcome.model_validate(data)
+    outcome = Quantitative_Outcome.model_validate(data)
     assert outcome.baseline_data == ""
     assert outcome.source_paragraph == ""
     assert outcome.SDG_categories == ""
@@ -382,14 +547,14 @@ def test_new_outcome_fields_are_backwards_compatible():
     ],
 )
 def test_baseline_data_preserved_in_serialization(baseline):
-    data = _programme().outcomes[0].model_dump()
+    data = _programme().quantitative_outcomes[0].model_dump()
     data["baseline_data"] = baseline
-    outcome = Outcome.model_validate(data)
+    outcome = Quantitative_Outcome.model_validate(data)
     for row in (outcome.model_dump(), outcome.to_csv_row()):
         assert row["baseline_data"] == baseline
         fields = list(row)
         assert fields.index("baseline_data") + 1 == (
-            fields.index("quantitative_outcome_results")
+            fields.index("results")
         )
 
 
@@ -399,9 +564,9 @@ def test_baseline_data_preserved_in_serialization(baseline):
 )
 def test_sdg_categories_accepts_exact_labels(classification):
     assert validate_sdg_categories([classification]) == [classification]
-    data = _programme().outcomes[0].model_dump()
+    data = _programme().quantitative_outcomes[0].model_dump()
     data["SDG_categories"] = classification
-    outcome = Outcome.model_validate(data)
+    outcome = Quantitative_Outcome.model_validate(data)
     assert outcome.to_csv_row()["SDG_categories"] == classification
     assert outcome.model_dump()["SDG_categories"] == classification
 
@@ -424,9 +589,10 @@ def test_sdg_categories_removes_invented_or_duplicate_labels(classification):
 
 
 def test_sdg_prompt_contains_exact_supplied_labels():
-    description = Outcome.model_fields["SDG_categories"].description
-    assert len(SDG_CATEGORIES) == 17
-    assert description.endswith("; ".join(SDG_CATEGORIES))
+    for model in (Quantitative_Outcome, Qualitative_Outcome):
+        description = model.model_fields["SDG_categories"].description
+        assert len(SDG_CATEGORIES) == 17
+        assert description.endswith("; ".join(SDG_CATEGORIES))
 
 
 def test_bundled_framework_has_all_supplied_indicators_and_scopes():

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from .programme_framework import SDG_CATEGORIES
@@ -59,7 +61,10 @@ class Intervention(BaseModel):
         return self.model_dump()
 
 
-class Outcome(BaseModel):
+class _OutcomeBase(BaseModel):
+    outcome_type: str = Field(
+        description="Whether the outcome is quantitative or qualitative."
+    )
     name: str = Field(description="Name of the reported programme outcome.")
     description: str = Field(
         description="Description of the outcome, including how it was measured."
@@ -81,35 +86,15 @@ class Outcome(BaseModel):
             + "; ".join(SDG_CATEGORIES)
         ),
     )
-    baseline_data: str = Field(
-        default="",
-        description=(
-            "All reported quantitative or qualitative baseline information for "
-            "this specific outcome: the status quo before the intervention was "
-            "implemented. Preserve reported values, units, dates, population "
-            "and relevant context. Include narrative descriptions of initial "
-            "conditions where reported. Do not confuse targets or post-intervention "
-            "results with baseline data, calculate baseline values, or infer "
-            "baseline conditions from later changes. Leave blank if not reported."
-        ),
-    )
-    quantitative_outcome_results: str = Field(
-        description="Extract all numerical results reported for this specific outcome, preserving values, units, and relevant context as stated. Do not calculate or infer results. Assign 'NR' if no numerical results are reported for this outcome."
-    )
-    qualitative_outcome_results: str = Field(
-        description="Extract all qualitative results reported for this specific outcome, including narrative findings or observed changes as stated. Do not infer results. Assign 'NR' if no qualitative results are reported for this outcome."
-    )
     source_paragraph: str = Field(
         default="",
         description=(
-            "Brief verbatim quotes supporting the numerical and qualitative "
-            "results for this specific outcome, labelled 'Quantitative' and "
-            "'Qualitative'. Include a separate quote and its document name, "
+            "Brief verbatim quotes supporting the results for this specific "
+            "outcome. Include a separate quote and its document name, "
             "section heading and page number for each distinct result where "
             "available. Use only locations present in the supplied text; never "
             "invent page numbers or quotes. State 'location not reported' when "
-            "no location is available and 'NR' for a result type with no "
-            "reported evidence."
+            "no location is available. Do not invent supporting evidence."
         )
     )
     outcome_category_classification: str = Field(
@@ -153,6 +138,52 @@ class Outcome(BaseModel):
         return self.model_dump()
 
 
+class Quantitative_Outcome(_OutcomeBase):
+    """An outcome supported by reported numerical results."""
+
+    outcome_type: Literal["quantitative"] = Field(
+        default="quantitative", description="Always 'quantitative'."
+    )
+    baseline_data: str = Field(
+        default="",
+        description=(
+            "Relevant reported quantitative or qualitative baseline information for "
+            "this specific outcome: the status quo before the intervention was "
+            "implemented. Preserve reported values, units, dates, population "
+            "and relevant context. Include narrative descriptions of initial "
+            "conditions where reported. Do not confuse targets or post-intervention "
+            "results with baseline data, calculate baseline values, or infer "
+            "baseline conditions from later changes. Assign 'NR' if not reported."
+        ),
+    )
+    results: str = Field(
+        description=(
+            "All numerical results reported for this specific outcome, preserving "
+            "values, units, time points, population and relevant context as stated. "
+            "Do not calculate or infer results. Do not create a quantitative "
+            "outcome when no numerical result is reported."
+        )
+    )
+
+
+class Qualitative_Outcome(_OutcomeBase):
+    """An outcome supported by qualitative findings or first-hand experiences."""
+
+    outcome_type: Literal["qualitative"] = Field(
+        default="qualitative", description="Always 'qualitative'."
+    )
+    results: str = Field(
+        description=(
+            "Reported qualitative findings or observed changes for this specific "
+            "outcome, including first-hand experiences from interviews, focus "
+            "groups, free-text responses and participant or beneficiary feedback. "
+            "Preserve attribution, differing views and relevant context. "
+            "Do not infer findings or merely rephrase numerical results. "
+            "Do not create a qualitative outcome without qualitative evidence."
+        )
+    )
+
+
 class Programme(BaseModel):
     programme_characteristics: Programme_Characteristics = Field(
         description="Programme-level metadata extracted from the evaluation report."
@@ -160,9 +191,13 @@ class Programme(BaseModel):
     interventions: list[Intervention] = Field(
         description="All distinct programme interventions identified in the report."
     )
-    outcomes: list[Outcome] = Field(
+    quantitative_outcomes: list[Quantitative_Outcome] = Field(
         default_factory=list,
-        description="All outcomes associated with the identified interventions.",
+        description="All quantitative outcomes associated with the interventions.",
+    )
+    qualitative_outcomes: list[Qualitative_Outcome] = Field(
+        default_factory=list,
+        description="All qualitative outcomes associated with the interventions.",
     )
 
     @classmethod
@@ -171,3 +206,10 @@ class Programme(BaseModel):
 
     def to_csv_row(self) -> dict[str, str]:
         return self.programme_characteristics.to_csv_row()
+
+    @classmethod
+    def outcome_csv_fieldnames(cls) -> list[str]:
+        """Return columns for the shared quantitative/qualitative outcomes table."""
+        return list(dict.fromkeys(
+            Quantitative_Outcome.csv_fieldnames() + Qualitative_Outcome.csv_fieldnames()
+        ))

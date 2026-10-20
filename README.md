@@ -320,14 +320,36 @@ All commits must use [**conventional commits**](conventionalcommits.org). The pr
 ### Programme outcomes and indicator frameworks
 
 Both the predefined and custom CSV-schema pipelines support
-`"study_type": "Programme"`. Outcome extraction includes, among other fields:
+`"study_type": "Programme"`. Programme extraction runs in three passes:
 
-- `baseline_data`: reported quantitative or qualitative conditions for the
+1. Extract programme characteristics and interventions (including intended results).
+2. Extract `Quantitative_Outcome` records with numerical evidence.
+3. Extract `Qualitative_Outcome` records, passing the quantitative extraction,
+   programme characteristics, interventions and original report into this call.
+
+Both outcome models have `results` and `outcome_type` fields. The type is fixed
+to `quantitative` or `qualitative` respectively. Qualitative results include
+first-hand experiences from interviews, focus groups, free-text responses and
+participant or beneficiary feedback, as well as supported narrative findings.
+They must not simply restate numbers from the quantitative pass. A topic can
+appear in both lists when distinct evidence supports each type, and qualitative
+findings do not require a corresponding quantitative outcome.
+
+JSON has separate `quantitative_outcomes` and `qualitative_outcomes` lists.
+CSV and Excel combine both lists (quantitative rows first) into one `outcomes`
+table/sheet in the same workbook as `programme` and `interventions`.
+`outcome_type` identifies each row. Qualitative records do not contain
+`baseline_data`; their baseline cells in the shared sheet are blank. Empty
+outcome groups are supported, including reports without either type of result.
+
+Outcome extraction includes, among other fields:
+
+- `baseline_data` (quantitative outcomes only): reported quantitative or qualitative conditions for the
   outcome before the intervention, including available values, dates and context.
   Baselines are kept separate from targets and post-intervention results, are
-  never inferred from later changes, and are left blank if not reported.
-  This field immediately precedes `quantitative_outcome_results` in the schema
-  and exports. Regenerate existing custom Programme prompt CSVs to include it.
+  never inferred from later changes. The extraction uses `NR` if no baseline is
+  reported. This field immediately precedes `results` in the quantitative schema
+  and shared outcomes export.
 - `SDG_categories`: all fitting SDGs as a semicolon-separated list of exact
   labels from the 17 SDGs supplied in the field description, or blank if none
   applies. Assignments can be inferred from reported outcome evidence; explicit
@@ -341,7 +363,7 @@ Both the predefined and custom CSV-schema pipelines support
 A sample, and current default framework is
 [`unicef_outcome_indicators.csv`](deet/hierarchical_mvp/unicef_outcome_indicators.csv).
 It contains the 54 indicators supplied for this extraction task, across five
-goal areas. 
+goal areas.
 
 To change frameworks, copy the CSV and edit its rows in a text editor or
 spreadsheet application, saving it as UTF-8 comma-separated text. Quote cells
@@ -372,20 +394,25 @@ pipeline**:
 
 This snippet shows only the relevant keys; retain the other required config
 fields. The framework path is relative to the JSON config's directory, or can be
-absolute. 
+absolute.
 
 For custom extraction, regenerate the Programme prompt CSV with
 `write_hierarchical_prompts_csv(study_type="Programme", csv_outpath=...)`
-to include the new fields, or add them to an existing CSV using datatype `str`.
+to replace the former `Outcome` class with `Quantitative_Outcome` and
+`Qualitative_Outcome`, each using `results` rather than the former separate
+quantitative/qualitative result columns. Update the Programme rows to use
+`quantitative_outcomes` and `qualitative_outcomes` instead of `outcomes`.
+Old Programme prompt CSVs are rejected with a migration message rather than
+silently losing data. Prompts for both outcome types can then be edited separately.
 The framework is a separate input: it is not embedded in that CSV or in the
-Outcome model. Both pipelines pass it into the outcome-extraction stage and
+outcome models. Both pipelines pass it into both outcome-extraction stages and
 validate that returned classification entries exactly match its IDs and
 statements, with no duplicates. Invalid entries and duplicate occurrences are
 removed with logged and printed warnings rather than failing extraction. Valid
 entries retain their order; if none remain, the field is blank. This checks label
 validity, not semantic accuracy. Malformed framework files still raise errors.
 
-Classification may infer a match from reported evidence using the scope rules. 
+Classification may infer a match from reported evidence using the scope rules.
 
 ### Running tests
 

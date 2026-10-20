@@ -7,7 +7,7 @@ import csv
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import dspy
 from dotenv import load_dotenv
@@ -23,12 +23,12 @@ from deet.hierarchical_mvp import ProgrammeModel as programme_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.programme_framework import (
-    OUTCOME_EXTRACTION_INSTRUCTIONS,
     PROGRAMME_EXTRACTION_INSTRUCTIONS,
+    QUALITATIVE_OUTCOME_INSTRUCTIONS,
+    QUANTITATIVE_OUTCOME_INSTRUCTIONS,
+    clean_outcome_classifications,
     load_indicator_framework,
     resolve_framework_config,
-    validate_classifications,
-    validate_sdg_categories,
 )
 from deet.hierarchical_mvp.utils import (
     _open_csv_for_write,
@@ -86,7 +86,8 @@ ANIMAL_DYNAMIC_CLASSES = {
 
 PROGRAMME_DYNAMIC_CLASSES = {
     "Intervention",
-    "Outcome",
+    "Quantitative_Outcome",
+    "Qualitative_Outcome",
     "Programme",
     "Programme_Characteristics",
 }
@@ -290,6 +291,8 @@ def build_programme_hierarchical_prompt_rows() -> list[dict[str, str]]:
             continue
         if not issubclass(cls, BaseModel):
             continue
+        if cls.__name__ not in PROGRAMME_DYNAMIC_CLASSES:
+            continue
 
         for field_name, field_info in cls.model_fields.items():
             annotation = field_info.annotation
@@ -298,7 +301,10 @@ def build_programme_hierarchical_prompt_rows() -> list[dict[str, str]]:
                     "class": cls.__name__,
                     "attribute": field_name,
                     "prompt": field_info.description or "",
-                    "datatype": getattr(annotation, "__name__", str(annotation)),
+                    "datatype": (
+                        "str" if field_name == "outcome_type"
+                        else getattr(annotation, "__name__", str(annotation))
+                    ),
                 }
             )
 
@@ -1328,6 +1334,15 @@ def _ensure_programme_runtime_models(
     dynamic_models: dict[str, type[BaseModel]],
 ) -> dict[str, type[BaseModel]]:
     runtime_models: dict[str, type[BaseModel]] = {}
+    if "Outcome" in schema or (
+        "Programme" in schema
+        and any(row["attribute"] == "outcomes" for row in schema["Programme"])
+    ):
+        msg = (
+            "The Programme prompt CSV uses the old Outcome schema. Regenerate it "
+            "with Quantitative_Outcome, Qualitative_Outcome and separate outcome lists."
+        )
+        raise ValueError(msg)
 
     for class_name in PROGRAMME_DYNAMIC_CLASSES:
         model_cls = dynamic_models.get(class_name)
@@ -1343,23 +1358,42 @@ def _ensure_programme_runtime_models(
                 f"Class '{class_name}' is required by the pipeline but is missing."
             )
 
-    if "Programme" in schema:
-        runtime_models["Programme"] = create_model(
-            "DynamicProgramme",
-            __base__=BaseModel,
-            programme_characteristics=(
-                runtime_models["Programme_Characteristics"],
-                Field(description="Programme-level metadata."),
-            ),
-            interventions=(
-                list[runtime_models["Intervention"]],
-                Field(description="Programme interventions."),
-            ),
-            outcomes=(
-                list[runtime_models["Outcome"]],
-                Field(default_factory=list, description="Programme outcomes."),
+    for class_name, kind in (
+        ("Quantitative_Outcome", "quantitative"),
+        ("Qualitative_Outcome", "qualitative"),
+    ):
+        outcome_type = (
+            Literal["quantitative"] if kind == "quantitative" else Literal["qualitative"]
+        )
+        runtime_models[class_name] = create_model(
+            f"Dynamic{class_name}",
+            __base__=runtime_models[class_name],
+            outcome_type=(
+                outcome_type,
+                Field(default=kind, description=f"Always '{kind}'."),
             ),
         )
+
+    runtime_models["Programme"] = create_model(
+        "DynamicProgramme",
+        __base__=BaseModel,
+        programme_characteristics=(
+            runtime_models["Programme_Characteristics"],
+            Field(description="Programme-level metadata."),
+        ),
+        interventions=(
+            list[runtime_models["Intervention"]],
+            Field(description="Programme interventions."),
+        ),
+        quantitative_outcomes=(
+            list[runtime_models["Quantitative_Outcome"]],
+            Field(default_factory=list, description="Quantitative outcomes."),
+        ),
+        qualitative_outcomes=(
+            list[runtime_models["Qualitative_Outcome"]],
+            Field(default_factory=list, description="Qualitative outcomes."),
+        ),
+    )
 
     return runtime_models
 
@@ -1385,14 +1419,14 @@ def _build_dynamic_programme_pipeline(
         },
         PROGRAMME_EXTRACTION_INSTRUCTIONS,
     )
-    extract_outcomes_sig = _build_dynamic_signature(
-        "DynamicExtractProgrammeOutcomes",
+    extract_quantitative_sig = _build_dynamic_signature(
+        "DynamicExtractProgrammeQuantitativeOutcomes",
         {
             "context": str,
             "classification_framework": str,
             "programme_characteristics": runtime_models["Programme_Characteristics"],
             "interventions": list[runtime_models["Intervention"]],
-            "outcomes": list[runtime_models["Outcome"]],
+            "quantitative_outcomes": list[runtime_models["Quantitative_Outcome"]],
         },
         {
             "context": dspy.InputField(desc="UN programme evaluation report text."),
@@ -1405,11 +1439,41 @@ def _build_dynamic_programme_pipeline(
             "interventions": dspy.InputField(
                 desc="Programme interventions from the first pass."
             ),
-            "outcomes": dspy.OutputField(
-                desc="All outcomes linked to identified interventions."
+            "quantitative_outcomes": dspy.OutputField(
+                desc="All quantitative outcomes linked to identified interventions."
             ),
         },
-        OUTCOME_EXTRACTION_INSTRUCTIONS,
+        QUANTITATIVE_OUTCOME_INSTRUCTIONS,
+    )
+    extract_qualitative_sig = _build_dynamic_signature(
+        "DynamicExtractProgrammeQualitativeOutcomes",
+        {
+            "context": str,
+            "classification_framework": str,
+            "programme_characteristics": runtime_models["Programme_Characteristics"],
+            "interventions": list[runtime_models["Intervention"]],
+            "quantitative_outcomes": list[runtime_models["Quantitative_Outcome"]],
+            "qualitative_outcomes": list[runtime_models["Qualitative_Outcome"]],
+        },
+        {
+            "context": dspy.InputField(desc="Programme evaluation report text."),
+            "classification_framework": dspy.InputField(
+                desc="CSV category IDs, groups, statements and scope criteria."
+            ),
+            "programme_characteristics": dspy.InputField(
+                desc="Programme characteristics from the first pass."
+            ),
+            "interventions": dspy.InputField(
+                desc="Programme interventions from the first pass."
+            ),
+            "quantitative_outcomes": dspy.InputField(
+                desc="Previously extracted quantitative outcomes, provided as context."
+            ),
+            "qualitative_outcomes": dspy.OutputField(
+                desc="All supported qualitative outcomes, including first-hand experiences."
+            ),
+        },
+        QUALITATIVE_OUTCOME_INSTRUCTIONS,
     )
 
     programme_model = runtime_models["Programme"]
@@ -1423,38 +1487,36 @@ def _build_dynamic_programme_pipeline(
                 classification_framework_path
             )
             self.extract_programme_info = dspy.Predict(extract_programme_info_sig)
-            self.extract_outcomes = dspy.Predict(extract_outcomes_sig)
+            self.extract_quantitative = dspy.Predict(extract_quantitative_sig)
+            self.extract_qualitative = dspy.Predict(extract_qualitative_sig)
 
         def forward(self, context: str) -> BaseModel:
             programme_pred = self.extract_programme_info(context=context)
-            outcomes_pred = self.extract_outcomes(
+            quantitative_pred = self.extract_quantitative(
                 context=context,
                 classification_framework=self.classification_framework,
                 programme_characteristics=programme_pred.programme_characteristics,
                 interventions=programme_pred.interventions,
             )
-            classifications = validate_classifications(
-                (
-                    outcome.model_dump().get("outcome_category_classification", "")
-                    for outcome in outcomes_pred.outcomes
-                ),
+            clean_outcome_classifications(
+                quantitative_pred.quantitative_outcomes,
                 self.classification_framework,
             )
-            sdg_categories = validate_sdg_categories(
-                outcome.model_dump().get("SDG_categories", "")
-                for outcome in outcomes_pred.outcomes
+            qualitative_pred = self.extract_qualitative(
+                context=context,
+                classification_framework=self.classification_framework,
+                programme_characteristics=programme_pred.programme_characteristics,
+                interventions=programme_pred.interventions,
+                quantitative_outcomes=quantitative_pred.quantitative_outcomes,
             )
-            for outcome, classification, sdgs in zip(
-                outcomes_pred.outcomes, classifications, sdg_categories, strict=True
-            ):
-                if "outcome_category_classification" in type(outcome).model_fields:
-                    outcome.outcome_category_classification = classification
-                if "SDG_categories" in type(outcome).model_fields:
-                    outcome.SDG_categories = sdgs
+            clean_outcome_classifications(
+                qualitative_pred.qualitative_outcomes, self.classification_framework
+            )
             return programme_model(
                 programme_characteristics=programme_pred.programme_characteristics,
                 interventions=programme_pred.interventions,
-                outcomes=outcomes_pred.outcomes,
+                quantitative_outcomes=quantitative_pred.quantitative_outcomes,
+                qualitative_outcomes=qualitative_pred.qualitative_outcomes,
             )
 
     return DynamicProgrammeExtractionPipeline
@@ -1518,7 +1580,8 @@ def _write_dynamic_study_outputs(
     if study_type == "Programme":
         pc_schema = schema.get("Programme_Characteristics", [])
         iv_schema = schema.get("Intervention", [])
-        outcome_schema = schema.get("Outcome", [])
+        quantitative_schema = schema.get("Quantitative_Outcome", [])
+        qualitative_schema = schema.get("Qualitative_Outcome", [])
 
         programme_row = _project_instance_to_schema(
             study.programme_characteristics, pc_schema
@@ -1526,15 +1589,31 @@ def _write_dynamic_study_outputs(
         intervention_rows = [
             _project_instance_to_schema(item, iv_schema) for item in study.interventions
         ]
-        outcome_rows = [
-            _project_instance_to_schema(item, outcome_schema) for item in study.outcomes
+        quantitative_rows = [
+            {"outcome_type": "quantitative", **_project_instance_to_schema(
+                item, quantitative_schema
+            )}
+            for item in study.quantitative_outcomes
         ]
+        qualitative_rows = [
+            {"outcome_type": "qualitative", **_project_instance_to_schema(
+                item, qualitative_schema
+            )}
+            for item in study.qualitative_outcomes
+        ]
+        outcome_rows = quantitative_rows + qualitative_rows
+        outcome_fieldnames = list(dict.fromkeys([
+            "outcome_type",
+            *(row["attribute"] for row in quantitative_schema),
+            *(row["attribute"] for row in qualitative_schema),
+        ]))
 
         if export_json_file:
             dynamic_payload = {
                 "programme_characteristics": programme_row,
                 "interventions": intervention_rows,
-                "outcomes": outcome_rows,
+                "quantitative_outcomes": quantitative_rows,
+                "qualitative_outcomes": qualitative_rows,
             }
             output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
             output_path.write_text(
@@ -1545,16 +1624,22 @@ def _write_dynamic_study_outputs(
             table_inputs = {
                 "programme": (pc_schema, [programme_row]),
                 "interventions": (iv_schema, intervention_rows),
-                "outcomes": (outcome_schema, outcome_rows),
+                "outcomes": (
+                    [{"attribute": field} for field in outcome_fieldnames],
+                    outcome_rows,
+                ),
             }
             tables = {}
             for table_name, (table_schema, rows) in table_inputs.items():
                 if not table_schema:
                     continue
                 flat_rows = [_flatten_row_for_export(row) for row in rows]
-                fieldnames = _fieldnames_union(flat_rows) or [
-                    item["attribute"] for item in table_schema
-                ]
+                fieldnames = (
+                    outcome_fieldnames if table_name == "outcomes"
+                    else _fieldnames_union(flat_rows) or [
+                        item["attribute"] for item in table_schema
+                    ]
+                )
                 tables[table_name] = (fieldnames, flat_rows)
 
             if tables:

@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING
 from deet.logger import logger
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Mapping, Sequence
+
+    from pydantic import BaseModel
 
 FRAMEWORK_COLUMNS = (
     "category_id",
@@ -54,14 +56,9 @@ OUTCOME_EXTRACTION_INSTRUCTIONS = """
 Extract every reported outcome using the previously identified programme
 characteristics and interventions. Preserve exact intervention names. Report only
 source-supported results.
-In baseline_data, extract reported quantitative and qualitative conditions for
-this outcome before the intervention was implemented, preserving dates, values
-and context. Keep baseline conditions separate from targets and actual results;
-do not calculate or infer them from later changes. Leave blank if not reported.
-Extract quantitative and qualitative results separately for each specific outcome,
-assigning 'NR' when that type of result is not reported. In source_paragraph,
-provide brief verbatim quotes supporting each quantitative and qualitative result,
-label the result type and include document, section and page where available.
+In results, preserve the reported findings for each specific outcome.
+In source_paragraph, provide brief verbatim quotes supporting each result
+and include document, section and page where available.
 Never invent quotes or locations. Intended results belong to interventions,
 not individual outcomes.
 For SDG_categories, select all fitting SDGs based on the reported outcome evidence,
@@ -79,6 +76,52 @@ unrelated activities as achieved outcome evidence. Preserve unmatched outcomes.
 Include barriers, enablers, lessons learned, achievements and recommendations
 within the corresponding outcome. Do not combine unrelated findings.
 """
+
+QUANTITATIVE_OUTCOME_INSTRUCTIONS = OUTCOME_EXTRACTION_INSTRUCTIONS + """
+Extract quantitative outcomes only: outcomes with reported numerical results.
+Set outcome_type to 'quantitative'. Preserve values, units, populations and time
+points. In baseline_data, extract reported quantitative or qualitative conditions
+before implementation. Keep baselines separate from targets and actual results;
+do not calculate or infer baselines from later changes. Assign 'NR' if absent.
+Return an empty quantitative_outcomes list if no numerical outcomes are reported.
+"""
+
+QUALITATIVE_OUTCOME_INSTRUCTIONS = OUTCOME_EXTRACTION_INSTRUCTIONS + """
+Extract qualitative outcomes after considering the supplied quantitative_outcomes.
+Set outcome_type to 'qualitative'. Include first-hand experiences reported through
+interviews, focus groups, free-text responses and participant or beneficiary
+feedback, as well as supported qualitative evaluation findings. Preserve who
+reported a finding and any conflicting or negative experiences. The quantitative
+outcomes are context, not evidence of qualitative findings: return distinct
+qualitative evidence, not prose restatements of numbers. A topic can appear in
+both lists when separate numerical and qualitative evidence supports it.
+Do not limit qualitative extraction to topics present in quantitative_outcomes.
+Do not extract baseline_data for qualitative outcomes. Return an empty
+qualitative_outcomes list if no qualitative outcomes are reported.
+"""
+
+
+def clean_outcome_classifications(
+    outcomes: Sequence[BaseModel], framework: str
+) -> None:
+    """Clean both classification fields in place, including custom model fields."""
+    classifications = validate_classifications(
+        (outcome.model_dump().get("outcome_category_classification", "")
+         for outcome in outcomes),
+        framework,
+    )
+    sdg_categories = validate_sdg_categories(
+        outcome.model_dump().get("SDG_categories", "") for outcome in outcomes
+    )
+    for outcome, classification, sdgs in zip(
+        outcomes, classifications, sdg_categories, strict=True
+    ):
+        for field, value in (
+            ("outcome_category_classification", classification),
+            ("SDG_categories", sdgs),
+        ):
+            if field in type(outcome).model_fields:
+                setattr(outcome, field, value)
 
 
 def _framework_entries(framework: str) -> set[str]:
