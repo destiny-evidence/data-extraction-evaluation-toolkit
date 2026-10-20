@@ -96,6 +96,7 @@ class ExtractionMethod(StrEnum):
     LLM = auto()
     KEYWORD = auto()
     SEMANTIC = auto()
+    HIERARCHICAL_TOP_DOWN = auto()
 
 
 class DataExtractionConfig(BaseModel):
@@ -209,6 +210,11 @@ class DataExtractionConfig(BaseModel):
         default=True, description="Include additional text/citations in output"
     )
 
+    vocab_prompt_locations: list[str] = Field(
+        default=["definition", "scope_note"],
+        description="Concept fields used to set prompts from vocabulary.",
+    )
+
     # Evaluation
     edit_distance_match_threshold: float = Field(
         default=DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD,
@@ -220,6 +226,15 @@ class DataExtractionConfig(BaseModel):
             "config YAML to use the default."
         ),
         json_schema_extra={"skip_prompt": True},
+    )
+
+    vocabulary_path: Path | None = Field(
+        default=None, description="Path to vocabulary file"
+    )
+
+    vocabulary_mapping_path: Path | None = Field(
+        default=None,
+        description="Path to json file mapping vocabulary concepts to column IDs",
     )
 
     @model_validator(mode="after")
