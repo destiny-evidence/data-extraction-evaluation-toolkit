@@ -22,7 +22,7 @@ from .ObesityRCTmodel import Intervention as ObesityIntervention
 from .ObesityRCTmodel import Study as ObesityStudy
 from .PrognosticModel import PrognosticFactor, PrognosticStudy
 from .ProgrammeModel import Intervention as ProgrammeIntervention
-from .ProgrammeModel import Learning, Outcome, Programme
+from .ProgrammeModel import Outcome, Programme
 from .RCTmodel import Intervention, Study
 
 # Excel on Windows misreads plain "utf-8" CSVs (special chars like bullet/en-dash
@@ -470,7 +470,7 @@ def export_programme_csv(
     write_xlsx: bool = False,
     flat_output: bool = False,
 ) -> None:
-    """Write programme characteristics, interventions, outcomes, and learnings."""
+    """Write programme characteristics, interventions, and outcomes with learning."""
     csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{model_suffix}" if model_suffix else ""
@@ -484,10 +484,6 @@ def export_programme_csv(
         "outcomes": (
             Outcome.csv_fieldnames(),
             [item.to_csv_row() for item in programme.outcomes],
-        ),
-        "learnings": (
-            Learning.csv_fieldnames(),
-            [item.to_csv_row() for item in programme.learnings],
         ),
     }
     _write_tables(

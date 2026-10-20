@@ -22,6 +22,14 @@ from deet.hierarchical_mvp import ObesityRCTmodel as obesity_models
 from deet.hierarchical_mvp import ProgrammeModel as programme_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
+from deet.hierarchical_mvp.programme_framework import (
+    OUTCOME_EXTRACTION_INSTRUCTIONS,
+    PROGRAMME_EXTRACTION_INSTRUCTIONS,
+    load_indicator_framework,
+    resolve_framework_config,
+    validate_classifications,
+    validate_sdg_categories,
+)
 from deet.hierarchical_mvp.utils import (
     _open_csv_for_write,
     _write_tables,
@@ -78,7 +86,6 @@ ANIMAL_DYNAMIC_CLASSES = {
 
 PROGRAMME_DYNAMIC_CLASSES = {
     "Intervention",
-    "Learning",
     "Outcome",
     "Programme",
     "Programme_Characteristics",
@@ -937,6 +944,9 @@ def _load_runtime_config(config_path: Path) -> dict[str, Any]:
         raise ValueError(f"Config file is missing required key(s): {missing_sorted}")
 
     _validate_export_flags(config)
+    framework_path = resolve_framework_config(config, config_path)
+    if framework_path is not None:
+        config["classification_framework_path"] = str(framework_path)
 
     return config
 
@@ -959,6 +969,9 @@ def _load_runtime_batch_config(config_path: Path) -> dict[str, Any]:
         raise ValueError(f"Config file is missing required key(s): {missing_sorted}")
 
     _validate_export_flags(config)
+    framework_path = resolve_framework_config(config, config_path)
+    if framework_path is not None:
+        config["classification_framework_path"] = str(framework_path)
 
     return config
 
@@ -1346,10 +1359,6 @@ def _ensure_programme_runtime_models(
                 list[runtime_models["Outcome"]],
                 Field(default_factory=list, description="Programme outcomes."),
             ),
-            learnings=(
-                list[runtime_models["Learning"]],
-                Field(default_factory=list, description="Programme learnings."),
-            ),
         )
 
     return runtime_models
@@ -1374,19 +1383,22 @@ def _build_dynamic_programme_pipeline(
                 desc="All distinct programme interventions."
             ),
         },
-        "Extract programme characteristics and every distinct intervention from "
-        "the same UN evaluation report. Report only explicitly stated information.",
+        PROGRAMME_EXTRACTION_INSTRUCTIONS,
     )
     extract_outcomes_sig = _build_dynamic_signature(
         "DynamicExtractProgrammeOutcomes",
         {
             "context": str,
+            "classification_framework": str,
             "programme_characteristics": runtime_models["Programme_Characteristics"],
             "interventions": list[runtime_models["Intervention"]],
             "outcomes": list[runtime_models["Outcome"]],
         },
         {
             "context": dspy.InputField(desc="UN programme evaluation report text."),
+            "classification_framework": dspy.InputField(
+                desc="CSV category IDs, groups, statements and inclusion/exclusion criteria."
+            ),
             "programme_characteristics": dspy.InputField(
                 desc="Programme characteristics from the first pass."
             ),
@@ -1397,37 +1409,7 @@ def _build_dynamic_programme_pipeline(
                 desc="All outcomes linked to identified interventions."
             ),
         },
-        "Extract every reported outcome using the previously identified programme "
-        "characteristics and interventions. Preserve exact intervention names and "
-        "do not infer links not stated in the source.",
-    )
-    extract_learnings_sig = _build_dynamic_signature(
-        "DynamicExtractProgrammeLearnings",
-        {
-            "context": str,
-            "programme_characteristics": runtime_models["Programme_Characteristics"],
-            "interventions": list[runtime_models["Intervention"]],
-            "outcomes": list[runtime_models["Outcome"]],
-            "learnings": list[runtime_models["Learning"]],
-        },
-        {
-            "context": dspy.InputField(desc="UN programme evaluation report text."),
-            "programme_characteristics": dspy.InputField(
-                desc="Programme characteristics from the first pass."
-            ),
-            "interventions": dspy.InputField(
-                desc="Programme interventions from the first pass."
-            ),
-            "outcomes": dspy.InputField(
-                desc="Programme outcomes from the second pass."
-            ),
-            "learnings": dspy.OutputField(
-                desc="Learnings linked to identified outcomes."
-            ),
-        },
-        "Extract barriers, enablers, lessons learned, achievements, and "
-        "recommendations using all prior outputs. Link each learning to an exact "
-        "outcome name.",
+        OUTCOME_EXTRACTION_INSTRUCTIONS,
     )
 
     programme_model = runtime_models["Programme"]
@@ -1435,30 +1417,44 @@ def _build_dynamic_programme_pipeline(
     class DynamicProgrammeExtractionPipeline(dspy.Module):
         """Dynamic runtime variant of Programme extraction."""
 
-        def __init__(self) -> None:
+        def __init__(self, classification_framework_path: Path | None = None) -> None:
             super().__init__()
+            self.classification_framework = load_indicator_framework(
+                classification_framework_path
+            )
             self.extract_programme_info = dspy.Predict(extract_programme_info_sig)
             self.extract_outcomes = dspy.Predict(extract_outcomes_sig)
-            self.extract_learnings = dspy.Predict(extract_learnings_sig)
 
         def forward(self, context: str) -> BaseModel:
             programme_pred = self.extract_programme_info(context=context)
             outcomes_pred = self.extract_outcomes(
                 context=context,
+                classification_framework=self.classification_framework,
                 programme_characteristics=programme_pred.programme_characteristics,
                 interventions=programme_pred.interventions,
             )
-            learnings_pred = self.extract_learnings(
-                context=context,
-                programme_characteristics=programme_pred.programme_characteristics,
-                interventions=programme_pred.interventions,
-                outcomes=outcomes_pred.outcomes,
+            classifications = validate_classifications(
+                (
+                    outcome.model_dump().get("outcome_category_classification", "")
+                    for outcome in outcomes_pred.outcomes
+                ),
+                self.classification_framework,
             )
+            sdg_categories = validate_sdg_categories(
+                outcome.model_dump().get("SDG_categories", "")
+                for outcome in outcomes_pred.outcomes
+            )
+            for outcome, classification, sdgs in zip(
+                outcomes_pred.outcomes, classifications, sdg_categories, strict=True
+            ):
+                if "outcome_category_classification" in type(outcome).model_fields:
+                    outcome.outcome_category_classification = classification
+                if "SDG_categories" in type(outcome).model_fields:
+                    outcome.SDG_categories = sdgs
             return programme_model(
                 programme_characteristics=programme_pred.programme_characteristics,
                 interventions=programme_pred.interventions,
                 outcomes=outcomes_pred.outcomes,
-                learnings=learnings_pred.learnings,
             )
 
     return DynamicProgrammeExtractionPipeline
@@ -1523,7 +1519,6 @@ def _write_dynamic_study_outputs(
         pc_schema = schema.get("Programme_Characteristics", [])
         iv_schema = schema.get("Intervention", [])
         outcome_schema = schema.get("Outcome", [])
-        learning_schema = schema.get("Learning", [])
 
         programme_row = _project_instance_to_schema(
             study.programme_characteristics, pc_schema
@@ -1534,17 +1529,12 @@ def _write_dynamic_study_outputs(
         outcome_rows = [
             _project_instance_to_schema(item, outcome_schema) for item in study.outcomes
         ]
-        learning_rows = [
-            _project_instance_to_schema(item, learning_schema)
-            for item in study.learnings
-        ]
 
         if export_json_file:
             dynamic_payload = {
                 "programme_characteristics": programme_row,
                 "interventions": intervention_rows,
                 "outcomes": outcome_rows,
-                "learnings": learning_rows,
             }
             output_path = output_parent_dir / f"{study_name}_{timestamp}{suffix}.json"
             output_path.write_text(
@@ -1556,7 +1546,6 @@ def _write_dynamic_study_outputs(
                 "programme": (pc_schema, [programme_row]),
                 "interventions": (iv_schema, intervention_rows),
                 "outcomes": (outcome_schema, outcome_rows),
-                "learnings": (learning_schema, learning_rows),
             }
             tables = {}
             for table_name, (table_schema, rows) in table_inputs.items():
@@ -1958,7 +1947,12 @@ def run_dynamic_extraction_from_csv_schema(
     study_type = config["study_type"]
     dynamic_pipeline_cls = _build_dynamic_pipeline_for_study_type(study_type, schema)
 
-    study = dynamic_pipeline_cls()(context=context)
+    pipeline_options = {}
+    if "classification_framework_path" in config:
+        pipeline_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
+    study = dynamic_pipeline_cls(**pipeline_options)(context=context)
 
     study_name = Path(input_paths[0]).stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -2029,11 +2023,16 @@ def run_dynamic_batch_extraction_from_csv_schema(
 
     logger.info(f"Found {len(md_paths)} markdown file(s) to process in {input_folder}.")
     json_paths: list[Path] = []
+    pipeline_options = {}
+    if "classification_framework_path" in config:
+        pipeline_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
     for md_path in md_paths:
         logger.info(f"--- Processing {md_path.name} ---")
         try:
             context = load_study_context([str(md_path)])
-            study = dynamic_pipeline_cls()(context=context)
+            study = dynamic_pipeline_cls(**pipeline_options)(context=context)
 
             study_name = md_path.stem
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

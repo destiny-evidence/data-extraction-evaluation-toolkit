@@ -174,7 +174,7 @@ match = "main"
 prerelease = false
 
 [tool.setuptools]
-package-data = {"deet.prompts" = ["*.txt"], "deet.ui.terminal.templates" = ["**/*.md"]}
+package-data = {"deet.prompts" = ["*.txt"], "deet.ui.terminal.templates" = ["**/*.md"], "deet.hierarchical_mvp" = ["*.csv"]}
 package-dir = {"" = "."}
 packages = {find = {exclude = ["test_env*", "tests*"]}}
 

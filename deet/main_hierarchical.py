@@ -26,6 +26,7 @@ from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipel
 from deet.hierarchical_mvp.PrognosticModel import PrognosticStudy
 from deet.hierarchical_mvp.ProgrammeExtraction import ProgrammeExtractionPipeline
 from deet.hierarchical_mvp.ProgrammeModel import Programme
+from deet.hierarchical_mvp.programme_framework import resolve_framework_config
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTmodel import Study
 from deet.hierarchical_mvp.utils import (
@@ -201,6 +202,9 @@ def load_config(config_path: Path) -> dict[str, Any]:
         )
 
     _validate_common_config(config)
+    framework_path = resolve_framework_config(config, config_path)
+    if framework_path is not None:
+        config["classification_framework_path"] = str(framework_path)
 
     return config
 
@@ -226,6 +230,9 @@ def load_batch_config(config_path: Path) -> dict[str, Any]:
         raise TypeError("Config key 'input_folder' must be a string.")
 
     _validate_common_config(config)
+    framework_path = resolve_framework_config(config, config_path)
+    if framework_path is not None:
+        config["classification_framework_path"] = str(framework_path)
 
     return config
 
@@ -266,7 +273,9 @@ def validate_create_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
 
 
 def extract(
-    context: str, study_type: str
+    context: str,
+    study_type: str,
+    classification_framework_path: Path | None = None,
 ) -> (
     Study
     | PrognosticStudy
@@ -297,7 +306,9 @@ def extract(
             pipeline = ClimateCarbonPricingExtractionPipeline()
             return pipeline(context=context)
         case "Programme":
-            pipeline = ProgrammeExtractionPipeline()
+            pipeline = ProgrammeExtractionPipeline(
+                classification_framework_path=classification_framework_path
+            )
             return pipeline(context=context)
         case _:
             raise ValueError(
@@ -475,7 +486,14 @@ def run_predict_single_study(config_arg_path: str) -> None:
     configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
 
     context = read_concatenade_mds(input_paths)  # get text from the md inputs
-    study = extract(context=context, study_type=config["study_type"])  # do extraction
+    extraction_options = {}
+    if "classification_framework_path" in config:
+        extraction_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
+    study = extract(
+        context=context, study_type=config["study_type"], **extraction_options
+    )
     save_data(
         study=study,
         input_paths=input_paths,
@@ -529,11 +547,18 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
     configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
 
     logger.info(f"Found {len(md_paths)} markdown file(s) to process in {input_folder}.")
+    extraction_options = {}
+    if "classification_framework_path" in config:
+        extraction_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
     for md_path in md_paths:
         logger.info(f"--- Processing {md_path.name} ---")
         try:
             context = read_concatenade_mds([str(md_path)])
-            study = extract(context=context, study_type=config["study_type"])
+            study = extract(
+                context=context, study_type=config["study_type"], **extraction_options
+            )
             save_data(
                 study=study,
                 input_paths=[str(md_path)],

@@ -317,6 +317,90 @@ All commits must use [**conventional commits**](conventionalcommits.org). The pr
 
 ## Tests
 
+### Programme outcomes and indicator frameworks
+
+Both the predefined and custom CSV-schema pipelines support
+`"study_type": "Programme"`. Outcome extraction includes:
+
+- `source_paragraph`: brief verbatim quotes for quantitative and qualitative
+  results, with document, section and page locations when present in the input.
+  Missing locations must not be invented.
+- Each intervention has `intended_results`: its reported aims or targets,
+  distinguished from actual results, and source-supported differences. This is
+  extracted in the first pass, not stored on individual outcomes. Missing aims
+  are not inferred.
+- `SDG_categories`: all fitting SDGs as a semicolon-separated list of exact
+  labels from the 17 SDGs supplied in the field description, or blank if none
+  applies. Assignments can be inferred from reported outcome evidence; explicit
+  SDG references are not required. Invalid labels and duplicate occurrences are
+  removed with logged and printed warnings; valid labels and outcomes are retained.
+- `outcome_category_classification`: a semicolon-separated string of
+  `category_id: category_statement` entries (indicator ID and full indicator
+  statement for the UNICEF framework). Unmatched outcomes are retained
+  with an empty classification.
+
+The default framework is
+[`unicef_outcome_indicators.csv`](deet/hierarchical_mvp/unicef_outcome_indicators.csv).
+It contains the 54 indicators supplied for this extraction task, across five
+goal areas. The first three rows retain the supplied scope guidance; **all other
+scope definitions are provisional, drafted guidance requiring domain review**.
+No strategic-plan version was supplied, so this table is not certified against
+a particular official plan.
+
+To change frameworks, copy the CSV and edit its rows in a text editor or
+spreadsheet application, saving it as UTF-8 comma-separated text. Quote cells
+containing commas, quotes or line breaks using standard CSV escaping (spreadsheet
+applications do this automatically). Keep these organisation-neutral headers
+five headers in this order:
+
+1. `category_id`: stable identifier, such as a UNICEF indicator ID.
+2. `category_group`: broader grouping, such as a UNICEF goal area.
+3. `category_statement`: full category definition or indicator statement.
+4. `inclusion_criteria`: evidence that qualifies for this category.
+5. `exclusion_criteria`: near-misses that should not be classified here.
+
+All cells must be non-empty and IDs unique. IDs are strings (so `1.10` is not
+`1.1`); preserve them as text when editing spreadsheets. IDs and statements must
+not contain semicolons, because semicolons delimit output entries. Goal areas,
+IDs, statements and scope guidance can all be replaced for another organisation.
+
+Add this optional key to either single-study or batch JSON configs, for **either
+pipeline**:
+
+```json
+{
+  "study_type": "Programme",
+  "classification_framework_path": "my_framework.csv"
+}
+```
+
+This snippet shows only the relevant keys; retain the other required config
+fields. The framework path is relative to the JSON config's directory, or can be
+absolute. Omit the key to use the bundled UNICEF framework. Invalid or missing
+frameworks raise an error rather than silently reverting to the default.
+
+For custom extraction, regenerate the Programme prompt CSV with
+`write_hierarchical_prompts_csv(study_type="Programme", csv_outpath=...)`
+to include the new fields, or add them to an existing CSV using datatype `str`.
+The framework is a separate input: it is not embedded in that CSV or in the
+Outcome model. Both pipelines pass it into the outcome-extraction stage and
+validate that returned classification entries exactly match its IDs and
+statements, with no duplicates. Invalid entries and duplicate occurrences are
+removed with logged and printed warnings rather than failing extraction. Valid
+entries retain their order; if none remain, the field is blank. This checks label
+validity, not semantic accuracy. Malformed framework files still raise errors.
+
+Classification may infer a match from reported evidence using the scope rules.
+`SDG_categories` replaces `sdg_belonging`; `strategic_plan_belonging` has been
+removed in favour of the configurable framework classification. Regenerate
+existing Programme prompt CSVs to move `intended_results` to Intervention,
+replace the SDG field and remove the strategic-plan field. JSON and tabular
+outputs use the new field names without legacy aliases.
+Quotes and locations depend on what survives
+document parsing; no live-LLM accuracy guarantee is implied.
+
+### Running tests
+
 Tests are written using `pytest`. You can run the tests locally using
 
 ```shell
