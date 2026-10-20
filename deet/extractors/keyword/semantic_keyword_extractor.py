@@ -23,8 +23,6 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
 
     def __init__(self, config: DataExtractionConfig) -> None:
         """Initialise, set the similarity threshold, and load the model."""
-        from sentence_transformers import SentenceTransformer
-
         super().__init__(config)
         self.similarity_threshold: float = config.semantic_similarity_threshold
         try:
