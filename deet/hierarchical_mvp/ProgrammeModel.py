@@ -81,6 +81,18 @@ class Outcome(BaseModel):
             + "; ".join(SDG_CATEGORIES)
         ),
     )
+    baseline_data: str = Field(
+        default="",
+        description=(
+            "All reported quantitative or qualitative baseline information for "
+            "this specific outcome: the status quo before the intervention was "
+            "implemented. Preserve reported values, units, dates, population "
+            "and relevant context. Include narrative descriptions of initial "
+            "conditions where reported. Do not confuse targets or post-intervention "
+            "results with baseline data, calculate baseline values, or infer "
+            "baseline conditions from later changes. Leave blank if not reported."
+        ),
+    )
     quantitative_outcome_results: str = Field(
         description="Extract all numerical results reported for this specific outcome, preserving values, units, and relevant context as stated. Do not calculate or infer results. Assign 'NR' if no numerical results are reported for this outcome."
     )

@@ -54,9 +54,13 @@ OUTCOME_EXTRACTION_INSTRUCTIONS = """
 Extract every reported outcome using the previously identified programme
 characteristics and interventions. Preserve exact intervention names. Report only
 source-supported results.
-Extract numerical and qualitative results separately for each specific outcome,
+In baseline_data, extract reported quantitative and qualitative conditions for
+this outcome before the intervention was implemented, preserving dates, values
+and context. Keep baseline conditions separate from targets and actual results;
+do not calculate or infer them from later changes. Leave blank if not reported.
+Extract quantitative and qualitative results separately for each specific outcome,
 assigning 'NR' when that type of result is not reported. In source_paragraph,
-provide brief verbatim quotes supporting each numerical and qualitative result,
+provide brief verbatim quotes supporting each quantitative and qualitative result,
 label the result type and include document, section and page where available.
 Never invent quotes or locations. Intended results belong to interventions,
 not individual outcomes.

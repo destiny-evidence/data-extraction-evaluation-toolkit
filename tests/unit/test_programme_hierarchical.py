@@ -50,6 +50,7 @@ def _programme() -> Programme:
         intervention_name=intervention.name,
         unit_of_analysis="Partner organisations",
         SDG_categories="Partnerships for the goals",
+        baseline_data="Before training, 20% had adequate capacity; partners lacked skills.",
         quantitative_outcome_results="80% of partners improved delivery capacity",
         qualitative_outcome_results="Partners reported stronger delivery capacity",
         source_paragraph=(
@@ -104,10 +105,14 @@ def test_custom_programme_prompts_include_outcome_results():
         assert "'NR'" in rows[field]["prompt"]
         assert "specific outcome" in rows[field]["prompt"]
     for field in (
-        "source_paragraph", "SDG_categories", "outcome_category_classification"
+        "baseline_data", "source_paragraph", "SDG_categories",
+        "outcome_category_classification"
     ):
         assert rows[field]["datatype"] == "str"
         assert rows[field]["prompt"] == Outcome.model_fields[field].description
+    assert list(rows).index("baseline_data") + 1 == (
+        list(rows).index("quantitative_outcome_results")
+    )
     assert "intended_results" not in rows
     assert "sdg_belonging" not in rows
     assert "strategic_plan_belonging" not in rows
@@ -321,6 +326,7 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
             "intervention_name",
             "unit_of_analysis",
             "SDG_categories",
+            "baseline_data",
             "quantitative_outcome_results",
             "qualitative_outcome_results",
             "source_paragraph",
@@ -352,16 +358,39 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
 def test_new_outcome_fields_are_backwards_compatible():
     data = _programme().outcomes[0].model_dump()
     for field in (
-        "source_paragraph", "SDG_categories", "outcome_category_classification"
+        "baseline_data", "source_paragraph", "SDG_categories",
+        "outcome_category_classification"
     ):
         del data[field]
     outcome = Outcome.model_validate(data)
+    assert outcome.baseline_data == ""
     assert outcome.source_paragraph == ""
     assert outcome.SDG_categories == ""
     assert outcome.outcome_category_classification == ""
     intervention_data = _programme().interventions[0].model_dump()
     del intervention_data["intended_results"]
     assert Intervention.model_validate(intervention_data).intended_results == ""
+
+
+@pytest.mark.parametrize(
+    "baseline",
+    [
+        "",
+        "Before the intervention, coverage was 20% in 2023.",
+        "Before the intervention, partners reported limited delivery capacity.",
+        "Coverage was 20% in 2023; partners reported limited delivery capacity.",
+    ],
+)
+def test_baseline_data_preserved_in_serialization(baseline):
+    data = _programme().outcomes[0].model_dump()
+    data["baseline_data"] = baseline
+    outcome = Outcome.model_validate(data)
+    for row in (outcome.model_dump(), outcome.to_csv_row()):
+        assert row["baseline_data"] == baseline
+        fields = list(row)
+        assert fields.index("baseline_data") + 1 == (
+            fields.index("quantitative_outcome_results")
+        )
 
 
 @pytest.mark.parametrize(
