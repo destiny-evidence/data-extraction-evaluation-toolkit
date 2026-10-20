@@ -1,4 +1,4 @@
-"""Semantic keyword extractor using sentence-transformer embeddings."""
+"""Semantic keyword extractor using fastembed embeddings."""
 
 import re
 from pathlib import Path
@@ -17,7 +17,7 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
     """
     Keyword extractor matching attribute phrases to document sentences.
 
-    Uses sentence-transformer embeddings and cosine similarity rather than
+    Uses fastembed embeddings and cosine similarity rather than
     exact string matching, so semantically related wording still matches.
     """
 
@@ -28,7 +28,7 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
         super().__init__(config)
         self.similarity_threshold: float = config.semantic_similarity_threshold
         try:
-            from sentence_transformers import SentenceTransformer
+            from fastembed import TextEmbedding
         except ImportError:
             msg = (
                 "The semantic keyword extractor requires the 'semantic' extra."
@@ -37,7 +37,7 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
                 "development/setup/installation#installing-optional-features"
             )
             fail_with_message(msg)
-        self.model = SentenceTransformer(config.model)
+        self.model = TextEmbedding(model_name=config.model)
 
     def _split_into_sentences(self, text: str) -> list[str]:
         """Split text into sentences on terminal punctuation followed by a space."""
@@ -46,7 +46,7 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
 
     def _encode(self, texts: list[str]) -> np.ndarray:
         """Embed a list of texts into a (len(texts), dim) array of vectors."""
-        return self.model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
+        return np.asarray(list(self.model.embed(texts)))
 
     def _phrases_per_attribute(self, attributes: list[Attribute]) -> list[list[str]]:
         """

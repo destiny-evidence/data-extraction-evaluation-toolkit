@@ -290,7 +290,7 @@ in square brackets.
 
 | Extra          | Enables                                                  |
 | -------------- | -------------------------------------------------------- |
-| `semantic`     | the semantic keyword extractor (`sentence-transformers`) |
+| `semantic`     | the semantic keyword extractor (`fastembed`)             |
 | `parsers`      | extra document parsers (`marker-pdf`, `pypandoc`)        |
 | `lang-quality` | language-quality checks (`nltk`)                         |
 
