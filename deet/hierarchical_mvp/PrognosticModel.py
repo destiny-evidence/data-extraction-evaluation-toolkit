@@ -287,8 +287,11 @@ class OtherPrognosticOutcome(BaseModel):
     effect_estimate_sd: str = Field(
         description="Standard deviation of the outcome for this group as reported. Use 'NR' if not reported."
     )
+    effect_estimate_se: str = Field(
+        description="Standard error of the outcome for this group as reported. Use 'NR' if not reported"
+    )
     other_effect_value: str = Field(
-        description="Any other reported effect estimate not captured above (e.g. odds ratio, rate, percentage, interquartile range). Report exactly as written. Use 'NR' if not reported."
+        description="Any other reported effect estimate not captured above (e.g. odds ratio, rate, percentage, interquartile range). Report exactly as written, including the name of the effect estimate being used. Use 'NR' if not reported."
     )
     unit_of_measurement: str = Field(
         description="The unit of measurement for this outcome (e.g. months, score points, %). Leave blank if not reported."
@@ -330,6 +333,7 @@ class OtherPrognosticOutcome(BaseModel):
             "effect_estimate_average",
             "effect_estimate_median",
             "effect_estimate_sd",
+            "effect_estimate_se",
             "other_effect_value",
             "unit_of_measurement",
             "high_is_good",
@@ -354,6 +358,7 @@ class OtherPrognosticOutcome(BaseModel):
             "effect_estimate_average": self.effect_estimate_average,
             "effect_estimate_median": self.effect_estimate_median,
             "effect_estimate_sd": self.effect_estimate_sd,
+            "effect_estimate_se": self.effect_estimate_se,
             "other_effect_value": self.other_effect_value,
             "unit_of_measurement": self.unit_of_measurement,
             "high_is_good": self.high_is_good,
