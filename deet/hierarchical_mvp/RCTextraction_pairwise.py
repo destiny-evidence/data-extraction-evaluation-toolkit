@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import dspy
 
-from .outcome_prompts import continuous_outcome_signature
+from .outcome_prompts import baseline_outcome_signature, continuous_outcome_signature
 from .RCTmodel_pairwise import (
     Continuous_Outcome,
     Dichotomous_Outcome,
@@ -58,6 +58,8 @@ class ExtractDichotomousOutcomes(dspy.Signature):
     Given the same RCT context and the already-identified intervention groups,
     extract ALL dichotomous (binary event) outcome data reported in the text.
     This could be outcomes at baseline or outcomes measured during the study.
+    Baseline outcomes should always be extracted as separate outcomes, especially if there are corresponding follow-up measurements at later time-points.
+    For example, if a data for the outcome is reported at baseline and again at a later time-point, both should be extracted as distinct outcomes.
 
     For EVERY dichotomous outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -72,7 +74,7 @@ class ExtractDichotomousOutcomes(dspy.Signature):
         desc="The intervention groups already identified for this trial"
     )
     dichotomous_outcomes: list[Dichotomous_Outcome] = dspy.OutputField(
-        desc=("All data related to every dichotomous outcomes reported in the study.")
+        desc="All reported pairwise dichotomous results, with baseline and follow-up in separate outcome objects; groups A and B within an object refer to the same time point."
     )
 
 
@@ -83,6 +85,8 @@ class ExtractContinuousOutcomes(dspy.Signature):
     Given the same RCT context and the already-identified intervention groups,
     extract ALL continuous outcome data reported in the text.
     This could be outcomes at baseline or outcomes measured during the study.
+    Baseline outcomes should always be extracted as separate outcomes, especially if there are corresponding follow-up measurements at later time-points.
+    For example, if a PANSS score is reported at baseline and again at a later time-point as endpoint or change score, both should be extracted as two distinct outcomes.
 
     For EVERY continuous outcome found, attempt to extract the attributes that are part of the schema attached to this class.
 
@@ -97,7 +101,7 @@ class ExtractContinuousOutcomes(dspy.Signature):
         desc="The intervention groups already identified for this trial"
     )
     continuous_outcomes: list[Continuous_Outcome] = dspy.OutputField(
-        desc=("All data related to every continuous outcomes reported in the study.")
+        desc="All reported pairwise continuous results, with baseline means and variability in separate outcome objects from follow-up results; groups A and B within an object refer to the same time point."
     )
 
 
@@ -108,6 +112,8 @@ class ExtractOtherOutcomes(dspy.Signature):
     Given the same RCT context and the already-identified intervention groups,
     extract ALL other (non-dichotomous, non-continuous) outcome data reported in the text.
     This could be outcomes at baseline or outcomes measured during the study.
+    Baseline outcomes should always be extracted as separate outcomes, especially if there are corresponding follow-up measurements at later time-points.
+    For example, if a PANSS score is reported at baseline and again at a later time-point, both should be extracted as distinct outcomes.
 
     Do not re-extract a dichotomous or continuous outcome unless you can identify new data for it that wasn't extracted in the previous steps.
 
@@ -137,7 +143,7 @@ class ExtractOtherOutcomes(dspy.Signature):
     )
 
     flexible_outcomes: list[Other_Outcome] = dspy.OutputField(
-        desc=("All data related to every 'other type' outcomes reported in the study.")
+        desc="All reported pairwise other results, with baseline and follow-up in separate outcome objects; groups A and B within an object refer to the same time point."
     )
 
 
@@ -158,11 +164,17 @@ class RCTExtractionPipeline(dspy.Module):
     def __init__(self) -> None:
         super().__init__()
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
-        self.extract_dichotomous = dspy.Predict(ExtractDichotomousOutcomes)
-        self.extract_continuous = dspy.Predict(
-            continuous_outcome_signature(ExtractContinuousOutcomes)
+        self.extract_dichotomous = dspy.Predict(
+            baseline_outcome_signature(ExtractDichotomousOutcomes)
         )
-        self.extract_other = dspy.Predict(ExtractOtherOutcomes)
+        self.extract_continuous = dspy.Predict(
+            continuous_outcome_signature(
+                baseline_outcome_signature(ExtractContinuousOutcomes)
+            )
+        )
+        self.extract_other = dspy.Predict(
+            baseline_outcome_signature(ExtractOtherOutcomes)
+        )
 
     def forward(self, context: str) -> Study:
         # Step 1: study characteristics + intervention groups

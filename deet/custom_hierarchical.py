@@ -24,6 +24,7 @@ from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.continuous_statistics import ReportedStatistic
 from deet.hierarchical_mvp.outcome_prompts import (
+    baseline_outcome_signature,
     continuous_outcome_signature,
     single_arm_outcome_signature,
 )
@@ -674,6 +675,10 @@ def _build_dynamic_rct_pipeline(
     )
 
     extract_other_sig = _build_dynamic_other_rct_signature(runtime_models)
+    extract_dichotomous_sig = baseline_outcome_signature(extract_dichotomous_sig)
+    extract_continuous_sig = baseline_outcome_signature(extract_continuous_sig)
+    if extract_other_sig is not None:
+        extract_other_sig = baseline_outcome_signature(extract_other_sig)
     if not pairwise:
         extract_dichotomous_sig = single_arm_outcome_signature(extract_dichotomous_sig)
         extract_continuous_sig = single_arm_outcome_signature(extract_continuous_sig)

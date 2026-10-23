@@ -48,7 +48,10 @@ def summary_statistics_field(arm: str, *, single: bool = False) -> FieldInfo:
             max_length=1,
             description=(
                 f"One reported summary statistic for {arm}, such as mean, median, "
-                "geometric mean, or within-arm mean change. Return a list containing "
+                "geometric mean, or within-arm mean change, at this outcome "
+                "object's time point. "
+                "Baseline means belong in a separate Baseline outcome object. "
+                "Return a list containing "
                 "at most one statistic. Create a separate outcome object for each "
                 "additional statistic set, with its corresponding variability "
                 "statistic. Keep endpoint/change in basis. Never infer arm results "
@@ -59,7 +62,10 @@ def summary_statistics_field(arm: str, *, single: bool = False) -> FieldInfo:
     return Field(
         description=(
             f"All reported summary statistics for {arm}, such as mean, median, "
-            "geometric mean, or within-arm mean change. Keep multiple statistics "
+            "geometric mean, or within-arm mean change, at this outcome "
+            "object's time point. "
+            "Baseline means belong in a separate Baseline outcome object. "
+            "Keep multiple statistics "
             "in this list without duplicating the outcome. Distinguish endpoint "
             "and change scores using basis. Never put a between-arm mean difference "
             "here or infer arm results from it; retain comparisons in effect_estimates "
@@ -76,7 +82,9 @@ def variability_statistics_field(arm: str, *, single: bool = False) -> FieldInfo
             description=(
                 f"One reported variability/uncertainty statistic for {arm}: Standard "
                 "deviation, Standard error, Interquartile range, Range, Confidence "
-                "interval, Variance, or Other. Return at most one statistic, paired "
+                "interval, Variance, or Other, at this outcome object's time point. "
+                "Baseline variability belongs with its baseline summary in a separate "
+                "Baseline outcome object. Return at most one statistic, paired "
                 "with the summary statistic in this outcome. Create another outcome "
                 "object for each additional statistic set; repeat the summary only "
                 "when the source associates it with that variability measure. Keep "
@@ -90,7 +98,9 @@ def variability_statistics_field(arm: str, *, single: bool = False) -> FieldInfo
         description=(
             f"All reported variability/uncertainty statistics for {arm}: Standard "
             "deviation, Standard error, Interquartile range, Range, Confidence "
-            "interval, Variance, or Other. Keep every reported measure, interval "
+            "interval, Variance, or Other, at this outcome object's time point. "
+            "Baseline variability belongs with its baseline summary in a separate "
+            "Baseline outcome object. Keep every reported measure, interval "
             "bounds and confidence level; identify the related summary statistic "
             "in details and endpoint/change in basis. Do not convert SE to SD, "
             "IQR to SD, or infer missing statistics. Use [] if none are reported."
