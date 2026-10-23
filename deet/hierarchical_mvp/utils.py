@@ -31,6 +31,8 @@ from .continuous_statistics import expand_statistics_columns
 from .ObesityRCTmodel import Intervention as ObesityIntervention
 from .ObesityRCTmodel import Study as ObesityStudy
 from .PrognosticModel import PrognosticFactor, PrognosticStudy
+from .ProgrammeModel import Intervention as ProgrammeIntervention
+from .ProgrammeModel import Programme
 from .RCTmodel import Intervention, Study
 
 if TYPE_CHECKING:
@@ -146,8 +148,7 @@ def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             message = (
-                "OPENAI_API_KEY is not set. Copy .env.example to .env and add "
-                "your key."
+                "OPENAI_API_KEY is not set. Copy .env.example to .env and add your key."
             )
             raise OSError(message)
         lm_kwargs["api_key"] = api_key
@@ -157,8 +158,7 @@ def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
         api_key = os.environ.get("AZURE_API_KEY")
         if not api_key:
             message = (
-                "AZURE_API_KEY is not set. Copy .env.example to .env and add "
-                "your key."
+                "AZURE_API_KEY is not set. Copy .env.example to .env and add your key."
             )
             raise OSError(message)
         lm_kwargs["api_key"] = api_key
@@ -481,6 +481,45 @@ def export_prognostic_csv(
                     study.hazard_ratio_outcomes + study.other_prognostic_outcomes
                 )
             ],
+        ),
+    }
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
+
+
+def export_programme_csv(
+    programme: Programme,
+    study_name: str,
+    predictions_dir: Path,
+    timestamp: str,
+    model_suffix: str = "",
+    write_csv: bool = True,
+    write_xlsx: bool = False,
+    flat_output: bool = False,
+) -> None:
+    """Write programme characteristics, interventions, and outcomes with learning."""
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
+
+    tables = {
+        "programme": (Programme.csv_fieldnames(), [programme.to_csv_row()]),
+        "interventions": (
+            ProgrammeIntervention.csv_fieldnames(),
+            [item.to_csv_row() for item in programme.interventions],
+        ),
+        "outcomes": (
+            Programme.outcome_csv_fieldnames(),
+            [item.to_csv_row() for item in (
+                *programme.quantitative_outcomes, *programme.qualitative_outcomes
+            )],
         ),
     }
     _write_tables(

@@ -122,11 +122,23 @@ class PrognosticFactor(BaseModel):
     factor_name: str = Field(
         description="The name of the prognostic factor as reported in the study (e.g. 'age > 65 years', 'stage III/IV', 'ECOG performance status ≥ 2')."
     )
+    relevant_genes: str = Field(
+        description="List any gene alterations or mutations relevant to this prognostic factor. Use concise names as reported. Leave blank if not reported."
+    )
+    relevant_rna_biomarkers: str = Field(
+        description="List any RNA alterations relevant to this prognostic factor. Use concise names as reported. Leave blank if not reported."
+    )
+    relevant_proteins: str = Field(
+        description="List any protein alterations relevant to this prognostic factor. Use concise names as reported. Leave blank if not reported."
+    )
     description: str = Field(
         description="Describe the prognostic factor in detail. Include how it was defined or categorised, any cut-off values used, and its clinical relevance."
     )
     measurement_method: str = Field(
         description="Describe how the prognostic factor was measured or assessed (e.g. blood test, clinical assessment, imaging). Leave blank if not reported."
+    )
+    cutoff: str = Field(
+        description="Identify the cutoff value that was used when defining or determining this prognostic factor. Leave blank if not reported or not applicable."
     )
     factor_type: str = Field(
         description="Classify the type of variable. Choose one of: 'binary', 'continuous', 'ordinal', 'categorical'. Use 'binary' if it was dichotomised."
@@ -142,18 +154,26 @@ class PrognosticFactor(BaseModel):
     def csv_fieldnames(cls) -> list[str]:
         return [
             "factor_name",
+            "relevant_genes",
+            "relevant_rna_biomarkers",
+            "relevant_proteins",
             "description",
             "measurement_method",
+            "cutoff",
             "factor_type",
             "reference_category",
             "group_n",
         ]
 
-    def to_csv_row(self) -> dict[str, str]:
+    def to_csv_row(self) -> dict[str, str | bool]:
         return {
             "factor_name": self.factor_name,
+            "relevant_genes": self.relevant_genes,
+            "relevant_rna_biomarkers": self.relevant_rna_biomarkers,
+            "relevant_proteins": self.relevant_proteins,
             "description": self.description,
             "measurement_method": self.measurement_method,
+            "cutoff": self.cutoff,
             "factor_type": self.factor_type,
             "reference_category": self.reference_category,
             "group_n": self.group_n,

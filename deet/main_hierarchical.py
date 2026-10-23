@@ -27,6 +27,8 @@ from deet.hierarchical_mvp.ObesityRCTextraction_pairwise import (
     ObesityRCTExtractionPipeline as ObesityRCTExtractionPipeline_pairwise,
 )
 from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
+from deet.hierarchical_mvp.ProgrammeExtraction import ProgrammeExtractionPipeline
+from deet.hierarchical_mvp.programme_framework import resolve_framework_config
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTextraction_pairwise import (
     RCTExtractionPipeline as RCTExtractionPipeline_pairwise,
@@ -39,6 +41,7 @@ from deet.hierarchical_mvp.utils import (
     export_csv,
     export_obesity_csv,
     export_prognostic_csv,
+    export_programme_csv,
     load_study_context,
 )
 from deet.logger import logger
@@ -217,6 +220,9 @@ def load_config(config_path: Path) -> dict[str, Any]:
         )
 
     _validate_common_config(config)
+    framework_path = resolve_framework_config(config, config_path)
+    if framework_path is not None:
+        config["classification_framework_path"] = str(framework_path)
 
     return config
 
@@ -242,6 +248,9 @@ def load_batch_config(config_path: Path) -> dict[str, Any]:
         raise TypeError("Config key 'input_folder' must be a string.")
 
     _validate_common_config(config)
+    framework_path = resolve_framework_config(config, config_path)
+    if framework_path is not None:
+        config["classification_framework_path"] = str(framework_path)
 
     return config
 
@@ -282,7 +291,9 @@ def validate_create_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
 
 
 def extract(
-    context: str, study_type: str
+    context: str,
+    study_type: str,
+    classification_framework_path: Path | None = None,
 ) -> BaseModel:
     """Run the configured extraction pipeline for a supported study type."""
     logger.info("Running extraction pipeline...")
@@ -295,12 +306,17 @@ def extract(
         case "ClimateCarbonPricing":
             pipeline = ClimateCarbonPricingExtractionPipeline()
             return pipeline(context=context)
-        case _:
-            error_message = (
-                f"Unsupported study_type '{study_type}'. Supported: "
-                f"{', '.join(RCT_PIPELINES)}, PrognosticStudy, ClimateCarbonPricing"
+        case "Programme":
+            pipeline = ProgrammeExtractionPipeline(
+                classification_framework_path=classification_framework_path
             )
-            raise ValueError(error_message)
+            return pipeline(context=context)
+        case _:
+            raise ValueError(
+                f"Unsupported study_type '{study_type}'. Supported: "
+                f"{', '.join(RCT_PIPELINES)}, PrognosticStudy, "
+                "ClimateCarbonPricing, Programme"
+            )
 
 
 def save_data(
@@ -314,7 +330,8 @@ def save_data(
     export_json_file: bool = False,
     flat_output: bool = False,
 ) -> None:
-    """Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested.
+    """
+    Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested.
 
     When `flat_output` is True (used by `predict_batch`), CSV/XLSX files are written
     directly into `output_parent_dir` with the study name embedded in each filename,
@@ -345,10 +362,11 @@ def save_data(
         "AnimalRCT": export_animal_csv,
         "PrognosticStudy": export_prognostic_csv,
         "ClimateCarbonPricing": export_climate_carbon_pricing_csv,
+        "Programme": export_programme_csv,
     }
     base_type = study_type.removesuffix("_pairwise")
     if study_type not in RCT_PIPELINES and study_type not in {
-        "PrognosticStudy", "ClimateCarbonPricing"
+        "PrognosticStudy", "ClimateCarbonPricing", "Programme"
     }:
         error_message = f"Unsupported study_type '{study_type}'."
         raise ValueError(error_message)
@@ -413,7 +431,14 @@ def run_predict_single_study(config_arg_path: str) -> None:
     configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
 
     context = read_concatenade_mds(input_paths)  # get text from the md inputs
-    study = extract(context=context, study_type=config["study_type"])  # do extraction
+    extraction_options = {}
+    if "classification_framework_path" in config:
+        extraction_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
+    study = extract(
+        context=context, study_type=config["study_type"], **extraction_options
+    )
     save_data(
         study=study,
         input_paths=input_paths,
@@ -454,7 +479,9 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
     input_folder, output_parent_dir = validate_create_batch_paths(config)
 
     md_paths = sorted(
-        p for p in Path(input_folder).iterdir() if p.is_file() and p.suffix.lower() == ".md"
+        p
+        for p in Path(input_folder).iterdir()
+        if p.is_file() and p.suffix.lower() == ".md"
     )
     if not md_paths:
         logger.warning(f"No markdown files found directly in {input_folder}.")
@@ -465,11 +492,18 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
     configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
 
     logger.info(f"Found {len(md_paths)} markdown file(s) to process in {input_folder}.")
+    extraction_options = {}
+    if "classification_framework_path" in config:
+        extraction_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
     for md_path in md_paths:
         logger.info(f"--- Processing {md_path.name} ---")
         try:
             context = read_concatenade_mds([str(md_path)])
-            study = extract(context=context, study_type=config["study_type"])
+            study = extract(
+                context=context, study_type=config["study_type"], **extraction_options
+            )
             save_data(
                 study=study,
                 input_paths=[str(md_path)],
@@ -482,7 +516,9 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
                 flat_output=True,
             )
         except Exception:
-            logger.exception(f"Failed to process {md_path.name}, continuing with remaining files.")
+            logger.exception(
+                f"Failed to process {md_path.name}, continuing with remaining files."
+            )
             continue
 
 
