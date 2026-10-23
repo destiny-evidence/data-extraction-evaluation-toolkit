@@ -114,6 +114,10 @@ class Intervention(BaseModel):
 
 
 class Dichotomous_Outcome(BaseModel):
+    """
+    Schema for extracting dichotomous (binary event) outcomes from RCTs.
+    Each outcome should be extracted separately for each time point at baseline and follow-up(s) and for each intervention.
+    """
     outcome_name: str = Field(
         description="Name of the dichotomous (binary event) outcome. An outcome can be measured at multiple time points (baseline, follow-up) and across different groups so this outcome  name might appear more than once in the final list of outcomes."
     )
@@ -136,7 +140,7 @@ class Dichotomous_Outcome(BaseModel):
     group_a_Events: str = Field(description="Number of events observed in group A")
     group_b_Events: str = Field(description="Number of events observed in group B")
     baseline_imbalances: str = Field(
-        description="Identify if there were any baseline differences between the characteristics of participants in the groups. Do not extrapolate. This information is often presented in tables."
+        description="Identify if there were any baseline differences between the characteristics of participants in the groups, such as age, gender, or disease severity. Do not extrapolate. This information is often presented in tables."
     )
     imputation_of_missing_data: str = Field(
         description="Was there imputation of missing data used for the analysis of this outcome? For example, were there assumptions made for intention to treat (ITT) analysis. Be as detailed as possible. Leave blank if not reported."
@@ -211,6 +215,10 @@ class Dichotomous_Outcome(BaseModel):
 
 
 class Continuous_Outcome(BaseModel):
+    """
+    Schema for extracting continuous outcomes from RCTs.
+    Each outcome should be extracted separately for each time point at baseline and follow-up(s) and for each intervention.
+    """
     outcome_name: str = Field(
         description="Name of the continuous outcome. An outcome can be measured at multiple time points (baseline, follow-up) and across different groups so this outcome  name might appear more than once in the final list of outcomes."
     )
@@ -242,7 +250,7 @@ class Continuous_Outcome(BaseModel):
         variability_statistics_field("group B")
     )
     baseline_imbalances: str = Field(
-        description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
+        description="Identify if there were any baseline differences between the groups, such as age, gender, or disease severity. Do not extrapolate. This information is often presented in tables."
     )
     unit_of_measurement: str = Field(
         description="What was the unit of measurement for this outcome? Leave blank if not reported."
@@ -349,6 +357,10 @@ class Continuous_Outcome(BaseModel):
 
 
 class Other_Outcome(BaseModel):
+    """
+    Schema for extracting other (non-dichotomous, non-continuous) outcomes from RCTs.
+    Each outcome should be extracted separately for each time point at baseline and follow-up(s) and for each intervention.
+    """
     outcome_name: str = Field(
         description="Name of the outcome. An outcome can be measured at multiple time points (baseline, follow-up) and across different groups so this outcome  name might appear more than once in the final list of outcomes."
     )
@@ -367,7 +379,7 @@ class Other_Outcome(BaseModel):
         description="Extract results on confidence intervals, p-values, or any other relevanteffect estimates related to this outcome if available. Leave blank if not reported. "
     )
     baseline_imbalances: str = Field(
-        description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
+        description="Identify if there were any baseline differences between the groups, such as age, gender, or disease severity. Do not extrapolate. This information is often presented in tables."
     )
     unit_of_measurement: str = Field(
         description="What was the unit of measurement for this outcome? Leave blank if not reported."
