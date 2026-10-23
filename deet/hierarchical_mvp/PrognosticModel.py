@@ -117,13 +117,13 @@ class PrognosticFactor(BaseModel):
         description="The name of the prognostic factor as reported in the study (e.g. 'age > 65 years', 'stage III/IV', 'ECOG performance status ≥ 2')."
     )
     relevant_genes: str = Field(
-        description="Identify any gene alterations or mutations relevant to this prognostic factor. Leave blank if not reported."
+        description="List any gene alterations or mutations relevant to this prognostic factor. Use concise names as reported. Leave blank if not reported."
     )
     relevant_rna_biomarkers: str = Field(
-        description="Identify any RNA alterations relevant to this prognostic factor. Leave blank if not reported."
+        description="List any RNA alterations relevant to this prognostic factor. Use concise names as reported. Leave blank if not reported."
     )
     relevant_proteins: str = Field(
-        description="Identify any protein alterations relevant to this prognostic factor. Leave blank if not reported."
+        description="List any protein alterations relevant to this prognostic factor. Use concise names as reported. Leave blank if not reported."
     )
     description: str = Field(
         description="Describe the prognostic factor in detail. Include how it was defined or categorised, any cut-off values used, and its clinical relevance."
