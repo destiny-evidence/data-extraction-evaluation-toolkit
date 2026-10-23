@@ -22,7 +22,7 @@ from .CochraneRCTmodel_pairwise import (
     Study,
     Study_Characteristics,
 )
-from .outcome_prompts import continuous_outcome_signature
+from .outcome_prompts import baseline_outcome_signature, continuous_outcome_signature
 
 # ---------------------------------------------------------------------------
 # Signatures
@@ -120,9 +120,13 @@ class CochraneRCTExtractionPipeline(dspy.Module):
     def __init__(self) -> None:
         super().__init__()
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
-        self.extract_dichotomous = dspy.Predict(ExtractDichotomousOutcomes)
+        self.extract_dichotomous = dspy.Predict(
+            baseline_outcome_signature(ExtractDichotomousOutcomes)
+        )
         self.extract_continuous = dspy.Predict(
-            continuous_outcome_signature(ExtractContinuousOutcomes)
+            continuous_outcome_signature(
+                baseline_outcome_signature(ExtractContinuousOutcomes)
+            )
         )
 
     def forward(self, context: str) -> Study:

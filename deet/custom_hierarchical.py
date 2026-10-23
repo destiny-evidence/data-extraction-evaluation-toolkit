@@ -978,6 +978,9 @@ def _build_dynamic_animal_pipeline(
         ),
     )
 
+    extract_dichotomous_sig = baseline_outcome_signature(extract_dichotomous_sig)
+    extract_continuous_sig = baseline_outcome_signature(extract_continuous_sig)
+    extract_other_sig = baseline_outcome_signature(extract_other_sig)
     if not pairwise:
         extract_dichotomous_sig = single_arm_outcome_signature(extract_dichotomous_sig)
         extract_continuous_sig = single_arm_outcome_signature(extract_continuous_sig)

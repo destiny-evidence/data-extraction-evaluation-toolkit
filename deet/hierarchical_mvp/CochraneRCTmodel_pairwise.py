@@ -189,7 +189,10 @@ class Dichotomous_Outcome(BaseModel):
     outcome_name: str = Field(
         description=(
             "The name of the outcome (maps to the 'Outcome' column in RevMan). "
-            "Use the exact name as reported in the study. Must be unique within the study."
+            "Use the exact name as reported in the study. The name may repeat for "
+            "different comparisons or time points. Extract baseline and follow-up "
+            "results as separate outcome objects, with both arms at the same time "
+            "point, and identify each object's time point in footnotes."
         )
     )
     arm_a: str = Field(
@@ -228,7 +231,7 @@ class Dichotomous_Outcome(BaseModel):
     )
     footnotes: str = Field(
         default="",
-        description="Any additional notes or context for this outcome (e.g. follow-up time point).",
+        description="Identify the single time point shared by arms A and B in this outcome object as reported, including Baseline, and any additional interpretive context. Do not store numerical results for another time point here; create separate outcome objects with structured result fields for those results.",
     )
 
     @classmethod
@@ -269,7 +272,10 @@ class Continuous_Outcome(BaseModel):
     outcome_name: str = Field(
         description=(
             "The name of the outcome (maps to the 'Outcome' column in RevMan). "
-            "Use the exact name as reported in the study. Must be unique within the study."
+            "Use the exact name as reported in the study. The name may repeat for "
+            "different comparisons or time points. Extract baseline and follow-up "
+            "results as separate outcome objects, with both arms at the same time "
+            "point, and identify each object's time point in footnotes."
         )
     )
     arm_a: str = Field(
@@ -314,7 +320,7 @@ class Continuous_Outcome(BaseModel):
     )
     footnotes: str = Field(
         default="",
-        description="Any additional notes or context for this outcome (e.g. follow-up time point).",
+        description="Identify the single time point shared by arms A and B in this outcome object as reported, including Baseline, and any additional interpretive context. Do not store numerical results for another time point here; create separate outcome objects with structured result fields for those results.",
     )
 
     @classmethod

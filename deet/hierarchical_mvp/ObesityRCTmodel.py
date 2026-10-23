@@ -131,14 +131,14 @@ class Dichotomous_Outcome(BaseModel):
         description="Assign the best fitting outcome category defined in this classification scheme."
     )
     outcome_time_point: OutcomeTimePoint = Field(
-        description="Assign the best fitting outcome time point defined in this classification scheme."
+        description="The single time point for this outcome object. Use separate outcome objects for Baseline, Post-intervention, and each Follow-up time point."
     )
     group_N: str = Field(
         description="Total number of participants analysed in this group for this outcome"
     )
     group_Events: str = Field(description="Number of events observed in this group")
     baseline_imbalances: str = Field(
-        description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
+        description="Record only explicitly reported between-group baseline imbalances or the authors' assessment of baseline comparability. Do not infer imbalances from numerical differences. Extract routine baseline outcome measurements into separate Baseline outcome objects, not here. Leave blank if no imbalance or comparability assessment is reported."
     )
     imputation_of_missing_data: str = Field(
         description="Was there imputation of missing data used for the analysis of this outcome? For example, were there assumptions made for intention to treat (ITT) analysis. Be as detailed as possible. Leave blank if not reported."
@@ -162,7 +162,7 @@ class Dichotomous_Outcome(BaseModel):
         description="Name of this group for this outcome (intervention or control)."
     )
     supplementary_info: str = Field(
-        description="If applicable, brief description of additional context. Flag up if any of the extracted numbers for this outcomes are percentages or otherwise not raw counts."
+        description="Additional interpretive context for this outcome object only. Do not store results for another time point or arm here; create separate outcome objects for those results. Flag if extracted event numbers are percentages rather than raw counts."
     )
     location_info: str = Field(
         description="If applicable, brief description of where in the source documents this outcome data was found (e.g. 'Table 2', section 'Results' or 'Figure 3'). This is to help with traceability and verification of the extracted data."
@@ -223,7 +223,7 @@ class Continuous_Outcome(BaseModel):
         description="Assign the best fitting outcome category defined in this classification scheme."
     )
     outcome_time_point: OutcomeTimePoint = Field(
-        description="Assign the best fitting outcome time point defined in this classification scheme."
+        description="The single time point for this outcome object. Use separate outcome objects for Baseline, Post-intervention, and each Follow-up time point."
     )
     group_N: str = Field(
         description="Total number of participants analysed in this group for this outcome"
@@ -235,7 +235,7 @@ class Continuous_Outcome(BaseModel):
         variability_statistics_field("this arm", single=True)
     )
     baseline_imbalances: str = Field(
-        description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
+        description="Record only explicitly reported between-group baseline imbalances or the authors' assessment of baseline comparability. Do not infer imbalances from numerical differences. Extract routine baseline outcome measurements into separate Baseline outcome objects, not here. Leave blank if no imbalance or comparability assessment is reported."
     )
     unit_of_measurement: str = Field(
         description="Unit of measurement for this outcome, e.g kg, cm, body mass index (BMI), z-score. Leave blank if not reported."
@@ -271,7 +271,7 @@ class Continuous_Outcome(BaseModel):
         description="Name of this group for this outcome (intervention or control)."
     )
     supplementary_info: str = Field(
-        description="If applicable, brief description of additional context. Flag up if any of the extracted numbers for this outcomes are percentages or otherwise not raw counts."
+        description="Additional interpretive context for this outcome object only. Do not store results for another time point or arm here; create separate outcome objects for those results. Flag if extracted event numbers are percentages rather than raw counts."
     )
     location_info: str = Field(
         description="If applicable, brief description of where in the source documents this outcome data was found (e.g. 'Table 2', section 'Results' or 'Figure 3'). This is to help with traceability and verification of the extracted data."
@@ -344,14 +344,14 @@ class Other_Outcome(BaseModel):
         description="Assign the best fitting outcome category defined in this classification scheme."
     )
     outcome_time_point: OutcomeTimePoint = Field(
-        description="Assign the best fitting outcome time point defined in this classification scheme."
+        description="The single time point for this outcome object. Use separate outcome objects for Baseline, Post-intervention, and each Follow-up time point."
     )
     group_result: str = Field(description="Outcome results reported for this group")
     effect_estimates: str = Field(
         description="Extract results on confidence intervals, p-values, or any other relevanteffect estimates related to this outcome if available. Leave blank if not reported. "
     )
     baseline_imbalances: str = Field(
-        description="Identify if there were any baseline differences between the groups. Do not extrapolate. This information is often presented in tables."
+        description="Record only explicitly reported between-group baseline imbalances or the authors' assessment of baseline comparability. Do not infer imbalances from numerical differences. Extract routine baseline outcome measurements into separate Baseline outcome objects, not here. Leave blank if no imbalance or comparability assessment is reported."
     )
     unit_of_measurement: str = Field(
         description="Unit of measurement for this outcome, e.g kg, cm, body mass index (BMI), z-score. Leave blank if not reported."
@@ -384,7 +384,7 @@ class Other_Outcome(BaseModel):
         description="Name of this group for this outcome (intervention or control)."
     )
     supplementary_info: str = Field(
-        description="If applicable, brief description of additional context."
+        description="Additional interpretive context for this outcome object only. Do not store results for another time point or arm here; create separate outcome objects for those results."
     )
     location_info: str = Field(
         description="If applicable, brief description of where in the source documents this outcome data was found (e.g. 'Table 2', section 'Results' or 'Figure 3'). This is to help with traceability and verification of the extracted data."

@@ -22,7 +22,11 @@ from .CochraneRCTmodel import (
     Study,
     Study_Characteristics,
 )
-from .outcome_prompts import continuous_outcome_signature, single_arm_outcome_signature
+from .outcome_prompts import (
+    baseline_outcome_signature,
+    continuous_outcome_signature,
+    single_arm_outcome_signature,
+)
 
 # ---------------------------------------------------------------------------
 # Signatures
@@ -121,11 +125,15 @@ class CochraneRCTExtractionPipeline(dspy.Module):
         super().__init__()
         self.extract_study_info = dspy.Predict(ExtractStudyInfo)
         self.extract_dichotomous = dspy.Predict(
-            single_arm_outcome_signature(ExtractDichotomousOutcomes)
+            baseline_outcome_signature(
+                single_arm_outcome_signature(ExtractDichotomousOutcomes)
+            )
         )
         self.extract_continuous = dspy.Predict(
             continuous_outcome_signature(
-                single_arm_outcome_signature(ExtractContinuousOutcomes)
+                baseline_outcome_signature(
+                    single_arm_outcome_signature(ExtractContinuousOutcomes)
+                )
             )
         )
 

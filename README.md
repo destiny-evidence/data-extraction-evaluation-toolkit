@@ -72,8 +72,8 @@ Existing pairwise JSON is not automatically converted into single-arm records.
 Regenerate prompt CSVs for the selected study type. Custom single-arm
 pipelines reject old two-arm prompt schemas instead of silently mixing formats.
 
-For `RCT` and `RCT_pairwise`, baseline outcome measurements belong in separate
-outcome objects, including measurements reported in baseline-characteristics
+For all RCT types and their `_pairwise` variants, baseline outcome measurements
+belong in separate outcome objects, including measurements reported in baseline-characteristics
 tables. Do not substitute baseline numbers in `supplementary_info` or
 `baseline_imbalances` for structured baseline results. The latter field is for
 explicitly reported imbalances or assessments of baseline comparability, not
@@ -83,6 +83,10 @@ objects: three baseline and three follow-up. `RCT_pairwise` retains two groups
 per object, with both groups measured at the same time point; baseline and
 follow-up still require separate objects. Do not infer baseline values or copy
 follow-up sample sizes or imputation methods unless explicitly applicable.
+Animal outcomes preserve the induction/assessment combination and whether the
+reported baseline is before induction or before assessment treatment. Cochrane
+schemas identify the object's time point in `footnotes`, while keeping numerical
+baseline results in structured result fields, not in notes.
 Regenerate existing custom prompt CSVs to pick up revised field descriptions,
 then reapply any study-specific edits.
 

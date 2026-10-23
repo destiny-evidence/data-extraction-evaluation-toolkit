@@ -30,7 +30,7 @@ from export_to_llmextract import (
 ARM_NAMES = ["Drug A", "Drug B", "Placebo"]
 
 
-@pytest.mark.parametrize("study_type", ["RCT", "RCT_pairwise"])
+@pytest.mark.parametrize("study_type", RCT_MODEL_MODULES)
 def test_baseline_contract_reaches_standard_and_dynamic_pipelines(tmp_path, study_type):
     path = write_hierarchical_prompts_csv(study_type, tmp_path / "prompts.csv")
     schema = _load_prompt_schema(path)
@@ -40,12 +40,19 @@ def test_baseline_contract_reaches_standard_and_dynamic_pipelines(tmp_path, stud
     ]
     for pipeline in pipelines:
         for name in ("extract_dichotomous", "extract_continuous", "extract_other"):
-            signature = getattr(pipeline, name).signature
+            predictor = getattr(pipeline, name, None)
+            if predictor is None:
+                continue
+            signature = predictor.signature
             assert "Baseline measurements are outcome results" in signature.instructions
             assert "does not satisfy this requirement" in signature.instructions
             assert "Do not copy follow-up sample sizes" in signature.instructions
             assert "same time point" in signature.instructions
-        if study_type == "RCT":
+            if study_type.startswith("Cochrane"):
+                assert "baseline time point in footnotes" in signature.instructions
+            if study_type.startswith("Animal"):
+                assert "before assessment treatment" in signature.instructions
+        if not study_type.endswith("_pairwise"):
             assert (
                 "six continuous outcome objects"
                 in pipeline.extract_continuous.signature.instructions
@@ -57,16 +64,27 @@ def test_baseline_contract_reaches_standard_and_dynamic_pipelines(tmp_path, stud
             )
 
 
-@pytest.mark.parametrize("study_type", ["RCT", "RCT_pairwise"])
+@pytest.mark.parametrize("study_type", RCT_MODEL_MODULES)
 def test_baseline_field_prompts_reach_generated_schema(tmp_path, study_type):
     path = write_hierarchical_prompts_csv(study_type, tmp_path / "prompts.csv")
     schema = _load_prompt_schema(path)
     for class_name in ("Dichotomous_Outcome", "Continuous_Outcome", "Other_Outcome"):
+        if class_name not in schema:
+            continue
         prompts = {field["attribute"]: field["prompt"] for field in schema[class_name]}
-        assert "explicitly reported" in prompts["baseline_imbalances"]
-        assert "separate Baseline outcome objects" in prompts["baseline_imbalances"]
-        assert "another time point" in prompts["supplementary_info"]
-        assert "separate outcome objects" in prompts["outcome_time_point"]
+        if study_type.startswith("Cochrane"):
+            assert "another time point" in prompts["footnotes"]
+            assert "separate outcome objects" in prompts["footnotes"]
+            assert "Must be unique" not in prompts["outcome_name"]
+            assert "time point" in prompts["outcome_name"]
+        else:
+            assert "explicitly reported" in prompts["baseline_imbalances"]
+            assert "separate Baseline outcome objects" in prompts["baseline_imbalances"]
+            assert "another time point" in prompts["supplementary_info"]
+            assert "separate outcome objects" in prompts["outcome_time_point"]
+            if study_type.startswith("Animal"):
+                assert "before induction" in prompts["outcome_time_point"]
+                assert "assessment combination" in prompts["supplementary_info"]
     continuous_prompts = {
         field["attribute"]: field["prompt"] for field in schema["Continuous_Outcome"]
     }
