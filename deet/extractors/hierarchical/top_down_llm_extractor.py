@@ -71,11 +71,7 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
 
         context = self._prepare_context(payload=payload, context_type=context_type)
 
-        all_annotations = []
-        all_messages = []
-        total_input_tokens = 0
-        total_output_tokens = 0
-        total_llm_call_seconds = 0.0
+        results: list[DocumentExtractionResult] = []
 
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
@@ -93,11 +89,7 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     "Model returned the following annotations:\n{}",
                     pretty_repr(result.annotations),
                 )
-                all_messages.extend(result.messages)
-                total_input_tokens += result.input_tokens
-                total_output_tokens += result.output_tokens
-                total_llm_call_seconds += result.llm_call_seconds
-                all_annotations.extend(result.annotations)
+                results.append(result)
                 present_attribute_ids = {
                     ann.attribute.attribute_id
                     for ann in result.annotations
@@ -118,11 +110,4 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                 )
                 level += 1
 
-        return DocumentExtractionResult(
-            annotations=all_annotations,
-            messages=all_messages,
-            input_tokens=total_input_tokens,
-            output_tokens=total_output_tokens,
-            model=self.model,
-            llm_call_seconds=total_llm_call_seconds,
-        )
+        return DocumentExtractionResult.combine(results)
