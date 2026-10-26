@@ -141,36 +141,8 @@ class LLMDataExtractor(BaseDataExtractor):
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
-        prompt = self._generate_user_message_json(
-            payload=context, attributes=selected_attributes
-        )
 
-        response_model: type[BaseLLMResponse]
-
-        if self.config.dynamic_json_schema:
-            response_model = build_llm_response_model(selected_attributes)
-        else:
-            response_model = LLMResponseSchema
-
-        with measure_elapsed() as llm_timer:
-            llm_response, messages, output_tokens, input_tokens = self._call_llm(
-                prompt=prompt, response_model=response_model
-            )
-
-        annotations = self._parse_llm_response(
-            response_content=llm_response,
-            response_model=response_model,
-            attributes=selected_attributes,
-        )
-
-        return DocumentExtractionResult(
-            annotations=annotations,
-            messages=messages,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            model=self.model,
-            llm_call_seconds=llm_timer.seconds,
-        )
+        return self._call_completion(context=context, attributes=selected_attributes)
 
     def _write_json_if_path(
         self, data: dict[str, Any] | list[Any], path: Path | None
@@ -185,6 +157,52 @@ class LLMDataExtractor(BaseDataExtractor):
         """
         if path is not None:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    def _call_completion(
+        self, *, context: str, attributes: list[Attribute]
+    ) -> DocumentExtractionResult:
+        """
+        Make one completion-API call: build the prompt, request, parse annotations.
+
+        Args:
+            context: The content of the document from which data should be extracted
+            attributes: The attributes defining what should be extracted
+
+        Returns:
+            DocumentExtractionResult for this single call: annotations,
+            messages, token counts, model, and call duration.
+
+        """
+        prompt = self._generate_user_message_json(
+            payload=context, attributes=attributes
+        )
+
+        response_model: type[BaseLLMResponse]
+
+        if self.config.dynamic_json_schema:
+            response_model = build_llm_response_model(attributes)
+        else:
+            response_model = LLMResponseSchema
+
+        with measure_elapsed() as llm_timer:
+            llm_response, messages, output_tokens, input_tokens = self._call_llm(
+                prompt=prompt, response_model=response_model
+            )
+
+        annotations = self._parse_llm_response(
+            response_content=llm_response,
+            response_model=response_model,
+            attributes=attributes,
+        )
+
+        return DocumentExtractionResult(
+            annotations=annotations,
+            messages=messages,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            llm_call_seconds=llm_timer.seconds,
+        )
 
     def _generate_user_message_json(
         self,

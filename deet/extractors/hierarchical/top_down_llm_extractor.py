@@ -7,9 +7,6 @@ from rich.pretty import pretty_repr
 
 from deet.data_models.base import (
     Attribute,
-    BaseLLMResponse,
-    LLMResponseSchema,
-    build_llm_response_model,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -78,6 +75,7 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
         all_messages = []
         total_input_tokens = 0
         total_output_tokens = 0
+        total_llm_call_seconds = 0.0
 
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
@@ -88,34 +86,22 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     f"Extracting attributes at level {level} of concept hierarchy."
                 )
                 level_attributes = [concept.attribute for concept in leaves]
-                prompt = self._generate_user_message_json(
-                    payload=context, attributes=level_attributes
-                )
-
-                response_model: type[BaseLLMResponse]
-
-                if self.config.dynamic_json_schema:
-                    response_model = build_llm_response_model(level_attributes)
-                else:
-                    response_model = LLMResponseSchema
-                llm_response, messages, output_tokens, input_tokens = self._call_llm(
-                    prompt=prompt, response_model=response_model
-                )
-                all_messages.extend(messages)
-                total_input_tokens += input_tokens
-                total_output_tokens += output_tokens
-                annotations = self._parse_llm_response(
-                    response_content=llm_response,
-                    attributes=level_attributes,
-                    response_model=response_model,
+                result = self._call_completion(
+                    context=context, attributes=level_attributes
                 )
                 logger.debug(
                     "Model returned the following annotations:\n{}",
-                    pretty_repr(annotations),
+                    pretty_repr(result.annotations),
                 )
-                all_annotations.extend(annotations)
+                all_messages.extend(result.messages)
+                total_input_tokens += result.input_tokens
+                total_output_tokens += result.output_tokens
+                total_llm_call_seconds += result.llm_call_seconds
+                all_annotations.extend(result.annotations)
                 present_attribute_ids = {
-                    ann.attribute.attribute_id for ann in annotations if ann.output_data
+                    ann.attribute.attribute_id
+                    for ann in result.annotations
+                    if ann.output_data
                 }
                 leaves = [
                     child
@@ -138,4 +124,5 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
             input_tokens=total_input_tokens,
             output_tokens=total_output_tokens,
             model=self.model,
+            llm_call_seconds=total_llm_call_seconds,
         )
