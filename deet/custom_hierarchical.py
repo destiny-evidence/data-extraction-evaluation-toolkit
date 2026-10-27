@@ -23,6 +23,7 @@ from deet.hierarchical_mvp import ProgrammeModel as programme_models
 from deet.hierarchical_mvp import PrognosticModel as prognostic_models
 from deet.hierarchical_mvp import RCTmodel as hierarchical_models
 from deet.hierarchical_mvp.continuous_statistics import ReportedStatistic
+from deet.hierarchical_mvp.extraction_logging import extraction_usage_log
 from deet.hierarchical_mvp.outcome_prompts import (
     baseline_outcome_signature,
     continuous_outcome_signature,
@@ -2218,7 +2219,13 @@ def run_dynamic_extraction_from_csv_schema(
         pipeline_options["classification_framework_path"] = Path(
             config["classification_framework_path"]
         )
-    study = dynamic_pipeline_cls(**pipeline_options)(context=context)
+    with extraction_usage_log(
+        output_parent_dir,
+        Path(input_paths[0]).stem,
+        study_type,
+        config["llm_model"],
+    ):
+        study = dynamic_pipeline_cls(**pipeline_options)(context=context)
 
     study_name = Path(input_paths[0]).stem
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -2298,7 +2305,10 @@ def run_dynamic_batch_extraction_from_csv_schema(
         logger.info(f"--- Processing {md_path.name} ---")
         try:
             context = load_study_context([str(md_path)])
-            study = dynamic_pipeline_cls(**pipeline_options)(context=context)
+            with extraction_usage_log(
+                output_parent_dir, md_path.stem, study_type, config["llm_model"]
+            ):
+                study = dynamic_pipeline_cls(**pipeline_options)(context=context)
 
             study_name = md_path.stem
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

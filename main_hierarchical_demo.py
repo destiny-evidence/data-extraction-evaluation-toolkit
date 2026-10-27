@@ -18,8 +18,8 @@ setup_console_logging()
 
 ######################################################PDF parsing (optional)
 #input_folder = "misc/hierarchical_mvp/input/CarbonPricing"
-input_folder = "misc/hierarchical_mvp/input/galenos/pdf_selection"
-run_parse_pdfs(input_folder)
+# input_folder = "misc/hierarchical_mvp/input/galenos/pdf_selection"
+# run_parse_pdfs(input_folder)
 
 ###FOR CLI usage, activate the venv and run:
 ## python -m deet.main_hierarchical parse_pdfs "misc\hierarchical_mvp\input\batch_pdfs"
@@ -49,18 +49,18 @@ run_parse_pdfs(input_folder)
 
 # ########################################################Batch extraction
 batch_config = {
-    "study_type": "RCT",
-    "llm_model": "anthropic/claude-sonnet-5",
-    "max_tokens": 60000,
+    "study_type": "PrognosticStudy",
+    "llm_model": "gpt-6.1-sol",
+    "max_tokens": 80000,
     "dspy_cache": False,
-    "input_folder": "misc/hierarchical_mvp/input/galenos/pdf_selection",
-    "output_parent_dir": "misc/hierarchical_mvp/output/galenos_demo",
+    "input_folder": "C:\\Users\\qtnzls7\\md_to_process",
+    "output_parent_dir": "C:\\Users\\qtnzls7\\who",
     "export_csv": False,
     "export_xlsx": True,
     "export_json": False,
 }
 
-batch_config_path = Path("misc/hierarchical_mvp/configs/demo_batch_config.json")
+batch_config_path = Path("C:\\Users\\qtnzls7\\who\\demo_batch_config.json")
 batch_config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
 
 run_predict_batch(str(batch_config_path))

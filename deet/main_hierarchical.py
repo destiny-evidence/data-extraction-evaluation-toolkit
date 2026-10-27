@@ -28,6 +28,7 @@ from deet.hierarchical_mvp.ObesityRCTextraction_pairwise import (
 )
 from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
 from deet.hierarchical_mvp.ProgrammeExtraction import ProgrammeExtractionPipeline
+from deet.hierarchical_mvp.extraction_logging import extraction_usage_log
 from deet.hierarchical_mvp.programme_framework import resolve_framework_config
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
 from deet.hierarchical_mvp.RCTextraction_pairwise import (
@@ -436,9 +437,15 @@ def run_predict_single_study(config_arg_path: str) -> None:
         extraction_options["classification_framework_path"] = Path(
             config["classification_framework_path"]
         )
-    study = extract(
-        context=context, study_type=config["study_type"], **extraction_options
-    )
+    with extraction_usage_log(
+        Path(output_parent_dir),
+        Path(input_paths[0]).stem,
+        config["study_type"],
+        config["llm_model"],
+    ):
+        study = extract(
+            context=context, study_type=config["study_type"], **extraction_options
+        )
     save_data(
         study=study,
         input_paths=input_paths,
@@ -501,9 +508,15 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
         logger.info(f"--- Processing {md_path.name} ---")
         try:
             context = read_concatenade_mds([str(md_path)])
-            study = extract(
-                context=context, study_type=config["study_type"], **extraction_options
-            )
+            with extraction_usage_log(
+                Path(output_parent_dir),
+                md_path.stem,
+                config["study_type"],
+                config["llm_model"],
+            ):
+                study = extract(
+                    context=context, study_type=config["study_type"], **extraction_options
+                )
             save_data(
                 study=study,
                 input_paths=[str(md_path)],

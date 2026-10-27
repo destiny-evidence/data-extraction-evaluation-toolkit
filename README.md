@@ -32,6 +32,102 @@ AZURE_API_KEY=yourkeyhere
 AZURE_API_BASE_ANTHROPIC=https://yourprojecthere.services.ai.azure.com/anthropic
 ```
 
+## Extraction token logs and cost estimates
+
+The predefined and custom CSV-schema hierarchical runners automatically write
+one `extraction_log_<study_name>_<run_id>.json` in `output_parent_dir` per study
+run, including batch runs and failed extractions. Logging is independent of the
+CSV/XLSX/JSON export switches and supports every implemented hierarchical study
+type, including pairwise variants and Programme.
+
+Each log contains per-LM-call records attributed to the predictor signature,
+attempt numbers, requested/returned models, timestamps, status, raw provider
+usage, and normalized token totals:
+
+- `input_tokens`: total input, including cached reads and cache writes.
+- `cached_input_tokens`: provider cache-read tokens, a subset of input.
+- `non_cached_input_tokens`: input minus cache reads; includes cache writes.
+- `cache_write_input_tokens`: cache-write tokens, when exposed by the provider.
+- `output_tokens`: total output; reasoning tokens are not added a second time.
+- `reasoning_tokens`: the reasoning subset, when exposed.
+
+Token logging is best-effort: logging initialization, callback, aggregation,
+serialization, or file-write errors are reported but do not prevent extraction
+or prediction export. Genuine extraction failures still propagate normally.
+When a log can be saved, accounting errors appear in `logging_errors` and mark
+`usage_complete` as false. If log persistence fails, a log may be absent or
+unfinished; check the application error messages.
+
+The counts are under `calls[].usage` and `totals`. Missing counts remain `null`;
+a total is `null` if any call lacks that count. `usage_complete` indicates whether
+input, cached-read, non-cached-input, and output totals are all known.
+DSPy local response-cache hits have `local_cache_hit: true` and zero new tokens;
+they are distinct from discounted provider cache reads. Logs contain no prompt
+or document text. Adapter fallback calls are included, but provider-internal
+retries and failures that return no usage cannot be fully accounted for.
+Direct pipeline calls outside these runners can opt in using the
+`extraction_usage_log` context manager in
+[`extraction_logging.py`](deet/hierarchical_mvp/extraction_logging.py).
+
+Estimate the price using your deployment's rates **per million tokens**, all in
+the same currency. For example, save this illustrative dictionary in a JSON
+file (these are not current model prices):
+
+```json
+{"input": 2.0, "cached_input": 0.2, "output": 10.0}
+```
+
+Then run:
+
+```powershell
+python -m deet.estimate_extraction_cost "C:\outputs\extraction_log_example_RUNID.json" --prices-file "C:\config\token_prices.json"
+```
+
+Alternatively, pass a JSON dictionary with `--prices`, or call from Python:
+
+```python
+from deet.estimate_extraction_cost import estimate_extraction_cost
+
+price = estimate_extraction_cost(
+    r"C:\outputs\extraction_log_example_RUNID.json",
+    {"input": 2.0, "cached_input": 0.2, "output": 10.0},
+)
+```
+
+To display each log's filename and estimated price plus an overall total:
+
+```python
+from deet.estimate_extraction_cost import summarize_extraction_costs
+
+total = summarize_extraction_costs(
+    r"C:\outputs",
+    {"input": 2.0, "cached_input": 0.2, "output": 10.0},
+)
+```
+
+This scans files starting with `extraction_log` directly in the folder (not
+subfolders), displays prices to eight decimal places, and returns the numeric
+total. All files use the same supplied pricing schedule. Unfinished logs
+(`status: running`) print a warning naming the file and are excluded from the
+total; the other records are still displayed and priced. If all logs are
+unfinished, the returned total is zero and explicitly excludes those logs.
+Other invalid logs or logs with incomplete usage raise an error naming the file
+before any table or total is displayed; missing folders and folders with no
+matching files also raise errors.
+
+The single-log function returns a numeric estimate; the CLI prints
+`{"estimated_cost": ...}`. Both reject unknown required counts, unfinished logs,
+logs with accounting errors, and invalid rates. Failed runs can be priced only
+when all their call usage is known. Rates apply to all recorded calls, so use a single pricing schedule per
+log. No prices are fetched or inferred from model/deployment names.
+
+For deployments with separate cache-write pricing, add `cache_write_input`:
+this is the **full write rate**, not an additional surcharge. It replaces the
+ordinary input rate for reported write tokens and requires known write counts.
+Without that key, writes use the ordinary input rate and a warning states that
+additional cache-write charges are excluded. Mixed cache-write lifetimes/rates,
+taxes, and other non-token charges are not modeled; estimates are not invoices.
+
 ## Implemented Study Types
 
 The pre-defined hierarchical extraction pipeline (`deet/main_hierarchical.py`) supports the following values for `study_type` in its config files:
