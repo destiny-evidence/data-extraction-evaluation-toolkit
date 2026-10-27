@@ -9,6 +9,7 @@ from enum import StrEnum, auto
 from functools import partial
 from importlib.resources import files
 from pathlib import Path
+from string import Template
 from typing import Annotated, Any, cast
 
 import yaml
@@ -17,6 +18,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
 )
 
@@ -38,6 +40,7 @@ from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
+    DecisionApiType,
     LLMProvider,
 )
 from deet.ui.terminal.render import optional_progress
@@ -76,6 +79,30 @@ class PromptConfig(BaseModel):
         description="System prompt that defines the task and role",
         default_factory=default_system_prompt,
     )
+
+    decision_question_template: str = Field(
+        default="Does this document concern $label? $prompt",
+        description=(
+            "Predicate question template for the decisions API."
+            " Placeholders: $label and $prompt."
+            " Attribute prompts ending in '?' are used unchanged;"
+            " set to '$prompt' to pass all prompts through as-is."
+        ),
+    )
+
+    @field_validator("decision_question_template", mode="after")
+    @classmethod
+    def check_decision_question_template(cls, value: str) -> str:
+        """Check the template is valid and uses only $label and $prompt."""
+        template = Template(value)
+        unknown = set(template.get_identifiers()) - {"label", "prompt"}
+        if not template.is_valid() or unknown:
+            invalid_template = (
+                f"Invalid decision_question_template {value!r}: only $label and"
+                " $prompt are allowed; write a literal '$' as '$$'."
+            )
+            raise ValueError(invalid_template)
+        return value
 
     @model_validator(mode="after")
     def load_system_prompt_file(self) -> "PromptConfig":
@@ -127,6 +154,37 @@ class DataExtractionConfig(BaseModel):
             default="gpt-5.6-luna",
             description="LLM model identifier used for completions.",
         )
+    )
+    decision_model: str | None = Field(
+        default=None,
+        description=(
+            "Decision-model deployment name."
+            " Setting it routes BOOL attributes to the decisions endpoint;"
+            " all other attributes go to the chat-completion model."
+            " Azure deployments only."
+        ),
+    )
+    decision_api_type: DecisionApiType = Field(
+        default=DecisionApiType.OPENAI,
+        description=(
+            "Azure decisions endpoint that serves decision_model."
+            " 'openai': Azure's OpenAI-compatible route at api_base + '/openai',"
+            " serving OpenAI-family deployments."
+            " 'system_one': Microsoft's systemone endpoint,"
+            " serving Microsoft decision models."
+            " Sending a deployment to the wrong endpoint fails with model-not-found."
+        ),
+    )
+    decision_threshold: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Probability threshold for decision-model boolean answers:"
+            " True if probability >= threshold."
+            " The raw probability is stored in the annotation's reasoning"
+            " as a 4-decimal string."
+        ),
     )
     semantic_similarity_threshold: float = Field(
         default=0.5, description="Threshold for matching sentences to prompt phrases"

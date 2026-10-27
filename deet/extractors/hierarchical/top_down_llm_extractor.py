@@ -82,8 +82,8 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     f"Extracting attributes at level {level} of concept hierarchy."
                 )
                 level_attributes = [concept.attribute for concept in leaves]
-                result = self._call_completion(
-                    context=context, attributes=level_attributes
+                result = DocumentExtractionResult.combine(
+                    self._annotate(context=context, attributes=level_attributes)
                 )
                 logger.debug(
                     "Model returned the following annotations:\n{}",

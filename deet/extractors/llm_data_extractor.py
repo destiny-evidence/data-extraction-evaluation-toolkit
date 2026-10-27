@@ -2,9 +2,11 @@
 
 import json
 from pathlib import Path
+from string import Template
 from typing import Any, cast
 
 import litellm
+from litellm.types.decisions import OpenAIDecisionResponse, OpenAIPredicateAnswer
 from loguru import logger
 from pydantic import (
     ValidationError,
@@ -13,6 +15,7 @@ from pydantic import (
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    AttributeType,
     BaseLLMResponse,
     DynamicLLMResponseBase,
     GoldStandardAnnotation,
@@ -20,6 +23,7 @@ from deet.data_models.base import (
     LLMInputSchema,
     LLMResponseSchema,
     attribute_id_from_response_key,
+    attribute_response_key,
     build_llm_response_model,
 )
 from deet.data_models.documents import (
@@ -31,6 +35,7 @@ from deet.data_models.extraction import (
 from deet.extractors.base_extractor import BaseDataExtractor, DataExtractionConfig
 from deet.settings import (
     DataExtractionSettings,
+    DecisionApiType,
     LLMProvider,
     get_settings,
 )
@@ -85,6 +90,25 @@ class LLMDataExtractor(BaseDataExtractor):
         else:
             error_message = f"Unsupported LLM provider: {self.config.provider}"
             raise ValueError(error_message)
+
+        self.decision_model: str | None = None
+        self.decision_api_base = self.api_base
+        if self.config.decision_model is not None:
+            if self.config.provider is not LLMProvider.AZURE:
+                error_message = (
+                    "decision_model requires the Azure provider, got"
+                    f" {self.config.provider}"
+                )
+                raise ValueError(error_message)
+            deployment = self.config.decision_model
+            match self.config.decision_api_type:
+                case DecisionApiType.OPENAI:
+                    # Azure mounts the OpenAI-compatible interface at /openai;
+                    # litellm has no azure/ decisions config.
+                    self.decision_model = f"openai/{deployment}"
+                    self.decision_api_base = f"{self.api_base.rstrip('/')}/openai"
+                case DecisionApiType.SYSTEM_ONE:
+                    self.decision_model = f"azure_ai/{deployment}"
 
         logger.info(f"Using {self.config.provider} with model: {self.model}")
         if self.config.max_tokens is not None:
@@ -142,7 +166,9 @@ class LLMDataExtractor(BaseDataExtractor):
 
         context = self._prepare_context(payload=payload, context_type=context_type)
 
-        return self._call_completion(context=context, attributes=selected_attributes)
+        return DocumentExtractionResult.combine(
+            self._annotate(context=context, attributes=selected_attributes)
+        )
 
     def _write_json_if_path(
         self, data: dict[str, Any] | list[Any], path: Path | None
@@ -157,6 +183,44 @@ class LLMDataExtractor(BaseDataExtractor):
         """
         if path is not None:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    def _annotate(
+        self, *, context: str, attributes: list[Attribute]
+    ) -> list[DocumentExtractionResult]:
+        """
+        Annotate attributes, routing booleans to a decision model if configured.
+
+        Args:
+            context: The content of the document from which data should be extracted
+            attributes: The attributes defining what should be extracted
+
+        Returns:
+            One DocumentExtractionResult per endpoint called: booleans and others
+            separately when decision routing is on, one completion call otherwise.
+
+        """
+        if self.decision_model is None:
+            return [self._call_completion(context=context, attributes=attributes)]
+        booleans = [
+            attribute
+            for attribute in attributes
+            if attribute.output_data_type is AttributeType.BOOL
+        ]
+        others = [
+            attribute
+            for attribute in attributes
+            if attribute.output_data_type is not AttributeType.BOOL
+        ]
+        logger.debug(
+            f"Routing {len(booleans)} attribute(s) to decision model,"
+            f" {len(others)} to completion"
+        )
+        calls: list[DocumentExtractionResult] = []
+        if booleans:
+            calls.append(self._call_decision(context=context, attributes=booleans))
+        if others:
+            calls.append(self._call_completion(context=context, attributes=others))
+        return calls
 
     def _call_completion(
         self, *, context: str, attributes: list[Attribute]
@@ -203,6 +267,193 @@ class LLMDataExtractor(BaseDataExtractor):
             model=self.model,
             llm_call_seconds=llm_timer.seconds,
         )
+
+    def _decision_instructions(self, attribute: Attribute) -> str:
+        """
+        Build predicate question text for one attribute.
+
+        Prompts ending in '?' pass through; otherwise the configured
+        ``decision_question_template`` frames label and prompt as a question.
+
+        Args:
+            attribute: The boolean attribute being asked about.
+
+        Returns:
+            Question text to send as the predicate ``instructions``.
+
+        """
+        prompt = (attribute.prompt or "").strip()
+        if prompt.endswith("?"):
+            return prompt
+        template = Template(self.config.prompt_config.decision_question_template)
+        return template.substitute(
+            label=attribute.attribute_label, prompt=prompt
+        ).strip()
+
+    def _call_decision(
+        self, *, context: str, attributes: list[Attribute]
+    ) -> DocumentExtractionResult:
+        """
+        Make one decisions-API call: one predicate question per boolean attribute.
+
+        Args:
+            context: The content of the document from which data should be extracted
+            attributes: The boolean attributes defining what should be extracted
+
+        Returns:
+            DocumentExtractionResult for this single call: annotations,
+            messages, token counts, model, and call duration.
+
+        """
+        questions = self._build_decision_questions(attributes)
+
+        with measure_elapsed() as llm_timer:
+            response, messages = self._call_decisions_api(
+                context=context, questions=questions
+            )
+
+        annotations = self._parse_decision_response(
+            response=response, attributes=attributes
+        )
+
+        usage = response.usage
+        return DocumentExtractionResult(
+            annotations=annotations,
+            messages=messages,
+            input_tokens=usage.input_tokens if usage else 0,
+            output_tokens=usage.output_tokens if usage else 0,
+            model=self.decision_model,
+            llm_call_seconds=llm_timer.seconds,
+        )
+
+    def _build_decision_questions(
+        self, attributes: list[Attribute]
+    ) -> list[dict[str, str]]:
+        """
+        Build one predicate question per boolean attribute.
+
+        Args:
+            attributes: The boolean attributes defining what should be extracted
+
+        Returns:
+            Predicate questions named by each attribute's response key.
+
+        Raises:
+            ValueError: If any attribute is not boolean.
+
+        """
+        for attribute in attributes:
+            if attribute.output_data_type is not AttributeType.BOOL:
+                msg = (
+                    "The decision backend only supports BOOL attributes, got "
+                    f"{attribute.output_data_type} for attribute "
+                    f"{attribute.attribute_id}"
+                )
+                raise ValueError(msg)
+
+        return [
+            {
+                "type": "predicate",
+                "name": attribute_response_key(attribute.attribute_id),
+                "instructions": self._decision_instructions(attribute),
+            }
+            for attribute in attributes
+        ]
+
+    def _call_decisions_api(
+        self, *, context: str, questions: list[dict[str, str]]
+    ) -> tuple[OpenAIDecisionResponse, list[dict[str, str]]]:
+        """
+        Send predicate questions about the context to the decision model.
+
+        Args:
+            context: The content of the document the questions are about
+            questions: Predicate questions from ``_build_decision_questions``
+
+        Returns:
+            The decisions response, and the request recorded as a system
+            message holding the questions and a user message holding the context.
+
+        """
+        response = litellm.decisions(
+            model=self.decision_model,
+            api_key=self.llm_api_key,
+            api_base=self.decision_api_base,
+            input=context,
+            questions=questions,
+        )
+
+        logger.debug(
+            "Decision answers: "
+            f"{[(answer.type, answer.name) for answer in response.answers]}"
+        )
+
+        messages = [
+            {
+                "role": "system",
+                "content": json.dumps({"decisions_questions": questions}),
+            },
+            {"role": "user", "content": context},
+        ]
+        return response, messages
+
+    def _parse_decision_response(
+        self, *, response: OpenAIDecisionResponse, attributes: list[Attribute]
+    ) -> list[GoldStandardAnnotation]:
+        """
+        Threshold predicate probabilities into boolean annotations.
+
+        Attributes without a predicate answer (a refusal or a missing answer)
+        get no annotation and are reported in a warning, as are answers whose
+        names match no attribute.
+
+        Args:
+            response: The decisions response to parse
+            attributes: The boolean attributes the questions were built from
+
+        Returns:
+            One annotation per answered attribute: raw_data holds the
+            thresholded decision, reasoning the probability to 4 decimals.
+
+        """
+        probabilities: dict[str | None, float] = {}
+        for answer in response.answers:
+            if isinstance(answer, OpenAIPredicateAnswer):
+                probabilities[answer.name] = answer.probability
+
+        expected = {attribute_response_key(a.attribute_id) for a in attributes}
+        unanswered = sorted(expected - probabilities.keys())
+        unexpected = sorted(
+            str(answer.name)
+            for answer in response.answers
+            if answer.name not in expected
+        )
+        if unanswered:
+            logger.warning(
+                f"Decision model gave no predicate answer for {len(unanswered)}"
+                f" of {len(expected)} attribute(s), skipping them: {unanswered}"
+            )
+        if unexpected:
+            logger.warning(
+                f"Decision model returned answers with unexpected names: {unexpected}"
+            )
+
+        annotations = []
+        for attribute in attributes:
+            probability = probabilities.get(
+                attribute_response_key(attribute.attribute_id)
+            )
+            if probability is None:
+                continue
+            annotations.append(
+                GoldStandardAnnotation(
+                    attribute=attribute,
+                    raw_data=probability >= self.config.decision_threshold,
+                    annotation_type=AnnotationType.LLM,
+                    reasoning=f"{probability:.4f}",
+                )
+            )
+        return annotations
 
     def _generate_user_message_json(
         self,

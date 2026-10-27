@@ -210,6 +210,56 @@ vocabulary_mapping_path: <PATH TO MAPPING FILE>
 See [Vocabularies and taxonomies](vocabulary.md) for how to prepare the
 vocabulary and mapping files, with a worked example.
 
+### Decision-model routing for boolean attributes
+
+Both LLM methods can send boolean attributes to a decision model (otherwise known as a [system-one model](https://typesafe.ai/blog/introducing-system-one-models-and-jev)),
+an endpoint that answers yes/no questions about a document and returns a probability for each one.
+These models are cheaper and faster, and are optimised for classification tasks.
+
+Where decision models are used, all other non-boolean attribute types keep going to the chat-completion model.
+Setting the [`decision_model` field](../reference/api.md#deet.extractors.base_extractor.DataExtractionConfig)
+enables decision models for every extraction call.
+A mixed attribute set therefore makes two calls, one per endpoint, and the results are merged into one extraction result.
+
+Currently, the decision model must be an Azure deployment.
+`decision_model` is the deployment name as served by the same resource that hosts the completion model, and `provider` must be `azure`.
+The `decision_api_type` field selects which Azure decisions endpoint the deployment is served from:
+
+- `openai` (default): Azure's OpenAI-compatible route at `api_base` + `/openai`.
+  Serves OpenAI-family deployments.
+- `system_one`: Microsoft's systemone endpoint.
+  Serves Microsoft's own decision models, such as `Microsoft-Decision-1`.
+
+The following config snippet would send boolean attributes to the decision endpoint using gpt-6-luna,
+and all other attributes to the completions endpoint using gpt-6-sol.
+Note that not all models support the decisions endpoint.
+
+```yaml
+provider: azure
+model: gpt-6-sol
+decision_model: gpt-6-luna
+decision_api_type: openai  # or system_one
+decision_threshold: 0.5
+```
+
+When using a decision model, each boolean attribute becomes one predicate question.
+The model answers with a probability that the attribute applies, and the annotation is `True` when that probability is at least `decision_threshold` (0.5 by default).
+The raw probability is written to the annotation's `reasoning` as a 4-decimal number, so it is visible in the `llm_reasoning` column of experiment output without re-running extraction.
+
+The model may refuse a question rather than answer it.
+A refused attribute gets no annotation and is reported in a warning, and top-down descent treats this like a `False` answer: it does not descend into that branch.
+
+The `decision_question_template` field controls how attribute prompts are framed as questions.
+Prompts ending in `?` are sent unchanged; other prompts are wrapped by the template, which by default renders as "Does this document concern $label? $prompt".
+Passing bare definitions rather than questions often results in refusals rather than answers.
+
+Set the template to `$prompt` to send all prompts as written.
+The template may use only `$label` and `$prompt`, with a literal `$` written as `$$`; other templates are rejected when the config is loaded.
+
+!!! Note "Configuration only"
+    The decision fields are currently not offered in the interactive configuration wizard.
+    Set them in the YAML config file.
+
 ### Keyword
 
 The keyword method does no LLM call at all: it simply checks whether the words we
