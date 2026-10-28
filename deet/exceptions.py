@@ -2,28 +2,38 @@
 
 from deet.data_models.base import AttributeType
 
+# UserFacingError
+# ├── RunAbortingError       stop the run, show the message
+# └── DocumentSkippedError   warn, skip the document, continue
+#
+# Anything else is internal control flow, or a bug if it escapes.
 
-class KnownError(Exception):
+
+class UserFacingError(Exception):
     """
-    Base for errors deet recognises and has a user-facing message for.
+    Base for errors with a message written for the user and a handling rule.
 
     Subclass one of the two labels below rather than this class directly.
     Third-party errors are mapped onto these in
     ``deet.extractors.llm_errors.KNOWN_LLM_ERRORS``.
+
+    Errors that are caught internally as control flow, or that indicate a bug
+    in deet, stay outside this hierarchy on purpose so they keep their
+    traceback.
     """
 
 
-class RunAbortingError(KnownError):
+class RunAbortingError(UserFacingError):
     """
-    A known error caused by the setup, so every document would fail the same way.
+    A known error that requires the run to stop.
 
     The run is stopped and the message is shown to the user.
     """
 
 
-class DocumentSkippedError(KnownError):
+class DocumentSkippedError(UserFacingError):
     """
-    A known error caused by a single document.
+    A known error that affects a single document.
 
     The document is skipped with a warning and the run continues.
     """

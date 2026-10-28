@@ -1,12 +1,11 @@
 """Registry of known litellm errors and the deet errors they are reported as."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 
 import litellm
 
 from deet.exceptions import (
-    KnownError,
     LLMAuthenticationError,
     LLMContentFilterError,
     LLMContextWindowExceededError,
@@ -14,24 +13,24 @@ from deet.exceptions import (
     LLMRateLimitError,
     LLMTimeoutError,
     UnsupportedModelParamsError,
+    UserFacingError,
 )
 
-UNSUPPORTED_PARAM_CODES = frozenset({"unsupported_value", "unsupported_parameter"})
 
-_UNSUPPORTED_PARAMS_GUIDANCE = (
-    "Model '{model}' does not support one of the configured parameters (see "
-    "the error above). Change that value in your extraction config and "
-    "re-run. (litellm's `drop_params` option is not exposed by deet.)"
-)
+def _has_error_code(codes: Collection[str]) -> Callable[[Exception], bool]:
+    """Build a condition matching the provider's error ``code`` (OpenAI/Azure)."""
+
+    def matches(error: Exception) -> bool:
+        return getattr(error, "code", None) in codes
+
+    return matches
 
 
 def _always(_error: Exception) -> bool:
     return True
 
 
-def _has_unsupported_param_code(error: Exception) -> bool:
-    """Match provider-side rejections of a parameter (OpenAI/Azure error codes)."""
-    return getattr(error, "code", None) in UNSUPPORTED_PARAM_CODES
+UNSUPPORTED_PARAM_CODES = frozenset({"unsupported_value", "unsupported_parameter"})
 
 
 @dataclass(frozen=True)
@@ -51,10 +50,16 @@ class KnownLLMError:
     """
 
     source: type[Exception]
-    target: type[KnownError]
+    target: type[UserFacingError]
     guidance: str
     matches: Callable[[Exception], bool] = _always
 
+
+_UNSUPPORTED_PARAMS_GUIDANCE = (
+    "Model '{model}' does not support one of the configured parameters (see "
+    "the error above). Change that value in your extraction config and "
+    "re-run. (litellm's `drop_params` option is not exposed by deet.)"
+)
 
 # First match wins. Most litellm errors here subclass ``BadRequestError``, so
 # entries for a subclass must come before any entry for its parent.
@@ -83,7 +88,7 @@ KNOWN_LLM_ERRORS: tuple[KnownLLMError, ...] = (
         source=litellm.BadRequestError,
         target=UnsupportedModelParamsError,
         guidance=_UNSUPPORTED_PARAMS_GUIDANCE,
-        matches=_has_unsupported_param_code,
+        matches=_has_error_code(UNSUPPORTED_PARAM_CODES),
     ),
     KnownLLMError(
         source=litellm.AuthenticationError,
@@ -126,7 +131,7 @@ KNOWN_LLM_ERRORS: tuple[KnownLLMError, ...] = (
 )
 
 
-def translate_llm_error(error: Exception, *, model: str) -> KnownError | None:
+def translate_llm_error(error: Exception, *, model: str) -> UserFacingError | None:
     """
     Return the deet error for a known litellm error, or None if it is unknown.
 
