@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.5.0-dev.4 (2026-10-28)
+
+### Bug Fixes
+
+- GPT-6 compatibility via upstream LiteLLM
+  ([`ea30a0c`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/ea30a0ca2028b97367d9860dc43debd63c02e577))
+
+
 ## v0.5.0-dev.3 (2026-10-15)
 
 ### Features
