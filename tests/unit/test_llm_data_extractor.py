@@ -26,7 +26,7 @@ from deet.data_models.eppi import (
     EppiDocument,
 )
 from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunOutput
-from deet.exceptions import UnsupportedModelParamsError
+from deet.exceptions import ContextTooLongError, UnsupportedModelParamsError
 from deet.extractors.base_extractor import DataExtractionConfig, PromptConfig
 from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
@@ -301,7 +301,7 @@ def test_call_llm_raises_when_payload_exceeds_max_by_default(
     llm_extractor.config.max_context_tokens = 1000
     llm_extractor.config.truncate_on_overflow = False
     response_model = build_llm_response_model(sample_eppi_attributes)
-    with pytest.raises(ValueError, match="exceeds max_context_tokens"):
+    with pytest.raises(ContextTooLongError, match="exceeds max_context_tokens"):
         llm_extractor._call_llm(prompt=prompt, response_model=response_model)
 
 
@@ -772,6 +772,39 @@ def test_extract_from_documents_warns_and_continues_on_skipped_document(
     assert len(skipped) == 1
     assert skipped[0].record["level"].name == "WARNING"
     assert "content filter" in str(skipped[0])
+
+
+def test_extract_from_documents_warns_and_skips_document_over_context_limit(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """A document over max_context_tokens is skipped with a warning, not an error."""
+    document = EppiDocument.model_validate(
+        {
+            "document_id": 1,
+            "name": "Long Doc",
+            "Abstract": " ".join(["word"] * 2000),
+        }
+    )
+    llm_extractor.config.max_context_tokens = 1000
+    llm_extractor.config.truncate_on_overflow = False
+
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=[document],
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert run_output.annotated_documents == []
+    assert mock_litellm_completion.call_count == 0
+    skipped = [m for m in messages if "Skipping Long Doc" in str(m)]
+    assert len(skipped) == 1
+    assert skipped[0].record["level"].name == "WARNING"
+    assert "exceeds max_context_tokens" in str(skipped[0])
 
 
 @pytest.mark.parametrize("max_workers", [1, 4])

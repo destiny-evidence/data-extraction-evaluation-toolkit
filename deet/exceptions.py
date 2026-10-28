@@ -39,7 +39,7 @@ class DocumentSkippedError(UserFacingError):
     """
 
 
-class MissingDocumentError(DocumentSkippedError):
+class MissingDocumentError(Exception):
     """
     Raise when looking up a document by id fails.
 
@@ -49,7 +49,7 @@ class MissingDocumentError(DocumentSkippedError):
     """
 
 
-class DuplicateAnnotationError(DocumentSkippedError):
+class DuplicateAnnotationError(Exception):
     """
     Raise when multiple annotations for a single attribute are present.
 
@@ -228,6 +228,15 @@ class LLMContentFilterError(DocumentSkippedError):
 
 class LLMContextWindowExceededError(DocumentSkippedError):
     """Raised when a document does not fit in the model's context window."""
+
+
+class ContextTooLongError(DocumentSkippedError, ValueError):
+    """
+    Raised when a document exceeds ``max_context_tokens`` and truncation is off.
+
+    Subclasses :class:`ValueError` so existing ``except ValueError`` call sites
+    remain valid.
+    """
 
 
 class LLMRateLimitError(DocumentSkippedError):

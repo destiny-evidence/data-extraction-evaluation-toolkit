@@ -28,6 +28,7 @@ from deet.data_models.documents import (
 from deet.data_models.extraction import (
     DocumentExtractionResult,
 )
+from deet.exceptions import ContextTooLongError
 from deet.extractors.base_extractor import BaseDataExtractor, DataExtractionConfig
 from deet.extractors.llm_errors import translate_llm_error
 from deet.settings import (
@@ -241,7 +242,8 @@ class LLMDataExtractor(BaseDataExtractor):
         Enforce max_context_tokens on the messages payload.
 
         When the total token count exceeds max_context_tokens:
-        - If ``truncate_on_overflow`` is False (default), raises ValueError.
+        - If ``truncate_on_overflow`` is False (default), raises
+          ContextTooLongError.
         - If ``truncate_on_overflow`` is True, truncates the "context" field
           inside the user prompt JSON to fit. Mutates messages in place.
 
@@ -252,10 +254,11 @@ class LLMDataExtractor(BaseDataExtractor):
             system_prompt: System prompt text (for token counting).
 
         Raises:
-            ValueError: When payload exceeds max_context_tokens and
-                truncate_on_overflow is False, or when truncate_on_overflow is
-                True but the prompt JSON cannot be parsed or messages are not
-                in the expected shape so truncation cannot be applied.
+            ContextTooLongError: When payload exceeds max_context_tokens and
+                truncate_on_overflow is False.
+            ValueError: When truncate_on_overflow is True but the prompt JSON
+                cannot be parsed or messages are not in the expected shape so
+                truncation cannot be applied.
 
         """
         max_ctx = self.config.max_context_tokens
@@ -273,7 +276,7 @@ class LLMDataExtractor(BaseDataExtractor):
                 "Set truncate_on_overflow=True in your config to "
                 "automatically truncate, or increase max_context_tokens."
             )
-            raise ValueError(msg)
+            raise ContextTooLongError(msg)
 
         try:
             prompt_data = json.loads(prompt)
