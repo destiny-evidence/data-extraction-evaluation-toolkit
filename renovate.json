@@ -1,0 +1,19 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:best-practices",
+        "helpers:pinGitHubActionDigests"
+    ],
+    "baseBranchPatterns": [
+        "development"
+    ],
+    "minimumReleaseAge": "5 days",
+    "packageRules": [
+        {
+            "matchManagers": [
+                "github-actions"
+            ],
+            "pinDigests": true
+        }
+    ]
+}

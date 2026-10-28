@@ -8,22 +8,30 @@ DEET provides an end-to-end, modular workflow for configuring, running and evalu
 
 DEET is intended for researchers, evidence synthesis teams, developers and organisations interested in evaluating or developing AI-enhanced evidence synthesis workflows. Users can expect structured extraction outputs, performance metrics and transparent evaluation results that support informed decisions about the use of AI in evidence synthesis.
 
+Within DESTINY, DEET will be used to evaluate an AI-powered data extraction workflow for intervention studies. Researchers will compare data extracted automatically by a large language model with manually extracted reference data, identify where the AI performs well or makes errors, and use these results to improve extraction methods before they are incorporated into evidence synthesis workflows.
+
 More detailed documentation can be found here [Docs](https://destiny-evidence.github.io/data-extraction-evaluation-toolkit/)
 
 ## Quickstart
 
+`deet` is published on PyPI as [`destiny-deet`](https://pypi.org/project/destiny-deet/).
+
 ### To use the `deet` CLI
 
 ```sh
-uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv tool install destiny-deet
 deet --help
 ```
 
 ### To use `deet` as a package
 
 ```sh
-uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv add destiny-deet  # or: pip install destiny-deet
 ```
+
+Optional extras are available for document parsing (`destiny-deet[parsers]`) and text quality checks (`destiny-deet[lang-quality]`).
+
+To install the latest unreleased code instead, replace `destiny-deet` with `git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git`.
 
 ## Using `deet`
 
@@ -34,7 +42,7 @@ Typical pipelines can be run using the CLI app `deet --help`
 ## Contributing
 
 If you want to contribute to this project -- awesome, everyone's welcome.
-Please see the [contributing guidelines](CONTRIBUTING.md) for details on how best to contribute.
+Please see the [contributing guidelines](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/main/CONTRIBUTING.md) for details on how best to contribute.
 
 A few important steps when contributing:
 
@@ -47,7 +55,7 @@ This will force you to use [conventional commits](https://www.conventionalcommit
 
 ## Commit message format
 
-All commits must use [**conventional commits**](conventionalcommits.org). The pre-commit hook will reject any commit that doesn't.
+All commits must use [**conventional commits**](https://www.conventionalcommits.org/en/v1.0.0/). The pre-commit hook will reject any commit that doesn't.
 
 | prefix | example | version effect |
 |---|---|---|
