@@ -379,6 +379,9 @@ class LLMDataExtractor(BaseDataExtractor):
                 },
             },
             "max_tokens": self.config.max_tokens,
+            # Not ``num_retries``: that routes through litellm's tenacity-based
+            # retry helper, which is not installed and would mask the error.
+            "max_retries": self.config.max_retries,
         }
 
         # Add provider-specific parameters for context window handling

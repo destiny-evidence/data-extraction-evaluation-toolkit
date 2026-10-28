@@ -222,6 +222,10 @@ class LLMModelNotFoundError(RunAbortingError):
     """Raised when the provider does not know the configured model or deployment."""
 
 
+class LLMQuotaExceededError(RunAbortingError):
+    """Raised when the provider account has run out of quota or credit."""
+
+
 class LLMContentFilterError(DocumentSkippedError):
     """Raised when the provider's content filter rejects a document."""
 

@@ -424,6 +424,21 @@ def test_call_llm_forwards_ollama_num_ctx(
     assert call_args.kwargs["num_ctx"] == 16384
 
 
+def test_call_llm_forwards_max_retries(
+    mock_litellm_completion, mock_settings, sample_eppi_attributes
+):
+    """The configured retry count is passed to litellm as ``max_retries``."""
+    config = DataExtractionConfig(model="test-model", max_retries=5)
+    llm_extractor = create_llm_extractor(config, mock_settings)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+
+    llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    kwargs = mock_litellm_completion.call_args.kwargs
+    assert kwargs["max_retries"] == 5
+    assert "num_retries" not in kwargs
+
+
 def _unsupported_temperature_error() -> litellm.UnsupportedParamsError:
     """Build the error litellm raises for temperature != 1 on O-series models."""
     return litellm.UnsupportedParamsError(

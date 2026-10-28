@@ -125,6 +125,15 @@ class DataExtractionConfig(BaseModel):
             " LLM calls via a thread pool."
         ),
     )
+    max_retries: int = Field(
+        default=3,
+        ge=0,
+        description=(
+            "Number of times a rate-limited, timed-out or 5xx LLM call is retried,"
+            " with backoff, before the document is skipped. Applies to OpenAI and"
+            " Azure; litellm does not retry Ollama calls."
+        ),
+    )
     model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
         Field(
             default="gpt-5.6-luna",

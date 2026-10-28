@@ -10,6 +10,7 @@ from deet.exceptions import (
     LLMContentFilterError,
     LLMContextWindowExceededError,
     LLMModelNotFoundError,
+    LLMQuotaExceededError,
     LLMRateLimitError,
     LLMTimeoutError,
     RunAbortingError,
@@ -96,6 +97,25 @@ def test_translate_llm_error_provider_side_unsupported_param(code):
 
     assert type(translated) is UnsupportedModelParamsError
     assert "my-deployment" in str(translated)
+
+
+def test_translate_llm_error_quota_exceeded():
+    """A rate-limit error caused by an exhausted quota stops the run."""
+    # The message litellm 1.96.2 produces for OpenAI's ``insufficient_quota``
+    # 429; the error code itself is not kept.
+    error = litellm.RateLimitError(
+        message=(
+            "OpenAIException - You exceeded your current quota, please check "
+            "your plan and billing details."
+        ),
+        model="gpt-4o",
+        llm_provider="openai",
+    )
+
+    translated = translate_llm_error(error, model="gpt-4o")
+
+    assert type(translated) is LLMQuotaExceededError
+    assert isinstance(translated, RunAbortingError)
 
 
 @pytest.mark.parametrize(

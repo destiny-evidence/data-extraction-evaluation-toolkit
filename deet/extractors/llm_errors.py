@@ -10,6 +10,7 @@ from deet.exceptions import (
     LLMContentFilterError,
     LLMContextWindowExceededError,
     LLMModelNotFoundError,
+    LLMQuotaExceededError,
     LLMRateLimitError,
     LLMTimeoutError,
     UnsupportedModelParamsError,
@@ -26,11 +27,25 @@ def _has_error_code(codes: Collection[str]) -> Callable[[Exception], bool]:
     return matches
 
 
+def _message_contains(markers: Collection[str]) -> Callable[[Exception], bool]:
+    """Build a condition matching text in the error message."""
+
+    def matches(error: Exception) -> bool:
+        message = str(error)
+        return any(marker in message for marker in markers)
+
+    return matches
+
+
 def _always(_error: Exception) -> bool:
     return True
 
 
 UNSUPPORTED_PARAM_CODES = frozenset({"unsupported_value", "unsupported_parameter"})
+# litellm keeps only the provider's message text on ``RateLimitError`` (``code``
+# is always "429"), so an exhausted quota is recognised from OpenAI's wording.
+# Other providers' quota errors fall through to ``LLMRateLimitError``.
+QUOTA_EXCEEDED_MARKERS = frozenset({"exceeded your current quota"})
 
 
 @dataclass(frozen=True)
@@ -117,10 +132,20 @@ KNOWN_LLM_ERRORS: tuple[KnownLLMError, ...] = (
     ),
     KnownLLMError(
         source=litellm.RateLimitError,
+        target=LLMQuotaExceededError,
+        guidance=(
+            "The provider account for '{model}' has run out of quota. Check "
+            "your plan and billing details, then re-run."
+        ),
+        matches=_message_contains(QUOTA_EXCEEDED_MARKERS),
+    ),
+    KnownLLMError(
+        source=litellm.RateLimitError,
         target=LLMRateLimitError,
         guidance=(
-            "The provider rate-limited this request. Lower `max_workers` in "
-            "your extraction config if this happens for many documents."
+            "The provider rate-limited this request and retries ran out. "
+            "Lower `max_workers` or raise `max_retries` in your extraction "
+            "config if this happens for many documents."
         ),
     ),
     KnownLLMError(
