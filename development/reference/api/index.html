@@ -14943,6 +14943,8 @@
 <a id="deet"></a>
     <div class="doc doc-contents first">
 
+        <p>Data Extraction Evaluation Toolkit.</p>
+
 
 
 
@@ -18521,23 +18523,6 @@ linking to a gold standard annotations document with references.</p>
             </li>
         </ul>
 
-        <p>Validators:</p>
-        <ul>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_linking_complete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.documents.Document.validate_linking_complete&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_linking_complete">validate_linking_complete</a></code>
-            </li>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_final&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.documents.Document.validate_final&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_final">validate_final</a></code>
-            </li>
-        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
@@ -19683,10 +19668,6 @@ of how destiny encodes the first_author field.</p>
 <h5 id="deet.data_models.documents.Document.validate_final" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">validate_final</span><span class="p">()</span></code>
 
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
-  </span>
-
 </h5>
 
 
@@ -19745,10 +19726,6 @@ of how destiny encodes the first_author field.</p>
 
 <h5 id="deet.data_models.documents.Document.validate_linking_complete" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">validate_linking_complete</span><span class="p">()</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
-  </span>
 
 </h5>
 
@@ -22370,20 +22347,6 @@ camelCase EPPI JSON fields to snake_case Python fields.</p>
 
         <p>Validators:</p>
         <ul>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_linking_complete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiDocument.validate_linking_complete&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_linking_complete">validate_linking_complete</a></code>
-            </li>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_final&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiDocument.validate_final&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_final">validate_final</a></code>
-            </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;empty_year_string_to_none&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
 
@@ -47029,7 +46992,7 @@ customizable prompts.</p>
 
         <span class="c1"># Add provider-specific parameters for context window handling</span>
         <span class="c1"># Note: Different parameters control context windows across providers:</span>
-        <span class="c1"># - max_tokens (OpenAI/Azure): Maximum output (completion) length</span>
+        <span class="c1"># - max_tokens: Maximum output length; LiteLLM maps provider-specific names.</span>
         <span class="c1"># - max_context_tokens (config): Application-level input budget, enforced</span>
         <span class="c1">#   via truncation in _enforce_context_limit()</span>
         <span class="c1"># - num_ctx (Ollama-only): Sets the model's total context window size.</span>
