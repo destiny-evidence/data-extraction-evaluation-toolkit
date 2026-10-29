@@ -225,6 +225,10 @@ We recommend installing uv to manage python packages. This can also be used to i
     If you installed uv with the standalone installer, run `uv self update`.
     If you installed it with a package manager, update it there, for example `scoop update uv`.
 
+    Python also needs to be recent.
+    Run `uv python upgrade` to update the Python versions that uv manages.
+    Existing environments keep the Python they were created with, so reinstall an existing CLI installation with `uv tool install --reinstall destiny-deet`.
+
 Now you have the basics set up, continue to [CLI users](#cli-users) if you want to use the CLI, or [package users](#package-users) if you want to use deet as a package, or to [contributors](#contributors) if you want to contribute to `deet`.
 
 ## Installing git

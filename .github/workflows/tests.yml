@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.12.11"
+          - "3.12.16"
     if: github.event.pull_request.draft == false
     env:
       DEET_STARTUP_BUDGET_S: 0.6 # Maximum time deet --help an take before tests break
