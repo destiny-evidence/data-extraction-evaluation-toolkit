@@ -4,33 +4,31 @@ This page shows different ways to install `deet` across platforms and use-cases
 
 ## Quick install (Windows)
 
-Windows users can install `deet` and everything it needs - [git](https://git-scm.com/),
-[uv](https://docs.astral.sh/uv/), [pandoc](https://pandoc.org/), and `deet` itself - with a single
-command. Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:
+Windows users can install `deet` with a single command.
+The installer sets up [uv](https://docs.astral.sh/uv/) if it is missing or too old, then installs `deet` from PyPI.
+Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:
 
 ```powershell
 irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1 | iex
 ```
 
-This should install deet, and all its dependencies (unless you already have them). When it finishes, run `deet --help` to check.
+When it finishes, run `deet --help` to check.
 
 It is a plain PowerShell script — you can
 [read it first](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/development/install.ps1)
 before piping it to `iex`.
 
-??? note "Options (branch, skipping pandoc, forcing a reinstall)"
+The installer does not install [pandoc](#installing-pandoc), which is only needed to work with full-text PDFs.
 
-    To install from a specific branch or tag — for a feature that is not yet released — fetch the
-    script first so it can take arguments:
+??? note "Options (forcing a reinstall)"
+
+    To reinstall `deet` even if it is already present, for example to upgrade, fetch the script first so it can take arguments:
 
     ```powershell
-    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1))) -Ref development
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1))) -Force
     ```
 
-    Other flags:
-
-    - `-SkipPandoc` — skip pandoc, if you only work with abstracts or pre-processed markdown.
-    - `-Force` — reinstall `deet` even if it is already present (use this to upgrade).
+    To install a branch or a feature that is not yet released, follow [Installing from a specific branch](#installing-from-a-specific-branch).
 
 If you would rather install each piece yourself — or you are on macOS or Linux — follow the manual
 steps below.
