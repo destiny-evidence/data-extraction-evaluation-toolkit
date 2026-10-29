@@ -143,6 +143,7 @@ def test_pipeline_parses_outputs_and_shares_full_report_prefix(
     assert [message["role"] for message in messages[0]] == ["system", "user", "user"]
     assert messages[0][:2] == messages[1][:2] == messages[2][:2]
     shared = messages[0][1]["content"]
+    assert isinstance(shared, str)  # no OpenAI breakpoint for other providers
     assert shared.count(report) == 1
     framework = pipeline.classification_framework.strip()
     assert shared.index(report) < shared.index(framework)
@@ -237,10 +238,21 @@ def test_openai_request_shapes_and_stage_logs_with_custom_framework(
         == requests[1]["messages"][:2]
         == (requests[2]["messages"][:2])
     )
-    shared = requests[0]["messages"][1]["content"]
+    shared_parts = requests[0]["messages"][1]["content"]
+    assert shared_parts == [
+        {
+            "type": "text",
+            "text": shared_parts[0]["text"],
+            "prompt_cache_breakpoint": {"mode": "explicit"},
+        }
+    ]
+    shared = shared_parts[0]["text"]
     assert "ORIGINAL_REPORT" in shared
     assert framework.strip() in shared
     assert all(len(request["messages"]) == 3 for request in requests)
+    assert all(
+        isinstance(request["messages"][2]["content"], str) for request in requests
+    )
     log = json.loads(next(tmp_path.glob("extraction_log_*.json")).read_text())
     assert [call["stage"] for call in log["calls"]] == [
         "ExtractProgrammeWithCachingInfo",

@@ -30,9 +30,12 @@ class _SplitStageInputsMixin:
     """
     End a user message after the report and framework.
 
-    OpenAI implicit prompt caching can only reuse prefixes ending at message
-    boundaries, so stage-specific inputs are sent in a separate final message.
+    Stage-specific inputs are sent in a separate final message. For OpenAI, the
+    shared message also carries an explicit cache breakpoint: implicit caching
+    only writes at the end of the latest message, which differs between stages.
     """
+
+    cache_breakpoint: bool = False
 
     def format(
         self,
@@ -49,8 +52,17 @@ class _SplitStageInputsMixin:
                 STAGE_INPUTS_MARKER
             )
             if marker and shared.strip():
+                shared_content: str | list[dict[str, Any]] = shared.rstrip()
+                if self.cache_breakpoint:
+                    shared_content = [
+                        {
+                            "type": "text",
+                            "text": shared_content,
+                            "prompt_cache_breakpoint": {"mode": "explicit"},
+                        }
+                    ]
                 messages[-1:] = [
-                    {"role": "user", "content": shared.rstrip()},
+                    {"role": "user", "content": shared_content},
                     {"role": "user", "content": marker + stage_inputs},
                 ]
         return messages
@@ -59,13 +71,19 @@ class _SplitStageInputsMixin:
 class ProgrammeWithCachingJSONAdapter(_SplitStageInputsMixin, dspy.JSONAdapter):
     """JSONAdapter with the report and framework in their own message."""
 
+    def __init__(self, *, cache_breakpoint: bool = False) -> None:
+        """Optionally mark the shared message with an OpenAI cache breakpoint."""
+        super().__init__()
+        self.cache_breakpoint = cache_breakpoint
+
 
 class ProgrammeWithCachingChatAdapter(_SplitStageInputsMixin, dspy.ChatAdapter):
     """ChatAdapter whose JSON fallback keeps the cache-friendly message split."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, cache_breakpoint: bool = False) -> None:
         """Disable DSPy's plain JSONAdapter fallback in favour of the split one."""
         super().__init__(use_json_adapter_fallback=False)
+        self.cache_breakpoint = cache_breakpoint
 
     def __call__(
         self,
@@ -81,9 +99,9 @@ class ProgrammeWithCachingChatAdapter(_SplitStageInputsMixin, dspy.ChatAdapter):
         except ContextWindowExceededError:
             raise
         except Exception:  # noqa: BLE001
-            return ProgrammeWithCachingJSONAdapter()(
-                lm, lm_kwargs, signature, demos, inputs
-            )
+            return ProgrammeWithCachingJSONAdapter(
+                cache_breakpoint=self.cache_breakpoint
+            )(lm, lm_kwargs, signature, demos, inputs)
 
     async def acall(
         self,
@@ -99,16 +117,18 @@ class ProgrammeWithCachingChatAdapter(_SplitStageInputsMixin, dspy.ChatAdapter):
         except ContextWindowExceededError:
             raise
         except Exception:  # noqa: BLE001
-            return await ProgrammeWithCachingJSONAdapter().acall(
-                lm, lm_kwargs, signature, demos, inputs
-            )
+            return await ProgrammeWithCachingJSONAdapter(
+                cache_breakpoint=self.cache_breakpoint
+            ).acall(lm, lm_kwargs, signature, demos, inputs)
 
 
 def _cache_friendly_adapter() -> dspy.ChatAdapter:
     """Keep a configured JSON adapter choice while splitting stage inputs."""
+    lm = dspy.settings.lm
+    cache_breakpoint = str(getattr(lm, "model", "")).startswith("openai/")
     if isinstance(dspy.settings.adapter, dspy.JSONAdapter):
-        return ProgrammeWithCachingJSONAdapter()
-    return ProgrammeWithCachingChatAdapter()
+        return ProgrammeWithCachingJSONAdapter(cache_breakpoint=cache_breakpoint)
+    return ProgrammeWithCachingChatAdapter(cache_breakpoint=cache_breakpoint)
 
 
 class ExtractProgrammeWithCaching(dspy.Signature):

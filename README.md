@@ -655,9 +655,11 @@ report as well.
 
 The pipeline uses its own DSPy adapters that send the report and classification
 framework as one user message, then the stage selector and previous extraction
-as a final user message. Newer OpenAI models (GPT-5.6 and later) reuse cached
-prefixes only at message boundaries, so a single combined user message would
-reuse only the system prompt (about 4K tokens) in later stages. A configured
+as a final user message. For `openai/` models, the shared message carries an
+explicit `prompt_cache_breakpoint`. On GPT-5.6 and later, implicit caching only
+writes a cache entry at the end of the latest message, which differs between
+stages, so without the breakpoint later stages reuse only the system prompt
+(about 4K tokens). Other providers receive plain text messages. A configured
 `dspy.JSONAdapter` is respected, and ChatAdapter parse failures fall back to the
 split JSON adapter.
 
