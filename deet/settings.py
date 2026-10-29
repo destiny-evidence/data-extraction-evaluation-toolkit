@@ -29,6 +29,13 @@ class LLMProvider(StrEnum):
     OLLAMA = auto()
 
 
+class DecisionApiType(StrEnum):
+    """Azure-hosted decisions endpoint flavours."""
+
+    OPENAI = auto()
+    SYSTEM_ONE = auto()
+
+
 class LogLevel(StrEnum):
     """Supported log levels for logging."""
 

@@ -26,13 +26,17 @@ except ImportError:
 
 @pytest.fixture
 def make_attr():
-    """Return a factory that builds Attributes by id and optional prompt."""
+    """Return a factory that builds Attributes by id, prompt and type."""
 
-    def _make(attribute_id: int, prompt: str | None = None) -> Attribute:
+    def _make(
+        attribute_id: int,
+        prompt: str | None = None,
+        output_data_type: AttributeType = AttributeType.BOOL,
+    ) -> Attribute:
         return Attribute(
             attribute_id=attribute_id,
             attribute_label=f"Attribute {attribute_id}",
-            output_data_type=AttributeType.BOOL,
+            output_data_type=output_data_type,
             prompt=prompt,
         )
 
