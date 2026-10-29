@@ -386,7 +386,7 @@ class LLMDataExtractor(BaseDataExtractor):
 
         # Add provider-specific parameters for context window handling
         # Note: Different parameters control context windows across providers:
-        # - max_tokens (OpenAI/Azure): Maximum output (completion) length
+        # - max_tokens: Maximum output length; LiteLLM maps provider-specific names.
         # - max_context_tokens (config): Application-level input budget, enforced
         #   via truncation in _enforce_context_limit()
         # - num_ctx (Ollama-only): Sets the model's total context window size.
