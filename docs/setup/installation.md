@@ -218,11 +218,12 @@ We recommend installing uv to manage python packages. This can also be used to i
     In Mac/Linux, we recommend you install uv using the [standalone installer](https://docs.astral.sh/uv/getting-started/installation/#__tabbed_1_1)
 
 !!! warning "Updating uv"
-    Deet requires at least version `0.9.8` of uv.
+    Deet requires a recent version of uv, and uv will refuse to run in the repository if it is too old.
+    Older versions bundle outdated certificate authority lists, which matters for the security of package downloads.
 
-    Check your current uv version by running `uv --version`.
-
-    Update uv by running `uv self`
+    Update uv before installing deet.
+    If you installed uv with the standalone installer, run `uv self update`.
+    If you installed it with a package manager, update it there, for example `scoop update uv`.
 
 Now you have the basics set up, continue to [CLI users](#cli-users) if you want to use the CLI, or [package users](#package-users) if you want to use deet as a package, or to [contributors](#contributors) if you want to contribute to `deet`.
 

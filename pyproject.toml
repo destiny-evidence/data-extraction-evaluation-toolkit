@@ -226,3 +226,4 @@ exclude-dependencies = [
 exclude-newer = "P5D"
 no-binary-package = ["destiny-deet"]
 no-build = true
+required-version = ">=0.13.5"
