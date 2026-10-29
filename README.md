@@ -637,6 +637,39 @@ removed with logged and printed warnings rather than failing extraction. Valid
 entries retain their order; if none remain, the field is blank. This checks label
 validity, not semantic accuracy. Malformed framework files still raise errors.
 
+#### Opt-in OpenAI prompt caching
+
+Set `"study_type": "ProgrammeWithCaching"` and use an `openai/` model to
+select the separate cache-friendly pipeline. The original `"Programme"` pipeline
+and models are unchanged. Both predefined and custom CSV-schema extraction support
+this option, using the same Programme prompt CSV fields, classification framework,
+three extraction stages and JSON/CSV/Excel output layout.
+
+The new pipeline uses one fixed signature and response schema for every stage.
+Instructions and schemas are identical across calls; the report and classification
+framework precede the changing stage selector and previous extraction results.
+This keeps the entire report in the shared prompt prefix, including with DSPy's
+JSON adapter and native structured-output schema. Moving instructions into model
+docstrings alone would not achieve this: DSPy renders those schemas before the
+report as well.
+
+The shared response envelope contains all four Programme fields. Each stage fills
+only its own fields, using null metadata and empty lists for unused fields.
+Inactive results are rejected, and numerical classifications are cleaned before
+being supplied to the qualitative stage. This adds fixed instruction/schema
+overhead but avoids repeating earlier results in responses.
+
+Provider caching is separate from `dspy_cache`, which controls DSPy's local
+whole-response cache. Supported OpenAI models can cache matching prompt prefixes
+automatically; keep the same model, adapter, predictor instructions and few-shot
+examples across stages. Model-specific minimum prefix sizes, cache retention,
+routing and request settings still determine actual hits. Changing adapter modes
+creates different prefixes even though each mode's schema is stable across stages.
+No live cache hit is guaranteed by prompt layout alone. With `dspy_cache` disabled,
+inspect `cached_input_tokens` in the existing extraction usage logs to verify
+provider reuse on your deployment. See OpenAI's
+[prompt caching guide](https://developers.openai.com/api/docs/guides/prompt-caching).
+
 Classification may infer a match from reported evidence using the scope rules.
 
 ### Running tests

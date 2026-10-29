@@ -38,6 +38,9 @@ from deet.hierarchical_mvp.programme_framework import (
     load_indicator_framework,
     resolve_framework_config,
 )
+from deet.hierarchical_mvp.ProgrammeWithCachingExtraction import (
+    build_programme_with_caching_pipeline,
+)
 from deet.hierarchical_mvp.utils import (
     _open_csv_for_write,
     _write_tables,
@@ -377,12 +380,13 @@ def _prompt_rows_for_non_rct(study_type: str) -> list[dict[str, str]]:
             rows = build_prognostic_hierarchical_prompt_rows()
         case "ClimateCarbonPricing":
             rows = build_climate_carbon_pricing_hierarchical_prompt_rows()
-        case "Programme":
+        case "Programme" | "ProgrammeWithCaching":
             rows = build_programme_hierarchical_prompt_rows()
         case _:
             error_message = (
                 f"Unsupported study_type '{study_type}'. Supported: "
-                f"{', '.join(RCT_MODEL_MODULES)}, PrognosticStudy, ClimateCarbonPricing"
+                f"{', '.join(RCT_MODEL_MODULES)}, PrognosticStudy, ClimateCarbonPricing, "
+                "Programme, ProgrammeWithCaching"
             )
             raise ValueError(error_message)
 
@@ -1688,8 +1692,10 @@ def _build_dynamic_pipeline_for_study_type(
         )
         return _build_dynamic_climate_carbon_pricing_pipeline(runtime_models)
 
-    if study_type == "Programme":
+    if study_type in {"Programme", "ProgrammeWithCaching"}:
         runtime_models = _ensure_programme_runtime_models(schema, dynamic_models)
+        if study_type == "ProgrammeWithCaching":
+            return build_programme_with_caching_pipeline(runtime_models)
         return _build_dynamic_programme_pipeline(runtime_models)
 
     if study_type not in RCT_MODEL_MODULES:
@@ -1757,7 +1763,7 @@ def _write_dynamic_study_outputs(
     # always get a valid path back regardless of which export flags are set.
     output_path = output_parent_dir
 
-    if study_type == "Programme":
+    if study_type in {"Programme", "ProgrammeWithCaching"}:
         pc_schema = schema.get("Programme_Characteristics", [])
         iv_schema = schema.get("Intervention", [])
         quantitative_schema = schema.get("Quantitative_Outcome", [])

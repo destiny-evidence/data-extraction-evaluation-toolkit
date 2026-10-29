@@ -28,6 +28,9 @@ from deet.hierarchical_mvp.ObesityRCTextraction_pairwise import (
 )
 from deet.hierarchical_mvp.PrognosticExtraction import PrognosticExtractionPipeline
 from deet.hierarchical_mvp.ProgrammeExtraction import ProgrammeExtractionPipeline
+from deet.hierarchical_mvp.ProgrammeWithCachingExtraction import (
+    ProgrammeWithCachingExtractionPipeline,
+)
 from deet.hierarchical_mvp.extraction_logging import extraction_usage_log
 from deet.hierarchical_mvp.programme_framework import resolve_framework_config
 from deet.hierarchical_mvp.RCTextraction import RCTExtractionPipeline
@@ -312,11 +315,15 @@ def extract(
                 classification_framework_path=classification_framework_path
             )
             return pipeline(context=context)
+        case "ProgrammeWithCaching":
+            return ProgrammeWithCachingExtractionPipeline(
+                classification_framework_path=classification_framework_path
+            )(context=context)
         case _:
             raise ValueError(
                 f"Unsupported study_type '{study_type}'. Supported: "
                 f"{', '.join(RCT_PIPELINES)}, PrognosticStudy, "
-                "ClimateCarbonPricing, Programme"
+                "ClimateCarbonPricing, Programme, ProgrammeWithCaching"
             )
 
 
@@ -364,10 +371,11 @@ def save_data(
         "PrognosticStudy": export_prognostic_csv,
         "ClimateCarbonPricing": export_climate_carbon_pricing_csv,
         "Programme": export_programme_csv,
+        "ProgrammeWithCaching": export_programme_csv,
     }
     base_type = study_type.removesuffix("_pairwise")
     if study_type not in RCT_PIPELINES and study_type not in {
-        "PrognosticStudy", "ClimateCarbonPricing", "Programme"
+        "PrognosticStudy", "ClimateCarbonPricing", "Programme", "ProgrammeWithCaching"
     }:
         error_message = f"Unsupported study_type '{study_type}'."
         raise ValueError(error_message)

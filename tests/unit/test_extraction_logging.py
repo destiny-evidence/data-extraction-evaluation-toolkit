@@ -349,6 +349,7 @@ def test_price_cli(tmp_path, monkeypatch, capsys):
         "PrognosticStudy",
         "ClimateCarbonPricing",
         "Programme",
+        "ProgrammeWithCaching",
     ],
 )
 def test_predefined_runners_log_all_study_types(
@@ -401,6 +402,7 @@ def test_predefined_runners_log_all_study_types(
         "PrognosticStudy",
         "ClimateCarbonPricing",
         "Programme",
+        "ProgrammeWithCaching",
     ],
 )
 def test_custom_runners_log_all_study_types(tmp_path, monkeypatch, study_type, batch):
