@@ -1,6 +1,7 @@
 """Tests for the LLM data extractor module."""
 
 import json
+import threading
 import time
 from io import StringIO
 from pathlib import Path
@@ -26,7 +27,11 @@ from deet.data_models.eppi import (
     EppiDocument,
 )
 from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunOutput
-from deet.exceptions import ContextTooLongError, UnsupportedModelParamsError
+from deet.exceptions import (
+    ContextTooLongError,
+    LLMQuotaExceededError,
+    UnsupportedModelParamsError,
+)
 from deet.extractors.base_extractor import DataExtractionConfig, PromptConfig
 from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
@@ -895,3 +900,58 @@ def test_extract_from_documents_cancels_queued_documents_on_unsupported_params(
         )
 
     assert mock_litellm_completion.call_count < len(documents) // 2
+
+
+@pytest.mark.parametrize("max_workers", [1, 2])
+def test_extract_from_documents_saves_finished_documents_when_run_stops(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    tmp_path,
+    max_workers,
+):
+    """A mid-run stop still writes the documents that finished before it."""
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in (1, 2, 3)
+    ]
+    llm_extractor.config.max_workers = max_workers
+    quota_error = litellm.RateLimitError(
+        message="You exceeded your current quota, please check your plan.",
+        model="gpt-4o",
+        llm_provider="openai",
+    )
+    finished = mock_litellm_completion.return_value
+    calls = iter(range(len(documents)))
+    lock = threading.Lock()
+
+    def first_call_succeeds(**_kwargs):
+        with lock:
+            call = next(calls)
+        if call == 0:
+            return finished
+        time.sleep(0.05)  # let the first document finish on the thread pool
+        raise quota_error
+
+    mock_litellm_completion.side_effect = first_call_succeeds
+    output_file = tmp_path / "results.json"
+    prompt_outfile = tmp_path / "prompts.json"
+
+    with pytest.raises(LLMQuotaExceededError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+            output_file=output_file,
+            prompt_outfile=prompt_outfile,
+        )
+
+    saved = json.loads(output_file.read_text())
+    assert len(saved["annotated_documents"]) == 1
+    assert len(json.loads(prompt_outfile.read_text())) == 1

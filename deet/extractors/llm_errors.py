@@ -151,7 +151,11 @@ KNOWN_LLM_ERRORS: tuple[KnownLLMError, ...] = (
     KnownLLMError(
         source=litellm.Timeout,
         target=LLMTimeoutError,
-        guidance="The request to '{model}' timed out.",
+        guidance=(
+            "The request to '{model}' timed out and retries ran out. Raise "
+            "`max_retries` in your extraction config if this happens for many "
+            "documents."
+        ),
     ),
 )
 

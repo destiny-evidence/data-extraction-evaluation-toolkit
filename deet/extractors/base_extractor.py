@@ -130,7 +130,7 @@ class DataExtractionConfig(BaseModel):
         ge=0,
         description=(
             "Number of times a rate-limited, timed-out or 5xx LLM call is retried,"
-            " with backoff, before the document is skipped. Applies to OpenAI and"
+            " with backoff, before the error is reported. Applies to OpenAI and"
             " Azure; litellm does not retry Ollama calls."
         ),
     )
@@ -196,7 +196,8 @@ class DataExtractionConfig(BaseModel):
         default=False,
         description=(
             "When True, automatically truncate context that exceeds "
-            "max_context_tokens. When False (default), raise ValueError."
+            "max_context_tokens. When False (default), raise"
+            " ContextTooLongError and skip the document."
         ),
     )
 
@@ -449,7 +450,8 @@ class BaseDataExtractor(ABC):
         are warned about, so that they do not crash a whole run.
         Failures that would affect every document
         (e.g. because of misconfigured llm settings)
-        stop the run with a ``RunAbortingError``.
+        stop the run with a ``RunAbortingError``. Documents finished before
+        the error are still written to ``output_file`` and ``prompt_outfile``.
 
 
         Args:
@@ -465,6 +467,9 @@ class BaseDataExtractor(ABC):
 
         Returns:
             ExtractionRunOutput containing annotated documents and run metadata.
+
+        Raises:
+            RunAbortingError: When an error would fail every remaining document.
 
         """
         if context_type is None:
@@ -492,10 +497,16 @@ class BaseDataExtractor(ABC):
         # Collect into input order regardless of completion order.
         ordered: list[_ProcessedDocument | None] = [None] * len(documents)
         completed = _iter_completed(documents, max_workers, process)
-        with optional_progress(documents, show_progress=show_progress) as tracked:
-            for _ in tracked:  # advance the bar once per finished document
-                index, bundle = next(completed)
-                ordered[index] = bundle
+        # Kept until results are saved, so a mid-run stop (e.g. exhausted
+        # quota) does not discard documents that were already paid for.
+        aborting_error: RunAbortingError | None = None
+        try:
+            with optional_progress(documents, show_progress=show_progress) as tracked:
+                for _ in tracked:  # advance the bar once per finished document
+                    index, bundle = next(completed)
+                    ordered[index] = bundle
+        except RunAbortingError as e:
+            aborting_error = e
 
         for bundle in ordered:
             if bundle is None:
@@ -535,6 +546,13 @@ class BaseDataExtractor(ABC):
                 json.dumps(prompt_payloads, indent=2), encoding="utf-8"
             )
             logger.info(f"Prompt payloads saved to: {prompt_outfile}")
+
+        if aborting_error is not None:
+            logger.warning(
+                f"Run stopped after extracting {len(llm_annotated_docs)} of "
+                f"{len(documents)} documents."
+            )
+            raise aborting_error
 
         return run_output
 

@@ -208,9 +208,10 @@ class UnsupportedModelParamsError(RunAbortingError):
     """
     Raised when the configured model rejects a configured LLM parameter.
 
-    Wraps ``litellm.UnsupportedParamsError`` (e.g. ``temperature=0.1`` on an
-    O-series model) so the run is aborted with an actionable message instead
-    of failing silently on every document.
+    Reported for ``litellm.UnsupportedParamsError`` (e.g. ``temperature=0.1``
+    on an O-series model) and for provider 400s with an unsupported-parameter
+    code, so the run is aborted with an actionable message instead of failing
+    silently on every document.
     """
 
 

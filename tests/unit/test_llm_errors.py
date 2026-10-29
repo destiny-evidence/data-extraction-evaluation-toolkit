@@ -19,6 +19,7 @@ from deet.exceptions import (
 from deet.extractors.llm_errors import (
     KNOWN_LLM_ERRORS,
     UNSUPPORTED_PARAM_CODES,
+    _always,
     translate_llm_error,
 )
 
@@ -140,10 +141,9 @@ def test_known_llm_errors_have_a_label():
 
 def test_known_llm_errors_are_all_reachable():
     """No entry is shadowed by an earlier unconditional entry for a parent type."""
-    unconditional = KNOWN_LLM_ERRORS[0].matches
     for position, known in enumerate(KNOWN_LLM_ERRORS):
         for earlier in KNOWN_LLM_ERRORS[:position]:
-            shadowed = earlier.matches is unconditional and issubclass(
+            shadowed = earlier.matches is _always and issubclass(
                 known.source, earlier.source
             )
             assert not shadowed, f"{known.source.__name__} is unreachable"
