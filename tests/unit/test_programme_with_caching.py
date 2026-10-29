@@ -1,7 +1,6 @@
 import csv
 import json
 from collections import defaultdict
-from os.path import commonprefix
 from unittest.mock import patch
 
 import dspy
@@ -141,20 +140,19 @@ def test_pipeline_parses_outputs_and_shares_full_report_prefix(
     )
     assert len(lm.history) == len(pipeline.predictors()) == 3
     messages = [call["messages"] for call in lm.history]
-    assert messages[0][0] == messages[1][0] == messages[2][0]
-    shared = commonprefix([call[-1]["content"] for call in messages])
+    assert [message["role"] for message in messages[0]] == ["system", "user", "user"]
+    assert messages[0][:2] == messages[1][:2] == messages[2][:2]
+    shared = messages[0][1]["content"]
     assert shared.count(report) == 1
-    assert pipeline.classification_framework in shared
-    assert shared.index(report) < shared.index(pipeline.classification_framework)
-    assert len(shared) > len(report) + len(pipeline.classification_framework)
+    framework = pipeline.classification_framework.strip()
+    assert shared.index(report) < shared.index(framework)
+    assert shared.endswith(framework)
+    assert "extraction_stage" not in shared
     for stage, call in zip(STAGES, messages, strict=True):
         content = call[-1]["content"]
-        assert (
-            content.index("END_REPORT")
-            < content.index("[[ ## extraction_stage ## ]]")
-            < content.index("[[ ## previous_extraction ## ]]")
-        )
-        assert f"[[ ## extraction_stage ## ]]\n{stage}" in content
+        assert content.startswith(f"[[ ## extraction_stage ## ]]\n{stage}")
+        assert "[[ ## previous_extraction ## ]]" in content
+        assert "END_REPORT" not in content
     last_request = messages[2][-1]["content"]
     assert "Training" in last_request
     if quantitative:
@@ -235,13 +233,14 @@ def test_openai_request_shapes_and_stage_logs_with_custom_framework(
     schemas = [request["response_format"].model_json_schema() for request in requests]
     assert schemas[0] == schemas[1] == schemas[2]
     assert (
-        requests[0]["messages"][0]
-        == requests[1]["messages"][0]
-        == (requests[2]["messages"][0])
+        requests[0]["messages"][:2]
+        == requests[1]["messages"][:2]
+        == (requests[2]["messages"][:2])
     )
-    shared = commonprefix([request["messages"][-1]["content"] for request in requests])
+    shared = requests[0]["messages"][1]["content"]
     assert "ORIGINAL_REPORT" in shared
-    assert framework in shared
+    assert framework.strip() in shared
+    assert all(len(request["messages"]) == 3 for request in requests)
     log = json.loads(next(tmp_path.glob("extraction_log_*.json")).read_text())
     assert [call["stage"] for call in log["calls"]] == [
         "ExtractProgrammeWithCachingInfo",
@@ -249,6 +248,30 @@ def test_openai_request_shapes_and_stage_logs_with_custom_framework(
         "ExtractProgrammeWithCachingQualitative",
     ]
     assert [call["attempt"] for call in log["calls"]] == [1, 1, 1]
+
+
+def test_chat_parse_failure_falls_back_to_split_json_request(pipeline, programme):
+    answer = {
+        "extraction": _stage_answers(pipeline, programme)[0].model_dump(mode="json")
+    }
+    lm = DummyLM([answer, answer], adapter=dspy.JSONAdapter())
+    with dspy.context(lm=lm):
+        pipeline._extract_stage(  # noqa: SLF001
+            pipeline.extract_programme_info,
+            "programme",
+            "REPORT",
+            pipeline.step_model(
+                programme_characteristics=None,
+                interventions=[],
+                quantitative_outcomes=[],
+                qualitative_outcomes=[],
+            ),
+        )
+    assert len(lm.history) == 2
+    chat, fallback = (call["messages"] for call in lm.history)
+    assert [message["role"] for message in fallback] == ["system", "user", "user"]
+    assert chat[1] == fallback[1]
+    assert "JSON" in fallback[0]["content"] or "JSON" in fallback[-1]["content"]
 
 
 def test_pipeline_cleans_outcomes_before_passing_to_next_stage(pipeline, programme):

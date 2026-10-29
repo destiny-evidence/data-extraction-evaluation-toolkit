@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 from types import GenericAlias
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import dspy
+from dspy.utils.exceptions import ContextWindowExceededError
 from pydantic import BaseModel, Field, create_model
 
 from .programme_framework import clean_outcome_classifications, load_indicator_framework
@@ -21,6 +22,93 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 ExtractionStage = Literal["programme", "quantitative", "qualitative"]
+
+STAGE_INPUTS_MARKER = "[[ ## extraction_stage ## ]]"
+
+
+class _SplitStageInputsMixin:
+    """
+    End a user message after the report and framework.
+
+    OpenAI implicit prompt caching can only reuse prefixes ending at message
+    boundaries, so stage-specific inputs are sent in a separate final message.
+    """
+
+    def format(
+        self,
+        signature: type[dspy.Signature],
+        demos: list[dict[str, Any]],
+        inputs: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = super().format(  # type: ignore[misc]
+            signature, demos, inputs
+        )
+        last = messages[-1]
+        if last.get("role") == "user" and isinstance(last.get("content"), str):
+            shared, marker, stage_inputs = last["content"].partition(
+                STAGE_INPUTS_MARKER
+            )
+            if marker and shared.strip():
+                messages[-1:] = [
+                    {"role": "user", "content": shared.rstrip()},
+                    {"role": "user", "content": marker + stage_inputs},
+                ]
+        return messages
+
+
+class ProgrammeWithCachingJSONAdapter(_SplitStageInputsMixin, dspy.JSONAdapter):
+    """JSONAdapter with the report and framework in their own message."""
+
+
+class ProgrammeWithCachingChatAdapter(_SplitStageInputsMixin, dspy.ChatAdapter):
+    """ChatAdapter whose JSON fallback keeps the cache-friendly message split."""
+
+    def __init__(self) -> None:
+        """Disable DSPy's plain JSONAdapter fallback in favour of the split one."""
+        super().__init__(use_json_adapter_fallback=False)
+
+    def __call__(
+        self,
+        lm: Any,  # noqa: ANN401
+        lm_kwargs: dict[str, Any],
+        signature: type[dspy.Signature],
+        demos: list[dict[str, Any]],
+        inputs: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Call the LM, retrying parse failures with the split JSON adapter."""
+        try:
+            return super().__call__(lm, lm_kwargs, signature, demos, inputs)
+        except ContextWindowExceededError:
+            raise
+        except Exception:  # noqa: BLE001
+            return ProgrammeWithCachingJSONAdapter()(
+                lm, lm_kwargs, signature, demos, inputs
+            )
+
+    async def acall(
+        self,
+        lm: Any,  # noqa: ANN401
+        lm_kwargs: dict[str, Any],
+        signature: type[dspy.Signature],
+        demos: list[dict[str, Any]],
+        inputs: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Asynchronously call the LM with the split JSON adapter fallback."""
+        try:
+            return await super().acall(lm, lm_kwargs, signature, demos, inputs)
+        except ContextWindowExceededError:
+            raise
+        except Exception:  # noqa: BLE001
+            return await ProgrammeWithCachingJSONAdapter().acall(
+                lm, lm_kwargs, signature, demos, inputs
+            )
+
+
+def _cache_friendly_adapter() -> dspy.ChatAdapter:
+    """Keep a configured JSON adapter choice while splitting stage inputs."""
+    if isinstance(dspy.settings.adapter, dspy.JSONAdapter):
+        return ProgrammeWithCachingJSONAdapter()
+    return ProgrammeWithCachingChatAdapter()
 
 
 class ExtractProgrammeWithCaching(dspy.Signature):
@@ -82,12 +170,13 @@ class ProgrammeWithCachingExtractionPipeline(dspy.Module):
         context: str,
         previous: ProgrammeWithCachingStep,
     ) -> ProgrammeWithCachingStep:
-        prediction = predictor(
-            context=context,
-            classification_framework=self.classification_framework,
-            extraction_stage=stage,
-            previous_extraction=previous,
-        )
+        with dspy.context(adapter=_cache_friendly_adapter()):
+            prediction = predictor(
+                context=context,
+                classification_framework=self.classification_framework,
+                extraction_stage=stage,
+                previous_extraction=previous,
+            )
         result = self.step_model.model_validate(prediction.extraction)
         for field in self.step_model.model_fields:
             expected = (

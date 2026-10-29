@@ -653,6 +653,14 @@ JSON adapter and native structured-output schema. Moving instructions into model
 docstrings alone would not achieve this: DSPy renders those schemas before the
 report as well.
 
+The pipeline uses its own DSPy adapters that send the report and classification
+framework as one user message, then the stage selector and previous extraction
+as a final user message. Newer OpenAI models (GPT-5.6 and later) reuse cached
+prefixes only at message boundaries, so a single combined user message would
+reuse only the system prompt (about 4K tokens) in later stages. A configured
+`dspy.JSONAdapter` is respected, and ChatAdapter parse failures fall back to the
+split JSON adapter.
+
 The shared response envelope contains all four Programme fields. Each stage fills
 only its own fields, using null metadata and empty lists for unused fields.
 Inactive results are rejected, and numerical classifications are cleaned before
