@@ -44,6 +44,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
+    "certifi>=2026.10.19",
     "clevercsv>=0.8.5",
     "destiny-sdk[labs]>=0.9.1",
     "diskcache>=5.6.3",
