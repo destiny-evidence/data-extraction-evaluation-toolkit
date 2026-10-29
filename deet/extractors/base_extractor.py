@@ -1,6 +1,7 @@
 """Base data extraction module to be extended with different extraction methods."""
 
 import json
+import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -38,6 +39,7 @@ from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import (
     DocumentSkippedError,
     LitellmModelNotMappedError,
+    RepeatedDocumentFailuresError,
     RunAbortingError,
 )
 from deet.settings import (
@@ -263,6 +265,51 @@ class DataExtractionConfig(BaseModel):
         return cls.model_validate(yaml.safe_load(path.read_text()))
 
 
+MAX_CONSECUTIVE_FAILURES = 10
+
+
+class _ConsecutiveFailures:
+    """
+    Count documents in a row that failed with the same unexpected error type.
+
+    Shared by the worker threads of one run. A success resets the count and a
+    different error type starts it again; known skips
+    (``DocumentSkippedError``) leave it unchanged so they cannot mask a setup
+    problem.
+    """
+
+    def __init__(self, limit: int = MAX_CONSECUTIVE_FAILURES) -> None:
+        self._limit = limit
+        self._count = 0
+        self._error_type: type[Exception] | None = None
+        self._lock = threading.Lock()
+
+    def reset(self) -> None:
+        with self._lock:
+            self._count = 0
+            self._error_type = None
+
+    def record(self, error: Exception) -> None:
+        """Count a failure and stop the run once ``limit`` in a row match."""
+        with self._lock:
+            if type(error) is self._error_type:
+                self._count += 1
+            else:
+                self._error_type = type(error)
+                self._count = 1
+            count = self._count
+        if count >= self._limit:
+            msg = (
+                f"{count} documents in a row failed with the same unexpected "
+                f"error, so the run was stopped. Last error: "
+                f"{type(error).__name__}: {error}\n\nThis usually means a setup "
+                "problem rather than bad documents. Check that the LLM endpoint "
+                "is reachable (e.g. that Ollama is running) and see the errors "
+                "logged above."
+            )
+            raise RepeatedDocumentFailuresError(msg) from error
+
+
 @dataclass(frozen=True)
 class _ProcessedDocument:
     """One document's extraction result plus the fields the batch loop reassembles."""
@@ -358,6 +405,7 @@ class BaseDataExtractor(ABC):
         filter_attribute_ids: list[int] | None,
         context_type: ContextType | None,
         parsing_by_doc: dict[str, DocumentParsingStats],
+        failures: _ConsecutiveFailures,
     ) -> tuple[int, _ProcessedDocument | None]:
         """
         Run one document through ``self.extract_from_document``.
@@ -367,6 +415,8 @@ class BaseDataExtractor(ABC):
 
         Catches per-document errors so one bad document doesn't crash the whole batch.
         A ``RunAbortingError`` is re-raised, since it would fail every document.
+        After ``MAX_CONSECUTIVE_FAILURES`` documents in a row fail with the same
+        unexpected error type, a ``RepeatedDocumentFailuresError`` stops the run.
 
         Args:
             index: Position of this document in the input list, echoed back in the
@@ -377,6 +427,7 @@ class BaseDataExtractor(ABC):
             filter_attribute_ids: Optional attribute IDs to filter by, or None.
             context_type: How to build ``document.context``
             parsing_by_doc: Per-document parsing stats keyed by document ID.
+            failures: The run's count of consecutive unexpected failures.
 
         Returns:
             `(index, result)`: `index` is echoed back unchanged so the caller
@@ -405,9 +456,12 @@ class BaseDataExtractor(ABC):
             logger.warning(f"Skipping {document.name}: {e}")
             return index, None
         except Exception as e:  # noqa: BLE001
-            logger.error(f"Failed to process {document.name}: {e}")
+            logger.error(f"Failed to process {document.name}: {type(e).__name__}: {e}")
             logger.debug("Error details", exc_info=True)
+            failures.record(e)
             return index, None
+
+        failures.reset()
 
         doc_id_str = str(document.safe_identity.document_id)
         parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
@@ -450,8 +504,10 @@ class BaseDataExtractor(ABC):
         are warned about, so that they do not crash a whole run.
         Failures that would affect every document
         (e.g. because of misconfigured llm settings)
-        stop the run with a ``RunAbortingError``. Documents finished before
-        the error are still written to ``output_file`` and ``prompt_outfile``.
+        stop the run with a ``RunAbortingError``, as do
+        ``MAX_CONSECUTIVE_FAILURES`` documents in a row failing with the same
+        unexpected error type. Documents finished before the error are still
+        written to ``output_file`` and ``prompt_outfile``.
 
 
         Args:
@@ -492,6 +548,7 @@ class BaseDataExtractor(ABC):
             filter_attribute_ids=filter_attribute_ids,
             context_type=context_type,
             parsing_by_doc=parsing_by_doc,
+            failures=_ConsecutiveFailures(),
         )
 
         # Collect into input order regardless of completion order.

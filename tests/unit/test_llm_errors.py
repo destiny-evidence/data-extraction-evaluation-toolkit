@@ -102,7 +102,7 @@ def test_translate_llm_error_provider_side_unsupported_param(code):
 
 def test_translate_llm_error_quota_exceeded():
     """A rate-limit error caused by an exhausted quota stops the run."""
-    # The message litellm 1.96.2 produces for OpenAI's ``insufficient_quota``
+    # The message litellm 1.102.1 produces for OpenAI's ``insufficient_quota``
     # 429; the error code itself is not kept.
     error = litellm.RateLimitError(
         message=(

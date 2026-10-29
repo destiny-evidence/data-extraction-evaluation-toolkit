@@ -30,9 +30,14 @@ from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunO
 from deet.exceptions import (
     ContextTooLongError,
     LLMQuotaExceededError,
+    RepeatedDocumentFailuresError,
     UnsupportedModelParamsError,
 )
-from deet.extractors.base_extractor import DataExtractionConfig, PromptConfig
+from deet.extractors.base_extractor import (
+    MAX_CONSECUTIVE_FAILURES,
+    DataExtractionConfig,
+    PromptConfig,
+)
 from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
 )
@@ -955,3 +960,144 @@ def test_extract_from_documents_saves_finished_documents_when_run_stops(
     saved = json.loads(output_file.read_text())
     assert len(saved["annotated_documents"]) == 1
     assert len(json.loads(prompt_outfile.read_text())) == 1
+
+
+def _abstract_documents(count: int) -> list[EppiDocument]:
+    return [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in range(1, count + 1)
+    ]
+
+
+def _connection_error() -> litellm.APIConnectionError:
+    return litellm.APIConnectionError(
+        message="Cannot connect to host localhost:11434",
+        model="llama3",
+        llm_provider="ollama",
+    )
+
+
+@pytest.mark.parametrize("max_workers", [1, 2])
+def test_extract_from_documents_stops_after_consecutive_unexpected_failures(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    max_workers,
+):
+    """The same unknown error failing every document stops the run."""
+    documents = _abstract_documents(3 * MAX_CONSECUTIVE_FAILURES)
+    llm_extractor.config.max_workers = max_workers
+    mock_litellm_completion.side_effect = _connection_error()
+
+    with pytest.raises(RepeatedDocumentFailuresError) as exc_info:
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert isinstance(exc_info.value.__cause__, litellm.APIConnectionError)
+    assert "APIConnectionError" in str(exc_info.value)
+    if max_workers == 1:
+        assert mock_litellm_completion.call_count == MAX_CONSECUTIVE_FAILURES
+    else:
+        assert mock_litellm_completion.call_count < len(documents)
+
+
+def test_extract_from_documents_success_resets_consecutive_failures(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """Failures separated by a success do not stop the run."""
+    error = _connection_error()
+    below_limit = [error] * (MAX_CONSECUTIVE_FAILURES - 1)
+    mock_litellm_completion.side_effect = [
+        *below_limit,
+        mock_litellm_completion.return_value,
+        *below_limit,
+    ]
+    documents = _abstract_documents(2 * len(below_limit) + 1)
+
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=documents,
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+
+    assert len(run_output.annotated_documents) == 1
+
+
+def test_extract_from_documents_known_skips_do_not_reset_consecutive_failures(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """A known skip between unexpected failures does not hide a setup problem."""
+    error = _connection_error()
+    content_filter_error = litellm.ContentPolicyViolationError(
+        message="The response was filtered.", model="gpt-4o", llm_provider="azure"
+    )
+    mock_litellm_completion.side_effect = [
+        error,
+        error,
+        content_filter_error,
+        *[error] * (MAX_CONSECUTIVE_FAILURES - 2),
+    ]
+
+    with pytest.raises(RepeatedDocumentFailuresError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=_abstract_documents(MAX_CONSECUTIVE_FAILURES + 2),
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert mock_litellm_completion.call_count == MAX_CONSECUTIVE_FAILURES + 1
+
+
+def test_extract_from_documents_different_unexpected_errors_do_not_stop_run(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """Alternating error types are not counted as the same repeated failure."""
+    mock_litellm_completion.side_effect = [
+        _connection_error() if i % 2 else KeyError("annotations")
+        for i in range(2 * MAX_CONSECUTIVE_FAILURES)
+    ]
+
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=_abstract_documents(2 * MAX_CONSECUTIVE_FAILURES),
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+
+    assert run_output.annotated_documents == []
+
+
+def test_extract_from_documents_logs_unexpected_error_type(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """The error type is logged, so errors with terse messages stay readable."""
+    mock_litellm_completion.side_effect = KeyError("annotations")
+
+    messages = []
+    logger_id = logger.add(messages.append, level="ERROR")
+    llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=_abstract_documents(1),
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert any(
+        "Failed to process Doc 1: KeyError: 'annotations'" in str(m) for m in messages
+    )

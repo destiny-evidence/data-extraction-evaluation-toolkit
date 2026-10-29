@@ -227,6 +227,15 @@ class LLMQuotaExceededError(RunAbortingError):
     """Raised when the provider account has run out of quota or credit."""
 
 
+class RepeatedDocumentFailuresError(RunAbortingError):
+    """
+    Raised when many documents in a row fail with the same unexpected error.
+
+    Catches setup problems the registry does not know about (e.g. Ollama not
+    running), which would otherwise fail every document one by one.
+    """
+
+
 class LLMContentFilterError(DocumentSkippedError):
     """Raised when the provider's content filter rejects a document."""
 
