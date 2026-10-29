@@ -183,10 +183,10 @@ def resolve_framework_config(
     if not isinstance(value, str) or not value.strip():
         msg = "Config key 'classification_framework_path' must be a non-empty string"
         raise TypeError(msg)
-    if config["study_type"] != "Programme":
+    if config["study_type"] not in {"Programme", "ProgrammeWithCaching"}:
         msg = (
             "'classification_framework_path' is supported only "
-            "for study_type 'Programme'"
+            "for study_type 'Programme' or 'ProgrammeWithCaching'"
         )
         raise ValueError(msg)
     path = Path(value)

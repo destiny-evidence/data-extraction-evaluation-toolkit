@@ -687,15 +687,16 @@ def test_framework_rejects_wrong_headers_and_missing_file(tmp_path):
 
 @pytest.mark.parametrize("dynamic", [False, True])
 @pytest.mark.parametrize("batch", [False, True])
+@pytest.mark.parametrize("study_type", ["Programme", "ProgrammeWithCaching"])
 def test_framework_config_reaches_single_and_batch_pipelines(
-    dynamic, batch, tmp_path, monkeypatch
+    dynamic, batch, study_type, tmp_path, monkeypatch
 ):
     framework_path = tmp_path / "framework.csv"
     framework_path.write_text(load_indicator_framework(), encoding="utf-8")
     report = tmp_path / "report.md"
     report.write_text("Evaluation report", encoding="utf-8")
     config = {
-        "study_type": "Programme",
+        "study_type": study_type,
         "llm_model": "test/model",
         "max_tokens": 1000,
         "dspy_cache": False,
@@ -737,7 +738,12 @@ def test_framework_config_reaches_single_and_batch_pipelines(
         else:
             module.run_dynamic_extraction_from_csv_schema(schema_path, config_path)
     else:
-        monkeypatch.setattr(module, "ProgrammeExtractionPipeline", FakePipeline)
+        pipeline_name = (
+            "ProgrammeWithCachingExtractionPipeline"
+            if study_type == "ProgrammeWithCaching"
+            else "ProgrammeExtractionPipeline"
+        )
+        monkeypatch.setattr(module, pipeline_name, FakePipeline)
         monkeypatch.setattr(module, "read_concatenade_mds", lambda _paths: "report")
         monkeypatch.setattr(module, "save_data", lambda **_kwargs: None)
         if batch:
