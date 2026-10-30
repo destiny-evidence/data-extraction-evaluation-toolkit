@@ -71,7 +71,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 name = "destiny-deet"
 readme = "README.md"
-requires-python = ">=3.12.11,<3.14"
+requires-python = ">=3.15.2,<3.16"
 version = "0.5.0-dev.4"
 
 [project.optional-dependencies]
