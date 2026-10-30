@@ -14,6 +14,39 @@
                 "github-actions"
             ],
             "pinDigests": true
+        },
+        {
+            "description": "Renovate doesn't know about our deliberate Python restrictions, e.g. Windows compatibility issues with binary dependencies like pillow. Only patch updates of .python-version are offered, and only through the Dependency Dashboard.",
+            "matchPackageNames": [
+                "python"
+            ],
+            "matchManagers": [
+                "pyenv"
+            ],
+            "matchUpdateTypes": [
+                "major",
+                "minor"
+            ],
+            "enabled": false
+        },
+        {
+            "matchPackageNames": [
+                "python"
+            ],
+            "matchManagers": [
+                "pyenv"
+            ],
+            "dependencyDashboardApproval": true
+        },
+        {
+            "description": "requires-python holds a hand-maintained exclusion list",
+            "matchPackageNames": [
+                "python"
+            ],
+            "matchManagers": [
+                "pep621"
+            ],
+            "enabled": false
         }
     ]
 }
