@@ -50,6 +50,10 @@ For each intervention, extract intended_results: its stated aims, targets and
 ideal outcomes, regardless of actual results. Distinguish aims from actual results
 and describe source-supported differences without calculating new values or
 inventing aims or explanations. State when an aim, result or comparison is absent.
+In source_grounding, include brief verbatim quotes supporting the intervention
+details and chapter, section and page locations where available. Leave it blank
+when no supporting source text is available; state 'location not reported' if
+no location is available. Never invent quotes or locations.
 """
 
 OUTCOME_EXTRACTION_INSTRUCTIONS = """
@@ -57,10 +61,14 @@ Extract every reported outcome using the previously identified programme
 characteristics and interventions. Preserve exact intervention names. Report only
 source-supported results.
 In results, preserve the reported findings for each specific outcome.
-In source_paragraph, provide brief verbatim quotes supporting each result
-and include document, section and page where available.
-Never invent quotes or locations. Intended results belong to interventions,
-not individual outcomes.
+In results_data_source, provide brief verbatim quotes supporting each result
+and include chapter, section and page where available. For baseline_data,
+barrier, enabler, lessons_learned, achievements and recommendation, provide the
+corresponding *_source field with a brief verbatim quote and chapter, section
+and page where available. Leave source fields blank when no supporting source
+text is available, and state 'location not reported' if no location is
+available. Never invent quotes or locations. Intended results belong to
+interventions, not individual outcomes.
 For SDG_categories, select all fitting SDGs based on the reported outcome evidence,
 even if the report does not explicitly name an SDG. Use only the exact labels
 listed in the SDG_categories field description, separated by semicolons without

@@ -47,6 +47,10 @@ def _programme() -> Programme:
             "Aim: all partners improve delivery capacity. "
             "Actual: 80% improved; the aim was not fully met."
         ),
+        source_grounding=(
+            '"The programme provided skills training for local partners" '
+            "(Chapter 2, Intervention Design, p. 8)."
+        ),
     )
     outcome = Quantitative_Outcome(
         name="Improved delivery capacity",
@@ -56,15 +60,39 @@ def _programme() -> Programme:
         SDG_categories="Partnerships for the goals",
         baseline_data="Before training, 20% had adequate capacity; partners lacked skills.",
         results="80% of partners improved delivery capacity",
-        source_paragraph=(
+        results_data_source=(
             'Quantitative: "80% of partners improved delivery capacity" '
-            "(Findings, p. 12)."
+            "(Chapter 3, Findings, p. 12)."
         ),
         barrier="Staff turnover",
+        barrier_source=(
+            '"Staff turnover limited the continuity of delivery" '
+            "(Chapter 4, Challenges, p. 18)."
+        ),
         enabler="Local ownership",
+        enabler_source=(
+            '"Local ownership helped sustain delivery" '
+            "(Chapter 4, Findings, p. 19)."
+        ),
         lessons_learned="Train multiple staff per partner",
+        lessons_learned_source=(
+            '"Training several staff in each partner organisation is important" '
+            "(Chapter 5, Lessons, p. 24)."
+        ),
         achievements="Delivery continued after handover",
+        achievements_source=(
+            '"Delivery continued after the handover" '
+            "(Chapter 3, Findings, p. 15)."
+        ),
         recommendation="Expand the training-of-trainers model",
+        recommendation_source=(
+            '"The training-of-trainers model should be expanded" '
+            "(Chapter 6, Recommendations, p. 30)."
+        ),
+        baseline_data_source=(
+            '"Before training, 20% had adequate capacity" '
+            "(Chapter 3, Baseline, p. 11)."
+        ),
     )
     return Programme(
         programme_characteristics=characteristics,
@@ -74,7 +102,10 @@ def _programme() -> Programme:
             **{
                 **outcome.model_dump(exclude={"outcome_type", "baseline_data"}),
                 "results": "Interviewed partners reported stronger delivery capacity",
-                "source_paragraph": '"Stronger delivery capacity" (Interviews, p. 13).',
+                "results_data_source": (
+                    '"Stronger delivery capacity" '
+                    "(Chapter 3, Interviews, p. 13)."
+                ),
             }
         )],
     )
@@ -107,14 +138,19 @@ def test_custom_programme_prompts_include_outcome_results(model):
         assert rows[field]["datatype"] == "str"
         assert rows[field]["prompt"] == model.model_fields[field].description
     for field in (
-        "source_paragraph", "SDG_categories",
+        "results_data_source", "barrier_source", "enabler_source",
+        "lessons_learned_source", "achievements_source",
+        "recommendation_source", "SDG_categories",
         "outcome_category_classification"
     ):
         assert rows[field]["datatype"] == "str"
         assert rows[field]["prompt"] == model.model_fields[field].description
     assert ("baseline_data" in rows) == (model is Quantitative_Outcome)
     if model is Quantitative_Outcome:
-        assert list(rows).index("baseline_data") + 1 == list(rows).index("results")
+        assert list(rows).index("baseline_data") + 2 == list(rows).index("results")
+        assert rows["baseline_data_source"]["prompt"] == (
+            model.model_fields["baseline_data_source"].description
+        )
     assert "intended_results" not in rows
     assert "sdg_belonging" not in rows
     assert "strategic_plan_belonging" not in rows
@@ -127,6 +163,9 @@ def test_custom_programme_prompts_include_outcome_results(model):
     }
     assert intervention_rows["intended_results"]["prompt"] == (
         Intervention.model_fields["intended_results"].description
+    )
+    assert intervention_rows["source_grounding"]["prompt"] == (
+        Intervention.model_fields["source_grounding"].description
     )
 
 
@@ -479,7 +518,8 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
     expected_headers = {
         "programme": ["countries", "responsible_author", "budget"],
         "interventions": [
-            "name", "description", "time_frame", "resources_used", "intended_results"
+            "name", "description", "time_frame", "resources_used",
+            "intended_results", "source_grounding",
         ],
         "outcomes": [
             "outcome_type",
@@ -488,14 +528,20 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
             "intervention_name",
             "unit_of_analysis",
             "SDG_categories",
-            "source_paragraph",
+            "results_data_source",
             "outcome_category_classification",
             "barrier",
+            "barrier_source",
             "enabler",
+            "enabler_source",
             "lessons_learned",
+            "lessons_learned_source",
             "achievements",
+            "achievements_source",
             "recommendation",
+            "recommendation_source",
             "baseline_data",
+            "baseline_data_source",
             "results",
         ],
     }
@@ -523,18 +569,28 @@ def test_export_programme_csv_writes_three_tables(tmp_path):
 def test_new_outcome_fields_are_backwards_compatible():
     data = _programme().quantitative_outcomes[0].model_dump()
     for field in (
-        "baseline_data", "source_paragraph", "SDG_categories",
-        "outcome_category_classification"
+        "baseline_data", "baseline_data_source", "results_data_source",
+        "barrier_source", "enabler_source", "lessons_learned_source",
+        "achievements_source", "recommendation_source", "SDG_categories",
+        "outcome_category_classification",
     ):
         del data[field]
     outcome = Quantitative_Outcome.model_validate(data)
     assert outcome.baseline_data == ""
-    assert outcome.source_paragraph == ""
+    for field in (
+        "baseline_data_source", "results_data_source", "barrier_source",
+        "enabler_source", "lessons_learned_source", "achievements_source",
+        "recommendation_source",
+    ):
+        assert getattr(outcome, field) == ""
     assert outcome.SDG_categories == ""
     assert outcome.outcome_category_classification == ""
     intervention_data = _programme().interventions[0].model_dump()
     del intervention_data["intended_results"]
-    assert Intervention.model_validate(intervention_data).intended_results == ""
+    del intervention_data["source_grounding"]
+    intervention = Intervention.model_validate(intervention_data)
+    assert intervention.intended_results == ""
+    assert intervention.source_grounding == ""
 
 
 @pytest.mark.parametrize(
@@ -553,7 +609,7 @@ def test_baseline_data_preserved_in_serialization(baseline):
     for row in (outcome.model_dump(), outcome.to_csv_row()):
         assert row["baseline_data"] == baseline
         fields = list(row)
-        assert fields.index("baseline_data") + 1 == (
+        assert fields.index("baseline_data") + 2 == (
             fields.index("results")
         )
 

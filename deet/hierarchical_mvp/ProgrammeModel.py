@@ -52,6 +52,17 @@ class Intervention(BaseModel):
             "not reported; do not invent ideal outcomes."
         ),
     )
+    source_grounding: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quotes supporting the reported details of this "
+            "intervention. Include the chapter name, section heading and page "
+            "number where available. Use only locations present in the supplied "
+            "text; never invent quotes or locations. Leave blank if no supporting "
+            "source text is available. State 'location not reported' if no "
+            "location is available."
+        ),
+    )
 
     @classmethod
     def csv_fieldnames(cls) -> list[str]:
@@ -86,15 +97,15 @@ class _OutcomeBase(BaseModel):
             + "; ".join(SDG_CATEGORIES)
         ),
     )
-    source_paragraph: str = Field(
+    results_data_source: str = Field(
         default="",
         description=(
             "Brief verbatim quotes supporting the results for this specific "
-            "outcome. Include a separate quote and its document name, "
-            "section heading and page number for each distinct result where "
-            "available. Use only locations present in the supplied text; never "
-            "invent page numbers or quotes. State 'location not reported' when "
-            "no location is available. Do not invent supporting evidence."
+            "outcome. Include the chapter name, section heading and page number "
+            "where available. Use only locations present in the supplied text; "
+            "never invent page numbers, chapter or section names, or quotes. "
+            "Leave blank if no supporting source text is available. State "
+            "'location not reported' if no location is available."
         )
     )
     outcome_category_classification: str = Field(
@@ -117,17 +128,65 @@ class _OutcomeBase(BaseModel):
     barrier: str = Field(
         description="Barriers or constraints affecting achievement of this outcome. Leave blank if not reported."
     )
+    barrier_source: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quote supporting this barrier. Include the chapter "
+            "name, section heading and page number where available. Do not invent "
+            "quotes or locations; leave blank if no supporting source text is "
+            "available. State 'location not reported' if no location is available."
+        ),
+    )
     enabler: str = Field(
         description="Enablers or facilitating factors supporting achievement of this outcome. Leave blank if not reported."
+    )
+    enabler_source: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quote supporting this enabler. Include the chapter "
+            "name, section heading and page number where available. Do not invent "
+            "quotes or locations; leave blank if no supporting source text is "
+            "available. State 'location not reported' if no location is available."
+        ),
     )
     lessons_learned: str = Field(
         description="Lessons learned in relation to this outcome, reported without extrapolation."
     )
+    lessons_learned_source: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quote supporting this lesson learned. Include the "
+            "chapter name, section heading and page number where available. Do "
+            "not invent quotes or locations; leave blank if no supporting source "
+            "text is available. State 'location not reported' if no location is "
+            "available."
+        ),
+    )
     achievements: str = Field(
         description="Achievements associated with this outcome, including reported progress or successes."
     )
+    achievements_source: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quote supporting this achievement. Include the "
+            "chapter name, section heading and page number where available. Do "
+            "not invent quotes or locations; leave blank if no supporting source "
+            "text is available. State 'location not reported' if no location is "
+            "available."
+        ),
+    )
     recommendation: str = Field(
         description="Recommendation associated with this outcome. Report it as stated and leave blank if none is reported."
+    )
+    recommendation_source: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quote supporting this recommendation. Include the "
+            "chapter name, section heading and page number where available. Do "
+            "not invent quotes or locations; leave blank if no supporting source "
+            "text is available. State 'location not reported' if no location is "
+            "available."
+        ),
     )
 
     @classmethod
@@ -154,6 +213,16 @@ class Quantitative_Outcome(_OutcomeBase):
             "conditions where reported. Do not confuse targets or post-intervention "
             "results with baseline data, calculate baseline values, or infer "
             "baseline conditions from later changes. Assign 'NR' if not reported."
+        ),
+    )
+    baseline_data_source: str = Field(
+        default="",
+        description=(
+            "Brief verbatim quote supporting this baseline data. Include the "
+            "chapter name, section heading and page number where available. Do "
+            "not invent quotes or locations; leave blank if no supporting source "
+            "text is available. State 'location not reported' if no location is "
+            "available."
         ),
     )
     results: str = Field(
