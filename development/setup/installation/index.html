@@ -1586,26 +1586,22 @@
 <h1 id="installation">Installation</h1>
 <p>This page shows different ways to install <code>deet</code> across platforms and use-cases</p>
 <h2 id="quick-install-windows">Quick install (Windows)</h2>
-<p>Windows users can install <code>deet</code> and everything it needs - <a href="https://git-scm.com/">git</a>,
-<a href="https://docs.astral.sh/uv/">uv</a>, <a href="https://pandoc.org/">pandoc</a>, and <code>deet</code> itself - with a single
-command. Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:</p>
+<p>Windows users can install <code>deet</code> with a single command.
+The installer sets up <a href="https://docs.astral.sh/uv/">uv</a> if it is missing or too old, then installs <code>deet</code> from PyPI.
+Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">irm </span><span class="n">https</span><span class="p">://</span><span class="n">raw</span><span class="p">.</span><span class="n">githubusercontent</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">destiny-evidence</span><span class="p">/</span><span class="n">data-extraction-evaluation-toolkit</span><span class="p">/</span><span class="n">development</span><span class="p">/</span><span class="n">install</span><span class="p">.</span><span class="n">ps1</span> <span class="p">|</span> <span class="nb">iex</span>
 </code></pre></div>
-<p>This should install deet, and all its dependencies (unless you already have them). When it finishes, run <code>deet --help</code> to check.</p>
+<p>When it finishes, run <code>deet --help</code> to check.</p>
 <p>It is a plain PowerShell script — you can
 <a href="https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/development/install.ps1">read it first</a>
 before piping it to <code>iex</code>.</p>
+<p>The installer does not install <a href="#installing-pandoc">pandoc</a>, which is only needed to work with full-text PDFs.</p>
 <details class="note">
-<summary>Options (branch, skipping pandoc, forcing a reinstall)</summary>
-<p>To install from a specific branch or tag — for a feature that is not yet released — fetch the
-script first so it can take arguments:</p>
-<div class="highlight"><pre><span></span><code><span class="p">&amp;</span> <span class="p">(</span><span class="no">[scriptblock]</span><span class="p">::</span><span class="n">Create</span><span class="p">((</span><span class="nb">irm </span><span class="n">https</span><span class="p">://</span><span class="n">raw</span><span class="p">.</span><span class="n">githubusercontent</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">destiny-evidence</span><span class="p">/</span><span class="n">data-extraction-evaluation-toolkit</span><span class="p">/</span><span class="n">development</span><span class="p">/</span><span class="n">install</span><span class="p">.</span><span class="n">ps1</span><span class="p">)))</span> <span class="n">-Ref</span> <span class="n">development</span>
+<summary>Options (forcing a reinstall)</summary>
+<p>To reinstall <code>deet</code> even if it is already present, for example to upgrade, fetch the script first so it can take arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="p">&amp;</span> <span class="p">(</span><span class="no">[scriptblock]</span><span class="p">::</span><span class="n">Create</span><span class="p">((</span><span class="nb">irm </span><span class="n">https</span><span class="p">://</span><span class="n">raw</span><span class="p">.</span><span class="n">githubusercontent</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">destiny-evidence</span><span class="p">/</span><span class="n">data-extraction-evaluation-toolkit</span><span class="p">/</span><span class="n">development</span><span class="p">/</span><span class="n">install</span><span class="p">.</span><span class="n">ps1</span><span class="p">)))</span> <span class="n">-Force</span>
 </code></pre></div>
-<p>Other flags:</p>
-<ul>
-<li><code>-SkipPandoc</code> — skip pandoc, if you only work with abstracts or pre-processed markdown.</li>
-<li><code>-Force</code> — reinstall <code>deet</code> even if it is already present (use this to upgrade).</li>
-</ul>
+<p>To install a branch or a feature that is not yet released, follow <a href="#installing-from-a-specific-branch">Installing from a specific branch</a>.</p>
 </details>
 <p>If you would rather install each piece yourself — or you are on macOS or Linux — follow the manual
 steps below.</p>
@@ -1778,9 +1774,14 @@ This is a test of *pandoc*.
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Updating uv</p>
-<p>Deet requires at least version <code>0.9.8</code> of uv.</p>
-<p>Check your current uv version by running <code>uv --version</code>.</p>
-<p>Update uv by running <code>uv self</code></p>
+<p>Deet requires a recent version of uv, and uv will refuse to run in the repository if it is too old.
+Older versions bundle outdated certificate authority lists, which matters for the security of package downloads.</p>
+<p>Update uv before installing deet.
+If you installed uv with the standalone installer, run <code>uv self update</code>.
+If you installed it with a package manager, update it there, for example <code>scoop update uv</code>.</p>
+<p>Python also needs to be recent.
+Run <code>uv python upgrade</code> to update the Python versions that uv manages.
+Existing environments keep the Python they were created with, so reinstall an existing CLI installation with <code>uv tool install --reinstall destiny-deet</code>.</p>
 </div>
 <p>Now you have the basics set up, continue to <a href="#cli-users">CLI users</a> if you want to use the CLI, or <a href="#package-users">package users</a> if you want to use deet as a package, or to <a href="#contributors">contributors</a> if you want to contribute to <code>deet</code>.</p>
 <h2 id="installing-git">Installing git</h2>
