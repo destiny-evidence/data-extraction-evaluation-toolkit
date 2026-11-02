@@ -69,18 +69,21 @@ def _write_tables(
     study_name: str | None = None,
     *,
     single_statistics: bool = False,
+    file_label: str = "",
 ) -> None:
     """
     Write named tables as individual CSV files and/or as sheets in one xlsx workbook.
 
     When `study_name` is given, it is inserted into every output filename (used for
     flat/batch output layouts where files aren't nested under a per-study directory).
+    When `file_label` is given, it is inserted instead of `study_name`, and the xlsx
+    workbook is prefixed 'extracted' rather than 'study'.
     """
     tables = {
         name: expand_statistics_columns(fieldnames, rows, single=single_statistics)
         for name, (fieldnames, rows) in tables.items()
     }
-    name_infix = f"_{study_name}" if study_name else ""
+    name_infix = f"_{file_label or study_name}" if (file_label or study_name) else ""
     if write_csv:
         for name, (fieldnames, rows) in tables.items():
             path = csv_dir / f"{name}{name_infix}_{timestamp}{suffix}.csv"
@@ -112,7 +115,8 @@ def _write_tables(
                     name="TableStyleMedium2", showRowStripes=True
                 )
                 sheet.add_table(excel_table)
-        xlsx_path = csv_dir / f"study{name_infix}_{timestamp}{suffix}.xlsx"
+        xlsx_prefix = "extracted" if file_label else "study"
+        xlsx_path = csv_dir / f"{xlsx_prefix}{name_infix}_{timestamp}{suffix}.xlsx"
         workbook.save(xlsx_path)
         logger.info(f"XLSX workbook saved to {xlsx_path}")
 
@@ -546,6 +550,7 @@ def export_behavioural_intervention_csv(
     write_xlsx: bool = False,
     flat_output: bool = False,
     external_id: str = "",
+    file_label: str = "",
 ) -> None:
     """
     Write three tables (study, interventions, effects) for a
@@ -554,6 +559,9 @@ def export_behavioural_intervention_csv(
     `predictions_dir` (with `study_name` in each filename) when `flat_output`
     is True. The tables are joined by the `study` (and `arm`) columns. `external_id`
     (the review's study ID, if known) is written as a column in every table.
+    `file_label`, if given, replaces `study_name` in the filenames of flat output only
+    (the xlsx is then named 'extracted_<file_label>_...'); the `study` column still
+    carries `study_name`.
     """
     csv_dir = predictions_dir if flat_output else predictions_dir / study_name
     csv_dir.mkdir(parents=True, exist_ok=True)
@@ -585,4 +593,5 @@ def export_behavioural_intervention_csv(
         write_csv,
         write_xlsx,
         study_name=study_name if flat_output else None,
+        file_label=file_label if flat_output else "",
     )

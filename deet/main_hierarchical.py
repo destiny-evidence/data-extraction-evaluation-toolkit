@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 from datetime import datetime
@@ -95,6 +96,17 @@ EXAMPLE_BATCH_CONFIG_JSON = """{
     \"export_xlsx\": false,
     \"export_json\": false
 }"""
+EXAMPLE_SELECTED_BATCH_CONFIG_JSON = """{
+    \"study_type\": \"BehaviouralIntervention\",
+    \"llm_model\": \"azure/gpt-5.2\",
+    \"max_tokens\": 30000,
+    \"dspy_cache\": false,
+    \"input_csv\": \"misc/hierarchical_mvp/input/selected_studies.csv\",
+    \"output_parent_dir\": \"misc/hierarchical_mvp/output/selected\",
+    \"export_csv\": false,
+    \"export_xlsx\": true,
+    \"export_json\": false
+}"""
 
 
 # ---------------------------------------------------------------------------
@@ -146,6 +158,22 @@ def parse_args() -> argparse.Namespace:
             "Path to JSON config with study_type, input_folder, output_parent_dir, "
             "max_tokens, and dspy_cache. Same shape as the single-study config, but "
             "'input_paths' is replaced with a single 'input_folder' path."
+        ),
+    )
+
+    selected_batch_parser = subparsers.add_parser(
+        "predict_selected_batch",
+        help="Run hierarchical extraction for the markdown files listed in a CSV.",
+    )
+    selected_batch_parser.add_argument(
+        "batch_config_path",
+        nargs="?",
+        default=DEFAULT_BATCH_CONFIG_FILENAME,
+        help=(
+            "Path to JSON config with study_type, input_csv, output_parent_dir, "
+            "max_tokens, and dspy_cache. Same shape as the batch config, but "
+            "'input_folder' is replaced with 'input_csv', a CSV with the columns "
+            "'md_file_path' and 'external_ID'."
         ),
     )
 
@@ -234,14 +262,21 @@ def load_config(config_path: Path) -> dict[str, Any]:
     return config
 
 
-def load_batch_config(config_path: Path) -> dict[str, Any]:
-    """Load and validate batch hierarchical extraction configuration from JSON."""
+def load_batch_config(
+    config_path: Path, input_key: str = "input_folder"
+) -> dict[str, Any]:
+    """
+    Load and validate batch hierarchical extraction configuration from JSON.
+
+    `input_key` names the config key holding the batch input path: 'input_folder' for
+    `predict_batch`, 'input_csv' for `predict_selected_batch`.
+    """
     config = json.loads(config_path.read_text(encoding="utf-8"))
 
     required_keys = {
         "study_type",
         "llm_model",
-        "input_folder",
+        input_key,
         "output_parent_dir",
         "max_tokens",
         "dspy_cache",
@@ -251,8 +286,8 @@ def load_batch_config(config_path: Path) -> dict[str, Any]:
         missing_sorted = ", ".join(sorted(missing))
         raise ValueError(f"Config file is missing required key(s): {missing_sorted}")
 
-    if not isinstance(config["input_folder"], str):
-        raise TypeError("Config key 'input_folder' must be a string.")
+    if not isinstance(config[input_key], str):
+        raise TypeError(f"Config key '{input_key}' must be a string.")
 
     _validate_common_config(config)
     framework_path = resolve_framework_config(config, config_path)
@@ -295,6 +330,18 @@ def validate_create_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     return str(input_folder), str(output_dir)
+
+
+def validate_create_selected_batch_paths(config: dict[str, Any]) -> tuple[str, str]:
+    """Validate the selection CSV exists and create output directory if needed."""
+    input_csv = resolve_path(config["input_csv"])
+    if not input_csv.is_file():
+        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
+
+    output_dir = resolve_path(config["output_parent_dir"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    return str(input_csv), str(output_dir)
 
 
 def extract(
@@ -340,6 +387,7 @@ def save_data(
     export_json_file: bool = False,
     flat_output: bool = False,
     external_id: str = "",
+    file_label: str = "",
 ) -> None:
     """
     Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested.
@@ -349,6 +397,9 @@ def save_data(
     instead of nested under `output_parent_dir/<study_name>/`.
 
     `external_id` is written as a column by the BehaviouralIntervention exporter only.
+    `file_label` replaces the study name in flat CSV/XLSX filenames, and the xlsx is then
+    named 'extracted_<file_label>_...' (BehaviouralIntervention exporter only); the study
+    name is still used inside the tables.
     """
     output_dir = Path(output_parent_dir)
 
@@ -391,6 +442,11 @@ def save_data(
             exporter_kwargs["external_id"] = external_id
         else:
             logger.warning(f"external_id is not supported for '{study_type}'; ignored.")
+    if file_label:
+        if base_type == "BehaviouralIntervention":
+            exporter_kwargs["file_label"] = file_label
+        else:
+            logger.warning(f"file_label is not supported for '{study_type}'; ignored.")
     exporters[base_type](
         study,
         study_name,
@@ -545,6 +601,91 @@ def run_predict_batch(batch_config_arg_path: str) -> None:
             continue
 
 
+def run_predict_selected_batch(batch_config_arg_path: str) -> None:
+    """
+    CLI handler: run hierarchical extraction for the markdown files listed in a CSV.
+
+    The CSV needs the columns 'md_file_path' and 'external_ID'. The xlsx is saved as
+    'extracted_documentID_<external_ID zero-padded to 3 digits>_<timestamp>_<model>.xlsx'
+    (the `study` column in the tables still carries the md file stem).
+    """
+    config_arg = Path(batch_config_arg_path)
+    config_path = config_arg if config_arg.is_absolute() else Path.cwd() / config_arg
+
+    try:
+        config = load_batch_config(config_path, input_key="input_csv")
+    except FileNotFoundError as exc:
+        logger.error(f"Batch config file not found: {config_path}")
+        logger.info("Example selected batch config content:")
+        logger.info(EXAMPLE_SELECTED_BATCH_CONFIG_JSON)
+        raise SystemExit(1) from exc
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        logger.error(f"Could not load batch config from {config_path}: {exc}")
+        logger.info("Example selected batch config content:")
+        logger.info(EXAMPLE_SELECTED_BATCH_CONFIG_JSON)
+        raise SystemExit(1) from exc
+
+    input_csv, output_parent_dir = validate_create_selected_batch_paths(config)
+
+    with Path(input_csv).open(newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        missing_columns = {"md_file_path", "external_ID"}.difference(
+            reader.fieldnames or []
+        )
+        if missing_columns:
+            missing_sorted = ", ".join(sorted(missing_columns))
+            logger.error(f"Input CSV is missing required column(s): {missing_sorted}")
+            raise SystemExit(1)
+        rows = list(reader)
+    if not rows:
+        logger.warning(f"No rows found in {input_csv}.")
+        return
+
+    load_dotenv()
+    model_suffix = config["llm_model"].rsplit("/", 1)[-1]
+    configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
+
+    logger.info(f"Found {len(rows)} selected study row(s) to process in {input_csv}.")
+    extraction_options = {}
+    if "classification_framework_path" in config:
+        extraction_options["classification_framework_path"] = Path(
+            config["classification_framework_path"]
+        )
+    for row in rows:
+        external_id = row["external_ID"].strip()
+        md_path = resolve_path(row["md_file_path"].strip())
+        logger.info(f"--- Processing {md_path.name} (external_ID {external_id}) ---")
+        try:
+            if not external_id.isdigit():
+                raise ValueError(
+                    f"external_ID must be a non-negative integer, got '{external_id}'."
+                )
+            if not md_path.is_file():
+                raise FileNotFoundError(f"Markdown file not found: {md_path}")
+            context = read_concatenade_mds([str(md_path)])
+            study = extract(
+                context=context, study_type=config["study_type"], **extraction_options
+            )
+            save_data(
+                study=study,
+                input_paths=[str(md_path)],
+                output_parent_dir=output_parent_dir,
+                study_type=config["study_type"],
+                model_suffix=model_suffix,
+                export_csv_files=config["export_csv"],
+                export_xlsx_file=config["export_xlsx"],
+                export_json_file=config["export_json"],
+                flat_output=True,
+                external_id=external_id,
+                file_label=f"documentID_{int(external_id):03d}",
+            )
+        except Exception:
+            logger.exception(
+                f"Failed to process {md_path.name}, continuing with remaining files."
+            )
+            continue
+
+
 def main() -> None:
     """CLI entrypoint for the hierarchical extraction CLI."""
     setup_console_logging()
@@ -557,6 +698,8 @@ def main() -> None:
             run_predict_single_study(args.config_path)
         case "predict_batch":
             run_predict_batch(args.batch_config_path)
+        case "predict_selected_batch":
+            run_predict_selected_batch(args.batch_config_path)
 
 
 if __name__ == "__main__":
