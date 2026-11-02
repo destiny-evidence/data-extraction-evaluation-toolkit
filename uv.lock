@@ -19,6 +19,7 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P5D"
 
 [manifest]
+constraints = [{ name = "virtualenv", specifier = ">=21.14.12" }]
 excludes = [
     { package = { name = "fastembed" }, dependencies = ["pillow"] },
     "ecdsa",
@@ -722,7 +723,6 @@ dev = [
     { name = "pytest-recording" },
     { name = "python-semantic-release" },
     { name = "ruff" },
-    { name = "virtualenv" },
 ]
 docs = [
     { name = "griffe-pydantic" },
@@ -778,7 +778,6 @@ dev = [
     { name = "pytest-recording", specifier = ">=0.13.4" },
     { name = "python-semantic-release", specifier = ">=10.6.1" },
     { name = "ruff", specifier = ">=0.12.11" },
-    { name = "virtualenv", specifier = ">=21.14.12" },
 ]
 docs = [
     { name = "griffe-pydantic", specifier = ">=1.3.1" },
