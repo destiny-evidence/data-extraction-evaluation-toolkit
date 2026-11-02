@@ -187,8 +187,21 @@ def test_native_response_schema_is_identical_for_all_passes(pipeline):
     }
 
 
+@pytest.mark.parametrize(
+    ("model", "has_breakpoint"),
+    [
+        ("openai/gpt-4.1", True),
+        ("gpt-6.1-sol", True),
+        ("azure/gpt-6.1-sol", True),
+        ("gpt-5.6", True),
+        ("gpt-5.5", False),
+        ("azure/gpt-4.1", False),
+        ("gpt-4o", False),
+        ("anthropic/claude-sonnet-4-5", False),
+    ],
+)
 def test_openai_request_shapes_and_stage_logs_with_custom_framework(
-    pipeline, programme, tmp_path
+    pipeline, programme, tmp_path, model, has_breakpoint
 ):
     framework = (
         "category_id,category_group,category_statement,inclusion_criteria,"
@@ -219,7 +232,7 @@ def test_openai_request_shapes_and_stage_logs_with_custom_framework(
         )
         for answer in answers
     ]
-    lm = dspy.LM("openai/gpt-4.1", cache=False)
+    lm = dspy.LM(model, cache=False)
     with (
         dspy.context(lm=lm, adapter=dspy.JSONAdapter()),
         patch.object(lm, "forward", side_effect=responses) as forward,
@@ -239,14 +252,18 @@ def test_openai_request_shapes_and_stage_logs_with_custom_framework(
         == (requests[2]["messages"][:2])
     )
     shared_parts = requests[0]["messages"][1]["content"]
-    assert shared_parts == [
-        {
-            "type": "text",
-            "text": shared_parts[0]["text"],
-            "prompt_cache_breakpoint": {"mode": "explicit"},
-        }
-    ]
-    shared = shared_parts[0]["text"]
+    if has_breakpoint:
+        assert shared_parts == [
+            {
+                "type": "text",
+                "text": shared_parts[0]["text"],
+                "prompt_cache_breakpoint": {"mode": "explicit"},
+            }
+        ]
+        shared = shared_parts[0]["text"]
+    else:
+        assert isinstance(shared_parts, str)
+        shared = shared_parts
     assert "ORIGINAL_REPORT" in shared
     assert framework.strip() in shared
     assert all(len(request["messages"]) == 3 for request in requests)

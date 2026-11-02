@@ -637,9 +637,9 @@ removed with logged and printed warnings rather than failing extraction. Valid
 entries retain their order; if none remain, the field is blank. This checks label
 validity, not semantic accuracy. Malformed framework files still raise errors.
 
-#### Opt-in OpenAI prompt caching
+#### Opt-in OpenAI and Azure prompt caching
 
-Set `"study_type": "ProgrammeWithCaching"` and use an `openai/` model to
+Set `"study_type": "ProgrammeWithCaching"` and use an OpenAI or Azure GPT model to
 select the separate cache-friendly pipeline. The original `"Programme"` pipeline
 and models are unchanged. Both predefined and custom CSV-schema extraction support
 this option, using the same Programme prompt CSV fields, classification framework,
@@ -655,8 +655,12 @@ report as well.
 
 The pipeline uses its own DSPy adapters that send the report and classification
 framework as one user message, then the stage selector and previous extraction
-as a final user message. For `openai/` models, the shared message carries an
-explicit `prompt_cache_breakpoint`. On GPT-5.6 and later, implicit caching only
+as a final user message. For `openai/` models and recognised Azure GPT-5.6+
+model names (for example `gpt-6.1-sol` or `azure/gpt-6.1-sol`), the shared message
+carries an explicit `prompt_cache_breakpoint`. Older Azure GPT models and custom
+deployment aliases that do not identify the model family receive plain text
+without a breakpoint. Azure explicit breakpoints require a Standard pay-as-you-go
+deployment; PTU-M deployments do not support them. On GPT-5.6 and later, implicit caching only
 writes a cache entry at the end of the latest message, which differs between
 stages, so without the breakpoint later stages reuse only the system prompt
 (about 4K tokens). Other providers receive plain text messages. A configured
@@ -679,6 +683,8 @@ No live cache hit is guaranteed by prompt layout alone. With `dspy_cache` disabl
 inspect `cached_input_tokens` in the existing extraction usage logs to verify
 provider reuse on your deployment. See OpenAI's
 [prompt caching guide](https://developers.openai.com/api/docs/guides/prompt-caching).
+For Azure deployment support and restrictions, see the
+[Azure prompt caching guide](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching).
 
 Classification may infer a match from reported evidence using the scope rules.
 

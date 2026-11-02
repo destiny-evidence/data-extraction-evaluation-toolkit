@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import re
 from types import GenericAlias
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -125,7 +126,13 @@ class ProgrammeWithCachingChatAdapter(_SplitStageInputsMixin, dspy.ChatAdapter):
 def _cache_friendly_adapter() -> dspy.ChatAdapter:
     """Keep a configured JSON adapter choice while splitting stage inputs."""
     lm = dspy.settings.lm
-    cache_breakpoint = str(getattr(lm, "model", "")).startswith("openai/")
+    model = str(getattr(lm, "model", ""))
+    # Bare GPT names use Azure credentials in configure_lm. Older Azure GPT
+    # models reject explicit breakpoints and must retain automatic caching.
+    azure_gpt = re.fullmatch(r"(?:azure/)?gpt-(\d+)(?:\.(\d+))?(?:-.*)?", model)
+    cache_breakpoint = model.startswith("openai/") or (
+        azure_gpt is not None and (int(azure_gpt[1]), int(azure_gpt[2] or 0)) >= (5, 6)
+    )
     if isinstance(dspy.settings.adapter, dspy.JSONAdapter):
         return ProgrammeWithCachingJSONAdapter(cache_breakpoint=cache_breakpoint)
     return ProgrammeWithCachingChatAdapter(cache_breakpoint=cache_breakpoint)
