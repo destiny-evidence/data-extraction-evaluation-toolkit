@@ -37,6 +37,7 @@
                 "pyenv"
             ],
             "dependencyDashboardApproval": true
+            "separateMinorPatch": true
         },
         {
             "description": "requires-python holds a hand-maintained exclusion list",
