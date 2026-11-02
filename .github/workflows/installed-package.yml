@@ -22,10 +22,14 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Read the pinned Python version
+        id: python
+        run: echo "version=$(tr -d '[:space:]' < .python-version)" >> "$GITHUB_OUTPUT"
+
       - name: Install uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.12.21"
+          resolution-strategy: "lowest"
 
       - name: Build both distributions
         # The release builds both, and package-data reaching the sdist is
@@ -57,7 +61,7 @@ jobs:
           for artifact in "$GITHUB_WORKSPACE"/dist/*; do
             name=$(basename "$artifact")
             echo "::group::$name"
-            uv venv "/tmp/venv-$name" --python 3.12.11
+            uv venv "/tmp/venv-$name" --python "${{ steps.python.outputs.version }}"
             uv pip install --python "/tmp/venv-$name/bin/python" "$artifact"
             "/tmp/venv-$name/bin/python" /tmp/probe.py
             "/tmp/venv-$name/bin/deet" --version

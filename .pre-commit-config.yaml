@@ -1,5 +1,8 @@
 exclude: ^tests/integration/datasets/
 
+default_language_version:
+  node: lts
+
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: 91ab4bf57e58b32adf1a122681f6ebe164d081c8 # v4.4.0
