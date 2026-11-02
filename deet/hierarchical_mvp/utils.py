@@ -23,6 +23,7 @@ from deet.logger import logger
 from .AnimalRCTmodel import AssessmentIntervention as AnimalAssessmentIntervention
 from .AnimalRCTmodel import InductionIntervention as AnimalInductionIntervention
 from .AnimalRCTmodel import Study as AnimalStudy
+from .BehaviouralInterventionModel import Study as BehaviouralInterventionStudy
 from .ClimateCarbonPricingmodel import Intervention as ClimateCarbonPricingIntervention
 from .ClimateCarbonPricingmodel import Study as ClimateCarbonPricingStudy
 from .CochraneRCTmodel import Intervention as CochraneIntervention
@@ -123,7 +124,8 @@ def get_api_base_for_model(model: str) -> str:
         if model.startswith("anthropic/")
         else "AZURE_API_BASE"
     )
-    api_base = os.environ.get(api_base_env_var)
+    # CHANGED BY LENNART J 28/10
+    api_base = os.environ.get(api_base_env_var).removesuffix("/openai/v1")
     if not api_base:
         message = (
             f"{api_base_env_var} is not set. "
@@ -164,6 +166,7 @@ def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
         lm_kwargs["api_key"] = api_key
         lm_kwargs["api_base"] = get_api_base_for_model(model)
 
+    print("model:", lm_kwargs["model"], "api_base:", lm_kwargs["api_base"])
     lm = dspy.LM(**lm_kwargs)
     model_family = model.rsplit("/", 1)[-1].lower()
     if model_family == "gpt-6" or model_family.startswith(("gpt-6-", "gpt-6.")):
@@ -520,6 +523,58 @@ def export_programme_csv(
             [item.to_csv_row() for item in (
                 *programme.quantitative_outcomes, *programme.qualitative_outcomes
             )],
+        ),
+    }
+    _write_tables(
+        tables,
+        csv_dir,
+        timestamp,
+        suffix,
+        write_csv,
+        write_xlsx,
+        study_name=study_name if flat_output else None,
+    )
+
+
+def export_behavioural_intervention_csv(
+    study: BehaviouralInterventionStudy,
+    study_name: str,
+    predictions_dir: Path,
+    timestamp: str,
+    model_suffix: str = "",
+    write_csv: bool = True,
+    write_xlsx: bool = False,
+    flat_output: bool = False,
+    external_id: str = "",
+) -> None:
+    """
+    Write three tables (study, interventions, effects) for a
+    BehaviouralIntervention extraction as timestamped CSV files and/or as sheets
+    of a single xlsx workbook into predictions/<study_name>/, or directly into
+    `predictions_dir` (with `study_name` in each filename) when `flat_output`
+    is True. The tables are joined by the `study` (and `arm`) columns. `external_id`
+    (the review's study ID, if known) is written as a column in every table.
+    """
+    csv_dir = predictions_dir if flat_output else predictions_dir / study_name
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{model_suffix}" if model_suffix else ""
+
+    tables = {
+        "study": (
+            BehaviouralInterventionStudy.csv_fieldnames(),
+            [study.to_csv_row(study_id=study_name, external_id=external_id)],
+        ),
+        "interventions": (
+            BehaviouralInterventionStudy.intervention_csv_fieldnames(),
+            study.intervention_csv_rows(
+                study_id=study_name, external_id=external_id
+            ),
+        ),
+        "effects": (
+            BehaviouralInterventionStudy.outcome_csv_fieldnames(),
+            study.outcome_csv_rows(
+                study_id=study_name, external_id=external_id
+            ),
         ),
     }
     _write_tables(

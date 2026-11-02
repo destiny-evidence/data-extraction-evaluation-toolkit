@@ -15,6 +15,7 @@ from deet.hierarchical_mvp.AnimalRCTextraction import AnimalRCTExtractionPipelin
 from deet.hierarchical_mvp.AnimalRCTextraction_pairwise import (
     AnimalRCTExtractionPipeline as AnimalRCTExtractionPipeline_pairwise,
 )
+from deet.hierarchical_mvp.BehaviouralInterventionExtraction import BehaviouralInterventionExtractionPipeline
 from deet.hierarchical_mvp.ClimateCarbonPricingextraction import (
     ClimateCarbonPricingExtractionPipeline,
 )
@@ -36,6 +37,7 @@ from deet.hierarchical_mvp.RCTextraction_pairwise import (
 from deet.hierarchical_mvp.utils import (
     configure_lm,
     export_animal_csv,
+    export_behavioural_intervention_csv,
     export_climate_carbon_pricing_csv,
     export_cochrane_csv,
     export_csv,
@@ -191,6 +193,11 @@ def _validate_common_config(config: dict[str, Any]) -> None:
         if not isinstance(config[export_key], bool):
             raise TypeError(f"Config key '{export_key}' must be a boolean.")
 
+    # Optional ID of the study in the review; only used by the BehaviouralIntervention export.
+    config.setdefault("external_id", "")
+    if not isinstance(config["external_id"], str):
+        raise TypeError("Config key 'external_id' must be a string.")
+
 
 def load_config(config_path: Path) -> dict[str, Any]:
     """Load and validate hierarchical extraction configuration from JSON."""
@@ -311,11 +318,14 @@ def extract(
                 classification_framework_path=classification_framework_path
             )
             return pipeline(context=context)
+        case "BehaviouralIntervention":
+            pipeline = BehaviouralInterventionExtractionPipeline()
+            return pipeline(context=context)
         case _:
             raise ValueError(
                 f"Unsupported study_type '{study_type}'. Supported: "
                 f"{', '.join(RCT_PIPELINES)}, PrognosticStudy, "
-                "ClimateCarbonPricing, Programme"
+                "ClimateCarbonPricing, Programme, BehaviouralIntervention"
             )
 
 
@@ -329,6 +339,7 @@ def save_data(
     export_xlsx_file: bool = False,
     export_json_file: bool = False,
     flat_output: bool = False,
+    external_id: str = "",
 ) -> None:
     """
     Persist extracted study payload to JSON, CSV, and/or XLSX outputs, as requested.
@@ -336,6 +347,8 @@ def save_data(
     When `flat_output` is True (used by `predict_batch`), CSV/XLSX files are written
     directly into `output_parent_dir` with the study name embedded in each filename,
     instead of nested under `output_parent_dir/<study_name>/`.
+
+    `external_id` is written as a column by the BehaviouralIntervention exporter only.
     """
     output_dir = Path(output_parent_dir)
 
@@ -363,13 +376,21 @@ def save_data(
         "PrognosticStudy": export_prognostic_csv,
         "ClimateCarbonPricing": export_climate_carbon_pricing_csv,
         "Programme": export_programme_csv,
+        "BehaviouralIntervention": export_behavioural_intervention_csv,
     }
     base_type = study_type.removesuffix("_pairwise")
     if study_type not in RCT_PIPELINES and study_type not in {
-        "PrognosticStudy", "ClimateCarbonPricing", "Programme"
+        "PrognosticStudy", "ClimateCarbonPricing", "Programme",
+        "BehaviouralIntervention",
     }:
         error_message = f"Unsupported study_type '{study_type}'."
         raise ValueError(error_message)
+    exporter_kwargs = {}
+    if external_id:
+        if base_type == "BehaviouralIntervention":
+            exporter_kwargs["external_id"] = external_id
+        else:
+            logger.warning(f"external_id is not supported for '{study_type}'; ignored.")
     exporters[base_type](
         study,
         study_name,
@@ -379,6 +400,7 @@ def save_data(
         write_csv=export_csv_files,
         write_xlsx=export_xlsx_file,
         flat_output=flat_output,
+        **exporter_kwargs,
     )
 
 
@@ -426,7 +448,7 @@ def run_predict_single_study(config_arg_path: str) -> None:
         config
     )  # I want to validate in and output paths and create output folder if needed BEFORE the extraction, to avoid running the LLM and then losing data due to unnecessary path/permission issues.
 
-    load_dotenv()
+    # load_dotenv()
     model_suffix = config["llm_model"].rsplit("/", 1)[-1]
     configure_lm(config["llm_model"], config["max_tokens"], cache=config["dspy_cache"])
 
@@ -448,6 +470,7 @@ def run_predict_single_study(config_arg_path: str) -> None:
         export_csv_files=config["export_csv"],
         export_xlsx_file=config["export_xlsx"],
         export_json_file=config["export_json"],
+        external_id=config["external_id"],
     )  # does what it says (I hope :) )
 
 
