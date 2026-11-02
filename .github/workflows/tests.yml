@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.12.11"
+          - "3.12.16"
     if: github.event.pull_request.draft == false
     env:
       DEET_STARTUP_BUDGET_S: 0.6 # Maximum time deet --help an take before tests break
@@ -35,7 +35,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: "0.12.21"
+          resolution-strategy: "lowest"
 
       - name: Restore uv cache
         uses: actions/cache@v6
@@ -103,3 +103,17 @@ jobs:
 
       - name: Minimize uv cache
         run: uv cache prune --ci
+
+  # The branch ruleset requires this job, so the test job above can gain a matrix without renaming a required check.
+  tests-passed:
+    name: tests
+    if: always()
+    needs: [data-extraction-evaluation-toolkit_tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless the test jobs passed
+        run: |
+          case "${{ needs.data-extraction-evaluation-toolkit_tests.result }}" in
+            success|skipped) ;;
+            *) echo "Test jobs finished with: ${{ needs.data-extraction-evaluation-toolkit_tests.result }}"; exit 1 ;;
+          esac
