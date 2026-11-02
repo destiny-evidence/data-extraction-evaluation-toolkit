@@ -219,9 +219,9 @@ class ConceptScheme[C: Concept](BaseModel):
             mapping_without_file = "Mapping without a mapping file is not yet supported"
             raise NotImplementedError(mapping_without_file)
 
-        mapping = TypeAdapter(list[ConceptMappingRow]).validate_json(
-            mapping_file.read_bytes()
-        )
+        mapping: list[ConceptMappingRow] = TypeAdapter(
+            list[ConceptMappingRow]
+        ).validate_json(mapping_file.read_bytes())
         attr_by_concept_id = {
             concept_id: attr for attr in attributes if (concept_id := attr.concept_id)
         }
