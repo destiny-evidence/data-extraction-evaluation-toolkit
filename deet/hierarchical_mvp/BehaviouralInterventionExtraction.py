@@ -15,6 +15,7 @@ the level above calls for it (gating is plain Python in ``forward``, not LLM-dec
 from __future__ import annotations
 
 import dspy
+from deet.logger import logger
 
 from .BehaviouralInterventionModel import (
     Arm_Details,
@@ -146,11 +147,26 @@ class ListEffects(dspy.Signature):
     """
     You are a systematic review assistant.
 
-    List EVERY estimate of the effect of an intervention on household energy consumption
-    that the study reports. A study may report several: one per treatment arm, population,
-    time period, specification or model. Capture the intention-to-treat estimate and ignore
-    ATT/LATE estimates. Only identify and classify the estimates here; their numbers are
-    extracted in a later step.
+    List every estimate of the effect of an intervention on household energy consumption
+    that the study reports. An estimate qualifies only if it contrasts energy consumption
+    under the intervention with a counterfactual: treated versus control households, or the
+    same households before versus during/after the intervention. A study may report several
+    qualifying estimates: one per treatment arm, population, time period, specification or
+    model. Capture the intention-to-treat estimate and ignore ATT/LATE estimates.
+
+    Do NOT list:
+    - coefficients of covariates, moderators or other explanatory variables (e.g. household
+      characteristics, attitudes, or changes in behaviour or motivation) that are not a
+      treatment indicator;
+    - heterogeneity or subgroup regressions that only explain variation within the treated
+      group, without a contrast to a counterfactual;
+    - the same estimate more than once, even if it is reported in several places (abstract,
+      text, table). Use the location that also reports its uncertainty (SD, SE, test
+      statistic or p-value).
+
+    Only identify and classify the estimates here; their numbers are extracted in a later
+    step. In your reasoning, go through the estimates you list by effect_number and explain
+    why each one qualifies, then briefly name the candidates you rejected and why.
 
     Report only information that is explicitly stated in the context. Report numbers exactly
     as they appear in the source; do not calculate or impute. If a value is not reported, use
@@ -322,6 +338,60 @@ def _needs_significance(effect: Effect) -> bool:
     return True
 
 
+def _norm(value: str) -> str:
+    return " ".join(value.lower().split())
+
+
+def _arms_key(stub: Effect_Stub) -> tuple[str, ...]:
+    return tuple(sorted(_norm(arm) for arm in stub.intervention_arms))
+
+
+def _dedupe_stubs(stubs: list[Effect_Stub]) -> list[Effect_Stub]:
+    """Drop stubs that point at the same estimate (same page, label and arms)."""
+    seen: set[tuple] = set()
+    kept = []
+    for stub in stubs:
+        key = (_norm(stub.page), _norm(stub.estimate_label), _arms_key(stub))
+        if key in seen:
+            logger.info(f"Dropped duplicate effect stub {stub.effect_number}: {key}")
+            continue
+        seen.add(key)
+        kept.append(stub)
+    return kept
+
+
+def _estimate_value(effect: Effect) -> str | None:
+    if effect.coefficient_estimate is not None:
+        value = effect.coefficient_estimate.coefficient
+    elif effect.difference_of_means is not None:
+        value = effect.difference_of_means.diff_mean
+    else:
+        return None
+    value = _norm(value).replace("%", "").lstrip("+")
+    return None if _missing(value) else value
+
+
+def _dedupe_effects(effects: list[Effect]) -> list[Effect]:
+    """Drop filled effects that repeat an estimate (same page, arms, kind and value).
+
+    Catches duplicates the stub-level check misses because the LLM labelled the same
+    estimate differently. Effects without a reported value are always kept.
+    """
+    seen: set[tuple] = set()
+    kept = []
+    for effect in effects:
+        value = _estimate_value(effect)
+        if value is not None:
+            stub = effect.stub
+            key = (_norm(stub.page), _arms_key(stub), stub.estimate_kind, value)
+            if key in seen:
+                logger.info(f"Dropped duplicate effect {stub.effect_number}: {key}")
+                continue
+            seen.add(key)
+        kept.append(effect)
+    return kept
+
+
 # ---------------------------------------------------------------------------
 # Pipeline module
 # ---------------------------------------------------------------------------
@@ -337,7 +407,8 @@ class BehaviouralInterventionExtractionPipeline(dspy.Module):
         self.extract_delivery = dspy.Predict(ExtractDeliveryDetails)
         self.extract_pricing = dspy.Predict(ExtractPricingDetails)
         self.extract_motivation = dspy.Predict(ExtractMotivationDetails)
-        self.list_effects = dspy.Predict(ListEffects)
+        # ChainOfThought so the reasoning behind each listed estimate is kept
+        self.list_effects = dspy.ChainOfThought(ListEffects)
         self.extract_coefficient = dspy.Predict(ExtractCoefficient)
         self.extract_difference_of_means = dspy.Predict(ExtractDifferenceOfMeans)
         self.extract_sample_sizes = dspy.Predict(ExtractSampleSizes)
@@ -426,9 +497,8 @@ class BehaviouralInterventionExtractionPipeline(dspy.Module):
         study.arm_details = [self._arm_details(context, i) for i in study.interventions]
 
         # L3a: list estimates
-        stubs = self.list_effects(
-            context=context, interventions=study.interventions
-        ).effect_stubs
+        listing = self.list_effects(context=context, interventions=study.interventions)
+        stubs = _dedupe_stubs(listing.effect_stubs)
         if not stubs:
             study.screening = Screening(
                 exclusion_reason="No relevant effect sizes",
@@ -437,5 +507,8 @@ class BehaviouralInterventionExtractionPipeline(dspy.Module):
             return study
 
         # L3b: fill each estimate, gated by its stub
-        study.effects = [self._fill_effect(context, stub) for stub in stubs]
+        effects = _dedupe_effects([self._fill_effect(context, stub) for stub in stubs])
+        for effect in effects:
+            effect.inclusion_reasoning = listing.reasoning
+        study.effects = effects
         return study

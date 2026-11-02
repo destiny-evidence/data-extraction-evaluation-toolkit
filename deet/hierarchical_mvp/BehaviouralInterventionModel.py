@@ -257,6 +257,13 @@ class Effect_Stub(BaseModel):
             "use a normal page count."
         )
     )
+    estimate_label: str = Field(
+        description=(
+            "Exact location of the estimate, specific enough to tell it apart from every other "
+            "estimate: table or section, plus the row/variable and the column/model label "
+            "(e.g. 'Table 4, row \"Treatment\", model (2)')."
+        )
+    )
     intervention_arms: list[str] = Field(
         description="Labels of the treatment arm(s) this estimate refers to (several for a joint intervention)."
     )
@@ -432,6 +439,13 @@ class Effect(BaseModel):
         default="",
         description="Remarks on how this estimate was obtained or interpreted.",
     )
+    inclusion_reasoning: str = Field(
+        default="",
+        description=(
+            "Reasoning of the effect-listing step on why the estimates were included. Set by the "
+            "pipeline, not queried from the LLM."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -511,6 +525,7 @@ class Study(BaseModel):
             *_field_names(SignificanceInfo),
             *_field_names(BaselineInfo),
             "notes_effect",
+            "inclusion_reasoning",
         ]
 
     def outcome_csv_rows(
@@ -535,6 +550,7 @@ class Study(BaseModel):
                 if block is not None:
                     row.update(_flatten(block))
             row["notes_effect"] = effect.notes_effect
+            row["inclusion_reasoning"] = effect.inclusion_reasoning
             rows.append(row)
         return rows
 
