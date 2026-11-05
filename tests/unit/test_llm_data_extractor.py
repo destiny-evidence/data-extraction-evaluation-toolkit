@@ -6,6 +6,12 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from litellm.types.decisions import (
+    OpenAIDecisionResponse,
+    OpenAIDecisionUsage,
+    OpenAIPredicateAnswer,
+    OpenAIRefusalAnswer,
+)
 from loguru import logger
 from pydantic import ValidationError
 
@@ -29,7 +35,7 @@ from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
 )
 from deet.processors.csv_annotation_converter import CSVAnnotationConverter
-from deet.settings import LLMProvider
+from deet.settings import DecisionApiType, LLMProvider
 
 # @pytest.fixture(autouse=True)
 # def mock_settings(monkeypatch):
@@ -679,3 +685,373 @@ def test_extract_from_documents_continues_on_error(
     assert run_output.metadata.total_input_tokens == 0
     assert run_output.metadata.total_output_tokens == 0
     assert mock_litellm_completion.call_count == 1
+
+
+def make_decision_response(
+    answers: list, input_tokens: int = 90, output_tokens: int = 0
+) -> OpenAIDecisionResponse:
+    """Build a litellm decisions response to serve from mocks."""
+    return OpenAIDecisionResponse(
+        model="s1-dep",
+        answers=tuple(answers),
+        usage=OpenAIDecisionUsage(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+        ),
+    )
+
+
+def make_completion_response(content: dict) -> MagicMock:
+    """Build a litellm completion response to serve from mocks."""
+    response = MagicMock()
+    response.choices[0].message.content = json.dumps(content)
+    response.usage.prompt_tokens = 80
+    response.usage.completion_tokens = 20
+    return response
+
+
+def create_decision_extractor(
+    mock_settings: MagicMock,
+    decision_api_type: DecisionApiType = DecisionApiType.OPENAI,
+    decision_threshold: float = 0.5,
+    decision_template: str | None = None,
+) -> LLMDataExtractor:
+    """Build an Azure-provider extractor with decision routing configured."""
+    with patch("pathlib.Path.read_text", return_value="Default system prompt"):
+        config = DataExtractionConfig(
+            model="test-model",
+            provider=LLMProvider.AZURE,
+            decision_model="s1-dep",
+            decision_api_type=decision_api_type,
+            decision_threshold=decision_threshold,
+        )
+        extractor = LLMDataExtractor(config=config, settings=mock_settings)
+    if decision_template is not None:
+        extractor.config.prompt_config.decision_question_template = decision_template
+    return extractor
+
+
+@pytest.fixture
+def mock_litellm_decisions():
+    """Fixture to mock the litellm.decisions call for both sample bool attrs."""
+    with patch("litellm.decisions") as mock_decisions:
+        mock_decisions.return_value = make_decision_response(
+            [
+                OpenAIPredicateAnswer(name="attribute_1234", probability=0.93),
+                OpenAIPredicateAnswer(name="attribute_2345", probability=0.12),
+            ]
+        )
+        yield mock_decisions
+
+
+@pytest.fixture
+def sample_bool_attrs(make_attr) -> list[Attribute]:
+    """Two bool attributes matching the names the canned mocks answer."""
+    return [make_attr(1234), make_attr(2345, "What is the question?")]
+
+
+class TestDecisionRouteConstruction:
+    """__init__ turns decision config into the model prefix and api_base."""
+
+    def test_openai_route_builds_prefix_and_base(self, mock_settings):
+        """openai mode prefixes the deployment and mounts the /openai route."""
+        extractor = create_decision_extractor(mock_settings)
+        assert extractor.decision_model == "openai/s1-dep"
+        assert extractor.decision_api_base == "test-base/openai"
+
+    def test_system_one_route_builds_prefix_and_base(self, mock_settings):
+        """system_one mode uses azure_ai at the bare api_base."""
+        extractor = create_decision_extractor(
+            mock_settings, decision_api_type=DecisionApiType.SYSTEM_ONE
+        )
+        assert extractor.decision_model == "azure_ai/s1-dep"
+        assert extractor.decision_api_base == "test-base"
+
+    def test_decision_model_requires_azure_provider(self, mock_settings):
+        """Configuring a decision model on a non-Azure provider is refused."""
+        with pytest.raises(
+            ValueError, match="decision_model requires the Azure provider"
+        ):
+            create_llm_extractor(
+                DataExtractionConfig(
+                    model="test-model",
+                    provider=LLMProvider.OLLAMA,
+                    decision_model="s1-dep",
+                ),
+                mock_settings,
+            )
+
+
+class TestAnnotateRouting:
+    """_annotate splits attributes by type across the two endpoints."""
+
+    def test_without_decision_model_uses_completion_only(
+        self,
+        llm_extractor,
+        mock_litellm_decisions,
+        mock_litellm_completion,
+        sample_bool_attrs,
+    ):
+        """With decision_model unset, every attribute goes to completions."""
+        calls = llm_extractor._annotate(
+            context="doc text", attributes=sample_bool_attrs
+        )
+        assert len(calls) == 1
+        mock_litellm_decisions.assert_not_called()
+        mock_litellm_completion.assert_called_once()
+
+    def test_all_bool_calls_decision_only(
+        self, mock_settings, mock_litellm_decisions, sample_bool_attrs
+    ):
+        """All-boolean attribute sets never hit the completion endpoint."""
+        with patch("litellm.completion") as mock_completion:
+            extractor = create_decision_extractor(mock_settings)
+            calls = extractor._annotate(
+                context="doc text", attributes=sample_bool_attrs
+            )
+        mock_completion.assert_not_called()
+        mock_litellm_decisions.assert_called_once()
+        kwargs = mock_litellm_decisions.call_args.kwargs
+        assert kwargs["model"] == "openai/s1-dep"
+        assert kwargs["api_key"] == "test-key"
+        assert kwargs["api_base"] == "test-base/openai"
+        assert kwargs["input"] == "doc text"
+        assert [q["name"] for q in kwargs["questions"]] == [
+            "attribute_1234",
+            "attribute_2345",
+        ]
+        result = DocumentExtractionResult.combine(calls)
+        assert {a.attribute.attribute_id for a in result.annotations} == {1234, 2345}
+
+    def test_none_bool_calls_completion_only(
+        self, mock_settings, mock_litellm_decisions, make_attr
+    ):
+        """Non-boolean attribute sets never hit the decision endpoint."""
+        string_attr = make_attr(
+            3456, "Summarise the method.", output_data_type=AttributeType.STRING
+        )
+        completion_payload = {
+            "attribute_3456": {
+                "output_data": "A stated method.",
+                "reasoning": "r",
+                "additional_text": "",
+            }
+        }
+        with patch(
+            "litellm.completion",
+            return_value=make_completion_response(completion_payload),
+        ) as mock_completion:
+            extractor = create_decision_extractor(mock_settings)
+            calls = extractor._annotate(context="doc text", attributes=[string_attr])
+        mock_litellm_decisions.assert_not_called()
+        mock_completion.assert_called_once()
+        assert len(calls) == 1
+        assert calls[0].model == "azure/test-model"
+
+    def test_mixed_calls_both_endpoints_and_merges(
+        self,
+        mock_settings,
+        mock_litellm_decisions,
+        sample_bool_attrs,
+        make_attr,
+    ):
+        """Mixed sets split across endpoints and merge into one combined result."""
+        string_attr = make_attr(
+            3456, "Summarise the method.", output_data_type=AttributeType.STRING
+        )
+        completion_payload = {
+            "attribute_3456": {
+                "output_data": "A stated method.",
+                "reasoning": "cited",
+                "additional_text": "",
+            }
+        }
+        with patch(
+            "litellm.completion",
+            return_value=make_completion_response(completion_payload),
+        ) as mock_completion:
+            extractor = create_decision_extractor(mock_settings)
+            calls = extractor._annotate(
+                context="doc text",
+                attributes=[*sample_bool_attrs, string_attr],
+            )
+        mock_litellm_decisions.assert_called_once()
+        mock_completion.assert_called_once()
+        names = [
+            q["name"] for q in mock_litellm_decisions.call_args.kwargs["questions"]
+        ]
+        assert names == ["attribute_1234", "attribute_2345"]
+        result = DocumentExtractionResult.combine(calls)
+        assert {a.attribute.attribute_id for a in result.annotations} == {
+            1234,
+            2345,
+            3456,
+        }
+        assert result.model == "openai/s1-dep + azure/test-model"
+
+
+class TestCallDecision:
+    """_call_decision sends the questions and assembles the extraction result."""
+
+    def test_raises_on_non_bool_attribute(self, mock_settings, make_attr):
+        """_call_decision is strict about BOOL-only attributes."""
+        string_attr = make_attr(
+            3456, "Summarise the method.", output_data_type=AttributeType.STRING
+        )
+        extractor = create_decision_extractor(mock_settings)
+        with pytest.raises(ValueError, match="only supports BOOL"):
+            extractor._call_decision(context="doc text", attributes=[string_attr])
+
+    def test_assembles_result(
+        self, mock_settings, mock_litellm_decisions, sample_bool_attrs
+    ):
+        """The result carries annotations, messages, tokens and model."""
+        extractor = create_decision_extractor(mock_settings)
+        result = extractor._call_decision(
+            context="doc text", attributes=sample_bool_attrs
+        )
+        assert [a.raw_data for a in result.annotations] == [True, False]
+        assert result.input_tokens == 90
+        assert result.output_tokens == 0
+        assert result.model == "openai/s1-dep"
+        assert result.messages[0]["role"] == "system"
+        assert "decisions_questions" in result.messages[0]["content"]
+        assert result.messages[1] == {"role": "user", "content": "doc text"}
+
+
+class TestParseDecisionResponse:
+    """_parse_decision_response turns answers into thresholded annotations."""
+
+    @staticmethod
+    def parse(
+        extractor: LLMDataExtractor, answers: list, attributes: list[Attribute]
+    ) -> tuple[list[GoldStandardAnnotation], list[str]]:
+        """Parse a response built from answers, capturing warnings."""
+        messages: list[str] = []
+        logger_id = logger.add(messages.append, level="WARNING")
+        try:
+            annotations = extractor._parse_decision_response(
+                response=make_decision_response(answers), attributes=attributes
+            )
+        finally:
+            logger.remove(logger_id)
+        return annotations, messages
+
+    def test_thresholds_probability_into_raw_data(
+        self, mock_settings, sample_bool_attrs
+    ):
+        """raw_data holds the thresholded bool, reasoning the raw probability."""
+        extractor = create_decision_extractor(mock_settings)
+        annotations, messages = self.parse(
+            extractor,
+            [
+                OpenAIPredicateAnswer(name="attribute_1234", probability=0.93),
+                OpenAIPredicateAnswer(name="attribute_2345", probability=0.12),
+            ],
+            sample_bool_attrs,
+        )
+        assert [a.raw_data for a in annotations] == [True, False]
+        assert [a.reasoning for a in annotations] == ["0.9300", "0.1200"]
+        assert [a.annotation_type for a in annotations] == [
+            AnnotationType.LLM,
+            AnnotationType.LLM,
+        ]
+        assert messages == []
+
+    def test_threshold_is_inclusive_and_configurable(
+        self, mock_settings, sample_bool_attrs
+    ):
+        """probability >= decision_threshold yields True, at or above the set value."""
+        extractor = create_decision_extractor(mock_settings, decision_threshold=0.3)
+        annotations, _ = self.parse(
+            extractor,
+            [
+                OpenAIPredicateAnswer(name="attribute_1234", probability=0.3),
+                OpenAIPredicateAnswer(name="attribute_2345", probability=0.3),
+            ],
+            sample_bool_attrs,
+        )
+        assert [a.raw_data for a in annotations] == [True, True]
+
+    def test_refusal_skips_attribute(self, mock_settings, sample_bool_attrs):
+        """A non-predicate (refusal) answer produces no annotation for that attr."""
+        extractor = create_decision_extractor(mock_settings)
+        annotations, messages = self.parse(
+            extractor,
+            [
+                OpenAIPredicateAnswer(name="attribute_1234", probability=0.8),
+                OpenAIRefusalAnswer(name="attribute_2345"),
+            ],
+            sample_bool_attrs,
+        )
+        assert [a.attribute.attribute_id for a in annotations] == [1234]
+        assert len(messages) == 1
+        assert "no predicate answer for 1 of 2" in str(messages[0])
+
+    def test_unexpected_answer_names_warn(self, mock_settings, sample_bool_attrs):
+        """Answers under names that match no attribute are reported."""
+        extractor = create_decision_extractor(mock_settings)
+        annotations, messages = self.parse(
+            extractor,
+            [
+                OpenAIPredicateAnswer(name="attribute_1234", probability=0.8),
+                OpenAIPredicateAnswer(name="renamed_2345", probability=0.8),
+            ],
+            sample_bool_attrs,
+        )
+        assert [a.attribute.attribute_id for a in annotations] == [1234]
+        assert any("['attribute_2345']" in str(m) for m in messages)
+        assert any("['renamed_2345']" in str(m) for m in messages)
+
+
+class TestDecisionInstructions:
+    """_decision_instructions frames attribute prompts as predicate questions."""
+
+    def test_pass_through_question_prompts(self, mock_settings, make_attr):
+        """Prompts already ending in '?' are sent unchanged."""
+        extractor = create_decision_extractor(mock_settings)
+        attribute = make_attr(2345, "What is the question?")
+        assert extractor._decision_instructions(attribute) == "What is the question?"
+
+    def test_apply_default_template(self, mock_settings, make_attr):
+        """Non-question prompts are framed by the default template."""
+        attribute = make_attr(4567, "Heat waves as an adaptation measure")
+        extractor = create_decision_extractor(mock_settings)
+        assert extractor._decision_instructions(attribute) == (
+            "Does this document concern Attribute 4567?"
+            " Heat waves as an adaptation measure"
+        )
+
+    def test_raw_template_passes_prompt_through(self, mock_settings, make_attr):
+        """A '$prompt' template sends the attribute prompt as-is."""
+        attribute = make_attr(4567, "Heat waves as an adaptation measure")
+        extractor = create_decision_extractor(
+            mock_settings, decision_template="$prompt"
+        )
+        assert (
+            extractor._decision_instructions(attribute)
+            == "Heat waves as an adaptation measure"
+        )
+
+
+class TestDecisionQuestionTemplateValidation:
+    """PromptConfig rejects templates that would fail at substitution time."""
+
+    @pytest.mark.parametrize(
+        "template",
+        ["$prompt", "Is $label relevant? $prompt", "Costs $$5? $prompt"],
+    )
+    def test_accepts_valid_templates(self, template):
+        """Templates using only $label, $prompt and escaped '$$' are accepted."""
+        config = PromptConfig(system_prompt="sys", decision_question_template=template)
+        assert config.decision_question_template == template
+
+    @pytest.mark.parametrize(
+        "template",
+        ["Does it concern $topic?", "Costs $5? $prompt", "Trailing $"],
+    )
+    def test_rejects_invalid_templates(self, template):
+        """Unknown placeholders and stray '$' fail at config load."""
+        with pytest.raises(ValidationError, match="decision_question_template"):
+            PromptConfig(system_prompt="sys", decision_question_template=template)
