@@ -2,6 +2,18 @@
 
 <!-- version list -->
 
+## v0.6.0 (2026-11-05)
+
+### Chores
+
+- Re-lock after merging main
+  ([`e4681a2`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/e4681a2f4a50027534b02fec3ac843b4c4a69234))
+
+- Restrict renovate to python patch updates
+  ([#472](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/472),
+  [`21a2421`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/21a24218163feb0a230c6bab0b3b5777633a1d80))
+
+
 ## v0.5.0 (2026-10-08)
 
 
