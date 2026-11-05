@@ -14,6 +14,30 @@
                 "github-actions"
             ],
             "pinDigests": true
+        },
+        {
+            "description": "Never let Renovate change requires-python: raising its floor drops support for older Python versions, so it is changed by hand.",
+            "matchManagers": [
+                "pep621"
+            ],
+            "matchDepTypes": [
+                "requires-python"
+            ],
+            "enabled": false
+        },
+        {
+            "description": "Only take patch releases of the development Python in .python-version; moving to a new minor version is done by hand once every dependency ships wheels for it.",
+            "matchManagers": [
+                "pyenv"
+            ],
+            "matchPackageNames": [
+                "python"
+            ],
+            "matchUpdateTypes": [
+                "major",
+                "minor"
+            ],
+            "enabled": false
         }
     ]
 }
