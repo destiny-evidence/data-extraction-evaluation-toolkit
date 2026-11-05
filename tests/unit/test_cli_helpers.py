@@ -13,6 +13,7 @@ from deet.data_models.extraction import (
     ExtractionRunOutput,
     PerDocumentExtractionStats,
 )
+from deet.exceptions import UnsupportedModelParamsError
 from deet.extractors.cli_helpers import (
     load_or_init_config,
     prepare_documents,
@@ -171,6 +172,44 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert written["total_input_tokens"] == 100
     assert written["total_output_tokens"] == 50
     assert written["total_cost_usd"] == 0.0123
+
+
+def test_run_extraction_pipeline_fails_on_unsupported_model_params(tmp_path, config):
+    """Unsupported model params are reported via fail_with_message, not a traceback."""
+    mock_project = MagicMock()
+    mock_project.experiments_dir = tmp_path / "experiments"
+    mock_project.pdf_dir = tmp_path / "pdfs"
+    mock_project.load_evaluation_strategy.return_value.get_active_ids.return_value = [1]
+
+    mock_processed_data = MagicMock()
+    mock_processed_data.attributes = [1]
+    mock_processed_data.documents = [MagicMock()]
+    mock_project.process_data.return_value = mock_processed_data
+
+    error_message = "Model 'o4-mini' does not support a configured parameter"
+    mock_extractor = MagicMock()
+    mock_extractor.config = config
+    mock_extractor.extract_from_documents.side_effect = UnsupportedModelParamsError(
+        error_message
+    )
+
+    with (
+        patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
+        patch(
+            "deet.extractors.cli_helpers.get_data_extractor",
+            return_value=mock_extractor,
+        ),
+        patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
+        patch(
+            "deet.extractors.cli_helpers.fail_with_message", side_effect=SystemExit
+        ) as mock_fail,
+        pytest.raises(SystemExit),
+    ):
+        run_extraction_pipeline(
+            deet_project=mock_project, prompt_population=None, prompt_csv_path=None
+        )
+
+    mock_fail.assert_called_once_with(error_message)
 
 
 def test_run_extraction_pipeline_fails_when_project_has_no_documents(tmp_path, config):

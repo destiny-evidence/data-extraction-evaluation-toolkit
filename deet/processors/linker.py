@@ -13,7 +13,7 @@ from pydantic import BaseModel, field_validator, model_validator
 
 from deet.data_models.documents import Document
 from deet.data_models.extraction import DocumentParsingStats
-from deet.exceptions import JsonStyleError
+from deet.exceptions import DocumentSkippedError, JsonStyleError
 from deet.processors.parser import DocumentParser, ParsedOutput
 from deet.utils.identifier_utils import MAX_DOCUMENT_ID_DIGITS, MIN_DOCUMENT_ID_DIGITS
 from deet.utils.timing import measure_elapsed
@@ -802,12 +802,19 @@ class DocumentReferenceLinker:
 
                     doc_id_str = str(interim_payload.document_id)
                     if interim_payload.format == "pdf":
-                        with measure_elapsed() as parse_timer:
-                            parsed_output = self._parse_pdf(
-                                interim_payload.file_path,
-                                return_images=return_images,
-                                return_metadata=return_metadata,
+                        try:
+                            with measure_elapsed() as parse_timer:
+                                parsed_output = self._parse_pdf(
+                                    interim_payload.file_path,
+                                    return_images=return_images,
+                                    return_metadata=return_metadata,
+                                )
+                        except DocumentSkippedError as e:
+                            logger.warning(
+                                f"Skipping document {interim_payload.document_id} "
+                                f"({interim_payload.file_path}): {e}"
                             )
+                            continue
                         self.document_parsing_stats[doc_id_str] = DocumentParsingStats(
                             parsing_seconds=parse_timer.seconds,
                             parsing_skipped=False,
