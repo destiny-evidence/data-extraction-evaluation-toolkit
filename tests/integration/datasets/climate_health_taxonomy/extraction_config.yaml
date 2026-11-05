@@ -1,0 +1,7 @@
+method: hierarchical_top_down
+model: gpt-4o-mini
+default_context_type: abstract_only
+truncate_on_overflow: true
+dynamic_json_schema: true
+vocabulary_path: taxonomy.ttl
+vocabulary_mapping_path: taxonomy_nacsos_mapping.json

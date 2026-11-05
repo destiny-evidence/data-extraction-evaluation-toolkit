@@ -99,6 +99,14 @@ class DeetProject(BaseModel):
     ] = Field(None, description="Path to folder containing PDFs")
 
     evaluation_strategy: EvaluationStrategyName = EvaluationStrategyName.NONE
+    vocabulary_path: Path | None = Field(
+        default=None, description="Path to vocabulary file"
+    )
+
+    vocabulary_mapping_path: Path | None = Field(
+        default=None,
+        description="Path to json file mapping vocabulary concepts to column IDs",
+    )
 
     # Project metadata
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

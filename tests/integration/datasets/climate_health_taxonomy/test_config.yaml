@@ -1,0 +1,7 @@
+gold_standard_file: annotations.csv
+gold_standard_format: generic_csv
+prompt_population: taxonomy
+link_map: null
+prompt_csv: null
+pdf_dir: null
+extraction_config: extraction_config.yaml
