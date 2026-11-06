@@ -2,6 +2,7 @@
 
 import csv
 import io
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,43 @@ class CSVParserConfig(BaseModel):
 
     author_separator: str = ";"
     auto_assign_reference_fields: Boolean = True
+
+
+def _csv_shape_ok(all_rows: list[list[str]], min_cols: int = 2) -> bool:
+    """Check if parsed csv has a sensible shape."""
+    if not all_rows:
+        return False
+    n = len(all_rows[0])
+    return n > min_cols and all(len(r) == n for r in all_rows)
+
+
+def _sniff_and_load_csv(raw_text: str, path: Path) -> list[list[str]]:
+    """Sniff csv dialect and return parsed csv rows."""
+    ascii_text = re.sub(r"[^\x00-\x7F]", "", raw_text)
+    dialect = clevercsv.Sniffer().sniff(ascii_text, verbose=False)
+    if dialect is None:
+        msg = f"can't detect dialect for {path.name}"
+        raise UnsupportedCsvDialectError(msg)
+
+    quotechar = dialect.quotechar or '"'
+    escapechar = dialect.escapechar or None
+    delimiter = dialect.delimiter or ","
+
+    logger.info(
+        f"Detected CSV dialect for {path.name!r}: "
+        f"delimiter={delimiter!r}, "
+        f"quotechar={quotechar!r}, "
+        f"escapechar={escapechar!r}"
+    )
+
+    rows_iter = csv.reader(
+        io.StringIO(raw_text, newline=""),
+        delimiter=delimiter,
+        quotechar=quotechar,
+        escapechar=escapechar,
+        doublequote=True,
+    )
+    return list(rows_iter)
 
 
 class CSVAnnotationConverter(AnnotationConverter):
@@ -484,31 +522,12 @@ class CSVAnnotationConverter(AnnotationConverter):
         with path.open(newline="", encoding="utf-8-sig") as f:
             raw_text = f.read()
 
-        # dialect detection
-        dialect = clevercsv.Sniffer().sniff(raw_text, verbose=False)
-        if dialect is None:
-            msg = f"can't detect dialect for {path.name}"
-            raise UnsupportedCsvDialectError(msg)
+        all_rows = list(csv.reader(io.StringIO(raw_text)))
 
-        quotechar = dialect.quotechar or '"'
-        escapechar = dialect.escapechar or None
-        delimiter = dialect.delimiter or ","
-
-        logger.info(
-            f"Detected CSV dialect for {file_path!r}: "
-            f"delimiter={delimiter!r}, "
-            f"quotechar={quotechar!r}, "
-            f"escapechar={escapechar!r}"
-        )
-
-        rows_iter = csv.reader(
-            io.StringIO(raw_text, newline=""),
-            delimiter=delimiter,
-            quotechar=quotechar,
-            escapechar=escapechar,
-            doublequote=True,
-        )
-        all_rows = list(rows_iter)
+        if _csv_shape_ok(all_rows):
+            logger.info("CSV parsed with standard dialect")
+        else:
+            all_rows = _sniff_and_load_csv(raw_text=raw_text, path=path)
 
         if not all_rows:
             msg = f"CSV file {file_path!r} appears to be empty."

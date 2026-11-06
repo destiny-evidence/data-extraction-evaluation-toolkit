@@ -2,6 +2,37 @@
 
 This page shows different ways to install `deet` across platforms and use-cases
 
+## Quick install (Windows)
+
+Windows users can install `deet` with a single command.
+The installer sets up [uv](https://docs.astral.sh/uv/) if it is missing or too old, then installs `deet` from PyPI.
+Open PowerShell (press the Windows key, type "powershell", and press Enter), then run:
+
+```powershell
+irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1 | iex
+```
+
+When it finishes, run `deet --help` to check.
+
+It is a plain PowerShell script — you can
+[read it first](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/development/install.ps1)
+before piping it to `iex`.
+
+The installer does not install [pandoc](#installing-pandoc), which is only needed to work with full-text PDFs.
+
+??? note "Options (forcing a reinstall)"
+
+    To reinstall `deet` even if it is already present, for example to upgrade, fetch the script first so it can take arguments:
+
+    ```powershell
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/destiny-evidence/data-extraction-evaluation-toolkit/development/install.ps1))) -Force
+    ```
+
+    To install a branch or a feature that is not yet released, follow [Installing from a specific branch](#installing-from-a-specific-branch).
+
+If you would rather install each piece yourself — or you are on macOS or Linux — follow the manual
+steps below.
+
 ## Basic setup and dependencies
 
 ### Accessing the terminal
@@ -185,11 +216,16 @@ We recommend installing uv to manage python packages. This can also be used to i
     In Mac/Linux, we recommend you install uv using the [standalone installer](https://docs.astral.sh/uv/getting-started/installation/#__tabbed_1_1)
 
 !!! warning "Updating uv"
-    Deet requires at least version `0.9.8` of uv.
+    Deet requires a recent version of uv, and uv will refuse to run in the repository if it is too old.
+    Older versions bundle outdated certificate authority lists, which matters for the security of package downloads.
 
-    Check your current uv version by running `uv --version`.
+    Update uv before installing deet.
+    If you installed uv with the standalone installer, run `uv self update`.
+    If you installed it with a package manager, update it there, for example `scoop update uv`.
 
-    Update uv by running `uv self`
+    Python also needs to be recent.
+    Run `uv python upgrade` to update the Python versions that uv manages.
+    Existing environments keep the Python they were created with, so reinstall an existing CLI installation with `uv tool install --reinstall destiny-deet`.
 
 Now you have the basics set up, continue to [CLI users](#cli-users) if you want to use the CLI, or [package users](#package-users) if you want to use deet as a package, or to [contributors](#contributors) if you want to contribute to `deet`.
 
@@ -212,10 +248,10 @@ Git is a versioning tool that is used here to install the deet package, which is
 
 If you just want to use the CLI, we recommend you install the package globally into an isolated managed environment. You can do this using `uv tool install <package>`.
 
-To install `deet`
+To install `deet` from PyPI, where it is published as `destiny-deet`
 
 ```bash
-uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv tool install destiny-deet
 ```
 
 Now you are ready to use `deet`. To test this, run
@@ -224,9 +260,11 @@ Now you are ready to use `deet`. To test this, run
 deet --help
 ```
 
+If you need an optional feature such as the semantic keyword extractor, see [Installing optional features](#installing-optional-features).
+
 ### Installing from a specific branch
 
-If a feature you want to use is being actively worked on, and is not yet merged into main, you can install a specific branch of deet by appending @branch to the previous command. For example
+If a feature you want to use is being actively worked on, and is not yet released, you can install a specific branch of deet directly from GitHub. For example
 
 ```bash
 uv tool install git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@development
@@ -241,11 +279,56 @@ You can also use deet as a python package, within another project.
 Assuming you are using UV to manage dependencies within your project, you can add deet via
 
 ```bash
-uv add git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+uv add destiny-deet
 uv sync
 ```
 
-Append @branch to the uv add command to use a specific branch of deet.
+or, with pip, `pip install destiny-deet`. To use a specific branch of deet, add `git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git@branch` instead.
+
+## Installing optional features
+
+Some of deet's features rely on heavier libraries that are not installed by
+default. These live behind optional *extras*, which you opt into by naming them
+in square brackets.
+
+| Extra          | Enables                                                  |
+| -------------- | -------------------------------------------------------- |
+| `semantic`     | the semantic keyword extractor (`fastembed`)             |
+| `parsers`      | extra document parsers (`marker-pdf`, `pypandoc`)        |
+| `lang-quality` | language-quality checks (`nltk`)                         |
+
+=== "CLI users"
+
+    Add the extra in brackets before the `@ git+...` source:
+
+    ```bash
+    uv tool install destiny-deet[semantic]
+    ```
+
+=== "Package users"
+
+    Enable the extra with `--extra` when you add deet:
+
+    ```bash
+    uv add --extra semantic git+https://github.com/destiny-evidence/data-extraction-evaluation-toolkit.git
+    uv sync
+    ```
+
+=== "Contributors"
+
+    In a cloned checkout, sync the extras you need (or `--all-extras`):
+
+    ```bash
+    uv sync --extra semantic
+    ```
+
+Combine multiple extras with commas, e.g. `[semantic,parsers]` (or repeat
+`--extra`). Append `@branch` to the git URL to install extras from a specific
+branch.
+
+!!! note "The `parsers` extra also needs pandoc"
+    `parsers` installs the Python wrappers; full-text PDF parsing additionally
+    needs the pandoc system binary — see [Installing pandoc](#installing-pandoc).
 
 ## Contributors
 

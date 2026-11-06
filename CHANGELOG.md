@@ -2,6 +2,96 @@
 
 <!-- version list -->
 
+## v0.5.0-dev.5 (2026-11-02)
+
+### Bug Fixes
+
+- Build pre-commit's Node environments from the LTS release instead of the newest one
+  ([`696bd60`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/696bd60b069a4af7885a63849d971dc84e1421c8))
+
+- Install deet from PyPI in the Windows installer and enforce the uv floor from pyproject.toml
+  ([`6b8e761`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/6b8e7616bdbdbec0bfe7c3d2cea166505ea8ecfc))
+
+- Require certifi 2026.10.19 or newer, which no longer trusts the compromised eMudhra root
+  ([`9cec6de`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9cec6deeae2ae2b97832a4f35fd460ce00d6abc1))
+
+- Require patched Python releases, which bundle pip without the compromised eMudhra root
+  ([`219b3f8`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/219b3f867d49b39eafe00f834f71f51b072f513e))
+
+- Require uv 0.13.5 or newer, which no longer trusts the compromised eMudhra root
+  ([`832ef24`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/832ef24c34e76484439e93f0121bf718c935c72b))
+
+- Require uv 0.13.6, the first release that can download Python 3.12.16
+  ([`abeaac8`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/abeaac80f4802c97e2b7bef26c5f7fc43f878f7f))
+
+- Require virtualenv 21.14.12 or newer, which embeds the pip with the fixed certificate bundle
+  ([`364e928`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/364e9282995851211860c0c355519045736e1b2a))
+
+### Chores
+
+- Move virtualenv floor from dev dependencies to constraint-dependencies
+  ([`0856518`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/08565186764183831d3f0f2acaa89a69b9125841))
+
+- Remove reamining hardcoded python versions from CI, reading from .python-version instead
+  ([`5147437`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/51474379ef473afe49f0bf2a168de702122e3b4f))
+
+### Continuous Integration
+
+- Report the test result through a gate job named tests, so the matrix can change without renaming
+  the required check
+  ([`0353a2c`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/0353a2cd7619f434ad1cbd2a35ad15103d8ae097))
+
+
+## v0.5.0-dev.4 (2026-10-28)
+
+### Bug Fixes
+
+- GPT-6 compatibility via upstream LiteLLM
+  ([`ea30a0c`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/ea30a0ca2028b97367d9860dc43debd63c02e577))
+
+
+## v0.5.0-dev.3 (2026-10-15)
+
+### Features
+
+- Replace sentence-transformers with fastembed
+  ([`587889d`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/587889dfc5f0cb3974ea3a84ba0089a3d53fcda9))
+
+
+## v0.5.0-dev.2 (2026-10-08)
+
+
+## v0.5.0-dev.1 (2026-10-06)
+
+
+## v0.4.0-dev.7 (2026-10-06)
+
+### Features
+
+- Add Windows one-line installer
+  ([#428](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/428),
+  [`7ad0851`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/7ad0851e58d0ef7ef19fbd731ea8f7794ae0efa0))
+
+
+## v0.4.0-dev.6 (2026-10-06)
+
+### Bug Fixes
+
+- Attempt to load csv before sniffing dialect as a fallback.
+  ([#449](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/449),
+  [`9906f1b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9906f1baa26f4a9b8c0fdc9d13e0a6ae7940093c))
+
+### Chores
+
+- **deps**: Move sentence-transformers into semantic extra
+  ([`e484860`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/e484860e0ebf7c550b2d925cdff12a6d444e63d8))
+
+### Documentation
+
+- Remove stray backticks from install commands in README
+  ([`72d2fe8`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/72d2fe880eeb7b6e686f80a2868142199d23ac28))
+
+
 ## v0.4.0-dev.5 (2026-09-28)
 
 ### Bug Fixes
