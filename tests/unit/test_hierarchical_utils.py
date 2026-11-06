@@ -1,8 +1,15 @@
+import csv
+from copy import deepcopy
 from unittest.mock import patch
 
 import pytest
+from openpyxl import load_workbook
 
-from deet.hierarchical_mvp.utils import configure_lm, get_api_base_for_model
+from deet.hierarchical_mvp.utils import (
+    _write_tables,
+    configure_lm,
+    get_api_base_for_model,
+)
 
 
 @pytest.mark.parametrize(
@@ -14,9 +21,7 @@ from deet.hierarchical_mvp.utils import configure_lm, get_api_base_for_model
 )
 def test_get_api_base_for_model(monkeypatch, model, expected_api_base):
     monkeypatch.setenv("AZURE_API_BASE", "https://openai.example.test")
-    monkeypatch.setenv(
-        "AZURE_API_BASE_ANTHROPIC", "https://anthropic.example.test"
-    )
+    monkeypatch.setenv("AZURE_API_BASE_ANTHROPIC", "https://anthropic.example.test")
 
     assert get_api_base_for_model(model) == expected_api_base
 
@@ -32,9 +37,7 @@ def test_get_api_base_for_anthropic_model_requires_anthropic_endpoint(monkeypatc
 def test_configure_lm_uses_anthropic_endpoint(monkeypatch):
     monkeypatch.setenv("AZURE_API_KEY", "test-key")
     monkeypatch.setenv("AZURE_API_BASE", "https://openai.example.test")
-    monkeypatch.setenv(
-        "AZURE_API_BASE_ANTHROPIC", "https://anthropic.example.test"
-    )
+    monkeypatch.setenv("AZURE_API_BASE_ANTHROPIC", "https://anthropic.example.test")
 
     with (
         patch("deet.hierarchical_mvp.utils.dspy.LM") as lm_class,
@@ -50,6 +53,38 @@ def test_configure_lm_uses_anthropic_endpoint(monkeypatch):
         cache=True,
     )
     configure.assert_called_once_with(lm=lm_class.return_value)
+
+
+def test_excel_ids_restart_per_sheet_and_leave_csv_and_source_unchanged(tmp_path):
+    tables = {
+        "study": (["name"], [{"name": "Trial"}]),
+        "outcomes": (
+            ["name", "Extraction_ID"],
+            [{"name": "Weight", "Extraction_ID": 99}, {"name": "Weight"}],
+        ),
+        "empty": (["name"], []),
+        "no_fields": ([], []),
+    }
+    original = deepcopy(tables)
+    _write_tables(tables, tmp_path, "test", "", write_csv=True, write_xlsx=True)
+    workbook = load_workbook(tmp_path / "study_test.xlsx")
+    try:
+        for sheet in workbook:
+            values = list(sheet.values)
+            assert values[0][0] == "Extraction_ID"
+            assert values[0].count("Extraction_ID") == 1
+            assert [row[0] for row in values[1:]] == list(range(1, len(values)))
+            if len(values) > 1:
+                assert next(iter(sheet.tables.values())).ref == f"A1:B{len(values)}"
+    finally:
+        workbook.close()
+    with (tmp_path / "study_test.csv").open(encoding="utf-8-sig", newline="") as source:
+        assert next(csv.reader(source)) == ["name"]
+    with (tmp_path / "outcomes_test.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as source:
+        assert [row["Extraction_ID"] for row in csv.DictReader(source)] == ["99", ""]
+    assert tables == original
 
 
 @pytest.mark.parametrize(

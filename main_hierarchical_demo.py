@@ -48,19 +48,37 @@ setup_console_logging()
 ## python -m deet.main_hierarchical predict_single_study "misc\hierarchical_mvp\configs\demo_single_config.json"
 
 # ########################################################Batch extraction
+# batch_config = {
+#     "study_type": "PrognosticStudy",
+#     "llm_model": "gpt-6.1-sol",
+#     "max_tokens": 80000,
+#     "dspy_cache": False,
+#     "input_folder": "C:\\Users\\qtnzls7\\md_to_process",
+#     "output_parent_dir": "C:\\Users\\qtnzls7\\who",
+#     "export_csv": False,
+#     "export_xlsx": True,
+#     "export_json": False,
+# }
+
+# batch_config_path = Path("C:\\Users\\qtnzls7\\who\\demo_batch_config.json")
+# batch_config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
+
+# run_predict_batch(str(batch_config_path))
+
 batch_config = {
-    "study_type": "PrognosticStudy",
+    "study_type": "ProgrammeWithCaching",
     "llm_model": "gpt-6.1-sol",
     "max_tokens": 80000,
     "dspy_cache": False,
-    "input_folder": "C:\\Users\\qtnzls7\\md_to_process",
-    "output_parent_dir": "C:\\Users\\qtnzls7\\who",
+    "input_folder": "C:\\Users\\qtnzls7\\Documents\\unicef\\to_pred",
+    "output_parent_dir": "C:\\Users\\qtnzls7\\Documents\\unicef",
+    "classification_framework_path": "C:\\Users\\qtnzls7\\Documents\\data-extraction-evaluation-toolkit\\deet\\hierarchical_mvp\\unicef_outcome_indicators_v2.csv",
     "export_csv": False,
     "export_xlsx": True,
     "export_json": False,
 }
 
-batch_config_path = Path("C:\\Users\\qtnzls7\\who\\demo_batch_config.json")
+batch_config_path = Path("C:\\Users\\qtnzls7\\Documents\\unicef\\demo_batch_config.json")
 batch_config_path.write_text(json.dumps(batch_config, indent=2), encoding="utf-8")
 
 run_predict_batch(str(batch_config_path))

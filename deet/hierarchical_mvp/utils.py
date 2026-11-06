@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # Import anyio eagerly before DSPy so the real anyio module is registered in
 # sys.modules before dspy's LazyImport machinery can install a placeholder.
@@ -56,6 +56,33 @@ def _open_csv_for_write(path: Path):
 
 # Excel sheet titles are limited to 31 characters.
 _XLSX_SHEET_TITLE_MAX_LEN = 31
+EXTRACTION_ID_COLUMN = "Extraction_ID"
+
+
+def _write_xlsx_sheet(
+    workbook: Workbook,
+    name: str,
+    fieldnames: list[str],
+    rows: list[dict[str, Any]],
+) -> None:
+    """Write an Excel table with sequential, per-sheet extraction IDs."""
+    sheet = workbook.create_sheet(title=name[:_XLSX_SHEET_TITLE_MAX_LEN])
+    data_fields = [field for field in fieldnames if field != EXTRACTION_ID_COLUMN]
+    headers = [EXTRACTION_ID_COLUMN, *data_fields]
+    sheet.append(headers)
+    for extraction_id, row in enumerate(rows, start=1):
+        sheet.append([extraction_id, *(row.get(field, "") for field in data_fields)])
+
+    if rows:
+        last_col = get_column_letter(len(headers))
+        excel_table = Table(
+            displayName=f"{sheet.title}_table",
+            ref=f"A1:{last_col}{len(rows) + 1}",
+        )
+        excel_table.tableStyleInfo = TableStyleInfo(
+            name="TableStyleMedium2", showRowStripes=True
+        )
+        sheet.add_table(excel_table)
 
 
 def _write_tables(
@@ -74,6 +101,7 @@ def _write_tables(
 
     When `study_name` is given, it is inserted into every output filename (used for
     flat/batch output layouts where files aren't nested under a per-study directory).
+    XLSX sheets include an Extraction_ID starting at 1; CSV schemas are unchanged.
     """
     tables = {
         name: expand_statistics_columns(fieldnames, rows, single=single_statistics)
@@ -95,22 +123,7 @@ def _write_tables(
         workbook = Workbook()
         workbook.remove(workbook.active)
         for name, (fieldnames, rows) in tables.items():
-            sheet = workbook.create_sheet(title=name[:_XLSX_SHEET_TITLE_MAX_LEN])
-            sheet.append(fieldnames)
-            for row in rows:
-                sheet.append([row.get(field, "") for field in fieldnames])
-
-            # A table ref must span the header plus at least one data row.
-            if rows:
-                last_col = get_column_letter(len(fieldnames))
-                excel_table = Table(
-                    displayName=f"{sheet.title}_table",
-                    ref=f"A1:{last_col}{len(rows) + 1}",
-                )
-                excel_table.tableStyleInfo = TableStyleInfo(
-                    name="TableStyleMedium2", showRowStripes=True
-                )
-                sheet.add_table(excel_table)
+            _write_xlsx_sheet(workbook, name, fieldnames, rows)
         xlsx_path = csv_dir / f"study{name_infix}_{timestamp}{suffix}.xlsx"
         workbook.save(xlsx_path)
         logger.info(f"XLSX workbook saved to {xlsx_path}")

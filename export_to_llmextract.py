@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from deet.hierarchical_mvp import PrognosticModel
 from deet.hierarchical_mvp.continuous_statistics import ReportedStatistic
 from deet.hierarchical_mvp.rct_registry import RCT_MODEL_MODULES
+from deet.hierarchical_mvp.utils import EXTRACTION_ID_COLUMN
 
 OUTPUT_DIR = Path("misc/hierarchical_mvp/output/templates")
 
@@ -155,7 +156,7 @@ def _autofit_columns(sheet: Worksheet) -> None:
 
 
 def build_template_workbook(classes: dict[str, type[BaseModel]]) -> Workbook:
-    """Build a workbook with one sheet per class: name/type/description rows for each field."""
+    """Build per-class sheets with numbered name/type/description rows."""
     workbook = Workbook()
     workbook.remove(workbook.active)
     used_titles: set[str] = set()
@@ -165,10 +166,13 @@ def build_template_workbook(classes: dict[str, type[BaseModel]]) -> Workbook:
         sheet = workbook.create_sheet(
             title=_unique_sheet_title(class_name, used_titles)
         )
-        sheet.append(["name", "type", "description"])
-        for field_name, field_info in cls.model_fields.items():
+        sheet.append([EXTRACTION_ID_COLUMN, "name", "type", "description"])
+        for extraction_id, (field_name, field_info) in enumerate(
+            cls.model_fields.items(), start=1
+        ):
             sheet.append(
                 [
+                    extraction_id,
                     field_name,
                     _type_name(field_info.annotation, classes),
                     field_info.description or "",

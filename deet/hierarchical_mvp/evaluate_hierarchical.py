@@ -18,7 +18,11 @@ from deet.hierarchical_mvp.evaluation_helpers_hierarchical import (
     match_evaluation_rows,
     read_xlsx_sheet_as_dicts,
 )
-from deet.hierarchical_mvp.utils import _open_csv_for_write, configure_lm
+from deet.hierarchical_mvp.utils import (
+    EXTRACTION_ID_COLUMN,
+    _open_csv_for_write,
+    configure_lm,
+)
 from deet.logger import logger
 
 _DEFAULT_LLM_MODEL = "azure/gpt-5.6-terra"
@@ -41,11 +45,13 @@ class SupportColumnPair(TypedDict):
 
 
 class EvaluationMap(TypedDict):
-    """Gold/prediction field locations and optional support-column pairs."""
+    """Field locations, matching support, and independently selected CSV context."""
 
     gold: EvaluationSource
     prediction: EvaluationSource
     support_columns: NotRequired[list[SupportColumnPair]]
+    gold_context: NotRequired[list[str]]
+    prediction_context: NotRequired[list[str]]
 
 
 INTERVENTION_EVALUATION_MAP: EvaluationMap = {
@@ -57,18 +63,48 @@ INTERVENTION_EVALUATION_MAP: EvaluationMap = {
 }
 
 
-def _require_columns(
-    rows: list[dict[str, Any]],
-    columns: set[str],
+def _read_evaluation_rows(
+    xlsx_path: Path,
     sheet_name: str,
-) -> None:
-    if not rows:
-        return
-    missing_columns = columns.difference(rows[0])
-    if missing_columns:
-        missing = ", ".join(sorted(missing_columns))
-        message = f"Column(s) {missing} not found in sheet '{sheet_name}'."
-        raise KeyError(message)
+    columns: set[str],
+) -> list[dict[str, Any]]:
+    rows = read_xlsx_sheet_as_dicts(
+        xlsx_path,
+        sheet_name,
+        required_columns=columns - {EXTRACTION_ID_COLUMN},
+    )
+    return [
+        {
+            **row,
+            EXTRACTION_ID_COLUMN: (
+                index
+                if row.get(EXTRACTION_ID_COLUMN) in (None, "")
+                else row[EXTRACTION_ID_COLUMN]
+            ),
+        }
+        for index, row in enumerate(rows, start=1)
+    ]
+
+
+def _load_prediction_rows(
+    mapping_rows: list[dict[str, str]],
+    prediction_source: EvaluationSource,
+    columns: set[str],
+) -> dict[Path, list[dict[str, Any]]]:
+    rows_by_path: dict[Path, list[dict[str, Any]]] = {}
+    for mapping_row in mapping_rows:
+        extraction_path = Path(mapping_row["extraction_xlsx_path"])
+        if not extraction_path.exists():
+            logger.warning(
+                f"Skipping reference {mapping_row['reference_item_id']}: "
+                f"extraction file not found at {extraction_path}"
+            )
+            continue
+        if extraction_path not in rows_by_path:
+            rows_by_path[extraction_path] = _read_evaluation_rows(
+                extraction_path, prediction_source["sheet"], columns
+            )
+    return rows_by_path
 
 
 def _build_candidates(
@@ -85,9 +121,7 @@ def _build_candidates(
                 gold_column=pair["gold_column"],
                 prediction_column=pair["prediction_column"],
                 value=str(
-                    row.get(
-                        pair["gold_column"] if gold else pair["prediction_column"]
-                    )
+                    row.get(pair["gold_column"] if gold else pair["prediction_column"])
                     or ""
                 ).strip(),
             )
@@ -118,6 +152,9 @@ def evaluate_fields(  # noqa: PLR0913
     `evaluation_helpers_hierarchical.generate_reference_mapping_template`), rows from
     the configured gold and prediction sheets are paired via an LLM-as-judge step.
     Optional support-column pairs are supplied to the judge as additional context.
+    gold_context/prediction_context are exported only, without affecting matching.
+    Source row identifiers use Extraction_ID or a 1-based non-empty entry number
+    assigned across the whole sheet before grouping by reference.
     """
     mapping_csv_path = Path(mapping_csv_path)
     gold_xlsx_path = Path(gold_xlsx_path)
@@ -126,50 +163,47 @@ def evaluate_fields(  # noqa: PLR0913
     gold_source = eval_map["gold"]
     prediction_source = eval_map["prediction"]
     support_columns = eval_map.get("support_columns", [])
+    gold_context = list(dict.fromkeys(eval_map.get("gold_context", [])))
+    prediction_context = list(dict.fromkeys(eval_map.get("prediction_context", [])))
     gold_support_columns = {pair["gold_column"] for pair in support_columns}
-    prediction_support_columns = {
-        pair["prediction_column"] for pair in support_columns
-    }
-    gold_reference_column = gold_source.get(
-        "reference_column", "reference_item_id"
-    )
-
-    load_dotenv()
-    configure_lm(llm_model, max_tokens)
+    prediction_support_columns = {pair["prediction_column"] for pair in support_columns}
+    gold_reference_column = gold_source.get("reference_column", "reference_item_id")
 
     mapping_rows = load_reference_mapping(mapping_csv_path)
 
-    gold_rows = read_xlsx_sheet_as_dicts(gold_xlsx_path, gold_source["sheet"])
-    _require_columns(
-        gold_rows,
-        {gold_reference_column, gold_source["column"], *gold_support_columns},
+    gold_rows = _read_evaluation_rows(
+        gold_xlsx_path,
         gold_source["sheet"],
+        {
+            gold_reference_column,
+            gold_source["column"],
+            *gold_support_columns,
+            *gold_context,
+        },
     )
     gold_rows_by_reference: dict[str, list[dict[str, Any]]] = {}
     for row in gold_rows:
         reference_id = str(row.get(gold_reference_column))
         gold_rows_by_reference.setdefault(reference_id, []).append(row)
 
+    prediction_rows_by_path = _load_prediction_rows(
+        mapping_rows,
+        prediction_source,
+        {prediction_source["column"], *prediction_support_columns, *prediction_context},
+    )
+
+    load_dotenv()
+    configure_lm(llm_model, max_tokens)
+
     results: list[dict[str, Any]] = []
     for mapping_row in mapping_rows:
         reference_item_id = mapping_row["reference_item_id"]
         extraction_xlsx_path = Path(mapping_row["extraction_xlsx_path"])
-        if not extraction_xlsx_path.exists():
-            logger.warning(
-                f"Skipping reference {reference_item_id}: extraction file not found "
-                f"at {extraction_xlsx_path}"
-            )
+        if extraction_xlsx_path not in prediction_rows_by_path:
             continue
 
         reference_gold_rows = gold_rows_by_reference.get(str(reference_item_id), [])
-        predicted_rows = read_xlsx_sheet_as_dicts(
-            extraction_xlsx_path, prediction_source["sheet"]
-        )
-        _require_columns(
-            predicted_rows,
-            {prediction_source["column"], *prediction_support_columns},
-            prediction_source["sheet"],
-        )
+        predicted_rows = prediction_rows_by_path[extraction_xlsx_path]
 
         gold_candidates = _build_candidates(
             reference_gold_rows,
@@ -190,8 +224,7 @@ def evaluate_fields(  # noqa: PLR0913
             f"{gold_candidates[match.matched_gold_index].value!r}"
             if match.matched_gold_index is not None
             else (
-                f"{predicted_candidates[match.predicted_index].value!r} -> "
-                "'(no match)'"
+                f"{predicted_candidates[match.predicted_index].value!r} -> '(no match)'"
             )
             for match in matches
         )
@@ -200,51 +233,78 @@ def evaluate_fields(  # noqa: PLR0913
         )
         logger.info(match_log_line)
         print(match_log_line)  # logger only writes to deet.log, not the terminal
-        matched_gold_indexes: set[int] = set()
-
-        for match in matches:
-            predicted_row = predicted_rows[match.predicted_index]
-            gold_row = (
+        matched_gold_indexes = {
+            match.matched_gold_index
+            for match in matches
+            if match.matched_gold_index is not None
+        }
+        row_pairs: list[tuple[dict[str, Any] | None, dict[str, Any] | None]] = [
+            (
                 reference_gold_rows[match.matched_gold_index]
                 if match.matched_gold_index is not None
+                else None,
+                predicted_rows[match.predicted_index],
+            )
+            for match in matches
+        ]
+        row_pairs.extend(
+            (gold_row, None)
+            for gold_index, gold_row in enumerate(reference_gold_rows)
+            if gold_index not in matched_gold_indexes
+        )
+
+        for gold_row, predicted_row in row_pairs:
+            gold_value = gold_row.get(gold_source["column"]) if gold_row else None
+            predicted_value = (
+                predicted_row.get(prediction_source["column"])
+                if predicted_row
                 else None
             )
-            if match.matched_gold_index is not None:
-                matched_gold_indexes.add(match.matched_gold_index)
-
             field_result = classify_field(
-                gold_value=gold_row.get(gold_source["column"]) if gold_row else None,
-                predicted_value=predicted_row.get(prediction_source["column"]),
+                gold_value=gold_value,
+                predicted_value=predicted_value,
             )
             results.append(
                 {
                     "reference_item_id": reference_item_id,
-                    "predicted_value": predicted_row.get(prediction_source["column"]),
-                    "gold_value": (
-                        gold_row.get(gold_source["column"]) if gold_row else ""
-                    ),
+                    "predicted_value": predicted_value,
+                    "gold_value": gold_value,
                     "classification": field_result.classification,
                     "exact_match": field_result.exact_match,
                     "fuzzy_score": field_result.fuzzy_score,
+                    "gold_file": str(gold_xlsx_path) if gold_row else "",
+                    "prediction_file": (
+                        str(extraction_xlsx_path) if predicted_row else ""
+                    ),
+                    "gold_sheet": gold_source["sheet"] if gold_row else "",
+                    "prediction_sheet": (
+                        prediction_source["sheet"] if predicted_row else ""
+                    ),
+                    "gold_excel_row": gold_row[EXTRACTION_ID_COLUMN]
+                    if gold_row
+                    else "",
+                    "prediction_excel_row": (
+                        predicted_row[EXTRACTION_ID_COLUMN] if predicted_row else ""
+                    ),
+                    "LLM_judge_status": (
+                        "prediction_only"
+                        if gold_row is None
+                        else "gold_only"
+                        if predicted_row is None
+                        else "matched"
+                    ),
+                    **{
+                        f"gold_context__{column}": (gold_row or {}).get(column, "")
+                        for column in gold_context
+                    },
+                    **{
+                        f"prediction_context__{column}": (predicted_row or {}).get(
+                            column, ""
+                        )
+                        for column in prediction_context
+                    },
                 }
             )
-
-        for gold_index, gold_row in enumerate(reference_gold_rows):
-            if gold_index not in matched_gold_indexes:
-                field_result = classify_field(
-                    gold_value=gold_row.get(gold_source["column"]),
-                    predicted_value=None,
-                )
-                results.append(
-                    {
-                        "reference_item_id": reference_item_id,
-                        "predicted_value": "",
-                        "gold_value": gold_row.get(gold_source["column"]),
-                        "classification": field_result.classification,
-                        "exact_match": field_result.exact_match,
-                        "fuzzy_score": field_result.fuzzy_score,
-                    }
-                )
 
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
@@ -254,6 +314,15 @@ def evaluate_fields(  # noqa: PLR0913
         "classification",
         "exact_match",
         "fuzzy_score",
+        "gold_file",
+        "prediction_file",
+        "gold_sheet",
+        "prediction_sheet",
+        "gold_excel_row",
+        "prediction_excel_row",
+        "LLM_judge_status",
+        *(f"gold_context__{column}" for column in gold_context),
+        *(f"prediction_context__{column}" for column in prediction_context),
     ]
     with _open_csv_for_write(output_csv_path) as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

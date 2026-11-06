@@ -452,16 +452,20 @@ def test_programme_output_writes_combined_outcomes_sheet(
         reader = csv.DictReader(csv_file)
         assert reader.fieldnames == Programme.outcome_csv_fieldnames()
         assert list(reader) == expected_rows
-    workbook = load_workbook(
-        output_dir / "study_20260925_120000.xlsx", read_only=True
-    )
+    workbook = load_workbook(output_dir / "study_20260925_120000.xlsx", read_only=True)
     try:
         assert workbook.sheetnames == ["programme", "interventions", "outcomes"]
         sheet_rows = list(workbook["outcomes"].values)
-        assert list(sheet_rows[0]) == Programme.outcome_csv_fieldnames()
+        assert list(sheet_rows[0]) == [
+            "Extraction_ID",
+            *Programme.outcome_csv_fieldnames(),
+        ]
         assert sheet_rows[1:] == [
-            tuple(row[field] or None for field in Programme.outcome_csv_fieldnames())
-            for row in expected_rows
+            (
+                index,
+                *(row[field] or None for field in Programme.outcome_csv_fieldnames()),
+            )
+            for index, row in enumerate(expected_rows, start=1)
         ]
     finally:
         workbook.close()

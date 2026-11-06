@@ -526,9 +526,22 @@ def test_template_workbooks_include_matching_schema(study_type):
     workbook = build_template_workbook(classes)
     try:
         rows = list(workbook["Continuous_Outcome"].values)
-        fields = {row[0] for row in rows[1:]}
+        fields = {row[1] for row in rows[1:]}
         assert ("group_label" in fields) == (not study_type.endswith("_pairwise"))
         assert "ReportedStatistic" in workbook.sheetnames
-        assert any(row[1] == "list[ReportedStatistic]" for row in rows[1:])
+        assert any(row[2] == "list[ReportedStatistic]" for row in rows[1:])
+    finally:
+        workbook.close()
+
+
+@pytest.mark.parametrize("study_type", STUDY_TYPE_MODULES)
+def test_all_template_sheets_have_sequential_extraction_ids(study_type):
+    classes = _module_classes(STUDY_TYPE_MODULES[study_type])
+    workbook = build_template_workbook(classes)
+    try:
+        for sheet in workbook:
+            values = list(sheet.values)
+            assert values[0][0] == "Extraction_ID"
+            assert [row[0] for row in values[1:]] == list(range(1, len(values)))
     finally:
         workbook.close()

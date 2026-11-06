@@ -32,6 +32,9 @@ eval_map_dict: EvaluationMap = {
         "sheet": "interventions",
         "column": "group_name",
     },
+    # Optional CSV-only context (does not change LLM matching):
+    # "gold_context": ["reference_title", "Extraction_ID"],
+    # "prediction_context": ["group_name", "Extraction_ID"],
     # Add equivalent secondary columns to help the LLM match ambiguous rows:
     # "support_columns": [
     #     {

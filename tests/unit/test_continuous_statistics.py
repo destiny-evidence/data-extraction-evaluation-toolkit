@@ -14,19 +14,25 @@ from deet.custom_hierarchical import (
     _write_dynamic_study_outputs,
     write_hierarchical_prompts_csv,
 )
+from deet.hierarchical_mvp.ClimateCarbonPricingmodel import Study as ClimateStudy
 from deet.hierarchical_mvp.cochrane_postprocessing import postprocess_cochrane_outcomes
 from deet.hierarchical_mvp.continuous_statistics import (
     ReportedStatistic,
     expand_statistics_columns,
     revman_statistics,
 )
+from deet.hierarchical_mvp.PrognosticModel import PrognosticStudy
+from deet.hierarchical_mvp.ProgrammeModel import Programme
 from deet.hierarchical_mvp.rct_registry import RCT_MODEL_MODULES
 from deet.hierarchical_mvp.utils import (
     _write_tables,
     export_animal_csv,
+    export_climate_carbon_pricing_csv,
     export_cochrane_csv,
     export_csv,
     export_obesity_csv,
+    export_prognostic_csv,
+    export_programme_csv,
 )
 
 
@@ -385,10 +391,11 @@ def test_shared_writer_expands_statistics_without_touching_other_lists(tmp_path)
     workbook = load_workbook(tmp_path / "study_test.xlsx", read_only=True)
     try:
         values = list(workbook["outcomes"].values)
-        assert list(values[0]) == headers
+        assert list(values[0]) == ["Extraction_ID", *headers]
+        assert [row[0] for row in values[1:]] == [1, 2]
         assert len(headers) == len(set(headers))
         assert (
-            dict(zip(headers, values[2], strict=True))[
+            dict(zip(values[0], values[2], strict=True))[
                 "group_summary_statistics_2_value"
             ]
             == "-8.6"
@@ -484,10 +491,58 @@ def test_static_and_dynamic_statistic_exports(tmp_path, study_type, dynamic):
             ]
     workbook = load_workbook(directory / "study_test.xlsx", read_only=True)
     try:
-        assert list(next(workbook["outcomes"].values)) == headers
+        assert list(next(workbook["outcomes"].values)) == ["Extraction_ID", *headers]
+        for sheet in workbook:
+            values = list(sheet.values)
+            assert values[0][0] == "Extraction_ID"
+            assert [row[0] for row in values[1:]] == list(range(1, len(values)))
     finally:
         workbook.close()
     assert study.model_dump() == original
+
+
+@pytest.mark.parametrize(
+    ("study_type", "model_cls", "exporter"),
+    [
+        ("PrognosticStudy", PrognosticStudy, export_prognostic_csv),
+        ("Programme", Programme, export_programme_csv),
+        ("ClimateCarbonPricing", ClimateStudy, export_climate_carbon_pricing_csv),
+    ],
+)
+@pytest.mark.parametrize("dynamic", [False, True])
+def test_non_rct_excel_sheets_include_extraction_ids(
+    tmp_path, study_type, model_cls, exporter, dynamic
+):
+    study = _sample_statistics_model(model_cls)
+    if dynamic:
+        schema_path = write_hierarchical_prompts_csv(
+            study_type, tmp_path / "prompts.csv"
+        )
+        schema = _load_prompt_schema(schema_path)
+        models = _build_dynamic_models_from_schema(schema)
+        root_name = "Programme" if study_type == "Programme" else model_cls.__name__
+        study = models[root_name].model_validate(study.model_dump())
+        _write_dynamic_study_outputs(
+            study,
+            schema,
+            study_type,
+            tmp_path,
+            "example",
+            "test",
+            "",
+            export_xlsx_file=True,
+        )
+    else:
+        exporter(study, "example", tmp_path, "test", write_xlsx=True)
+    workbook = load_workbook(tmp_path / "example" / "study_test.xlsx")
+    try:
+        assert len(workbook.sheetnames) >= 3
+        for sheet in workbook:
+            values = list(sheet.values)
+            assert values[0][0] == "Extraction_ID"
+            assert [row[0] for row in values[1:]] == list(range(1, len(values)))
+    finally:
+        workbook.close()
 
 
 def test_cochrane_postprocessing_keeps_legacy_pairwise_mean_sd_json(tmp_path):

@@ -171,4 +171,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    total = summarize_extraction_costs(
+    r"C:\Users\qtnzls7\Documents\unicef\out",
+    {
+        "input": 2.0,
+        "cached_input": 0.1,
+        "cache_write_input": 2.5,
+        "output": 10.0,
+    },
+)

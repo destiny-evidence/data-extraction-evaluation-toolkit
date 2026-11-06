@@ -32,6 +32,58 @@ AZURE_API_KEY=yourkeyhere
 AZURE_API_BASE_ANTHROPIC=https://yourprojecthere.services.ai.azure.com/anthropic
 ```
 
+## Excel extraction IDs and hierarchical evaluation context
+
+Every newly exported Excel sheet includes an `Extraction_ID` column, numbering
+data entries from 1 independently in each tab. This applies to every predefined
+study design, pairwise variant, custom-schema extraction, EPPI gold export, and
+Excel model template. IDs describe the exported rows; they are not extracted by
+the LLM and do not change the extraction models, CSV schemas, or JSON output.
+Re-exporting a sheet regenerates its IDs.
+
+For hierarchical evaluation with `evaluate_fields`, configure optional context
+columns independently for the gold and prediction sheets:
+
+```python
+eval_map_dict = {
+    "gold": {"sheet": "Outcomes", "column": "Title"},
+    "prediction": {"sheet": "outcomes", "column": "outcome_name"},
+    "support_columns": [
+        {"gold_column": "OutcomeTypeName", "prediction_column": "outcome_type"},
+        {"gold_column": "grp1ArmName", "prediction_column": "group_label"},
+    ],
+    "gold_context": ["OutcomeTypeName", "grp1ArmName", "Extraction_ID"],
+    "prediction_context": ["outcome_type", "group_label", "Extraction_ID"],
+}
+```
+
+`support_columns` help the LLM distinguish ambiguous rows. `gold_context` and
+`prediction_context` only select fields for human inspection in the output CSV;
+they do not affect matching or scoring. Their columns appear as
+`gold_context__<column>` and `prediction_context__<column>` in configured order.
+The lists need not contain equivalent fields or have the same length.
+
+The evaluation CSV retains its existing values and scores, and also includes:
+
+- `gold_file`, `prediction_file`: source workbook paths.
+- `gold_sheet`, `prediction_sheet`: source worksheet names.
+- `gold_excel_row`, `prediction_excel_row`: the source `Extraction_ID`, or a
+  sequential 1-based entry number when that column or its cell is absent.
+  Fallback numbering excludes the header and completely blank rows, and is
+  assigned across the entire sheet **before** filtering by study reference.
+  Despite their names, these are entry identifiers, not physical Excel row
+  coordinates; the first entry has ID 1, not Excel row 2.
+- `LLM_judge_status`: `matched`, `prediction_only`, or `gold_only`.
+  This describes pairing, not correctness: a matched pair can still be scored FP.
+
+Fields for an absent side of a pair are blank. Requested columns are validated
+against worksheet headers, including on empty sheets, before any LLM calls.
+Missing columns raise an error naming the workbook, sheet, and columns;
+`Extraction_ID` is the exception because it can be generated for older inputs.
+Existing non-empty IDs are preserved during evaluation, and input workbooks
+are never modified. The existing behavior of warning and skipping missing
+prediction files is unchanged.
+
 ## Extraction token logs and cost estimates
 
 The predefined and custom CSV-schema hierarchical runners automatically write

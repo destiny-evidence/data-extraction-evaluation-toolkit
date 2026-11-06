@@ -9,17 +9,12 @@ from typing import Any, NamedTuple
 
 import dspy
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table, TableStyleInfo
 from pydantic import BaseModel, Field
 
 from deet.evaluators.gold_standard_llm_evaluator import _verbatim_fuzzy_match_pct
 from deet.logger import logger
 
-from .utils import _open_csv_for_write
-
-# Excel sheet titles are limited to 31 characters.
-_XLSX_SHEET_TITLE_MAX_LEN = 31
+from .utils import _open_csv_for_write, _write_xlsx_sheet
 
 # Top-level EPPI reference lists exported as their own sheet, keyed by sheet name.
 _EPPI_CHILD_LIST_KEYS = {
@@ -77,22 +72,7 @@ def _write_xlsx_workbook(
     workbook.remove(workbook.active)
 
     for name, (fieldnames, rows) in tables.items():
-        sheet = workbook.create_sheet(title=name[:_XLSX_SHEET_TITLE_MAX_LEN])
-        sheet.append(fieldnames or ["(no data)"])
-        for row in rows:
-            sheet.append([row.get(field, "") for field in fieldnames])
-
-        # A table ref must span the header plus at least one data row.
-        if rows and fieldnames:
-            last_col = get_column_letter(len(fieldnames))
-            excel_table = Table(
-                displayName=f"{sheet.title}_table",
-                ref=f"A1:{last_col}{len(rows) + 1}",
-            )
-            excel_table.tableStyleInfo = TableStyleInfo(
-                name="TableStyleMedium2", showRowStripes=True
-            )
-            sheet.add_table(excel_table)
+        _write_xlsx_sheet(workbook, name, fieldnames, rows)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)
@@ -107,7 +87,7 @@ def export_from_eppi(
     Each of `References[].Arms`, `References[].Outcomes` and `References[].Timepoints` is
     written to its own sheet ("Arms", "Outcomes", "Timepoints"), with every child object's
     own fields as columns plus a `reference_item_id`/`reference_title` pair identifying which
-    reference it belongs to.
+    reference it belongs to. Each sheet has an Extraction_ID starting at 1.
 
     Args:
         json_path: Path to the EPPI export JSON file (e.g. gold standard annotations).
@@ -147,27 +127,43 @@ def export_from_eppi(
     return output_path
 
 
-def read_xlsx_sheet_as_dicts(xlsx_path: str | Path, sheet_name: str) -> list[dict[str, Any]]:
-    """Read a worksheet with a header row into a list of dicts, one per non-empty data row."""
+def read_xlsx_sheet_as_dicts(
+    xlsx_path: str | Path,
+    sheet_name: str,
+    *,
+    required_columns: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Read non-empty rows, optionally validating the header even without data."""
     xlsx_path = Path(xlsx_path)
     workbook = load_workbook(xlsx_path, data_only=True, read_only=True)
-    if sheet_name not in workbook.sheetnames:
-        raise KeyError(
-            f"Sheet '{sheet_name}' not found in {xlsx_path} (available: {workbook.sheetnames})"
-        )
+    try:
+        if sheet_name not in workbook.sheetnames:
+            message = (
+                f"Sheet '{sheet_name}' not found in {xlsx_path} "
+                f"(available: {workbook.sheetnames})"
+            )
+            raise KeyError(message)
 
-    rows_iter = workbook[sheet_name].iter_rows(values_only=True)
-    header = list(next(rows_iter, ()))
-    if not header:
-        return []
+        rows_iter = workbook[sheet_name].iter_rows(values_only=True)
+        header = list(next(rows_iter, ()))
+        missing_columns = (required_columns or set()).difference(header)
+        if missing_columns:
+            missing = ", ".join(sorted(missing_columns))
+            message = (
+                f"Column(s) {missing} not found in sheet '{sheet_name}' in {xlsx_path}."
+            )
+            raise KeyError(message)
+        if not header:
+            return []
 
-    records: list[dict[str, Any]] = []
-    for row in rows_iter:
-        record = dict(zip(header, row))
-        # Skip the placeholder "(no data)" row written by `_write_xlsx_workbook` for empty sheets.
-        if any(value not in (None, "") for value in record.values()):
-            records.append(record)
-    return records
+        records: list[dict[str, Any]] = []
+        for row in rows_iter:
+            record = dict(zip(header, row, strict=False))
+            if any(value not in (None, "") for value in record.values()):
+                records.append(record)
+        return records
+    finally:
+        workbook.close()
 
 
 def generate_reference_mapping_template(
