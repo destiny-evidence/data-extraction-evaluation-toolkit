@@ -82,6 +82,14 @@ class LLMDataExtractor(BaseDataExtractor):
             self.model = f"ollama/{self.config.model}"
             self.llm_api_key = None
             self.api_base = None
+        elif self.config.provider == LLMProvider.OPENAI:
+            self.model = self.config.model
+            self.llm_api_key = settings.openai_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = None
+        elif self.config.provider == LLMProvider.HUGGINGFACE:
+            self.model = f"huggingface/{self.config.model}"
+            self.llm_api_key = settings.huggingface_api_key.get_secret_value()  # type: ignore[union-attr]
+            self.api_base = None
         else:
             error_message = f"Unsupported LLM provider: {self.config.provider}"
             raise ValueError(error_message)
