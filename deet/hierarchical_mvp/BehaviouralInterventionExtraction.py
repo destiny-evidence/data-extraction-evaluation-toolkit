@@ -5,35 +5,39 @@ targeting household energy use.
 Same structure as the Cochrane RCT pipeline, but each level is only queried when
 the level above calls for it (gating is plain Python in ``forward``, not LLM-decided):
 
-  L0  ScreenDocument          -> stop if the document is excluded
-  L1  ExtractStudyInfo        -> stop if no treatment arm is found
-  L2  Extract*Details         -> only for the broad types an arm actually has
-  L3a ListEffects             -> stop if no estimate is reported
-  L3b Extract* (per estimate) -> only the blocks the estimate's stub requires
+  L0  ScreenDocument               -> stop if the document is excluded
+  L1  ExtractStudyInfo             -> stop if no treatment arm is found
+  L2  Extract*Details              -> only for the broad types an arm actually has
+  L3a ClassifyEvaluationDesign     -> how the effects are identified (one per document)
+  L3b ListCandidateEstimates       -> every estimate, described but not selected
+  L3c select_candidates()          -> which estimates to code (plain Python, selection_BI.py)
+  L3d ExtractEffectStatistics      -> one call per selected estimate, always with significance
+  L3e derive()                     -> derived values in Python (derive_BI.py)
 """
 
 from __future__ import annotations
 
 import dspy
+
 from deet.logger import logger
 
 from .BehaviouralInterventionModel import (
     Arm_Details,
     BaselineInfo,
-    CoefficientEstimate,
+    Candidate,
     DeliveryDetails,
-    DifferenceOfMeans,
     Effect,
-    Effect_Stub,
+    EffectStatistics,
+    EvaluationDesign,
     Intervention,
     MotivationDetails,
     PricingDetails,
-    SampleSizes,
     Screening,
-    SignificanceInfo,
     Study,
     Study_Characteristics,
 )
+from .derive_BI import derive
+from .selection_BI import select_candidates
 
 _NOT_REPORTED = {"", "NR", "NA"}
 
@@ -143,30 +147,19 @@ class ExtractMotivationDetails(dspy.Signature):
     )
 
 
-class ListEffects(dspy.Signature):
+class ClassifyEvaluationDesign(dspy.Signature):
     """
-    You are a systematic review assistant.
+    You are a systematic review assistant for a review of behavioural interventions that
+    reduce household energy consumption.
 
-    List every estimate of the effect of an intervention on household energy consumption
-    that the study reports. An estimate qualifies only if it contrasts energy consumption
-    under the intervention with a counterfactual: treated versus control households, or the
-    same households before versus during/after the intervention. A study may report several
-    qualifying estimates: one per treatment arm, population, time period, specification or
-    model. Capture the intention-to-treat estimate and ignore ATT/LATE estimates.
+    Describe how this study identifies the effect of the intervention on household energy
+    consumption: the design, whether households were randomly assigned, which energy outcomes
+    are estimated, which specification the authors name as primary, and whether energy
+    consumption was measured after the treatment had ended.
 
-    Do NOT list:
-    - coefficients of covariates, moderators or other explanatory variables (e.g. household
-      characteristics, attitudes, or changes in behaviour or motivation) that are not a
-      treatment indicator;
-    - heterogeneity or subgroup regressions that only explain variation within the treated
-      group, without a contrast to a counterfactual;
-    - the same estimate more than once, even if it is reported in several places (abstract,
-      text, table). Use the location that also reports its uncertainty (SD, SE, test
-      statistic or p-value).
-
-    Only identify and classify the estimates here; their numbers are extracted in a later
-    step. In your reasoning, go through the estimates you list by effect_number and explain
-    why each one qualifies, then briefly name the candidates you rejected and why.
+    Follow-up means measurement after the treatment ended. Estimates made during the
+    treatment, such as a mid-term survey or a check after a few months of treatment, are not
+    follow-up.
 
     Report only information that is explicitly stated in the context. Report numbers exactly
     as they appear in the source; do not calculate or impute. If a value is not reported, use
@@ -177,17 +170,33 @@ class ListEffects(dspy.Signature):
     interventions: list[Intervention] = dspy.InputField(
         desc="The treatment arms already identified"
     )
-    effect_stubs: list[Effect_Stub] = dspy.OutputField(
-        desc="One entry per reported estimate, with its location, arm(s), design, technique and kind"
+    evaluation_design: EvaluationDesign = dspy.OutputField(
+        desc="Design, randomisation, outcomes, primary analysis and follow-up of the study"
     )
 
 
-class ExtractCoefficient(dspy.Signature):
+class ListCandidateEstimates(dspy.Signature):
     """
     You are a systematic review assistant.
 
-    For the given estimate, extract the regression coefficient, its uncertainty measure,
-    the direction of the effect and the control variables used in the model.
+    List every estimate of the effect of an intervention on household energy consumption
+    that the study reports. An estimate qualifies if it contrasts energy consumption under
+    the intervention with a counterfactual: treated versus control households, or the same
+    households before versus during/after the intervention. List every such estimate, including
+    alternative specifications, sub-periods, subgroups and descriptive contrasts. A later step
+    selects which ones to code, so do not leave an estimate out because it may not be selected.
+    Describe each estimate with its attributes (location, arms, population, period,
+    specification, analysis and whether it reports uncertainty).
+
+    Do NOT list:
+    - coefficients of covariates or other explanatory variables that are not a treatment
+      indicator (e.g. household characteristics, attitudes, or changes in behaviour);
+    - the same number more than once. If an estimate is reported in several places (abstract,
+      text, table), list it once from the location that also reports its uncertainty, and
+      point same_estimate_as at the other entry if you list both.
+
+    In your reasoning, go through the estimates by effect_number and describe the attributes
+    that matter for the selection (population, period, analysis, specification, uncertainty).
 
     Report only information that is explicitly stated in the context. Report numbers exactly
     as they appear in the source; do not calculate or impute. If a value is not reported, use
@@ -195,96 +204,45 @@ class ExtractCoefficient(dspy.Signature):
     """
 
     context: str = dspy.InputField(desc=_CONTEXT_DESC)
-    effect: Effect_Stub = dspy.InputField(
-        desc="The estimate to extract (see its page and arm)"
+    interventions: list[Intervention] = dspy.InputField(
+        desc="The treatment arms already identified"
     )
-    coefficient_estimate: CoefficientEstimate = dspy.OutputField(
-        desc="Coefficient block for this estimate"
+    evaluation_design: EvaluationDesign = dspy.InputField(
+        desc="How the study identifies the effect, and its outcomes"
+    )
+    candidates: list[Candidate] = dspy.OutputField(
+        desc="One entry per reported estimate, with its location, arms, population, period and specification"
     )
 
 
-class ExtractDifferenceOfMeans(dspy.Signature):
+class ExtractEffectStatistics(dspy.Signature):
     """
     You are a systematic review assistant.
 
-    For the given estimate, extract the control and treated group means and SDs and the
-    difference of means. Capture both group means where possible.
+    For the given estimate, extract its statistics: the point estimate with its sign, the
+    coefficient or the group means and differences, the uncertainty, the sample sizes and the
+    significance. Start by copying the table row and column header (or the sentence) the numbers
+    come from into source_quote.
+
+    Fill coefficient_estimate when the estimate is a regression coefficient (estimate_kind
+    'coefficient'); fill difference_of_means when it is a difference or group means
+    (estimate_kind 'difference_of_means'). For a pre-test/post-test design with no control group,
+    report only the total sample size and leave the treatment and control sizes as NR.
+
+    Always extract the significance: stars and their legend, the p-value, the test, the test
+    statistic and the number of tails, whether or not an SE is reported.
 
     Report only information that is explicitly stated in the context. Report numbers exactly
-    as they appear in the source; do not calculate or impute. If a value is not reported, use
-    the string "NR".
+    as they appear in the source, including their sign; do not calculate or impute. If a value
+    is not reported, use the string "NR".
     """
 
     context: str = dspy.InputField(desc=_CONTEXT_DESC)
-    effect: Effect_Stub = dspy.InputField(
-        desc="The estimate to extract (see its page and arm)"
+    effect: Candidate = dspy.InputField(
+        desc="The estimate to extract (see its table, row, column and page)"
     )
-    difference_of_means: DifferenceOfMeans = dspy.OutputField(
-        desc="Difference-of-means block for this estimate"
-    )
-
-
-class ExtractSampleSizes(dspy.Signature):
-    """
-    You are a systematic review assistant.
-
-    For the given estimate, extract the total, treatment and control sample sizes. Capture as
-    much detail as possible. Several treatments may share one control group, so the treatment
-    and control sizes need not add up to the total.
-
-    Report only information that is explicitly stated in the context. Report numbers exactly
-    as they appear in the source; do not calculate or impute. If a value is not reported, use
-    the string "NR".
-    """
-
-    context: str = dspy.InputField(desc=_CONTEXT_DESC)
-    effect: Effect_Stub = dspy.InputField(
-        desc="The estimate to extract (see its page and arm)"
-    )
-    sample_sizes: SampleSizes = dspy.OutputField(
-        desc="Treatment, control and total sample sizes"
-    )
-
-
-class ExtractTotalSampleSize(dspy.Signature):
-    """
-    You are a systematic review assistant.
-
-    For the given pre-test/post-test estimate (no control group, same group measured twice),
-    extract the total sample size.
-
-    Report only information that is explicitly stated in the context. Report numbers exactly
-    as they appear in the source; do not calculate or impute. If a value is not reported, use
-    the string "NR".
-    """
-
-    context: str = dspy.InputField(desc=_CONTEXT_DESC)
-    effect: Effect_Stub = dspy.InputField(
-        desc="The estimate to extract (see its page and arm)"
-    )
-    total_sample_size: str = dspy.OutputField(
-        desc="Total number of households or observations for this estimate"
-    )
-
-
-class ExtractSignificance(dspy.Signature):
-    """
-    You are a systematic review assistant.
-
-    For the given estimate, extract what the study reports about statistical significance:
-    p-value or significance level, the test used, the test statistic and the number of tails.
-
-    Report only information that is explicitly stated in the context. Report numbers exactly
-    as they appear in the source; do not calculate or impute. If a value is not reported, use
-    the string "NR".
-    """
-
-    context: str = dspy.InputField(desc=_CONTEXT_DESC)
-    effect: Effect_Stub = dspy.InputField(
-        desc="The estimate to extract (see its page and arm)"
-    )
-    significance: SignificanceInfo = dspy.OutputField(
-        desc="Significance block for this estimate"
+    statistics: EffectStatistics = dspy.OutputField(
+        desc="Statistics block for this estimate"
     )
 
 
@@ -305,7 +263,7 @@ class ExtractBaseline(dspy.Signature):
     """
 
     context: str = dspy.InputField(desc=_CONTEXT_DESC)
-    effect: Effect_Stub = dspy.InputField(
+    effect: Candidate = dspy.InputField(
         desc="The estimate to extract (see its page and arm)"
     )
     baseline: BaselineInfo = dspy.OutputField(
@@ -321,43 +279,16 @@ _DELIVERY_TYPES = {"Information", "Feedback", "Social Comparison"}
 
 
 def _missing(value: str) -> bool:
-    return value.strip() in _NOT_REPORTED
-
-
-def _needs_significance(effect: Effect) -> bool:
-    """Skip the significance query when the test statistic can be derived from SE/SD."""
-    if effect.coefficient_estimate is not None:
-        c = effect.coefficient_estimate
-        return _missing(c.coefficient_sd) or c.coefficient_sd_type in {
-            "NA",
-            "Not provided",
-        }
-    if effect.difference_of_means is not None:
-        d = effect.difference_of_means
-        return _missing(d.control_sd) and _missing(d.treated_sd)
-    return True
+    # Case-insensitive: "nr" and "NR" are both not reported.
+    return value.strip().upper() in _NOT_REPORTED
 
 
 def _norm(value: str) -> str:
     return " ".join(value.lower().split())
 
 
-def _arms_key(stub: Effect_Stub) -> tuple[str, ...]:
-    return tuple(sorted(_norm(arm) for arm in stub.intervention_arms))
-
-
-def _dedupe_stubs(stubs: list[Effect_Stub]) -> list[Effect_Stub]:
-    """Drop stubs that point at the same estimate (same page, label and arms)."""
-    seen: set[tuple] = set()
-    kept = []
-    for stub in stubs:
-        key = (_norm(stub.page), _norm(stub.estimate_label), _arms_key(stub))
-        if key in seen:
-            logger.info(f"Dropped duplicate effect stub {stub.effect_number}: {key}")
-            continue
-        seen.add(key)
-        kept.append(stub)
-    return kept
+def _arms_key(candidate: Candidate) -> tuple[str, ...]:
+    return tuple(sorted(_norm(arm) for arm in candidate.intervention_arms))
 
 
 def _estimate_value(effect: Effect) -> str | None:
@@ -367,29 +298,62 @@ def _estimate_value(effect: Effect) -> str | None:
         value = effect.difference_of_means.diff_mean
     else:
         return None
-    value = _norm(value).replace("%", "").lstrip("+")
-    return None if _missing(value) else value
+    if _missing(value):
+        return None
+    return _norm(value).replace("%", "").lstrip("+")
 
 
-def _dedupe_effects(effects: list[Effect]) -> list[Effect]:
-    """Drop filled effects that repeat an estimate (same page, arms, kind and value).
+def _uncertainty(effect: Effect) -> str | None:
+    if effect.coefficient_estimate is not None:
+        sd = effect.coefficient_estimate.coefficient_sd
+        return None if _missing(sd) else _norm(sd)
+    if effect.difference_of_means is not None:
+        control, treated = (
+            effect.difference_of_means.control_sd,
+            effect.difference_of_means.treated_sd,
+        )
+        if _missing(control) or _missing(treated):
+            return None
+        return f"{_norm(control)}|{_norm(treated)}"
+    return None
 
-    Catches duplicates the stub-level check misses because the LLM labelled the same
-    estimate differently. Effects without a reported value are always kept.
+
+def _dedupe_effects(effects: list[Effect]) -> tuple[list[Effect], list[Effect]]:
     """
-    seen: set[tuple] = set()
-    kept = []
+    Split effects into kept and dropped copies of an estimate.
+
+    A safety net behind select_candidates(). Two effects are copies only if the value, the
+    uncertainty, the outcome and the arms all match and are reported. Matching values without
+    uncertainty are only logged.
+    """
+    seen: dict[tuple, Effect] = {}
+    values: set[tuple[str, ...]] = set()
+    kept, dropped = [], []
     for effect in effects:
         value = _estimate_value(effect)
-        if value is not None:
-            stub = effect.stub
-            key = (_norm(stub.page), _arms_key(stub), stub.estimate_kind, value)
+        uncertainty = _uncertainty(effect)
+        if value is not None and uncertainty is not None:
+            key = (
+                value,
+                uncertainty,
+                _norm(effect.candidate.outcome),
+                _arms_key(effect.candidate),
+            )
             if key in seen:
-                logger.info(f"Dropped duplicate effect {stub.effect_number}: {key}")
+                logger.info(
+                    f"Dropped duplicate effect {effect.candidate.effect_number}: {key}"
+                )
+                dropped.append(effect)
                 continue
-            seen.add(key)
+            seen[key] = effect
+        elif value is not None:
+            if (value, _arms_key(effect.candidate)) in values:
+                logger.warning(
+                    f"Possible duplicate effect {effect.candidate.effect_number}: value {value}"
+                )
+            values.add((value, _arms_key(effect.candidate)))
         kept.append(effect)
-    return kept
+    return kept, dropped
 
 
 # ---------------------------------------------------------------------------
@@ -407,13 +371,10 @@ class BehaviouralInterventionExtractionPipeline(dspy.Module):
         self.extract_delivery = dspy.Predict(ExtractDeliveryDetails)
         self.extract_pricing = dspy.Predict(ExtractPricingDetails)
         self.extract_motivation = dspy.Predict(ExtractMotivationDetails)
-        # ChainOfThought so the reasoning behind each listed estimate is kept
-        self.list_effects = dspy.ChainOfThought(ListEffects)
-        self.extract_coefficient = dspy.Predict(ExtractCoefficient)
-        self.extract_difference_of_means = dspy.Predict(ExtractDifferenceOfMeans)
-        self.extract_sample_sizes = dspy.Predict(ExtractSampleSizes)
-        self.extract_total_sample_size = dspy.Predict(ExtractTotalSampleSize)
-        self.extract_significance = dspy.Predict(ExtractSignificance)
+        # ChainOfThought so the reasoning behind each decision is kept
+        self.classify_design = dspy.ChainOfThought(ClassifyEvaluationDesign)
+        self.list_candidates = dspy.ChainOfThought(ListCandidateEstimates)
+        self.extract_statistics = dspy.Predict(ExtractEffectStatistics)
         self.extract_baseline = dspy.Predict(ExtractBaseline)
 
     # -- L2 ----------------------------------------------------------------
@@ -435,42 +396,25 @@ class BehaviouralInterventionExtractionPipeline(dspy.Module):
             ).motivation
         return details
 
-    # -- L3b ---------------------------------------------------------------
+    # -- L3d ---------------------------------------------------------------
 
-    def _fill_effect(self, context: str, stub: Effect_Stub) -> Effect:
-        effect = Effect(stub=stub)
-
-        # Estimate block selected by the stub's kind
-        if stub.estimate_kind == "coefficient":
-            effect.coefficient_estimate = self.extract_coefficient(
-                context=context, effect=stub
-            ).coefficient_estimate
-        else:
-            effect.difference_of_means = self.extract_difference_of_means(
-                context=context, effect=stub
-            ).difference_of_means
-
-        # Sample sizes: a pre/post design has no control group
-        if stub.study_design == "Pre-test/post-test":
-            total = self.extract_total_sample_size(
-                context=context, effect=stub
-            ).total_sample_size
-            effect.sample_sizes = SampleSizes(total_sample_size=total)
-        else:
-            effect.sample_sizes = self.extract_sample_sizes(
-                context=context, effect=stub
-            ).sample_sizes
-
-        # Significance only when the test statistic cannot be derived from SE/SD
-        if _needs_significance(effect):
-            effect.significance = self.extract_significance(
-                context=context, effect=stub
-            ).significance
+    def _fill_effect(self, context: str, candidate: Candidate) -> Effect:
+        stats = self.extract_statistics(context=context, effect=candidate).statistics
+        effect = Effect(
+            candidate=candidate,
+            source_quote=stats.source_quote,
+            sign_convention=stats.sign_convention,
+            signed_point_estimate=stats.signed_point_estimate,
+            coefficient_estimate=stats.coefficient_estimate,
+            difference_of_means=stats.difference_of_means,
+            sample_sizes=stats.sample_sizes,
+            significance=stats.significance,
+        )
 
         # Baseline only when a percentage change must be derived (absolute units)
-        if stub.outcome_scale == "absolute":
+        if candidate.outcome_scale == "absolute":
             effect.baseline = self.extract_baseline(
-                context=context, effect=stub
+                context=context, effect=candidate
             ).baseline
 
         return effect
@@ -496,19 +440,49 @@ class BehaviouralInterventionExtractionPipeline(dspy.Module):
         # L2: per-arm details, only for the types each arm has
         study.arm_details = [self._arm_details(context, i) for i in study.interventions]
 
-        # L3a: list estimates
-        listing = self.list_effects(context=context, interventions=study.interventions)
-        stubs = _dedupe_stubs(listing.effect_stubs)
-        if not stubs:
+        # L3a: how the effects are identified
+        design_step = self.classify_design(
+            context=context, interventions=study.interventions
+        )
+        design = design_step.evaluation_design
+        study.evaluation_design = design
+        study.design_reasoning = design_step.reasoning
+        self._apply_design(study, design)
+
+        # L3b + L3c: list every candidate, then select the ones to code
+        listing = self.list_candidates(
+            context=context, interventions=study.interventions, evaluation_design=design
+        )
+        study.listing_reasoning = listing.reasoning
+        study.candidates = select_candidates(listing.candidates)
+        chosen = [record for record in study.candidates if record.selected == "Yes"]
+        if not chosen:
             study.screening = Screening(
                 exclusion_reason="No relevant effect sizes",
                 notes_exclusion_reason="No estimates were identified after the intervention arms were found.",
             )
             return study
 
-        # L3b: fill each estimate, gated by its stub
-        effects = _dedupe_effects([self._fill_effect(context, stub) for stub in stubs])
+        # L3d + L3e: statistics and derived values for the selected estimates
+        effects = [self._fill_effect(context, record.candidate) for record in chosen]
+        effects, dropped = _dedupe_effects(effects)
+        record_of = {id(record.candidate): record for record in study.candidates}
+        for effect in dropped:
+            record = record_of[id(effect.candidate)]
+            record.selected = "No"
+            record.decision_reason = (
+                "duplicate of another selected estimate (same value and uncertainty)"
+            )
         for effect in effects:
-            effect.inclusion_reasoning = listing.reasoning
+            effect.selection_reason = record_of[id(effect.candidate)].decision_reason
+            effect.derived, notes = derive(effect)
+            effect.notes_effect = "; ".join(notes)
         study.effects = effects
         return study
+
+    def _apply_design(self, study: Study, design: EvaluationDesign) -> None:
+        # Decided once from the design step, so it is not contradicted by a separate answer.
+        if study.study_characteristics is not None:
+            study.study_characteristics.randomisation_dummy = design.randomised
+        for arm in study.interventions:
+            arm.followup = design.post_treatment_followup

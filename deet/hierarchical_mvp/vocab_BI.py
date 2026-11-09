@@ -1,4 +1,5 @@
-"""Controlled vocabularies for the behavioural-intervention extraction.
+"""
+Controlled vocabularies for the behavioural-intervention extraction.
 
 Values follow the codebook (resources/Codebook-2025-02-24.docx). Where the
 human-coded CSV uses a different convention, the codebook wording is used here
@@ -184,3 +185,41 @@ ControlVariable = Literal[
     "Electricity use",
     "Environmental attitudes",
 ]
+
+# Evaluation design of the whole study (first pipeline step, decides how effects are identified).
+EvaluationDesignType = Literal[
+    "RCT with control",
+    "RCT between treatments only",
+    "Quasi-experimental with comparison group",
+    "Natural experiment",
+    "One-group pre-post",
+    "Other",
+]
+
+EstimandAvailable = Literal[
+    "ITT",
+    "Only per-protocol or as-treated",
+    "Not applicable",
+]
+
+# Analysis population of one estimate.
+EstimandAnalysis = Literal[
+    "ITT", "ATT", "LATE", "Per-protocol or as-treated", "Unclear"
+]
+
+# What kind of estimate a candidate is; only "average_effect" (and the descriptive fallback) is selected.
+EstimandType = Literal[
+    "average_effect",
+    "time_profile",
+    "slope_or_elasticity",
+    "interaction_or_heterogeneity",
+    "placebo_or_pre_trend",
+    "descriptive_only",
+]
+
+PopulationType = Literal["full_sample", "subgroup"]
+
+PeriodType = Literal["full_treatment_period", "sub_period", "post_treatment_followup"]
+
+# Sign of a reported estimate: change in consumption, or a saving where positive means less consumption.
+SignConvention = Literal["change in consumption", "reduction (positive = saving)"]

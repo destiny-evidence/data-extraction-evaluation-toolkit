@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 # FastAPI (pulled in via destiny_sdk.auth) imports anyio.abc and anyio low-level
 # modules during import, and an uninitialized LazyImport placeholder causes the
 # circular-import failures seen in notebook/Colab environments.
-import anyio  # noqa: F401
-import anyio.abc  # noqa: F401
+import anyio
+import anyio.abc
 import anyio.lowlevel  # noqa: F401
 import dspy
 from openpyxl import Workbook
@@ -140,7 +140,8 @@ def get_api_base_for_model(model: str) -> str:
 
 
 def configure_lm(model: str, max_tokens: int, cache: bool = False) -> None:
-    """Initialise DSPy with provider credentials and compatible token limits.
+    """
+    Initialise DSPy with provider credentials and compatible token limits.
 
     DSPy 3.2.x does not recognise GPT-6 models as requiring
     max_completion_tokens, so normalise their request kwargs explicitly.
@@ -524,9 +525,13 @@ def export_programme_csv(
         ),
         "outcomes": (
             Programme.outcome_csv_fieldnames(),
-            [item.to_csv_row() for item in (
-                *programme.quantitative_outcomes, *programme.qualitative_outcomes
-            )],
+            [
+                item.to_csv_row()
+                for item in (
+                    *programme.quantitative_outcomes,
+                    *programme.qualitative_outcomes,
+                )
+            ],
         ),
     }
     _write_tables(
@@ -553,7 +558,7 @@ def export_behavioural_intervention_csv(
     file_label: str = "",
 ) -> None:
     """
-    Write three tables (study, interventions, effects) for a
+    Write four tables (study, interventions, candidates, effects) for a
     BehaviouralIntervention extraction as timestamped CSV files and/or as sheets
     of a single xlsx workbook into predictions/<study_name>/, or directly into
     `predictions_dir` (with `study_name` in each filename) when `flat_output`
@@ -574,15 +579,15 @@ def export_behavioural_intervention_csv(
         ),
         "interventions": (
             BehaviouralInterventionStudy.intervention_csv_fieldnames(),
-            study.intervention_csv_rows(
-                study_id=study_name, external_id=external_id
-            ),
+            study.intervention_csv_rows(study_id=study_name, external_id=external_id),
+        ),
+        "candidates": (
+            BehaviouralInterventionStudy.candidate_csv_fieldnames(),
+            study.candidate_csv_rows(study_id=study_name, external_id=external_id),
         ),
         "effects": (
             BehaviouralInterventionStudy.outcome_csv_fieldnames(),
-            study.outcome_csv_rows(
-                study_id=study_name, external_id=external_id
-            ),
+            study.outcome_csv_rows(study_id=study_name, external_id=external_id),
         ),
     }
     _write_tables(

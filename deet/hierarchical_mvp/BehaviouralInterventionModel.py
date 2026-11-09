@@ -1,14 +1,17 @@
-"""Pydantic data models for behavioural-intervention (household energy) extraction.
+"""
+Pydantic data models for behavioural-intervention (household energy) extraction.
 
 The models mirror the hierarchy of the codebook:
 
     Study_Characteristics            study level
+      EvaluationDesign               study level: how the effects are identified, outcomes
       Intervention                   one per treatment arm
         DeliveryDetails              only for Information / Feedback / Social Comparison arms
         PricingDetails               only for Monetary Incentives arms
         MotivationDetails            only for Motivation arms
-      Effect_Stub                    one per reported estimate (where / which arms / which kind)
-      Effect                         stub + the estimate block selected by the stub
+      Candidate                      one per estimate listed in the document (no selection yet)
+      CandidateRecord                candidate + the selection decision made in Python
+      Effect                         selected candidate + its statistics + derived values
 
 Sub-models that are only queried when a higher level calls for them are held as
 Optional: ``None`` means "not applicable / not queried", while the string "NR"
@@ -27,7 +30,11 @@ from .vocab_BI import (
     ControlVariable,
     DocumentType,
     EffectDirection,
+    EstimandAnalysis,
+    EstimandAvailable,
+    EstimandType,
     EstimateKind,
+    EvaluationDesignType,
     ExclusionReason,
     FramingUnit,
     GeographicScope,
@@ -35,12 +42,26 @@ from .vocab_BI import (
     InterventionSubtype,
     InterventionType,
     OutcomeScale,
+    PeriodType,
+    PopulationType,
+    SignConvention,
     SignificanceReporting,
     SignificanceTest,
     StatisticalTechnique,
     StudyDesign,
     YesNo,
     YesNoUnclear,
+)
+
+# Output columns derived in Python (see derive_BI.py). Exported next to the reported columns.
+DERIVED_FIELDS = (
+    "derived_effect_direction",
+    "derived_diff_mean",
+    "derived_test_statistic",
+    "derived_total_sample_size",
+    "derived_significance_reporting",
+    "derived_p_bound",
+    "derived_percentage_change",
 )
 
 # ---------------------------------------------------------------------------
@@ -83,7 +104,10 @@ class Study_Characteristics(BaseModel):
     )
     publication_year: str = Field(description="Year the document was published.")
     study_year: str = Field(
-        description="Year in which the study (intervention) took place; use the publication year if not stated."
+        description=(
+            "Year(s) in which the fieldwork or intervention took place, not the publication year. "
+            "Use the publication year only if no fieldwork or intervention date is given anywhere."
+        )
     )
     document_type: DocumentType = Field(
         description=(
@@ -94,8 +118,9 @@ class Study_Characteristics(BaseModel):
     )
     geographic_scope: GeographicScope = Field(
         description=(
-            "Area across which the intervention was carried out. Stick to the listed options; "
-            "describe anything smaller than a municipality in notes_study_scope."
+            "Area in which the participating households live, not the location of the institution "
+            "that ran the study. Stick to the listed options; describe anything smaller than a "
+            "municipality in notes_study_scope."
         )
     )
     city: str = Field(
@@ -180,7 +205,10 @@ class Intervention(BaseModel):
         )
     )
     followup: YesNoUnclear = Field(
-        description="Yes if energy consumption was investigated in a follow-up after the treatment, otherwise No."
+        description=(
+            "Yes if energy consumption was measured after the treatment had ended (follow-up). "
+            "Measurements during the treatment, such as a mid-term survey, are not follow-up."
+        )
     )
     notes_duration: str = Field(
         default="", description="Remarks on the periods (e.g. pre-intervention weeks)."
@@ -238,6 +266,73 @@ class Arm_Details(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Study design level (one per document)
+# ---------------------------------------------------------------------------
+
+
+class Outcome(BaseModel):
+    name: str = Field(
+        description="Energy outcome as the study names it, e.g. 'electricity', 'gas', 'total energy'."
+    )
+    dependent_variable: str = Field(
+        description="Energy-consumption measure with its unit in brackets, as in Effect_Stub.dependent_variable."
+    )
+    outcome_scale: OutcomeScale = Field(
+        description="'log' if the outcome is a log, 'percent' if it is a percentage change, else 'absolute'."
+    )
+
+
+class EvaluationDesign(BaseModel):
+    design: EvaluationDesignType = Field(
+        description=(
+            "How the effects are identified. RCT with control: random assignment to treatment and "
+            "a control group. RCT between treatments only: random assignment, no untreated group. "
+            "Quasi-experimental with comparison group: self-selected or matched comparison group. "
+            "Natural experiment: exogenous change such as a price change or a regression "
+            "discontinuity or kink. One-group pre-post: no comparison group."
+        )
+    )
+    randomised: YesNo = Field(
+        description=(
+            "Yes if households were randomly assigned to treatment and control or between treatments. "
+            "Quote the supporting sentence in randomisation_quote."
+        )
+    )
+    randomisation_quote: str = Field(
+        default="",
+        description="Verbatim sentence on how households were assigned. Leave blank if none.",
+    )
+    estimand_available: EstimandAvailable = Field(
+        description="ITT if an intention-to-treat estimate is reported; 'Not applicable' if there is no assignment."
+    )
+    outcomes: list[Outcome] = Field(
+        description="Every energy outcome that the study estimates effects for."
+    )
+    primary_analysis: str = Field(
+        description="Table or section where the main results are reported, e.g. 'Table 4'."
+    )
+    stated_preferred_specification: str = Field(
+        description=(
+            "Verbatim quote where the authors name a primary, preferred or main model. "
+            "'not stated' if they do not."
+        )
+    )
+    treatment_period: str = Field(
+        description="Start and end of the treatment period (dates or months). 'NR' if not reported."
+    )
+    post_treatment_followup: YesNo = Field(
+        description=(
+            "Yes only if energy consumption was measured after the treatment had ended. "
+            "Measurements during the treatment are not follow-up."
+        )
+    )
+    notes_design: str = Field(
+        default="",
+        description="Remarks on the design that affect which estimates are relevant.",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Effect level
 # ---------------------------------------------------------------------------
 
@@ -284,7 +379,8 @@ class Effect_Stub(BaseModel):
     statistical_technique: StatisticalTechnique = Field(
         description=(
             "Type of regression/test used for this estimate. Do NOT code Difference in Difference "
-            "here; that is the study design."
+            "here; that is the study design. Use 'Difference of means' for t-tests or Welch tests "
+            "of group means; use 'Random effects regression' for mixed or multilevel models."
         )
     )
     dependent_variable: str = Field(
@@ -303,6 +399,90 @@ class Effect_Stub(BaseModel):
             "'difference_of_means' if group means (or a difference of means) are reported."
         )
     )
+
+
+class Candidate(Effect_Stub):
+    """One estimate found in the document. Describes it; the selection is made in Python."""
+
+    table_or_section: str = Field(
+        description="Table, figure, appendix or section text where the estimate appears, e.g. 'Table 4' or 'Abstract'."
+    )
+    row_label: str = Field(
+        description="Row label of the estimate in that table. Blank if not a table."
+    )
+    column_label: str = Field(
+        description="Column or model label of the estimate. Blank if not a table."
+    )
+    outcome: str = Field(
+        description="Name of the energy outcome from the evaluation design that this estimate measures."
+    )
+    estimand_type: EstimandType = Field(
+        description=(
+            "average_effect: the average effect of the intervention on the outcome. "
+            "time_profile: an hourly or daily load-shape estimate. "
+            "slope_or_elasticity: a price-response slope or elasticity. "
+            "interaction_or_heterogeneity: an interaction term or a regression within the treated group. "
+            "placebo_or_pre_trend: a pre-treatment or placebo term. "
+            "descriptive_only: group means or a difference of means without a model."
+        )
+    )
+    population: PopulationType = Field(
+        description="full_sample if the estimate uses all participants; subgroup if it uses a part of them."
+    )
+    population_label: str = Field(
+        default="",
+        description="Name of the subgroup, e.g. 'low users'. Blank for full_sample.",
+    )
+    post_treatment_selected: YesNo = Field(
+        description=(
+            "Yes if the population was selected on behaviour after treatment started (e.g. households "
+            "that played a game or completed a task). No otherwise."
+        )
+    )
+    period: PeriodType = Field(
+        description=(
+            "full_treatment_period: the whole treatment period. sub_period: a part of it, such as "
+            "3, 6 or 9 months after start. post_treatment_followup: after the treatment ended."
+        )
+    )
+    period_label: str = Field(
+        default="",
+        description="Label of the sub-period, e.g. '6 months'. Blank otherwise.",
+    )
+    specification_label: str = Field(
+        description="Model label, e.g. 'Model (3)' or 'OLS with household fixed effects'."
+    )
+    is_authors_preferred: YesNo = Field(
+        description="Yes if the authors name this specification as primary, preferred or main (see the design's stated_preferred_specification)."
+    )
+    n_controls_and_fixed_effects: int = Field(
+        default=0,
+        description="Number of control variables plus fixed-effect sets in this specification. 0 for a base model.",
+    )
+    analysis: EstimandAnalysis = Field(
+        description="Population the estimate refers to: ITT, ATT, LATE, Per-protocol or as-treated, or Unclear."
+    )
+    has_uncertainty: YesNo = Field(
+        description="Yes if this estimate is reported with an SE, SD, CI, t-statistic, p-value or significance stars."
+    )
+    same_estimate_as: str = Field(
+        default="",
+        description=(
+            "effect_number of another candidate that reports the same number elsewhere in the document "
+            "(e.g. the abstract, or a table that repeats another table). Blank if none."
+        ),
+    )
+    notes_candidate: str = Field(
+        default="", description="Remarks on how the estimate was located or read."
+    )
+
+
+class CandidateRecord(BaseModel):
+    """A candidate with the selection decision taken by select_candidates()."""
+
+    candidate: Candidate
+    selected: YesNo
+    decision_reason: str
 
 
 class CoefficientEstimate(BaseModel):
@@ -370,18 +550,27 @@ class SampleSizes(BaseModel):
         description="Sample size of the control group (possibly shared by several treatments). 'NR' if not reported.",
     )
     notes_sample_size: str = Field(
-        default="", description="Remarks on how sample sizes relate to this estimate."
+        default="",
+        description="Remarks on how sample sizes relate to this estimate, e.g. whether N is the analysed N after attrition.",
     )
 
 
 class SignificanceInfo(BaseModel):
-    """Asked only when no standard error/SD is available to compute the test statistic."""
+    """Always asked, also when an SE is available, so the significance is recorded for every effect."""
 
     p_value: str = Field(
         description=(
             "Reported p-value, or the significance level (e.g. 0.05) if only a level is given. "
             "'NR' if not reported."
         )
+    )
+    stars: str = Field(
+        default="",
+        description="Significance stars printed next to the estimate, e.g. '**'. Blank if none are shown.",
+    )
+    star_legend: str = Field(
+        default="",
+        description="Star legend as printed in the table or its notes, e.g. '*** p<0.01, ** p<0.05, * p<0.1'. Blank if none.",
     )
     significance_reporting: SignificanceReporting = Field(
         description=(
@@ -426,25 +615,62 @@ class BaselineInfo(BaseModel):
     )
 
 
-class Effect(BaseModel):
-    """One estimate: the stub plus the blocks the stub required."""
+class EffectStatistics(BaseModel):
+    """Output of the one-call statistics step for a selected candidate."""
 
-    stub: Effect_Stub
+    source_quote: str = Field(
+        description=(
+            "Verbatim text of the table row and column header, or of the sentence, that the numbers "
+            "below come from. Copy it from the context. Fill this first."
+        )
+    )
+    sign_convention: SignConvention = Field(
+        description=(
+            "'change in consumption' if the printed sign is the change in energy consumption (negative "
+            "= consumption fell). 'reduction (positive = saving)' if the printed value is a saving, where "
+            "a positive value means consumption fell."
+        )
+    )
+    signed_point_estimate: str = Field(
+        description="The point estimate with its sign exactly as printed (keep a minus sign). 'NR' if not reported."
+    )
+    coefficient_estimate: CoefficientEstimate | None = Field(
+        default=None,
+        description="Fill only when the estimate is a coefficient; leave empty otherwise.",
+    )
+    difference_of_means: DifferenceOfMeans | None = Field(
+        default=None,
+        description="Fill only when the estimate is a difference of means; leave empty otherwise.",
+    )
+    sample_sizes: SampleSizes = Field(
+        description="Treatment, control and total sample sizes for this estimate."
+    )
+    significance: SignificanceInfo = Field(
+        description="Significance information for this estimate. Always fill."
+    )
+
+
+class Effect(BaseModel):
+    """One selected estimate: the candidate plus its statistics and the Python-derived values."""
+
+    candidate: Candidate
+    source_quote: str = ""
+    sign_convention: str = ""
+    signed_point_estimate: str = ""
     coefficient_estimate: CoefficientEstimate | None = None
     difference_of_means: DifferenceOfMeans | None = None
     sample_sizes: SampleSizes | None = None
     significance: SignificanceInfo | None = None
     baseline: BaselineInfo | None = None
+    # Keys are DERIVED_FIELDS; computed deterministically in derive_BI.py, never by the LLM.
+    derived: dict[str, str] = Field(default_factory=dict)
     notes_effect: str = Field(
         default="",
-        description="Remarks on how this estimate was obtained or interpreted.",
+        description="Remarks on how this estimate was obtained or interpreted, including derived-value mismatches.",
     )
-    inclusion_reasoning: str = Field(
+    selection_reason: str = Field(
         default="",
-        description=(
-            "Reasoning of the effect-listing step on why the estimates were included. Set by the "
-            "pipeline, not queried from the LLM."
-        ),
+        description="Why this candidate was selected. Set by select_candidates(), not queried.",
     )
 
 
@@ -456,12 +682,22 @@ class Effect(BaseModel):
 class Study(BaseModel):
     screening: Screening
     study_characteristics: Study_Characteristics | None = None
+    evaluation_design: EvaluationDesign | None = None
     interventions: list[Intervention] = Field(default_factory=list)
     arm_details: list[Arm_Details] = Field(default_factory=list)
+    candidates: list[CandidateRecord] = Field(default_factory=list)
     effects: list[Effect] = Field(default_factory=list)
+    design_reasoning: str = Field(
+        default="",
+        description="Reasoning of the design step. Set by the pipeline, not queried.",
+    )
+    listing_reasoning: str = Field(
+        default="",
+        description="Reasoning of the candidate-listing step. Set by the pipeline, not queried.",
+    )
 
     # -- CSV export ---------------------------------------------------------
-    # Three tables joined by `study` (and `arm`): study, interventions, effects.
+    # Four tables joined by `study` (and `arm`): study, interventions, candidates, effects.
 
     @classmethod
     def csv_fieldnames(cls) -> list[str]:
@@ -470,15 +706,22 @@ class Study(BaseModel):
             "external_id",
             *_field_names(Screening),
             *_field_names(Study_Characteristics, skip={"study"}),
+            *_field_names(EvaluationDesign, skip={"outcomes"}),
+            "outcomes",
+            "design_reasoning",
+            "listing_reasoning",
         ]
 
-    def to_csv_row(
-        self, study_id: str = "", external_id: str = ""
-    ) -> dict[str, str]:
+    def to_csv_row(self, study_id: str = "", external_id: str = "") -> dict[str, str]:
         row = {"study": self._study_id(study_id), "external_id": external_id}
         row.update(_flatten(self.screening))
         if self.study_characteristics is not None:
             row.update(_flatten(self.study_characteristics, skip={"study"}))
+        if self.evaluation_design is not None:
+            row.update(_flatten(self.evaluation_design, skip={"outcomes"}))
+            row["outcomes"] = _outcomes_text(self.evaluation_design.outcomes)
+        row["design_reasoning"] = self.design_reasoning
+        row["listing_reasoning"] = self.listing_reasoning
         return row
 
     @classmethod
@@ -514,18 +757,47 @@ class Study(BaseModel):
         return rows
 
     @classmethod
+    def candidate_csv_fieldnames(cls) -> list[str]:
+        return [
+            "study",
+            "external_id",
+            *_field_names(Candidate),
+            "selected",
+            "decision_reason",
+        ]
+
+    def candidate_csv_rows(
+        self, study_id: str = "", external_id: str = ""
+    ) -> list[dict[str, str]]:
+        study_id = self._study_id(study_id)
+        return [
+            {
+                "study": study_id,
+                "external_id": external_id,
+                **_flatten(record.candidate),
+                "selected": record.selected,
+                "decision_reason": record.decision_reason,
+            }
+            for record in self.candidates
+        ]
+
+    @classmethod
     def outcome_csv_fieldnames(cls) -> list[str]:
         return [
             "study",
             "external_id",
-            *_field_names(Effect_Stub),
+            *_field_names(Candidate),
+            "source_quote",
+            "sign_convention",
+            "signed_point_estimate",
             *_field_names(CoefficientEstimate),
             *_field_names(DifferenceOfMeans, skip=_SHARED),
             *_field_names(SampleSizes),
             *_field_names(SignificanceInfo),
             *_field_names(BaselineInfo),
+            *DERIVED_FIELDS,
             "notes_effect",
-            "inclusion_reasoning",
+            "selection_reason",
         ]
 
     def outcome_csv_rows(
@@ -537,7 +809,10 @@ class Study(BaseModel):
             row = {
                 "study": study_id,
                 "external_id": external_id,
-                **_flatten(effect.stub),
+                **_flatten(effect.candidate),
+                "source_quote": effect.source_quote,
+                "sign_convention": effect.sign_convention,
+                "signed_point_estimate": effect.signed_point_estimate,
             }
             # effect_direction is shared by both estimate kinds: one column.
             for block in (
@@ -549,8 +824,9 @@ class Study(BaseModel):
             ):
                 if block is not None:
                     row.update(_flatten(block))
+            row.update(effect.derived)
             row["notes_effect"] = effect.notes_effect
-            row["inclusion_reasoning"] = effect.inclusion_reasoning
+            row["selection_reason"] = effect.selection_reason
             rows.append(row)
         return rows
 
@@ -561,6 +837,12 @@ class Study(BaseModel):
 
 
 _SHARED = {"effect_direction"}
+
+
+def _outcomes_text(outcomes: list[Outcome]) -> str:
+    return "; ".join(
+        f"{o.name} ({o.dependent_variable}; {o.outcome_scale})" for o in outcomes
+    )
 
 
 def _field_names(model: type[BaseModel], skip: set[str] = frozenset()) -> list[str]:
