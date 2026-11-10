@@ -155,9 +155,15 @@ def mock_litellm_completion():
         mock_usage = MagicMock()
         mock_usage.prompt_tokens = 100
         mock_usage.completion_tokens = 42
+        mock_usage.prompt_tokens_details.cached_tokens = 30
+        mock_usage.cache_read_input_tokens = None
         mock_response.usage = mock_usage
         mock_completion.return_value = mock_response
-        yield mock_completion
+        with patch(
+            "deet.utils.tokenisation.litellm.completion_cost",
+            return_value=0.0012,
+        ):
+            yield mock_completion
 
 
 # config
@@ -375,9 +381,11 @@ def test_call_llm(
         config = DataExtractionConfig(model="test-model", provider=llm_provider)
 
         llm_extractor = create_llm_extractor(config, mock_settings)
-        response, messages, output_tokens, input_tokens = llm_extractor._call_llm(
-            prompt, response_model=response_model
-        )
+        call = llm_extractor._call_llm(prompt, response_model=response_model)
+        response = call.response_content
+        messages = call.messages
+        output_tokens = call.output_tokens
+        input_tokens = call.input_tokens
 
         mock_litellm_completion.assert_called_once()
         call_args = mock_litellm_completion.call_args
@@ -397,6 +405,8 @@ def test_call_llm(
         assert len(messages) >= 1
         assert output_tokens == 42
         assert input_tokens == 100
+        assert call.cached_input_tokens == 30
+        assert call.total_cost_usd == pytest.approx(0.0012)
     else:
         with pytest.raises(ValidationError, match=r"provider"):
             DataExtractionConfig(model="test-model", provider=llm_provider)
@@ -552,6 +562,8 @@ def test_extract_from_document(
     assert len(result.messages) >= 1
     assert result.output_tokens == 42
     assert result.input_tokens == 100
+    assert result.cached_input_tokens == 30
+    assert result.total_cost_usd == pytest.approx(0.0012)
     assert result.model is not None
     assert result.timestamp is not None
     assert {a.attribute.attribute_id for a in result.annotations} == {1234, 2345}
@@ -600,10 +612,13 @@ def test_extract_from_documents(
     meta = saved["metadata"]
     assert meta["total_input_tokens"] == 100
     assert meta["total_output_tokens"] == 42
+    assert meta["total_cached_input_tokens"] == 30
+    assert meta["total_cost_usd"] == pytest.approx(0.0012)
     doc_id_str = str(sample_eppi_document.safe_identity.document_id)
     assert meta["per_document"][doc_id_str]["input_tokens"] == 100
     assert meta["per_document"][doc_id_str]["output_tokens"] == 42
-    assert "total_cost_usd" in meta
+    assert meta["per_document"][doc_id_str]["cached_input_tokens"] == 30
+    assert "cached_input_tokens" in meta["notes"]["per_document"]
 
 
 def test_extract_from_documents_skips_document_missing_abstract(
