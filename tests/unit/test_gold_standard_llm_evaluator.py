@@ -16,8 +16,13 @@ from deet.data_models.eppi import (
     EppiGoldStandardAnnotation,
     EppiItemAttributeFullTextDetails,
 )
-from deet.data_models.evaluation import AttributeCountMetric, RunMetricsReport
+from deet.data_models.evaluation import (
+    AttributeCountMetric,
+    AttributeScoreMetric,
+    RunMetricsReport,
+)
 from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
+from deet.evaluators.metrics import EvaluationMetricSettings
 
 pytest_plugins = ["tests.unit.test_eppi"]
 
@@ -404,6 +409,7 @@ def test_evaluator_mixed_types_include_extraction_metrics(tmp_path):
 
     assert "edit_distance_match_rate" in metrics_by_attr["Outcome label"]
     assert metrics_by_attr["Outcome label"]["edit_distance_match_rate"] == 1.0
+    assert "semantic_match_rate" not in metrics_by_attr["Outcome label"]
 
     for numeric_label in ("Sample size", "Effect size"):
         assert "mean_absolute_error" in metrics_by_attr[numeric_label]
@@ -429,6 +435,106 @@ def test_evaluator_mixed_types_include_extraction_metrics(tmp_path):
     assert by_label["Outcome label"]["accuracy_given_bad_source"] != ""
     assert by_label["Sample size"]["mean_absolute_error"] != ""
     assert by_label["Sample size"]["mean_absolute_percentage_error"] != ""
+
+
+def test_evaluator_includes_semantic_match_when_enabled() -> None:
+    """STRING evaluation emits semantic_match_rate only when the flag is on."""
+    string_attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=10,
+        attribute_label="Outcome label",
+        output_data_type=AttributeType.STRING,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    doc = EppiDocument(
+        name="Mixed Doc", citation=ReferenceFileInput(), document_id=42424242
+    )
+    gold_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc,
+        annotations=[
+            EppiGoldStandardAnnotation(  # type: ignore[call-arg]
+                attribute=string_attr,
+                output_data="Odds  Ratio",
+                annotation_type=AnnotationType.HUMAN,
+            ),
+        ],
+    )
+    llm_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc,
+        annotations=[
+            EppiGoldStandardAnnotation(  # type: ignore[call-arg]
+                attribute=string_attr,
+                output_data="odds ratio",
+                annotation_type=AnnotationType.LLM,
+            ),
+        ],
+    )
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=[gold_doc],
+        llm_annotated_documents=[llm_doc],
+        attributes=[string_attr],
+        extraction_run_id="semantic_on",
+        metric_settings=EvaluationMetricSettings(enable_semantic_metrics=True),
+    )
+    evaluator.evaluate_llm_annotations()
+    metrics = {
+        metric.metric_name: metric.value
+        for metric in evaluator.calculated_metrics
+        if isinstance(metric, AttributeScoreMetric | AttributeCountMetric)
+    }
+    assert metrics["semantic_match_rate"] == 1.0
+    assert "semantic_match_rate_given_good_source" in metrics
+
+
+def test_evaluator_records_none_when_semantic_extra_missing(monkeypatch) -> None:
+    """Missing fastembed leaves semantic_match_rate blank, not a crash."""
+    string_attr = EppiAttribute(  # type: ignore[call-arg]
+        attribute_id=10,
+        attribute_label="Outcome label",
+        output_data_type=AttributeType.STRING,
+        attribute_type=EppiAttributeSelectionType.INTERVENTION,
+    )
+    doc = EppiDocument(name="Doc", citation=ReferenceFileInput(), document_id=1)
+    gold_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc,
+        annotations=[
+            EppiGoldStandardAnnotation(  # type: ignore[call-arg]
+                attribute=string_attr,
+                output_data="hypertension",
+                annotation_type=AnnotationType.HUMAN,
+            ),
+        ],
+    )
+    llm_doc = EppiGoldStandardAnnotatedDocument(
+        document=doc,
+        annotations=[
+            EppiGoldStandardAnnotation(  # type: ignore[call-arg]
+                attribute=string_attr,
+                output_data="hypertension",
+                annotation_type=AnnotationType.LLM,
+            ),
+        ],
+    )
+
+    def _missing_extra(texts: list[str], *, model_name: str = "") -> None:
+        msg = "uv sync --extra semantic"
+        raise ImportError(msg)
+
+    monkeypatch.setattr("deet.evaluators.embeddings.encode_texts", _missing_extra)
+    evaluator = GoldStandardLLMEvaluator(
+        gold_standard_annotated_documents=[gold_doc],
+        llm_annotated_documents=[llm_doc],
+        attributes=[string_attr],
+        extraction_run_id="missing_extra",
+        metric_settings=EvaluationMetricSettings(enable_semantic_metrics=True),
+    )
+    evaluator.evaluate_llm_annotations()
+    metrics = {
+        metric.metric_name: metric.value
+        for metric in evaluator.calculated_metrics
+        if isinstance(metric, AttributeScoreMetric | AttributeCountMetric)
+    }
+    assert metrics["semantic_match_rate"] is None
+    assert metrics["edit_distance_match_rate"] == 1.0
 
 
 def test_empty_bad_source_subset_leaves_metrics_blank(tmp_path) -> None:

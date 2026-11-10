@@ -1,5 +1,8 @@
 """Unit tests for extraction evaluation metrics."""
 
+from functools import partial
+
+import numpy as np
 import pytest
 from sklearn.metrics import (  # type:ignore[import-untyped]
     mean_absolute_error,
@@ -7,10 +10,12 @@ from sklearn.metrics import (  # type:ignore[import-untyped]
 )
 
 from deet.data_models.base import AttributeType
+from deet.evaluators.embeddings import DEFAULT_EMBEDDING_MODEL_NAME
 from deet.evaluators.metrics import (
     EvaluationMetricSettings,
     edit_distance_match_rate,
     get_metrics_for_attribute_type,
+    semantic_match_rate,
 )
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 
@@ -92,12 +97,14 @@ def test_get_metrics_for_attribute_type_registers_new_metrics() -> None:
     string_metrics = get_metrics_for_attribute_type(AttributeType.STRING)
     assert "accuracy" in string_metrics
     assert "edit_distance_match_rate" in string_metrics
+    assert "semantic_match_rate" not in string_metrics
 
     for attr_type in (AttributeType.INTEGER, AttributeType.FLOAT):
         numeric_metrics = get_metrics_for_attribute_type(attr_type)
         assert "accuracy" in numeric_metrics
         assert "mean_absolute_error" in numeric_metrics
         assert "mean_absolute_percentage_error" in numeric_metrics
+        assert "semantic_match_rate" not in numeric_metrics
         assert numeric_metrics["mean_absolute_error"] is mean_absolute_error
         assert (
             numeric_metrics["mean_absolute_percentage_error"]
@@ -133,3 +140,99 @@ def test_data_extraction_config_edit_distance_threshold_from_yaml(tmp_path) -> N
     )
     custom_config = DataExtractionConfig.from_yaml(custom_path)
     assert custom_config.edit_distance_match_threshold == 0.85
+
+
+def test_semantic_match_rate_normalises_before_embedding(monkeypatch) -> None:
+    """Whitespace and case are folded before strings are embedded."""
+    seen: dict[str, object] = {}
+
+    def _encode(texts: list[str], *, model_name: str = "") -> np.ndarray:
+        seen["texts"] = list(texts)
+        seen["model"] = model_name
+        return np.eye(len(texts), dtype=np.float64)
+
+    monkeypatch.setattr("deet.evaluators.embeddings.encode_texts", _encode)
+    rate = semantic_match_rate(
+        ["Odds  Ratio", "hypertension"],
+        ["odds ratio", "hypertention"],
+        model_name="unit-test-model",
+    )
+    assert seen["texts"] == ["odds ratio", "hypertension", "hypertention"]
+    assert seen["model"] == "unit-test-model"
+    assert rate == 0.5
+
+
+def test_semantic_match_rate_respects_threshold(monkeypatch) -> None:
+    """Pairs below the cosine threshold do not count as matches."""
+
+    def _encode(texts: list[str], *, model_name: str = "") -> np.ndarray:
+        table = {
+            "a": np.array([1.0, 0.0]),
+            "b": np.array([0.6, 0.8]),
+        }
+        return np.vstack([table[text] for text in texts])
+
+    monkeypatch.setattr("deet.evaluators.embeddings.encode_texts", _encode)
+    assert semantic_match_rate(["a"], ["b"]) == 0.0
+    assert semantic_match_rate(["a"], ["b"], threshold=0.5) == 1.0
+
+
+def test_semantic_match_rate_rejects_none_predictions() -> None:
+    """None predictions raise, consistent with edit-distance behaviour."""
+    with pytest.raises(TypeError, match="None predictions"):
+        semantic_match_rate(["a", "b"], ["a", None])
+
+
+def test_semantic_match_rate_rejects_length_mismatch() -> None:
+    """Mismatched list lengths raise ValueError."""
+    with pytest.raises(ValueError, match="same length"):
+        semantic_match_rate(["a", "b"], ["a"])
+
+
+def test_semantic_match_rate_empty_lists() -> None:
+    """Empty aligned lists raise, matching sklearn empty-input behaviour."""
+    with pytest.raises(ValueError, match="non-empty"):
+        semantic_match_rate([], [])
+
+
+def test_get_metrics_includes_semantic_match_only_when_enabled() -> None:
+    """STRING metrics gain semantic_match_rate when the flag is on."""
+    enabled = get_metrics_for_attribute_type(
+        AttributeType.STRING,
+        settings=EvaluationMetricSettings(
+            enable_semantic_metrics=True,
+            semantic_match_threshold=0.5,
+            embedding_model_name="unit-test-model",
+        ),
+    )
+    assert "semantic_match_rate" in enabled
+    semantic_metric = enabled["semantic_match_rate"]
+    assert isinstance(semantic_metric, partial)
+    assert semantic_metric.keywords["threshold"] == 0.5
+    assert semantic_metric.keywords["model_name"] == "unit-test-model"
+
+
+def test_data_extraction_config_semantic_settings_from_yaml(tmp_path) -> None:
+    """Semantic settings default off and can be set from the extraction YAML."""
+    default_path = tmp_path / "default.yaml"
+    default_path.write_text(
+        "provider: azure\nmodel: gpt-5.6-luna\nmax_context_tokens: 1000\n",
+        encoding="utf-8",
+    )
+    default_config = DataExtractionConfig.from_yaml(default_path)
+    assert default_config.enable_semantic_metrics is False
+    assert default_config.semantic_match_threshold == 0.85
+    assert default_config.embedding_model_name == DEFAULT_EMBEDDING_MODEL_NAME
+
+    custom_path = tmp_path / "custom.yaml"
+    custom_path.write_text(
+        "provider: azure\nmodel: gpt-5.6-luna\nmax_context_tokens: 1000\n"
+        "enable_semantic_metrics: true\n"
+        "semantic_match_threshold: 0.80\n"
+        "embedding_model_name: BAAI/bge-small-en-v1.5\n",
+        encoding="utf-8",
+    )
+    custom_config = DataExtractionConfig.from_yaml(custom_path)
+    assert custom_config.enable_semantic_metrics is True
+    assert custom_config.semantic_match_threshold == 0.80
+    assert custom_config.embedding_model_name == "BAAI/bge-small-en-v1.5"

@@ -131,6 +131,11 @@ def test_preferred_metric_column_names_derived_from_registries() -> None:
     assert "accuracy_given_good_source" in columns
     assert "accuracy_given_bad_source" in columns
     assert "edit_distance_match_rate_given_good_source" in columns
+    assert "semantic_match_rate" in columns
+    assert "semantic_match_rate_given_good_source" in columns
+    assert columns.index("edit_distance_match_rate") < columns.index(
+        "semantic_match_rate"
+    )
     assert "precision" in columns
     assert "precision_given_good_source" not in columns
     assert columns.index("accuracy") < columns.index("precision")

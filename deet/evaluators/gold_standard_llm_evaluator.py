@@ -231,8 +231,9 @@ class GoldStandardLLMEvaluator:
             attributes: Attributes to evaluate.
             extraction_run_id: Run identifier written into metric rows.
             custom_metrics: Optional sklearn metric names to merge in.
-            metric_settings: Thresholds for extraction metrics (e.g. edit
-                distance). Defaults to :class:`EvaluationMetricSettings`.
+            metric_settings: Thresholds and flags for extraction metrics
+                (edit distance, opt-in semantic match). Defaults to
+                :class:`EvaluationMetricSettings`.
 
         """
         self.gold_standard_annotated_documents = gold_standard_annotated_documents
@@ -375,8 +376,8 @@ class GoldStandardLLMEvaluator:
         Appends one :class:`AttributeScoreMetric` per metric onto
         ``self.calculated_metrics``. The lists may be the full attribute set or
         any filtered subset (e.g. good/bad source). When a metric raises on
-        empty or invalid inputs, ``value`` is recorded as ``None`` (blank CSV
-        cell).
+        empty or invalid inputs, or the optional semantic extra is missing,
+        ``value`` is recorded as ``None`` (blank CSV cell).
 
         Args:
             attribute: Attribute being scored.
@@ -390,7 +391,7 @@ class GoldStandardLLMEvaluator:
             metric_key = f"{metric_name}{suffix}"
             try:
                 value = float(metric_fn(y_true, y_pred))
-            except (ValueError, TypeError) as error:
+            except (ValueError, TypeError, ImportError) as error:
                 logger.warning(
                     f"Metric '{metric_key}' not applicable for "
                     f"attribute '{attribute.attribute_label}' "

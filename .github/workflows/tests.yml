@@ -68,10 +68,10 @@ jobs:
 
           if [ "$TARGET_BRANCH" = "main" ]; then
             echo "Running all tests (including real files)..."
-            uv run pytest --cov=deet --cov-report=xml --record-mode=none
+            uv run pytest --cov=deet --cov-report=xml --record-mode=none -m "not slow"
           else
             echo "Omitting real file parser tests..."
-            uv run pytest --cov=deet --cov-report=xml --ignore=tests/test_parser_real_files.py  --record-mode=none
+            uv run pytest --cov=deet --cov-report=xml --ignore=tests/test_parser_real_files.py  --record-mode=none -m "not slow"
           fi
 
       - name: Code coverage reporting

@@ -290,9 +290,14 @@ in square brackets.
 
 | Extra          | Enables                                                  |
 | -------------- | -------------------------------------------------------- |
-| `semantic`     | the semantic keyword extractor (`fastembed`)             |
+| `semantic`     | the semantic keyword extractor and opt-in `semantic_match_rate` (`fastembed`) |
 | `parsers`      | extra document parsers (`marker-pdf`, `pypandoc`)        |
 | `lang-quality` | language-quality checks (`nltk`)                         |
+
+`semantic_match_rate` uses this extra and stays off until you set
+`enable_semantic_metrics: true` in the extraction config, or pass
+`--enable-semantic-metrics` to `deet experiments evaluate`. See
+[Evaluation](../concepts/evaluation.md#metrics-by-attribute-type).
 
 === "CLI users"
 

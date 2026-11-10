@@ -138,10 +138,18 @@ module = "tabulate.*"
 ignore_missing_imports = true
 module = "sentence_transformers.*"
 
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "fastembed.*"
+
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
 filterwarnings = [
     "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+]
+markers = [
+    "no_embedding_mock: call the real encode_texts helper with a stand-in model",
+    "slow: optional tests that download embedding models",
 ]
 pythonpath = "."
 testpaths = ["tests"]
@@ -179,7 +187,7 @@ ignore = [
     "TD002", # name for TO DO
     "TD003", # pedantic issue number requester in to dos
 ]
-per-file-ignores = {"deet/processors/parser.py" = ["PLC0415"], "deet/utils/assess_text_quality.py" = ["PLC0415"], "tests*" = ["ANN001", "ANN201", "ANN202", "ARG001", "D100", "D103", "INP001", "PLR0913", "PLR2004", "S101", "SLF001"]}
+per-file-ignores = {"deet/evaluators/embeddings.py" = ["PLC0415"], "deet/processors/parser.py" = ["PLC0415"], "deet/utils/assess_text_quality.py" = ["PLC0415"], "tests*" = ["ANN001", "ANN201", "ANN202", "ARG001", "D100", "D103", "INP001", "PLR0913", "PLR2004", "S101", "SLF001"]}
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]

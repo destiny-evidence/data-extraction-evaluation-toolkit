@@ -532,18 +532,80 @@ def test_extract_happy_path(tmp_path):
         mock_evaluator = mock_evaluator_cls.return_value
 
         result = runner.invoke(app, ["experiments", "evaluate"], obj=state)
+        assert result.exit_code == 0
+        evaluator_kwargs = mock_evaluator_cls.call_args.kwargs
 
-    assert result.exit_code == 0
-    mock_extractor.extract_from_documents.assert_called_once()
-    mock_evaluator.evaluate_llm_annotations.assert_called_once()
-    mock_evaluator.write_metrics_to_csv.assert_called_once()
-    evaluator_kwargs = mock_evaluator_cls.call_args.kwargs
+        fake_config.enable_semantic_metrics = True
+        result_from_config = runner.invoke(
+            app,
+            ["experiments", "evaluate", "--run-name", "from-config"],
+            obj=state,
+        )
+        assert result_from_config.exit_code == 0
+        assert (
+            mock_evaluator_cls.call_args.kwargs[
+                "metric_settings"
+            ].enable_semantic_metrics
+            is True
+        )
+
+        result_disabled = runner.invoke(
+            app,
+            [
+                "experiments",
+                "evaluate",
+                "--run-name",
+                "disabled",
+                "--no-enable-semantic-metrics",
+            ],
+            obj=state,
+        )
+        assert result_disabled.exit_code == 0
+        assert (
+            mock_evaluator_cls.call_args.kwargs[
+                "metric_settings"
+            ].enable_semantic_metrics
+            is False
+        )
+
+        fake_config.enable_semantic_metrics = False
+        result_enabled = runner.invoke(
+            app,
+            [
+                "experiments",
+                "evaluate",
+                "--run-name",
+                "enabled",
+                "--enable-semantic-metrics",
+            ],
+            obj=state,
+        )
+        assert result_enabled.exit_code == 0
+        assert (
+            mock_evaluator_cls.call_args.kwargs[
+                "metric_settings"
+            ].enable_semantic_metrics
+            is True
+        )
+
+    mock_extractor.extract_from_documents.assert_called()
+    mock_evaluator.evaluate_llm_annotations.assert_called()
+    mock_evaluator.write_metrics_to_csv.assert_called()
     assert (
         evaluator_kwargs["metric_settings"].edit_distance_match_threshold
         == fake_config.edit_distance_match_threshold
     )
-    mock_evaluator.export_llm_comparison.assert_called_once()
-    mock_evaluator.display_metrics.assert_called_once()
+    assert evaluator_kwargs["metric_settings"].enable_semantic_metrics is False
+    assert (
+        evaluator_kwargs["metric_settings"].semantic_match_threshold
+        == fake_config.semantic_match_threshold
+    )
+    assert (
+        evaluator_kwargs["metric_settings"].embedding_model_name
+        == fake_config.embedding_model_name
+    )
+    mock_evaluator.export_llm_comparison.assert_called()
+    mock_evaluator.display_metrics.assert_called()
 
 
 def test_test_llm_config():

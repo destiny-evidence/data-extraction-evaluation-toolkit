@@ -55,7 +55,7 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
 | Attribute type | Default metrics |
 |----------------|-----------------|
 | **BOOL** | `accuracy`, `precision`, `recall`, `f1_score`, `n_labels` |
-| **STRING** | `accuracy`, `edit_distance_match_rate`, plus stratified variants `*_given_good_source` and `*_given_bad_source` |
+| **STRING** | `accuracy`, `edit_distance_match_rate`, plus stratified variants `*_given_good_source` and `*_given_bad_source`. Optional `semantic_match_rate` when semantic metrics are enabled |
 | **INTEGER** / **FLOAT** | `accuracy`, `mean_absolute_error`, `mean_absolute_percentage_error`, plus stratified variants `*_given_good_source` and `*_given_bad_source` |
 | **LIST** / **DICT** | No default metrics yet |
 
@@ -66,6 +66,27 @@ via [`AttributeMetric`](../reference/api.md#deet.data_models.evaluation.Attribut
 - **`edit_distance_match_rate`**: fraction of pairs whose normalised Levenshtein
   similarity is at least a configurable threshold (default `0.90`). Threshold
   can be set as `edit_distance_match_threshold` in the extraction config YAML.
+  Use this for typos and small character-level drift (e.g. `hypertension` vs
+  `hypertention`).
+- **`semantic_match_rate`** (opt-in): fraction of pairs whose embedding cosine
+  similarity is at least `semantic_match_threshold` (default `0.85`). Strings
+  are normalised the same way as edit distance, then encoded with fastembed
+  (`BAAI/bge-small-en-v1.5` by default; override with `embedding_model_name`).
+  This catches paraphrases that edit distance misses, for example
+  `three blind mice` vs `3 blind mice`. It is **off** unless you set
+  `enable_semantic_metrics: true` in the extraction config YAML or pass
+  `--enable-semantic-metrics` on `deet experiments evaluate`. It needs the
+  optional extra: `uv sync --extra semantic` (see
+  [Installing optional features](../setup/installation.md#installing-optional-features)).
+  Semantic similarity is not used for numeric attributes or for source-fidelity
+  / `match_status` near-match (those stay numeric equality and Levenshtein).
+
+  ```yaml
+  enable_semantic_metrics: true
+  semantic_match_threshold: 0.85
+  embedding_model_name: BAAI/bge-small-en-v1.5
+  ```
+
 - **`mean_absolute_error` / `mean_absolute_percentage_error`**: magnitude of
   numeric error. These complement exact-match accuracy; they do not replace it.
   Missing or invalid LLM predictions (e.g. failed document extraction or

@@ -80,13 +80,26 @@ def evaluate(  # noqa: PLR0913
             "--custom-evaluation-metrics cohen_kappa_score`"
         ),
     ] = None,
+    enable_semantic_metrics: Annotated[
+        bool | None,
+        typer.Option(
+            "--enable-semantic-metrics/--no-enable-semantic-metrics",
+            help=(
+                "Score STRING attributes with semantic_match_rate on this run. "
+                "Omit the flag to use enable_semantic_metrics from the "
+                "extraction config (off by default). Requires the semantic "
+                "extra (fastembed)."
+            ),
+        ),
+    ] = None,
 ) -> None:
     """
     Extract data from documents and evaluate.
 
     Load gold standard annotation data, and use an LLM to extract data from the
     documents in your dataset. Evaluate by comparing the results to the gold
-    standard data.
+    standard data. Pass ``--enable-semantic-metrics`` to add embedding cosine
+    similarity for STRING attributes (needs the ``semantic`` extra).
     """
     from deet.evaluators.gold_standard_llm_evaluator import GoldStandardLLMEvaluator
     from deet.evaluators.metrics import EvaluationMetricSettings
@@ -112,6 +125,13 @@ def evaluate(  # noqa: PLR0913
         extraction_run_id=experiment_artefacts.run_id,
         metric_settings=EvaluationMetricSettings(
             edit_distance_match_threshold=config.edit_distance_match_threshold,
+            enable_semantic_metrics=(
+                config.enable_semantic_metrics
+                if enable_semantic_metrics is None
+                else enable_semantic_metrics
+            ),
+            semantic_match_threshold=config.semantic_match_threshold,
+            embedding_model_name=config.embedding_model_name,
         ),
     )
     evaluator.evaluate_llm_annotations()

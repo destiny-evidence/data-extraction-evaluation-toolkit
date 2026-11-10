@@ -1,9 +1,11 @@
+import hashlib
 import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+import numpy as np
 import pytest
 from pydantic import SecretStr
 from vcr.request import Request
@@ -22,6 +24,41 @@ except ImportError:
         """Compatibility shim for aiohttp 3.9+ which removed this class."""
 
     aiohttp.streams.AsyncStreamReaderMixin = AsyncStreamReaderMixin  # type: ignore[attr-defined]
+
+
+def _hash_unit_vectors(texts: list[str]) -> np.ndarray:
+    """Deterministic L2-normalised vectors so identical strings cosine-match."""
+    dim = 8
+    out = np.zeros((len(texts), dim), dtype=np.float64)
+    for row, text in enumerate(texts):
+        digest = hashlib.sha256(text.encode("utf-8")).digest()
+        ints = np.frombuffer(digest[:dim], dtype=np.uint8).astype(np.float64)
+        ints = ints - ints.mean()
+        norm = np.linalg.norm(ints)
+        out[row] = ints / norm if norm else ints
+    return out
+
+
+@pytest.fixture(autouse=True)
+def mock_semantic_embeddings(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Avoid downloading fastembed weights in CI and default pytest.
+
+    Tests marked ``slow`` keep the real encoder. Tests marked
+    ``no_embedding_mock`` call ``encode_texts`` itself with a stand-in model.
+    """
+    if request.node.get_closest_marker("slow") or request.node.get_closest_marker(
+        "no_embedding_mock"
+    ):
+        return
+
+    def _fake_encode(texts: list[str], *, model_name: str = "") -> np.ndarray:
+        return _hash_unit_vectors(list(texts))
+
+    monkeypatch.setattr("deet.evaluators.embeddings.encode_texts", _fake_encode)
 
 
 @pytest.fixture

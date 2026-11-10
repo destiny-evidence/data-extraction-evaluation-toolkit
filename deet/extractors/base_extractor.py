@@ -34,7 +34,11 @@ from deet.data_models.extraction import (
     PerDocumentExtractionStats,
 )
 from deet.data_models.ui_schema import UI
-from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
+from deet.evaluators.embeddings import DEFAULT_EMBEDDING_MODEL_NAME
+from deet.evaluators.metrics import (
+    DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD,
+    DEFAULT_SEMANTIC_MATCH_THRESHOLD,
+)
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
@@ -219,6 +223,29 @@ class DataExtractionConfig(BaseModel):
             "to count as a match in edit_distance_match_rate. Omit from the "
             "config YAML to use the default."
         ),
+        json_schema_extra={"skip_prompt": True},
+    )
+    enable_semantic_metrics: bool = Field(
+        default=False,
+        description=(
+            "When True, score STRING attributes with semantic_match_rate. "
+            "Requires the optional semantic extra (fastembed). Off by default."
+        ),
+        json_schema_extra={"skip_prompt": True},
+    )
+    semantic_match_threshold: float = Field(
+        default=DEFAULT_SEMANTIC_MATCH_THRESHOLD,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum embedding cosine similarity (0-1) for a string pair "
+            "to count as a match in semantic_match_rate."
+        ),
+        json_schema_extra={"skip_prompt": True},
+    )
+    embedding_model_name: str = Field(
+        default=DEFAULT_EMBEDDING_MODEL_NAME,
+        description="fastembed model id used for semantic_match_rate.",
         json_schema_extra={"skip_prompt": True},
     )
 
