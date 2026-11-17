@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -16652,6 +16652,16 @@ This can change if the <code>AttributeType</code> of the <code>attribute</code> 
             </li>
         </ul>
 
+        <p>Validators:</p>
+        <ul>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;handle_output_data_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.base.GoldStandardAnnotation.handle_output_data_input&lt;/code&gt;)" href="#deet.data_models.base.GoldStandardAnnotation.handle_output_data_input">handle_output_data_input</a></code>
+            </li>
+        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/base.py</code></summary>
@@ -16852,7 +16862,7 @@ This can change if the <code>AttributeType</code> of the <code>attribute</code> 
             <code class="highlight language-python"><span class="n">handle_output_data_input</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
   </span>
 
 </h5>
@@ -18523,6 +18533,23 @@ linking to a gold standard annotations document with references.</p>
             </li>
         </ul>
 
+        <p>Validators:</p>
+        <ul>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_linking_complete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.documents.Document.validate_linking_complete&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_linking_complete">validate_linking_complete</a></code>
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_final&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.documents.Document.validate_final&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_final">validate_final</a></code>
+            </li>
+        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/documents.py</code></summary>
@@ -19668,6 +19695,10 @@ of how destiny encodes the first_author field.</p>
 <h5 id="deet.data_models.documents.Document.validate_final" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">validate_final</span><span class="p">()</span></code>
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
+  </span>
+
 </h5>
 
 
@@ -19726,6 +19757,10 @@ of how destiny encodes the first_author field.</p>
 
 <h5 id="deet.data_models.documents.Document.validate_linking_complete" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">validate_linking_complete</span><span class="p">()</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
+  </span>
 
 </h5>
 
@@ -22348,6 +22383,20 @@ camelCase EPPI JSON fields to snake_case Python fields.</p>
         <p>Validators:</p>
         <ul>
             <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_linking_complete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiDocument.validate_linking_complete&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_linking_complete">validate_linking_complete</a></code>
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_final&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiDocument.validate_final&lt;/code&gt;)" href="#deet.data_models.documents.Document.validate_final">validate_final</a></code>
+            </li>
+            <li>
               <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;empty_year_string_to_none&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -23003,6 +23052,16 @@ the extracted information relates to.</p>
             </li>
         </ul>
 
+        <p>Validators:</p>
+        <ul>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;handle_output_data_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.eppi.EppiGoldStandardAnnotation.handle_output_data_input&lt;/code&gt;)" href="#deet.data_models.base.GoldStandardAnnotation.handle_output_data_input">handle_output_data_input</a></code>
+            </li>
+        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/eppi.py</code></summary>
@@ -70760,7 +70819,7 @@ Uses char-based fallback when encode/decode unavailable.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.action.edit", "content.tooltips"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>
