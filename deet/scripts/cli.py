@@ -2,12 +2,14 @@
 """A CLI app to run deet pipelines."""
 
 import contextlib
+import sys
 import warnings
 from importlib.metadata import version as get_version
 from typing import Annotated
 
 import typer
 
+from deet.exceptions import RunAbortingError
 from deet.logger import logger
 from deet.scripts.commands import experiments, project
 from deet.scripts.commands.deprecated import (
@@ -19,6 +21,8 @@ from deet.scripts.commands.deprecated import (
     test_llm_config_legacy,
 )
 from deet.scripts.typer_context import CLIState
+from deet.settings import LogLevel
+from deet.ui import notify
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
 from deet.ui.terminal.templates import APP_HELP
@@ -91,9 +95,13 @@ def global_options(
 
 
 def main() -> None:
-    """Run CLI app."""
-    app()
+    """Run CLI app, reporting known run-aborting errors without a traceback."""
+    try:
+        app()
+    except RunAbortingError as e:
+        notify(str(e), level=LogLevel.ERROR)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    app()
+    main()

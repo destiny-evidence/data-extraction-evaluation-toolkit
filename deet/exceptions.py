@@ -2,6 +2,42 @@
 
 from deet.data_models.base import AttributeType
 
+# UserFacingError
+# ├── RunAbortingError       stop the run, show the message
+# └── DocumentSkippedError   warn, skip the document, continue
+#
+# Anything else is internal control flow, or a bug if it escapes.
+
+
+class UserFacingError(Exception):
+    """
+    Base for errors with a message written for the user and a handling rule.
+
+    Subclass one of the two labels below rather than this class directly.
+    Third-party errors are mapped onto these in
+    ``deet.extractors.llm_errors.KNOWN_LLM_ERRORS``.
+
+    Errors that are caught internally as control flow, or that indicate a bug
+    in deet, stay outside this hierarchy on purpose so they keep their
+    traceback.
+    """
+
+
+class RunAbortingError(UserFacingError):
+    """
+    A known error that requires the run to stop.
+
+    The run is stopped and the message is shown to the user.
+    """
+
+
+class DocumentSkippedError(UserFacingError):
+    """
+    A known error that affects a single document.
+
+    The document is skipped with a warning and the run continues.
+    """
+
 
 class MissingDocumentError(Exception):
     """
@@ -23,7 +59,7 @@ class DuplicateAnnotationError(Exception):
     """
 
 
-class InvalidInputFileTypeError(Exception):
+class InvalidInputFileTypeError(RunAbortingError):
     """
     Raise when user supplies a not permitted input file type.
 
@@ -33,7 +69,7 @@ class InvalidInputFileTypeError(Exception):
     """
 
 
-class InvalidOutputFileTypeError(Exception):
+class InvalidOutputFileTypeError(RunAbortingError):
     """
     Raise when user supplies a not permitted output file.
 
@@ -43,7 +79,7 @@ class InvalidOutputFileTypeError(Exception):
     """
 
 
-class InvalidFileTypeError(Exception):
+class InvalidFileTypeError(RunAbortingError):
     """
     Raise when user supplies a not permitted file.
 
@@ -53,7 +89,7 @@ class InvalidFileTypeError(Exception):
     """
 
 
-class FileParserMismatchError(Exception):
+class FileParserMismatchError(RunAbortingError):
     """
     Raise when we have an input-file <> parser mismatch.
 
@@ -73,7 +109,7 @@ class MalformedLanguageError(Exception):
     """
 
 
-class EmptyPdfExtractionError(Exception):
+class EmptyPdfExtractionError(DocumentSkippedError):
     """
     Raise when PDF parsing yields no extractable text.
 
@@ -109,7 +145,7 @@ class BadDocumentIdError(Exception):
     """
 
 
-class JsonStyleError(Exception):
+class JsonStyleError(RunAbortingError):
     """
     Raise when a json containing document-reference-linkages
     is incorrectly formatted.
@@ -120,7 +156,7 @@ class JsonStyleError(Exception):
     """
 
 
-class NoAbstractError(Exception):
+class NoAbstractError(DocumentSkippedError):
     """
     Raise when we can't find an abstract in our citation info.
 
@@ -168,5 +204,62 @@ class LitellmModelNotMappedError(Exception):
     """
 
 
-class SplitsValidationError(Exception):
+class UnsupportedModelParamsError(RunAbortingError):
+    """
+    Raised when the configured model rejects a configured LLM parameter.
+
+    Reported for ``litellm.UnsupportedParamsError`` (e.g. ``temperature=0.1``
+    on an O-series model) and for provider 400s with an unsupported-parameter
+    code, so the run is aborted with an actionable message instead of failing
+    silently on every document.
+    """
+
+
+class LLMAuthenticationError(RunAbortingError):
+    """Raised when the provider rejects the configured credentials or access."""
+
+
+class LLMModelNotFoundError(RunAbortingError):
+    """Raised when the provider does not know the configured model or deployment."""
+
+
+class LLMQuotaExceededError(RunAbortingError):
+    """Raised when the provider account has run out of quota or credit."""
+
+
+class RepeatedDocumentFailuresError(RunAbortingError):
+    """
+    Raised when many documents in a row fail with the same unexpected error.
+
+    Catches setup problems the registry does not know about (e.g. Ollama not
+    running), which would otherwise fail every document one by one.
+    """
+
+
+class LLMContentFilterError(DocumentSkippedError):
+    """Raised when the provider's content filter rejects a document."""
+
+
+class LLMContextWindowExceededError(DocumentSkippedError):
+    """Raised when a document does not fit in the model's context window."""
+
+
+class ContextTooLongError(DocumentSkippedError, ValueError):
+    """
+    Raised when a document exceeds ``max_context_tokens`` and truncation is off.
+
+    Subclasses :class:`ValueError` so existing ``except ValueError`` call sites
+    remain valid.
+    """
+
+
+class LLMRateLimitError(DocumentSkippedError):
+    """Raised when the provider rate-limits the request for a document."""
+
+
+class LLMTimeoutError(DocumentSkippedError):
+    """Raised when the request for a document times out."""
+
+
+class SplitsValidationError(RunAbortingError):
     """Raised when invalid allocation of documents to splits is attemped."""

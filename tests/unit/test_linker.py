@@ -14,7 +14,7 @@ from deet.data_models.documents import (
     DocumentIdentity,
     DocumentIDSource,
 )
-from deet.exceptions import JsonStyleError
+from deet.exceptions import EmptyPdfExtractionError, JsonStyleError
 from deet.processors.linker import (
     DocumentReferenceLinker,
     DocumentReferenceMapping,
@@ -1162,6 +1162,48 @@ def test_linker_link_many_with_pdf_parsing(tmp_path):
 
     assert len(results) == 1
     assert results[0].context == "Parsed PDF content"
+
+
+def test_linker_link_many_skips_pdf_without_text(tmp_path):
+    """A PDF with no extractable text is skipped; other documents still link."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    empty_pdf = docs_dir / "12345678.pdf"
+    empty_pdf.write_text("fake pdf")
+    good_pdf = docs_dir / "87654321.pdf"
+    good_pdf.write_text("fake pdf")
+
+    docs = [
+        Document(
+            name=f"Test {document_id}",
+            citation=ReferenceFileInput(),
+            document_id=document_id,
+            document_identity=DocumentIdentity(
+                document_id=document_id,
+                first_author="Smith",
+                year="2024",
+                doi=f"10.1000/{document_id}",
+            ),
+        )
+        for document_id in (12345678, 87654321)
+    ]
+
+    linker = DocumentReferenceLinker(
+        references=docs,
+        document_base_dir=docs_dir,
+        linking_strategies=[LinkingStrategy.FILENAME_ID],
+    )
+
+    def parse_pdf(path_to_pdf, **_kwargs):
+        if path_to_pdf == empty_pdf:
+            raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
+        return ParsedOutput(text="Parsed PDF content", parser_library="unknown")
+
+    with patch.object(DocumentReferenceLinker, "_parse_pdf", side_effect=parse_pdf):
+        results = linker.link_many_references_parsed_documents()
+
+    assert [d.safe_identity.document_id for d in results] == [87654321]
+    assert "12345678" not in linker.document_parsing_stats
 
 
 def test_linker_link_many_multiple_documents(tmp_path):

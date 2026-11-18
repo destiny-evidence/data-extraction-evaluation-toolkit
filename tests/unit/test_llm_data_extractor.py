@@ -1,10 +1,13 @@
 """Tests for the LLM data extractor module."""
 
 import json
+import threading
+import time
 from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import litellm
 import pytest
 from loguru import logger
 from pydantic import ValidationError
@@ -24,7 +27,17 @@ from deet.data_models.eppi import (
     EppiDocument,
 )
 from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunOutput
-from deet.extractors.base_extractor import DataExtractionConfig, PromptConfig
+from deet.exceptions import (
+    ContextTooLongError,
+    LLMQuotaExceededError,
+    RepeatedDocumentFailuresError,
+    UnsupportedModelParamsError,
+)
+from deet.extractors.base_extractor import (
+    MAX_CONSECUTIVE_FAILURES,
+    DataExtractionConfig,
+    PromptConfig,
+)
 from deet.extractors.llm_data_extractor import (
     LLMDataExtractor,
 )
@@ -298,7 +311,7 @@ def test_call_llm_raises_when_payload_exceeds_max_by_default(
     llm_extractor.config.max_context_tokens = 1000
     llm_extractor.config.truncate_on_overflow = False
     response_model = build_llm_response_model(sample_eppi_attributes)
-    with pytest.raises(ValueError, match="exceeds max_context_tokens"):
+    with pytest.raises(ContextTooLongError, match="exceeds max_context_tokens"):
         llm_extractor._call_llm(prompt=prompt, response_model=response_model)
 
 
@@ -419,6 +432,55 @@ def test_call_llm_forwards_ollama_num_ctx(
 
     call_args = mock_litellm_completion.call_args
     assert call_args.kwargs["num_ctx"] == 16384
+
+
+def test_call_llm_forwards_max_retries(
+    mock_litellm_completion, mock_settings, sample_eppi_attributes
+):
+    """The configured retry count is passed to litellm as ``max_retries``."""
+    config = DataExtractionConfig(model="test-model", max_retries=5)
+    llm_extractor = create_llm_extractor(config, mock_settings)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+
+    llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    kwargs = mock_litellm_completion.call_args.kwargs
+    assert kwargs["max_retries"] == 5
+    assert "num_retries" not in kwargs
+
+
+def _unsupported_temperature_error() -> litellm.UnsupportedParamsError:
+    """Build the error litellm raises for temperature != 1 on O-series models."""
+    return litellm.UnsupportedParamsError(
+        message=(
+            "O-series models don't support temperature=0.1. "
+            "Only temperature=1 is supported. To drop unsupported openai "
+            "params from the call, set `litellm.drop_params = True`"
+        ),
+        llm_provider="openai",
+        model="o4-mini",
+    )
+
+
+def test_call_llm_raises_unsupported_model_params_error(
+    mock_litellm_completion, mock_settings, sample_eppi_attributes
+):
+    """A param rejected by the model is re-raised with an actionable message."""
+    config = DataExtractionConfig(model="o4-mini", temperature=0.1)
+    llm_extractor = create_llm_extractor(config, mock_settings)
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    mock_litellm_completion.side_effect = _unsupported_temperature_error()
+
+    with pytest.raises(UnsupportedModelParamsError) as exc_info:
+        llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    message = str(exc_info.value)
+    # litellm's message is shown in full ...
+    assert str(exc_info.value.__cause__) in message
+    # ... followed by deet's guidance on how to fix it.
+    assert "o4-mini" in message
+    assert "extraction config" in message
+    assert isinstance(exc_info.value.__cause__, litellm.UnsupportedParamsError)
 
 
 def test_parse_llm_response(
@@ -679,3 +741,363 @@ def test_extract_from_documents_continues_on_error(
     assert run_output.metadata.total_input_tokens == 0
     assert run_output.metadata.total_output_tokens == 0
     assert mock_litellm_completion.call_count == 1
+
+
+def test_call_llm_leaves_unknown_errors_unchanged(
+    llm_extractor, mock_litellm_completion, sample_eppi_attributes
+):
+    """An error that is not in the registry is re-raised as it is."""
+    response_model = build_llm_response_model(sample_eppi_attributes)
+    error = ValueError("LLM call failed")
+    mock_litellm_completion.side_effect = error
+
+    with pytest.raises(ValueError, match="LLM call failed") as exc_info:
+        llm_extractor._call_llm('{"key": "value"}', response_model=response_model)
+
+    assert exc_info.value is error
+
+
+def test_extract_from_documents_warns_and_continues_on_skipped_document(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """A known per-document error skips that document with a warning."""
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in (1, 2)
+    ]
+    content_filter_error = litellm.ContentPolicyViolationError(
+        message="The response was filtered.",
+        model="gpt-4o",
+        llm_provider="azure",
+    )
+    mock_litellm_completion.side_effect = [
+        content_filter_error,
+        mock_litellm_completion.return_value,
+    ]
+
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=documents,
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert [d.document.name for d in run_output.annotated_documents] == ["Doc 2"]
+    skipped = [m for m in messages if "Skipping Doc 1" in str(m)]
+    assert len(skipped) == 1
+    assert skipped[0].record["level"].name == "WARNING"
+    assert "content filter" in str(skipped[0])
+
+
+def test_extract_from_documents_warns_and_skips_document_over_context_limit(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """A document over max_context_tokens is skipped with a warning, not an error."""
+    document = EppiDocument.model_validate(
+        {
+            "document_id": 1,
+            "name": "Long Doc",
+            "Abstract": " ".join(["word"] * 2000),
+        }
+    )
+    llm_extractor.config.max_context_tokens = 1000
+    llm_extractor.config.truncate_on_overflow = False
+
+    messages = []
+    logger_id = logger.add(messages.append, level="WARNING")
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=[document],
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert run_output.annotated_documents == []
+    assert mock_litellm_completion.call_count == 0
+    skipped = [m for m in messages if "Skipping Long Doc" in str(m)]
+    assert len(skipped) == 1
+    assert skipped[0].record["level"].name == "WARNING"
+    assert "exceeds max_context_tokens" in str(skipped[0])
+
+
+@pytest.mark.parametrize("max_workers", [1, 4])
+def test_extract_from_documents_aborts_on_unsupported_model_params(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    max_workers,
+):
+    """
+    Unsupported model params abort the whole run instead of being swallowed
+    per document, both sequentially and on the thread pool.
+    """
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in (1, 2, 3)
+    ]
+    llm_extractor.config.max_workers = max_workers
+    mock_litellm_completion.side_effect = _unsupported_temperature_error()
+
+    with pytest.raises(UnsupportedModelParamsError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    if max_workers == 1:
+        # Sequential runs must stop at the first failing document.
+        assert mock_litellm_completion.call_count == 1
+
+
+def test_extract_from_documents_cancels_queued_documents_on_unsupported_params(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """
+    On the thread pool, documents still queued when the error surfaces are
+    cancelled rather than processed before the run stops.
+    """
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in range(1, 21)
+    ]
+    llm_extractor.config.max_workers = 2
+
+    def slow_unsupported_params_error(**_kwargs):
+        # Keep each call busy briefly so most documents are still queued
+        # when the first error reaches the main thread.
+        time.sleep(0.05)
+        raise _unsupported_temperature_error()
+
+    mock_litellm_completion.side_effect = slow_unsupported_params_error
+
+    with pytest.raises(UnsupportedModelParamsError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert mock_litellm_completion.call_count < len(documents) // 2
+
+
+@pytest.mark.parametrize("max_workers", [1, 2])
+def test_extract_from_documents_saves_finished_documents_when_run_stops(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    tmp_path,
+    max_workers,
+):
+    """A mid-run stop still writes the documents that finished before it."""
+    documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in (1, 2, 3)
+    ]
+    llm_extractor.config.max_workers = max_workers
+    quota_error = litellm.RateLimitError(
+        message="You exceeded your current quota, please check your plan.",
+        model="gpt-4o",
+        llm_provider="openai",
+    )
+    finished = mock_litellm_completion.return_value
+    calls = iter(range(len(documents)))
+    lock = threading.Lock()
+
+    def first_call_succeeds(**_kwargs):
+        with lock:
+            call = next(calls)
+        if call == 0:
+            return finished
+        time.sleep(0.05)  # let the first document finish on the thread pool
+        raise quota_error
+
+    mock_litellm_completion.side_effect = first_call_succeeds
+    output_file = tmp_path / "results.json"
+    prompt_outfile = tmp_path / "prompts.json"
+
+    with pytest.raises(LLMQuotaExceededError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+            output_file=output_file,
+            prompt_outfile=prompt_outfile,
+        )
+
+    saved = json.loads(output_file.read_text())
+    assert len(saved["annotated_documents"]) == 1
+    assert len(json.loads(prompt_outfile.read_text())) == 1
+
+
+def _abstract_documents(count: int) -> list[EppiDocument]:
+    return [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Doc {document_id}",
+                "Abstract": "The document's abstract.",
+            }
+        )
+        for document_id in range(1, count + 1)
+    ]
+
+
+def _connection_error() -> litellm.APIConnectionError:
+    return litellm.APIConnectionError(
+        message="Cannot connect to host localhost:11434",
+        model="llama3",
+        llm_provider="ollama",
+    )
+
+
+@pytest.mark.parametrize("max_workers", [1, 2])
+def test_extract_from_documents_stops_after_consecutive_unexpected_failures(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    max_workers,
+):
+    """The same unknown error failing every document stops the run."""
+    documents = _abstract_documents(3 * MAX_CONSECUTIVE_FAILURES)
+    llm_extractor.config.max_workers = max_workers
+    mock_litellm_completion.side_effect = _connection_error()
+
+    with pytest.raises(RepeatedDocumentFailuresError) as exc_info:
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert isinstance(exc_info.value.__cause__, litellm.APIConnectionError)
+    assert "APIConnectionError" in str(exc_info.value)
+    if max_workers == 1:
+        assert mock_litellm_completion.call_count == MAX_CONSECUTIVE_FAILURES
+    else:
+        assert mock_litellm_completion.call_count < len(documents)
+
+
+def test_extract_from_documents_success_resets_consecutive_failures(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """Failures separated by a success do not stop the run."""
+    error = _connection_error()
+    below_limit = [error] * (MAX_CONSECUTIVE_FAILURES - 1)
+    mock_litellm_completion.side_effect = [
+        *below_limit,
+        mock_litellm_completion.return_value,
+        *below_limit,
+    ]
+    documents = _abstract_documents(2 * len(below_limit) + 1)
+
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=documents,
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+
+    assert len(run_output.annotated_documents) == 1
+
+
+def test_extract_from_documents_known_skips_do_not_reset_consecutive_failures(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """A known skip between unexpected failures does not hide a setup problem."""
+    error = _connection_error()
+    content_filter_error = litellm.ContentPolicyViolationError(
+        message="The response was filtered.", model="gpt-4o", llm_provider="azure"
+    )
+    mock_litellm_completion.side_effect = [
+        error,
+        error,
+        content_filter_error,
+        *[error] * (MAX_CONSECUTIVE_FAILURES - 2),
+    ]
+
+    with pytest.raises(RepeatedDocumentFailuresError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=_abstract_documents(MAX_CONSECUTIVE_FAILURES + 2),
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert mock_litellm_completion.call_count == MAX_CONSECUTIVE_FAILURES + 1
+
+
+def test_extract_from_documents_different_unexpected_errors_do_not_stop_run(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """Alternating error types are not counted as the same repeated failure."""
+    mock_litellm_completion.side_effect = [
+        _connection_error() if i % 2 else KeyError("annotations")
+        for i in range(2 * MAX_CONSECUTIVE_FAILURES)
+    ]
+
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=_abstract_documents(2 * MAX_CONSECUTIVE_FAILURES),
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+
+    assert run_output.annotated_documents == []
+
+
+def test_extract_from_documents_logs_unexpected_error_type(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """The error type is logged, so errors with terse messages stay readable."""
+    mock_litellm_completion.side_effect = KeyError("annotations")
+
+    messages = []
+    logger_id = logger.add(messages.append, level="ERROR")
+    llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=_abstract_documents(1),
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+    logger.remove(logger_id)
+
+    assert any(
+        "Failed to process Doc 1: KeyError: 'annotations'" in str(m) for m in messages
+    )
