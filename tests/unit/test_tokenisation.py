@@ -6,7 +6,6 @@ import pytest
 
 from deet.exceptions import LitellmModelNotMappedError
 from deet.utils.tokenisation import (
-    cached_input_tokens_from_usage,
     count_tokens,
     estimate_cost_usd,
     get_model_max_tokens,
@@ -168,27 +167,6 @@ def test_reported_call_cost_usd_on_error_returns_none() -> None:
         side_effect=ValueError("model not mapped"),
     ):
         assert reported_call_cost_usd(object()) is None
-
-
-def test_cached_input_tokens_prefers_prompt_details() -> None:
-    """OpenAI-style cached_tokens win over an Anthropic cache-read field."""
-    usage = {
-        "prompt_tokens_details": {"cached_tokens": 12},
-        "cache_read_input_tokens": 99,
-    }
-    assert cached_input_tokens_from_usage(usage) == 12
-
-
-def test_cached_input_tokens_falls_back_to_cache_read() -> None:
-    """Anthropic cache_read_input_tokens is used when prompt details are absent."""
-    usage = {"cache_read_input_tokens": 7}
-    assert cached_input_tokens_from_usage(usage) == 7
-
-
-def test_cached_input_tokens_missing_is_zero() -> None:
-    """Missing usage reports no cached prompt tokens."""
-    assert cached_input_tokens_from_usage(None) == 0
-    assert cached_input_tokens_from_usage(object()) == 0
 
 
 def test_count_tokens_fallback_on_error():

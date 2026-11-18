@@ -36,7 +36,6 @@ from deet.settings import (
 )
 from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
-    cached_input_tokens_from_usage,
     count_tokens,
     estimate_cost_usd,
     reported_call_cost_usd,
@@ -417,12 +416,16 @@ class LLMDataExtractor(BaseDataExtractor):
 
         input_tokens = 0
         output_tokens = 0
+        cached_input_tokens = 0
         usage = response.usage
         if usage is not None:
             if hasattr(usage, "prompt_tokens"):
                 input_tokens = usage.prompt_tokens or 0
             if hasattr(usage, "completion_tokens"):
                 output_tokens = usage.completion_tokens or 0
+            details = usage.prompt_tokens_details
+            if details is not None:
+                cached_input_tokens = details.cached_tokens or 0
 
         return LLMCallRecord(
             response_content=response_content,
@@ -430,7 +433,7 @@ class LLMDataExtractor(BaseDataExtractor):
             output_tokens=output_tokens,
             input_tokens=input_tokens,
             total_cost_usd=reported_call_cost_usd(response),
-            cached_input_tokens=cached_input_tokens_from_usage(usage),
+            cached_input_tokens=cached_input_tokens,
         )
 
     def _create_gold_standard_annotation(

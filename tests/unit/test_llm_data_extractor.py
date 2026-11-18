@@ -156,7 +156,6 @@ def mock_litellm_completion():
         mock_usage.prompt_tokens = 100
         mock_usage.completion_tokens = 42
         mock_usage.prompt_tokens_details.cached_tokens = 30
-        mock_usage.cache_read_input_tokens = None
         mock_response.usage = mock_usage
         mock_completion.return_value = mock_response
         with patch(

@@ -174,48 +174,6 @@ def reported_call_cost_usd(completion_response: object) -> float | None:
     return round(float(cost), 6)
 
 
-def cached_input_tokens_from_usage(usage: object | None) -> int:
-    """
-    Count prompt tokens served from the provider prompt cache.
-
-    OpenAI-compatible responses report this on
-    ``usage.prompt_tokens_details.cached_tokens``, which is already included
-    in ``prompt_tokens``. Anthropic reports ``usage.cache_read_input_tokens``
-    on the usage object itself. Returns 0 when usage is missing or the
-    provider reports no cache hit.
-
-    Args:
-        usage: Provider usage object from a LiteLLM completion response.
-
-    Returns:
-        Cached prompt token count, or 0.
-
-    """
-    if usage is None:
-        return 0
-    details = _usage_attr(usage, "prompt_tokens_details")
-    cached = _coerce_token_count(_usage_attr(details, "cached_tokens"))
-    if cached is None:
-        cached = _coerce_token_count(_usage_attr(usage, "cache_read_input_tokens"))
-    return cached or 0
-
-
-def _usage_attr(obj: object | None, name: str) -> object | None:
-    """Read ``name`` from a usage object or dict, or None when it is absent."""
-    if obj is None:
-        return None
-    if isinstance(obj, dict):
-        return obj.get(name)
-    return getattr(obj, name, None)
-
-
-def _coerce_token_count(value: object) -> int | None:
-    """Return ``value`` as an int when it is a real number, otherwise None."""
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        return None
-    return int(value)
-
-
 def truncate_to_token_limit(text: str, model: str, max_tokens: int) -> str:
     """
     Truncate text to fit within a token limit.
