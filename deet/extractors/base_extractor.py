@@ -519,7 +519,7 @@ class BaseDataExtractor(ABC):
         """
         Resolve document text from exactly one of payload or md_path.
 
-        Raises
+        Raises:
             ValueError: If neither or both of payload and md_path are provided.
             FileNotFoundError: If md_path is given but does not exist.
 
