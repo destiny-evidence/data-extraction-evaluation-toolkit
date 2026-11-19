@@ -4,6 +4,7 @@ import re
 
 import litellm
 from litellm.exceptions import NotFoundError as LitellmNotFoundError
+from litellm.types.utils import ModelResponse
 from loguru import logger
 
 from deet.exceptions import LitellmModelNotMappedError
@@ -139,7 +140,7 @@ def estimate_cost_usd(
         return (None, None)
 
 
-def reported_call_cost_usd(completion_response: object) -> float | None:
+def reported_call_cost_usd(completion_response: ModelResponse) -> float | None:
     """
     Read the USD cost LiteLLM reports for one completion response.
 

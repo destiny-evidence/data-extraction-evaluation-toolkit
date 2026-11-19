@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, cast
 
 import litellm
+from litellm.types.utils import ChatCompletionMessageToolCall, ModelResponse, Usage
 from loguru import logger
 from pydantic import (
     ValidationError,
@@ -404,25 +405,31 @@ class LLMDataExtractor(BaseDataExtractor):
         if self.config.provider == LLMProvider.OLLAMA:
             completion_kwargs["num_ctx"] = self.config.max_context_tokens
 
-        response = litellm.completion(**completion_kwargs)
+        response = cast("ModelResponse", litellm.completion(**completion_kwargs))
 
         msg = response.choices[0].message
 
-        if getattr(msg, "content", None) is not None:
+        if msg.content is not None:
             response_content = msg.content
-        elif getattr(msg, "tool_calls", None):
-            response_content = msg.tool_calls[0].function.arguments
+        elif msg.tool_calls:
+            call = msg.tool_calls[0]
+            if not isinstance(call, ChatCompletionMessageToolCall):
+                error = "LiteLLM returned an unsupported tool call type"
+                raise ValueError(error)
+            response_content = call.function.arguments
+        else:
+            error = "LiteLLM returned neither message content nor tool calls"
+            raise ValueError(error)
         logger.debug(f"raw response: {response_content}")
 
         input_tokens = 0
         output_tokens = 0
         cached_input_tokens = 0
-        usage = response.usage
+        # Litellm declares Usage at runtime, so we need to cast this to a Usage object
+        usage = cast("Usage | None", getattr(response, "usage", None))
         if usage is not None:
-            if hasattr(usage, "prompt_tokens"):
-                input_tokens = usage.prompt_tokens or 0
-            if hasattr(usage, "completion_tokens"):
-                output_tokens = usage.completion_tokens or 0
+            input_tokens = usage.prompt_tokens or 0
+            output_tokens = usage.completion_tokens or 0
             details = usage.prompt_tokens_details
             if details is not None:
                 cached_input_tokens = details.cached_tokens or 0

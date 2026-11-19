@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import pytest
+from litellm.types.utils import ModelResponse
 
 from deet.exceptions import LitellmModelNotMappedError
 from deet.utils.tokenisation import (
@@ -148,7 +149,7 @@ def test_reported_call_cost_usd_rounds_litellm_cost() -> None:
         "deet.utils.tokenisation.litellm.completion_cost",
         return_value=0.123456789,
     ):
-        assert reported_call_cost_usd(object()) == pytest.approx(0.123457)
+        assert reported_call_cost_usd(ModelResponse()) == pytest.approx(0.123457)
 
 
 def test_reported_call_cost_usd_keeps_zero() -> None:
@@ -157,7 +158,7 @@ def test_reported_call_cost_usd_keeps_zero() -> None:
         "deet.utils.tokenisation.litellm.completion_cost",
         return_value=0.0,
     ):
-        assert reported_call_cost_usd(object()) == 0.0
+        assert reported_call_cost_usd(ModelResponse()) == 0.0
 
 
 def test_reported_call_cost_usd_on_error_returns_none() -> None:
@@ -166,7 +167,7 @@ def test_reported_call_cost_usd_on_error_returns_none() -> None:
         "deet.utils.tokenisation.litellm.completion_cost",
         side_effect=ValueError("model not mapped"),
     ):
-        assert reported_call_cost_usd(object()) is None
+        assert reported_call_cost_usd(ModelResponse()) is None
 
 
 def test_count_tokens_fallback_on_error():
