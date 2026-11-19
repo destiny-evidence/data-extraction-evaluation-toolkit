@@ -14,7 +14,11 @@ from deet.data_models.documents import (
     DocumentIdentity,
     DocumentIDSource,
 )
-from deet.exceptions import EmptyPdfExtractionError, JsonStyleError
+from deet.exceptions import (
+    EmptyPdfExtractionError,
+    JsonStyleError,
+    RunAbortingError,
+)
 from deet.processors.linker import (
     DocumentReferenceLinker,
     DocumentReferenceMapping,
@@ -1164,8 +1168,8 @@ def test_linker_link_many_with_pdf_parsing(tmp_path):
     assert results[0].context == "Parsed PDF content"
 
 
-def test_linker_link_many_skips_pdf_without_text(tmp_path):
-    """A PDF with no extractable text is skipped; other documents still link."""
+def test_linker_link_many_stops_on_pdf_without_text(tmp_path):
+    """A PDF with no extractable text stops linking and names the document."""
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
     empty_pdf = docs_dir / "12345678.pdf"
@@ -1199,11 +1203,15 @@ def test_linker_link_many_skips_pdf_without_text(tmp_path):
             raise EmptyPdfExtractionError(EmptyPdfExtractionError.DEFAULT_MESSAGE)
         return ParsedOutput(text="Parsed PDF content", parser_library="unknown")
 
-    with patch.object(DocumentReferenceLinker, "_parse_pdf", side_effect=parse_pdf):
-        results = linker.link_many_references_parsed_documents()
+    with (
+        patch.object(DocumentReferenceLinker, "_parse_pdf", side_effect=parse_pdf),
+        pytest.raises(EmptyPdfExtractionError) as exc_info,
+    ):
+        linker.link_many_references_parsed_documents()
 
-    assert [d.safe_identity.document_id for d in results] == [87654321]
-    assert "12345678" not in linker.document_parsing_stats
+    assert isinstance(exc_info.value, RunAbortingError)
+    assert "12345678" in str(exc_info.value)
+    assert str(empty_pdf) in str(exc_info.value)
 
 
 def test_linker_link_many_multiple_documents(tmp_path):

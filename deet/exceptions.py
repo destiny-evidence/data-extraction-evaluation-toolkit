@@ -109,12 +109,13 @@ class MalformedLanguageError(Exception):
     """
 
 
-class EmptyPdfExtractionError(DocumentSkippedError):
+class EmptyPdfExtractionError(RunAbortingError):
     """
     Raise when PDF parsing yields no extractable text.
 
     Occurs when the PDF has no mappable text (e.g. image-only) or when text
-    is represented in a way pdfminer cannot decode.
+    is represented in a way pdfminer cannot decode. Linking stops, so the user
+    fixes or removes the document before extraction loads the linked documents.
 
     """
 
