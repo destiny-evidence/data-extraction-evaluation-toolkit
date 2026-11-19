@@ -104,6 +104,7 @@ show_missing = true
 
 [tool.coverage.run]
 omit = [
+    "deet/utils/_vendor/*",
     "deet/utils/destiny_utils.py",
 ]
 source = ["deet"]
