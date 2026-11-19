@@ -689,7 +689,7 @@ wheels = [
 
 [[package]]
 name = "destiny-deet"
-version = "0.5.0.dev5"
+version = "0.5.0.dev6"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
