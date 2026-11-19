@@ -13,7 +13,7 @@ from deet.data_models.extraction import (
     ExtractionRunOutput,
     PerDocumentExtractionStats,
 )
-from deet.exceptions import UnsupportedModelParamsError
+from deet.exceptions import RunAbortingError
 from deet.extractors.cli_helpers import (
     load_or_init_config,
     prepare_documents,
@@ -174,24 +174,16 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert written["total_cost_usd"] == 0.0123
 
 
-def test_run_extraction_pipeline_fails_on_unsupported_model_params(tmp_path, config):
-    """Unsupported model params are reported via fail_with_message, not a traceback."""
+def test_run_extraction_pipeline_propagates_run_aborting_error(tmp_path, config):
+    """A RunAbortingError from extraction reaches the caller unchanged."""
     mock_project = MagicMock()
     mock_project.experiments_dir = tmp_path / "experiments"
-    mock_project.pdf_dir = tmp_path / "pdfs"
-    mock_project.load_evaluation_strategy.return_value.get_active_ids.return_value = [1]
+    mock_project.process_data.return_value.documents = [MagicMock()]
 
-    mock_processed_data = MagicMock()
-    mock_processed_data.attributes = [1]
-    mock_processed_data.documents = [MagicMock()]
-    mock_project.process_data.return_value = mock_processed_data
-
-    error_message = "Model 'o4-mini' does not support a configured parameter"
+    error = RunAbortingError("simulated abort")
     mock_extractor = MagicMock()
     mock_extractor.config = config
-    mock_extractor.extract_from_documents.side_effect = UnsupportedModelParamsError(
-        error_message
-    )
+    mock_extractor.extract_from_documents.side_effect = error
 
     with (
         patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
@@ -200,16 +192,13 @@ def test_run_extraction_pipeline_fails_on_unsupported_model_params(tmp_path, con
             return_value=mock_extractor,
         ),
         patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
-        patch(
-            "deet.extractors.cli_helpers.fail_with_message", side_effect=SystemExit
-        ) as mock_fail,
-        pytest.raises(SystemExit),
+        pytest.raises(RunAbortingError) as exc_info,
     ):
         run_extraction_pipeline(
             deet_project=mock_project, prompt_population=None, prompt_csv_path=None
         )
 
-    mock_fail.assert_called_once_with(error_message)
+    assert exc_info.value is error
 
 
 def test_run_extraction_pipeline_fails_when_project_has_no_documents(tmp_path, config):

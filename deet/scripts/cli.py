@@ -9,7 +9,7 @@ from typing import Annotated
 
 import typer
 
-from deet.exceptions import RunAbortingError
+from deet.exceptions import UserFacingError
 from deet.logger import logger
 from deet.scripts.commands import experiments, project
 from deet.scripts.commands.deprecated import (
@@ -95,10 +95,10 @@ def global_options(
 
 
 def main() -> None:
-    """Run CLI app, reporting known run-aborting errors without a traceback."""
+    """Run CLI app, reporting user-facing errors without a traceback."""
     try:
         app()
-    except RunAbortingError as e:
+    except UserFacingError as e:
         notify(str(e), level=LogLevel.ERROR)
         sys.exit(1)
 

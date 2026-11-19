@@ -10,7 +10,7 @@ import yaml  # type:ignore[import-untyped]
 from typer.testing import CliRunner
 
 from deet.data_models.project import DeetProject
-from deet.exceptions import JsonStyleError
+from deet.exceptions import DocumentSkippedError, RunAbortingError
 from deet.extractors.llm_data_extractor import DataExtractionConfig
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app, main
@@ -597,13 +597,16 @@ def test_version_short_flag() -> None:
     assert version("destiny-deet") in result.output
 
 
-def test_main_reports_run_aborting_error_without_traceback(capsys) -> None:
-    """A RunAbortingError escaping a command is printed and exits with code 1."""
+@pytest.mark.parametrize("error_type", [RunAbortingError, DocumentSkippedError])
+def test_main_reports_user_facing_error_without_traceback(capsys, error_type) -> None:
+    """A UserFacingError escaping a command is printed and exits with code 1."""
     with (
-        patch("deet.scripts.cli.app", side_effect=JsonStyleError("bad link map")),
+        patch("deet.scripts.cli.app", side_effect=error_type("simulated abort")),
         pytest.raises(SystemExit) as exc_info,
     ):
         main()
 
+    captured = capsys.readouterr()
     assert exc_info.value.code == 1
-    assert "bad link map" in capsys.readouterr().err
+    assert "simulated abort" in captured.err
+    assert "Traceback (most recent call last)" not in captured.err

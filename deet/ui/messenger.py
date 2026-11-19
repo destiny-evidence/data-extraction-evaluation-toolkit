@@ -16,6 +16,12 @@ def notify(message: str, level: LogLevel = LogLevel.INFO) -> None:
 
 
 def fail_with_message(message: str) -> NoReturn:
-    """Print message and exit CLI."""
+    """
+    Print message and exit CLI.
+
+    Deprecated: raise a ``RunAbortingError`` instead. ``deet.scripts.cli.main``
+    prints any ``UserFacingError`` and exits with code 1, and the error also
+    works when the code is called outside the CLI.
+    """
     notify(message, level=LogLevel.ERROR)
     raise typer.Exit(code=1)
