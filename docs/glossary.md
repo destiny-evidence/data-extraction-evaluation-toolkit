@@ -1,5 +1,17 @@
 # Glossary
 
+term:concept
+: A named idea that a <term:vocabulary> declares, and gives a unique identifier to. A concept has a preferred label, optional definition and a scope note. In a taxonomy, a concept may name other concepts as its parents (SKOS: broader) or children (SKOS: narrower). For example, a concept "vector-borne diseases" may be a parent of a concept "malaria". Deet uses each concept as one category a document may be about: and maps each concept to a boolean attribute.
+
+term:concept scheme
+: A named collection of related <term:concept>s within a <term:vocabulary>, forming one hierarchical tree.
+
+term:vocabulary
+: A set of controlled <term:concept>s used for categorisation. Vocabularies may be flat or hierarchical.
+
+term:taxonomy
+: A vocabulary whose <term:concept>s are arranged in a broader/narrower hierarchy.
+
 term:Ground Truth
 : The "ground truth" data manually extracted by human experts. Used as the benchmark against which to evaluate AI-extracted data.
 
