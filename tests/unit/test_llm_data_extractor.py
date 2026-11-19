@@ -30,7 +30,9 @@ from deet.data_models.extraction import DocumentExtractionResult, ExtractionRunO
 from deet.exceptions import (
     ContextTooLongError,
     LLMQuotaExceededError,
+    NoDocumentsExtractedError,
     RepeatedDocumentFailuresError,
+    RunAbortingError,
     UnsupportedModelParamsError,
 )
 from deet.extractors.base_extractor import (
@@ -806,12 +808,15 @@ def test_extract_from_documents_warns_and_skips_document_over_context_limit(
     mock_litellm_completion,
 ):
     """A document over max_context_tokens is skipped with a warning, not an error."""
-    document = EppiDocument.model_validate(
+    long_document = EppiDocument.model_validate(
         {
             "document_id": 1,
             "name": "Long Doc",
             "Abstract": " ".join(["word"] * 2000),
         }
+    )
+    short_document = EppiDocument.model_validate(
+        {"document_id": 2, "name": "Short Doc", "Abstract": "A short abstract."}
     )
     llm_extractor.config.max_context_tokens = 1000
     llm_extractor.config.truncate_on_overflow = False
@@ -820,13 +825,13 @@ def test_extract_from_documents_warns_and_skips_document_over_context_limit(
     logger_id = logger.add(messages.append, level="WARNING")
     run_output = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        documents=[document],
+        documents=[long_document, short_document],
         context_type=ContextType.ABSTRACT_ONLY,
     )
     logger.remove(logger_id)
 
-    assert run_output.annotated_documents == []
-    assert mock_litellm_completion.call_count == 0
+    assert [d.document.name for d in run_output.annotated_documents] == ["Short Doc"]
+    assert mock_litellm_completion.call_count == 1
     skipped = [m for m in messages if "Skipping Long Doc" in str(m)]
     assert len(skipped) == 1
     assert skipped[0].record["level"].name == "WARNING"
@@ -1063,24 +1068,88 @@ def test_extract_from_documents_known_skips_do_not_reset_consecutive_failures(
     assert mock_litellm_completion.call_count == DEFAULT_MAX_CONSECUTIVE_FAILURES + 1
 
 
-def test_extract_from_documents_different_unexpected_errors_do_not_stop_run(
+def test_extract_from_documents_different_unexpected_errors_fail_at_the_end(
     llm_extractor,
     sample_eppi_attributes,
     mock_litellm_completion,
 ):
-    """Alternating error types are not counted as the same repeated failure."""
+    """
+    Alternating error types are not counted as the same repeated failure.
+
+    Every document is still tried, then the run fails because none succeeded.
+    """
+    documents = _abstract_documents(2 * DEFAULT_MAX_CONSECUTIVE_FAILURES)
     mock_litellm_completion.side_effect = [
         _connection_error() if i % 2 else KeyError("annotations")
-        for i in range(2 * DEFAULT_MAX_CONSECUTIVE_FAILURES)
+        for i in range(len(documents))
     ]
 
+    with pytest.raises(NoDocumentsExtractedError) as exc_info:
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert mock_litellm_completion.call_count == len(documents)
+    assert "10 x KeyError" in str(exc_info.value)
+    assert "10 x APIConnectionError" in str(exc_info.value)
+
+
+def test_extract_from_documents_fails_when_every_document_is_skipped(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    tmp_path,
+):
+    """Known skips on every document fail the run, with the reasons saved."""
+    long_documents = [
+        EppiDocument.model_validate(
+            {
+                "document_id": document_id,
+                "name": f"Long Doc {document_id}",
+                "Abstract": " ".join(["word"] * 2000),
+            }
+        )
+        for document_id in (1, 2)
+    ]
+    llm_extractor.config.max_context_tokens = 1000
+    llm_extractor.config.truncate_on_overflow = False
+    output_file = tmp_path / "llm_annotations.json"
+
+    with pytest.raises(NoDocumentsExtractedError) as exc_info:
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=long_documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+            output_file=output_file,
+        )
+
+    assert isinstance(exc_info.value, RunAbortingError)
+    assert "2 x ContextTooLongError" in str(exc_info.value)
+    assert mock_litellm_completion.call_count == 0
+    metadata = ExtractionRunOutput.model_validate_json(output_file.read_text()).metadata
+    assert set(metadata.failed_documents) == {"1", "2"}
+    assert metadata.stopped_by is not None
+    assert metadata.stopped_by.error_type == "NoDocumentsExtractedError"
+
+
+def test_extract_from_documents_empty_input_is_not_an_error(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """No documents in gives an empty output, not a NoDocumentsExtractedError."""
     run_output = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        documents=_abstract_documents(2 * DEFAULT_MAX_CONSECUTIVE_FAILURES),
+        documents=[],
         context_type=ContextType.ABSTRACT_ONLY,
     )
 
     assert run_output.annotated_documents == []
+    assert run_output.metadata.failed_documents == {}
+    assert run_output.metadata.stopped_by is None
+    assert mock_litellm_completion.call_count == 0
 
 
 def test_extract_from_documents_logs_unexpected_error_type(

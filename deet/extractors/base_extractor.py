@@ -3,6 +3,7 @@
 import json
 import threading
 from abc import ABC, abstractmethod
+from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -40,6 +41,7 @@ from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import (
     DocumentSkippedError,
     LitellmModelNotMappedError,
+    NoDocumentsExtractedError,
     RepeatedDocumentFailuresError,
     RunAbortingError,
 )
@@ -353,6 +355,20 @@ def _failure_from(error: Exception) -> DocumentExtractionFailure:
     )
 
 
+def _no_documents_extracted(
+    failed_documents: dict[str, DocumentExtractionFailure],
+) -> NoDocumentsExtractedError:
+    """Build the error for a run where every processed document failed."""
+    counts = Counter(failure.error_type for failure in failed_documents.values())
+    reasons = ", ".join(f"{n} x {error_type}" for error_type, n in counts.most_common())
+    msg = (
+        "No documents were extracted: every document failed or was skipped "
+        f"({reasons}).\n\nSee the warnings and errors logged above, or "
+        "failed_documents in the saved run metadata."
+    )
+    return NoDocumentsExtractedError(msg)
+
+
 def _iter_completed(
     documents: list[Document],
     max_workers: int,
@@ -546,6 +562,9 @@ class BaseDataExtractor(ABC):
         Documents finished before the error are still written to
         ``output_file`` and ``prompt_outfile``. Skipped and failed documents,
         and the error that stopped the run, are listed in the run metadata.
+        If documents were processed but none succeeded, a
+        ``NoDocumentsExtractedError`` is raised once all have been tried; an
+        empty ``documents`` returns an empty output.
 
 
         Args:
@@ -563,7 +582,8 @@ class BaseDataExtractor(ABC):
             ExtractionRunOutput containing annotated documents and run metadata.
 
         Raises:
-            RunAbortingError: When an error would fail every remaining document.
+            RunAbortingError: When an error would fail every remaining document,
+                or (``NoDocumentsExtractedError``) when no document succeeded.
 
         """
         if context_type is None:
@@ -627,6 +647,10 @@ class BaseDataExtractor(ABC):
             total_output_tokens += result.output_tokens
             if result.total_cost_usd is not None:
                 total_cost = (total_cost or 0.0) + result.total_cost_usd
+
+        # An empty input is not a failure; documents that all failed are.
+        if aborting_error is None and failed_documents and not llm_annotated_docs:
+            aborting_error = _no_documents_extracted(failed_documents)
 
         run_metadata = ExtractionRunMetadata(
             model=self.config.model,

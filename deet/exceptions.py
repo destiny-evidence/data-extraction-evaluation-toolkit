@@ -237,6 +237,16 @@ class RepeatedDocumentFailuresError(RunAbortingError):
     """
 
 
+class NoDocumentsExtractedError(RunAbortingError):
+    """
+    Raised when documents were processed but every one failed or was skipped.
+
+    Catches runs that would otherwise finish with empty results, e.g. every
+    document too long for ``max_context_tokens``, or each failing with a
+    different error. An empty input is not an error.
+    """
+
+
 class LLMContentFilterError(DocumentSkippedError):
     """Raised when the provider's content filter rejects a document."""
 
