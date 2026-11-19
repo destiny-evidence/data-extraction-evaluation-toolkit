@@ -28,6 +28,7 @@ from deet.data_models.documents import (
     GoldStandardAnnotatedDocument,
 )
 from deet.data_models.extraction import (
+    DocumentExtractionFailure,
     DocumentExtractionResult,
     DocumentParsingStats,
     ExtractionRunMetadata,
@@ -104,6 +105,9 @@ class ExtractionMethod(StrEnum):
     SEMANTIC = auto()
 
 
+DEFAULT_MAX_CONSECUTIVE_FAILURES = 10
+
+
 class DataExtractionConfig(BaseModel):
     """Configuration for data extraction tasks."""
 
@@ -134,6 +138,16 @@ class DataExtractionConfig(BaseModel):
             "Number of times a rate-limited, timed-out or 5xx LLM call is retried,"
             " with backoff, before the error is reported. Applies to OpenAI and"
             " Azure; litellm does not retry Ollama calls."
+        ),
+    )
+    max_consecutive_failures: int = Field(
+        default=DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        ge=1,
+        description=(
+            "Stop the run once this many documents in a row fail with the same"
+            " unexpected error, since that usually means a setup problem (e.g."
+            " Ollama not running). Capped at the number of documents, so a run"
+            " where every document fails this way always stops."
         ),
     )
     model: Annotated[str, UI(help="The name of the LLM model you want to use.")] = (
@@ -265,9 +279,6 @@ class DataExtractionConfig(BaseModel):
         return cls.model_validate(yaml.safe_load(path.read_text()))
 
 
-MAX_CONSECUTIVE_FAILURES = 10
-
-
 class _ConsecutiveFailures:
     """
     Count documents in a row that failed with the same unexpected error type.
@@ -278,7 +289,7 @@ class _ConsecutiveFailures:
     problem.
     """
 
-    def __init__(self, limit: int = MAX_CONSECUTIVE_FAILURES) -> None:
+    def __init__(self, limit: int) -> None:
         self._limit = limit
         self._count = 0
         self._error_type: type[Exception] | None = None
@@ -320,11 +331,35 @@ class _ProcessedDocument:
     stats: PerDocumentExtractionStats
 
 
+@dataclass(frozen=True)
+class _FailedDocument:
+    """A document that was skipped or failed, for the run metadata."""
+
+    doc_id: str
+    failure: DocumentExtractionFailure
+
+
+def _document_key(document: Document) -> str:
+    """Return the key a document is listed under in the run metadata."""
+    try:
+        return str(document.safe_identity.document_id)
+    except RuntimeError:
+        return document.name
+
+
+def _failure_from(error: Exception) -> DocumentExtractionFailure:
+    return DocumentExtractionFailure(
+        error_type=type(error).__name__, message=str(error)
+    )
+
+
 def _iter_completed(
     documents: list[Document],
     max_workers: int,
-    process: Callable[[int, Document], tuple[int, _ProcessedDocument | None]],
-) -> Iterator[tuple[int, _ProcessedDocument | None]]:
+    process: Callable[
+        [int, Document], tuple[int, _ProcessedDocument | _FailedDocument]
+    ],
+) -> Iterator[tuple[int, _ProcessedDocument | _FailedDocument]]:
     """
     Yield `(index, result)` pairs as each document finishes extraction.
 
@@ -406,7 +441,7 @@ class BaseDataExtractor(ABC):
         context_type: ContextType | None,
         parsing_by_doc: dict[str, DocumentParsingStats],
         failures: _ConsecutiveFailures,
-    ) -> tuple[int, _ProcessedDocument | None]:
+    ) -> tuple[int, _ProcessedDocument | _FailedDocument]:
         """
         Run one document through ``self.extract_from_document``.
 
@@ -415,8 +450,9 @@ class BaseDataExtractor(ABC):
 
         Catches per-document errors so one bad document doesn't crash the whole batch.
         A ``RunAbortingError`` is re-raised, since it would fail every document.
-        After ``MAX_CONSECUTIVE_FAILURES`` documents in a row fail with the same
-        unexpected error type, a ``RepeatedDocumentFailuresError`` stops the run.
+        After ``config.max_consecutive_failures`` documents in a row fail with the
+        same unexpected error type, a ``RepeatedDocumentFailuresError`` stops the
+        run.
 
         Args:
             index: Position of this document in the input list, echoed back in the
@@ -432,8 +468,8 @@ class BaseDataExtractor(ABC):
         Returns:
             `(index, result)`: `index` is echoed back unchanged so the caller
             can restore input order from completion order; `result` is a
-            `_ProcessedDocument` on success, or `None` when the document is
-            skipped (no usable context) or extraction raises.
+            `_ProcessedDocument` on success, or a `_FailedDocument` recording the
+            error when the document is skipped or extraction raises.
 
         """
         logger.info(f"Processing document: {document.name}")
@@ -454,12 +490,12 @@ class BaseDataExtractor(ABC):
             raise
         except DocumentSkippedError as e:
             logger.warning(f"Skipping {document.name}: {e}")
-            return index, None
+            return index, _FailedDocument(_document_key(document), _failure_from(e))
         except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to process {document.name}: {type(e).__name__}: {e}")
             logger.debug("Error details", exc_info=True)
             failures.record(e)
-            return index, None
+            return index, _FailedDocument(_document_key(document), _failure_from(e))
 
         failures.reset()
 
@@ -505,9 +541,11 @@ class BaseDataExtractor(ABC):
         Failures that would affect every document
         (e.g. because of misconfigured llm settings)
         stop the run with a ``RunAbortingError``, as do
-        ``MAX_CONSECUTIVE_FAILURES`` documents in a row failing with the same
-        unexpected error type. Documents finished before the error are still
-        written to ``output_file`` and ``prompt_outfile``.
+        ``config.max_consecutive_failures`` documents in a row (at most the
+        number of documents) failing with the same unexpected error type.
+        Documents finished before the error are still written to
+        ``output_file`` and ``prompt_outfile``. Skipped and failed documents,
+        and the error that stopped the run, are listed in the run metadata.
 
 
         Args:
@@ -548,11 +586,15 @@ class BaseDataExtractor(ABC):
             filter_attribute_ids=filter_attribute_ids,
             context_type=context_type,
             parsing_by_doc=parsing_by_doc,
-            failures=_ConsecutiveFailures(),
+            failures=_ConsecutiveFailures(
+                limit=max(1, min(self.config.max_consecutive_failures, len(documents)))
+            ),
         )
 
         # Collect into input order regardless of completion order.
-        ordered: list[_ProcessedDocument | None] = [None] * len(documents)
+        ordered: list[_ProcessedDocument | _FailedDocument | None] = [None] * len(
+            documents
+        )
         completed = _iter_completed(documents, max_workers, process)
         # Kept until results are saved, so a mid-run stop (e.g. exhausted
         # quota) does not discard documents that were already paid for.
@@ -560,13 +602,17 @@ class BaseDataExtractor(ABC):
         try:
             with optional_progress(documents, show_progress=show_progress) as tracked:
                 for _ in tracked:  # advance the bar once per finished document
-                    index, bundle = next(completed)
-                    ordered[index] = bundle
+                    index, outcome = next(completed)
+                    ordered[index] = outcome
         except RunAbortingError as e:
             aborting_error = e
 
+        failed_documents: dict[str, DocumentExtractionFailure] = {}
         for bundle in ordered:
-            if bundle is None:
+            if bundle is None:  # not processed before the run stopped
+                continue
+            if isinstance(bundle, _FailedDocument):
+                failed_documents[bundle.doc_id] = bundle.failure
                 continue
             result = bundle.result
             doc_id_str = bundle.doc_id
@@ -588,6 +634,10 @@ class BaseDataExtractor(ABC):
             total_output_tokens=total_output_tokens,
             total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
             per_document=per_document,
+            failed_documents=failed_documents,
+            stopped_by=(
+                _failure_from(aborting_error) if aborting_error is not None else None
+            ),
         )
         run_output = ExtractionRunOutput(
             annotated_documents=llm_annotated_docs,

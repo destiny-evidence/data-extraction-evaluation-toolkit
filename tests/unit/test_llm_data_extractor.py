@@ -34,7 +34,7 @@ from deet.exceptions import (
     UnsupportedModelParamsError,
 )
 from deet.extractors.base_extractor import (
-    MAX_CONSECUTIVE_FAILURES,
+    DEFAULT_MAX_CONSECUTIVE_FAILURES,
     DataExtractionConfig,
     PromptConfig,
 )
@@ -726,24 +726,22 @@ def test_extract_from_documents_skips_document_missing_abstract(
 
 def test_extract_from_documents_continues_on_error(
     llm_extractor,
-    sample_eppi_document,
     sample_eppi_attributes,
     mock_litellm_completion,
-    tmp_path,
 ):
-    """Test that when one document fails, processing continues with empty results."""
-    sample_eppi_documents = [sample_eppi_document]
-    llm_extractor.config.default_context_type = ContextType.ABSTRACT_ONLY
-    mock_litellm_completion.side_effect = ValueError("LLM call failed")
+    """When one document fails, processing continues with the next one."""
+    mock_litellm_completion.side_effect = [
+        ValueError("LLM call failed"),
+        mock_litellm_completion.return_value,
+    ]
     run_output = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        documents=sample_eppi_documents,
+        documents=_abstract_documents(2),
+        context_type=ContextType.ABSTRACT_ONLY,
     )
     assert isinstance(run_output, ExtractionRunOutput)
-    assert run_output.annotated_documents == []
-    assert run_output.metadata.total_input_tokens == 0
-    assert run_output.metadata.total_output_tokens == 0
-    assert mock_litellm_completion.call_count == 1
+    assert [d.document.name for d in run_output.annotated_documents] == ["Doc 2"]
+    assert mock_litellm_completion.call_count == 2
 
 
 def test_call_llm_leaves_unknown_errors_unchanged(
@@ -995,7 +993,7 @@ def test_extract_from_documents_stops_after_consecutive_unexpected_failures(
     max_workers,
 ):
     """The same unknown error failing every document stops the run."""
-    documents = _abstract_documents(3 * MAX_CONSECUTIVE_FAILURES)
+    documents = _abstract_documents(3 * DEFAULT_MAX_CONSECUTIVE_FAILURES)
     llm_extractor.config.max_workers = max_workers
     mock_litellm_completion.side_effect = _connection_error()
 
@@ -1009,7 +1007,7 @@ def test_extract_from_documents_stops_after_consecutive_unexpected_failures(
     assert isinstance(exc_info.value.__cause__, litellm.APIConnectionError)
     assert "APIConnectionError" in str(exc_info.value)
     if max_workers == 1:
-        assert mock_litellm_completion.call_count == MAX_CONSECUTIVE_FAILURES
+        assert mock_litellm_completion.call_count == DEFAULT_MAX_CONSECUTIVE_FAILURES
     else:
         assert mock_litellm_completion.call_count < len(documents)
 
@@ -1021,7 +1019,7 @@ def test_extract_from_documents_success_resets_consecutive_failures(
 ):
     """Failures separated by a success do not stop the run."""
     error = _connection_error()
-    below_limit = [error] * (MAX_CONSECUTIVE_FAILURES - 1)
+    below_limit = [error] * (DEFAULT_MAX_CONSECUTIVE_FAILURES - 1)
     mock_litellm_completion.side_effect = [
         *below_limit,
         mock_litellm_completion.return_value,
@@ -1052,17 +1050,17 @@ def test_extract_from_documents_known_skips_do_not_reset_consecutive_failures(
         error,
         error,
         content_filter_error,
-        *[error] * (MAX_CONSECUTIVE_FAILURES - 2),
+        *[error] * (DEFAULT_MAX_CONSECUTIVE_FAILURES - 2),
     ]
 
     with pytest.raises(RepeatedDocumentFailuresError):
         llm_extractor.extract_from_documents(
             attributes=sample_eppi_attributes,
-            documents=_abstract_documents(MAX_CONSECUTIVE_FAILURES + 2),
+            documents=_abstract_documents(DEFAULT_MAX_CONSECUTIVE_FAILURES + 2),
             context_type=ContextType.ABSTRACT_ONLY,
         )
 
-    assert mock_litellm_completion.call_count == MAX_CONSECUTIVE_FAILURES + 1
+    assert mock_litellm_completion.call_count == DEFAULT_MAX_CONSECUTIVE_FAILURES + 1
 
 
 def test_extract_from_documents_different_unexpected_errors_do_not_stop_run(
@@ -1073,12 +1071,12 @@ def test_extract_from_documents_different_unexpected_errors_do_not_stop_run(
     """Alternating error types are not counted as the same repeated failure."""
     mock_litellm_completion.side_effect = [
         _connection_error() if i % 2 else KeyError("annotations")
-        for i in range(2 * MAX_CONSECUTIVE_FAILURES)
+        for i in range(2 * DEFAULT_MAX_CONSECUTIVE_FAILURES)
     ]
 
     run_output = llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        documents=_abstract_documents(2 * MAX_CONSECUTIVE_FAILURES),
+        documents=_abstract_documents(2 * DEFAULT_MAX_CONSECUTIVE_FAILURES),
         context_type=ContextType.ABSTRACT_ONLY,
     )
 
@@ -1091,13 +1089,16 @@ def test_extract_from_documents_logs_unexpected_error_type(
     mock_litellm_completion,
 ):
     """The error type is logged, so errors with terse messages stay readable."""
-    mock_litellm_completion.side_effect = KeyError("annotations")
+    mock_litellm_completion.side_effect = [
+        KeyError("annotations"),
+        mock_litellm_completion.return_value,
+    ]
 
     messages = []
     logger_id = logger.add(messages.append, level="ERROR")
     llm_extractor.extract_from_documents(
         attributes=sample_eppi_attributes,
-        documents=_abstract_documents(1),
+        documents=_abstract_documents(2),
         context_type=ContextType.ABSTRACT_ONLY,
     )
     logger.remove(logger_id)
@@ -1105,3 +1106,101 @@ def test_extract_from_documents_logs_unexpected_error_type(
     assert any(
         "Failed to process Doc 1: KeyError: 'annotations'" in str(m) for m in messages
     )
+
+
+def test_extract_from_documents_consecutive_failure_limit_is_configurable(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """``max_consecutive_failures`` sets how many failures in a row stop the run."""
+    llm_extractor.config.max_consecutive_failures = 2
+    mock_litellm_completion.side_effect = _connection_error()
+
+    with pytest.raises(RepeatedDocumentFailuresError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=_abstract_documents(5),
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+    assert mock_litellm_completion.call_count == 2
+
+
+@pytest.mark.parametrize("max_workers", [1, 2])
+def test_extract_from_documents_stops_when_every_document_fails(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    max_workers,
+):
+    """With fewer documents than the limit, all failing the same way still stops."""
+    llm_extractor.config.max_workers = max_workers
+    mock_litellm_completion.side_effect = _connection_error()
+    documents = _abstract_documents(DEFAULT_MAX_CONSECUTIVE_FAILURES - 7)
+
+    with pytest.raises(RepeatedDocumentFailuresError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=documents,
+            context_type=ContextType.ABSTRACT_ONLY,
+        )
+
+
+def test_extract_from_documents_records_failed_documents_in_metadata(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+):
+    """Skipped and failed documents are listed in the run metadata."""
+    content_filter_error = litellm.ContentPolicyViolationError(
+        message="The response was filtered.", model="gpt-4o", llm_provider="azure"
+    )
+    mock_litellm_completion.side_effect = [
+        content_filter_error,
+        KeyError("annotations"),
+        mock_litellm_completion.return_value,
+    ]
+
+    run_output = llm_extractor.extract_from_documents(
+        attributes=sample_eppi_attributes,
+        documents=_abstract_documents(3),
+        context_type=ContextType.ABSTRACT_ONLY,
+    )
+
+    failed = run_output.metadata.failed_documents
+    assert set(failed) == {"1", "2"}
+    assert failed["1"].error_type == "LLMContentFilterError"
+    assert failed["2"].error_type == "KeyError"
+    assert "annotations" in failed["2"].message
+    assert set(run_output.metadata.per_document) == {"3"}
+    assert run_output.metadata.stopped_by is None
+
+
+def test_extract_from_documents_saves_stopping_error_in_metadata(
+    llm_extractor,
+    sample_eppi_attributes,
+    mock_litellm_completion,
+    tmp_path,
+):
+    """The error that stopped the run is saved with the finished documents."""
+    llm_extractor.config.max_consecutive_failures = 2
+    mock_litellm_completion.side_effect = [
+        mock_litellm_completion.return_value,
+        _connection_error(),
+        _connection_error(),
+    ]
+    output_file = tmp_path / "llm_annotations.json"
+
+    with pytest.raises(RepeatedDocumentFailuresError):
+        llm_extractor.extract_from_documents(
+            attributes=sample_eppi_attributes,
+            documents=_abstract_documents(4),
+            context_type=ContextType.ABSTRACT_ONLY,
+            output_file=output_file,
+        )
+
+    metadata = ExtractionRunOutput.model_validate_json(output_file.read_text()).metadata
+    assert metadata.stopped_by is not None
+    assert metadata.stopped_by.error_type == "RepeatedDocumentFailuresError"
+    assert set(metadata.failed_documents) == {"2"}

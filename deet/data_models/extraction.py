@@ -73,6 +73,16 @@ class RunMetadataNotes(BaseModel):
             ),
         },
     )
+    failed_documents: str = (
+        "Documents that were skipped or failed during extraction, keyed by "
+        "document ID, with the error type and message. They have no entry in "
+        "annotated_documents."
+    )
+    stopped_by: str = (
+        "The error that stopped the run early, or null if the run finished. "
+        "Documents not yet processed when it stopped appear in neither "
+        "annotated_documents nor failed_documents."
+    )
 
 
 class DocumentParsingStats(BaseModel):
@@ -120,6 +130,13 @@ class DocumentExtractionResult(BaseModel):
         return self
 
 
+class DocumentExtractionFailure(BaseModel):
+    """Why one document has no extraction in a run."""
+
+    error_type: str
+    message: str
+
+
 class ExtractionRunMetadata(BaseModel):
     """Aggregate metadata for a batch extraction run."""
 
@@ -128,6 +145,8 @@ class ExtractionRunMetadata(BaseModel):
     total_output_tokens: int = 0
     total_cost_usd: float | None = None
     per_document: dict[str, PerDocumentExtractionStats] = Field(default_factory=dict)
+    failed_documents: dict[str, DocumentExtractionFailure] = Field(default_factory=dict)
+    stopped_by: DocumentExtractionFailure | None = None
     total_pipeline_duration_seconds: float | None = None
     stage_durations_seconds: dict[str, float] = Field(default_factory=dict)
     notes: RunMetadataNotes = Field(default_factory=RunMetadataNotes)
