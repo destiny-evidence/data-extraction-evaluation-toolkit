@@ -78,6 +78,8 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
         all_messages = []
         total_input_tokens = 0
         total_output_tokens = 0
+        total_cached_input_tokens = 0
+        total_cost_usd: float | None = 0.0
 
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
@@ -98,14 +100,17 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     response_model = build_llm_response_model(level_attributes)
                 else:
                     response_model = LLMResponseSchema
-                llm_response, messages, output_tokens, input_tokens = self._call_llm(
-                    prompt=prompt, response_model=response_model
-                )
-                all_messages.extend(messages)
-                total_input_tokens += input_tokens
-                total_output_tokens += output_tokens
+                llm_call = self._call_llm(prompt=prompt, response_model=response_model)
+                all_messages.extend(llm_call.messages)
+                total_input_tokens += llm_call.input_tokens
+                total_output_tokens += llm_call.output_tokens
+                total_cached_input_tokens += llm_call.cached_input_tokens
+                if llm_call.total_cost_usd is None:
+                    total_cost_usd = None
+                elif total_cost_usd is not None:
+                    total_cost_usd += llm_call.total_cost_usd
                 annotations = self._parse_llm_response(
-                    response_content=llm_response,
+                    response_content=llm_call.response_content,
                     attributes=level_attributes,
                     response_model=response_model,
                 )
