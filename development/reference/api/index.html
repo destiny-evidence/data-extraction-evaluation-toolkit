@@ -2762,23 +2762,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="DocumentExtractionResult">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deet.data_models.extraction.DocumentExtractionResult.compute_total_cost_usd" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        compute_total_cost_usd
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
         
           <li class="md-nav__item">
@@ -5026,6 +5009,17 @@
   
     <nav class="md-nav" aria-label="llm_data_extractor">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deet.extractors.llm_data_extractor.LLMCallRecord" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLMCallRecord
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#deet.extractors.llm_data_extractor.LLMDataExtractor" class="md-nav__link">
@@ -7829,10 +7823,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#deet.utils.tokenisation.merge_prompt_completion_cost_usd" class="md-nav__link">
+  <a href="#deet.utils.tokenisation.reported_call_cost_usd" class="md-nav__link">
     <span class="md-ellipsis">
       
-        merge_prompt_completion_cost_usd
+        reported_call_cost_usd
       
     </span>
   </a>
@@ -9810,23 +9804,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="DocumentExtractionResult">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deet.data_models.extraction.DocumentExtractionResult.compute_total_cost_usd" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        compute_total_cost_usd
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
         
           <li class="md-nav__item">
@@ -12074,6 +12051,17 @@
   
     <nav class="md-nav" aria-label="llm_data_extractor">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deet.extractors.llm_data_extractor.LLMCallRecord" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLMCallRecord
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#deet.extractors.llm_data_extractor.LLMDataExtractor" class="md-nav__link">
@@ -14877,10 +14865,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#deet.utils.tokenisation.merge_prompt_completion_cost_usd" class="md-nav__link">
+  <a href="#deet.utils.tokenisation.reported_call_cost_usd" class="md-nav__link">
     <span class="md-ellipsis">
       
-        merge_prompt_completion_cost_usd
+        reported_call_cost_usd
       
     </span>
   </a>
@@ -28497,6 +28485,10 @@ In this case, it would make sense to start a fresh instantiation</p>
                 (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
             </li>
             <li>
+              <code><span title="deet.data_models.extraction.DocumentExtractionResult.cached_input_tokens">cached_input_tokens</span></code>
+                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
+            </li>
+            <li>
               <code><span title="deet.data_models.extraction.DocumentExtractionResult.model">model</span></code>
                 (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> | None</code>)
             </li>
@@ -28514,34 +28506,10 @@ In this case, it would make sense to start a fresh instantiation</p>
             </li>
         </ul>
 
-        <p>Validators:</p>
-        <ul>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;compute_total_cost_usd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-validator&quot;&gt;&lt;code&gt;pydantic-validator&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;deet.data_models.extraction.DocumentExtractionResult.compute_total_cost_usd&lt;/code&gt;)" href="#deet.data_models.extraction.DocumentExtractionResult.compute_total_cost_usd">compute_total_cost_usd</a></code>
-            </li>
-        </ul>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span>
-<span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
 <span class="normal">112</span>
@@ -28559,25 +28527,11 @@ In this case, it would make sense to start a fresh instantiation</p>
     <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
     <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cached_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">llm_call_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="n">UTC</span><span class="p">))</span>
-
-    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_total_cost_usd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Populate ``total_cost_usd`` from tokens and model (``estimate_cost_usd``)."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">return</span> <span class="bp">self</span>
-        <span class="n">prompt_c</span><span class="p">,</span> <span class="n">completion_c</span> <span class="o">=</span> <span class="n">estimate_cost_usd</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
-            <span class="n">prompt_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
-            <span class="n">completion_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_prompt_completion_cost_usd</span><span class="p">(</span><span class="n">prompt_c</span><span class="p">,</span> <span class="n">completion_c</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="k">if</span> <span class="n">merged</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -28592,59 +28546,6 @@ In this case, it would make sense to start a fresh instantiation</p>
 
 
 
-
-<div class="doc doc-object doc-function">
-
-
-<h5 id="deet.data_models.extraction.DocumentExtractionResult.compute_total_cost_usd" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">compute_total_cost_usd</span><span class="p">()</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
-  </span>
-
-</h5>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Populate <code>total_cost_usd</code> from tokens and model (<code>estimate_cost_usd</code>).</p>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">compute_total_cost_usd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Populate ``total_cost_usd`` from tokens and model (``estimate_cost_usd``)."""</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="bp">self</span>
-    <span class="n">prompt_c</span><span class="p">,</span> <span class="n">completion_c</span> <span class="o">=</span> <span class="n">estimate_cost_usd</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
-        <span class="n">prompt_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
-        <span class="n">completion_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_prompt_completion_cost_usd</span><span class="p">(</span><span class="n">prompt_c</span><span class="p">,</span> <span class="n">completion_c</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="k">if</span> <span class="n">merged</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="bp">self</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
 
 
 
@@ -28692,11 +28593,11 @@ In this case, it would make sense to start a fresh instantiation</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DocumentParsingStats</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DocumentParsingStats</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Parsing timing for a single document during document preparation."""</span>
 
     <span class="n">parsing_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -28752,14 +28653,14 @@ In this case, it would make sense to start a fresh instantiation</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">14</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">13</span>
+<span class="normal">14</span>
 <span class="normal">15</span>
 <span class="normal">16</span>
 <span class="normal">17</span>
 <span class="normal">18</span>
 <span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtractionPipelineStage</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtractionPipelineStage</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Named stages timed during an extraction pipeline run."""</span>
 
     <span class="n">annotation_conversion</span> <span class="o">=</span> <span class="s2">"annotation_conversion"</span>
@@ -28829,6 +28730,10 @@ In this case, it would make sense to start a fresh instantiation</p>
                 (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
             </li>
             <li>
+              <code><span title="deet.data_models.extraction.ExtractionRunMetadata.total_cached_input_tokens">total_cached_input_tokens</span></code>
+                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
+            </li>
+            <li>
               <code><span title="deet.data_models.extraction.ExtractionRunMetadata.total_cost_usd">total_cost_usd</span></code>
                 (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a> | None</code>)
             </li>
@@ -28878,12 +28783,14 @@ In this case, it would make sense to start a fresh instantiation</p>
 <span class="normal">131</span>
 <span class="normal">132</span>
 <span class="normal">133</span>
-<span class="normal">134</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtractionRunMetadata</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">134</span>
+<span class="normal">135</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtractionRunMetadata</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Aggregate metadata for a batch extraction run."""</span>
 
     <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">total_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">total_output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">total_cached_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">per_document</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PerDocumentExtractionStats</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">total_pipeline_duration_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -28961,11 +28868,11 @@ In this case, it would make sense to start a fresh instantiation</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">137</span>
-<span class="normal">138</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">138</span>
 <span class="normal">139</span>
 <span class="normal">140</span>
-<span class="normal">141</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtractionRunOutput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">141</span>
+<span class="normal">142</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtractionRunOutput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Top-level output from a batch extraction run."""</span>
 
     <span class="n">annotated_documents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">GoldStandardAnnotatedDocument</span><span class="p">]</span>
@@ -29012,7 +28919,7 @@ In this case, it would make sense to start a fresh instantiation</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>Per-document tokens and timing for an extraction run.</p>
+        <p>Per-document tokens, cached prompt tokens, and timing for an extraction run.</p>
 
     
 
@@ -29024,6 +28931,10 @@ In this case, it would make sense to start a fresh instantiation</p>
             </li>
             <li>
               <code><span title="deet.data_models.extraction.PerDocumentExtractionStats.output_tokens">output_tokens</span></code>
+                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
+            </li>
+            <li>
+              <code><span title="deet.data_models.extraction.PerDocumentExtractionStats.cached_input_tokens">cached_input_tokens</span></code>
                 (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
             </li>
             <li>
@@ -29043,18 +28954,20 @@ In this case, it would make sense to start a fresh instantiation</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span>
-<span class="normal">88</span>
-<span class="normal">89</span>
-<span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerDocumentExtractionStats</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Per-document tokens and timing for an extraction run."""</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerDocumentExtractionStats</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Per-document tokens, cached prompt tokens, and timing for an extraction run."""</span>
 
     <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cached_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">parsing_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">parsing_skipped</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">llm_call_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -29100,7 +29013,7 @@ In this case, it would make sense to start a fresh instantiation</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>Human-readable notes for timing fields in run metadata.</p>
+        <p>Human-readable notes for cost, token, and timing fields in run metadata.</p>
 
     
 
@@ -29118,12 +29031,21 @@ In this case, it would make sense to start a fresh instantiation</p>
               <code><span title="deet.data_models.extraction.RunMetadataNotes.per_document">per_document</span></code>
                 (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code>)
             </li>
+            <li>
+              <code><span title="deet.data_models.extraction.RunMetadataNotes.total_cached_input_tokens">total_cached_input_tokens</span></code>
+                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+            </li>
+            <li>
+              <code><span title="deet.data_models.extraction.RunMetadataNotes.total_cost_usd">total_cost_usd</span></code>
+                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+            </li>
         </ul>
 
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">51</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
+<span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
@@ -29147,8 +29069,21 @@ In this case, it would make sense to start a fresh instantiation</p>
 <span class="normal">72</span>
 <span class="normal">73</span>
 <span class="normal">74</span>
-<span class="normal">75</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">RunMetadataNotes</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Human-readable notes for timing fields in run metadata."""</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">RunMetadataNotes</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Human-readable notes for cost, token, and timing fields in run metadata."""</span>
 
     <span class="n">total_pipeline_duration_seconds</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">"Wall-clock time for the extraction run, from loading project data "</span>
@@ -29170,7 +29105,21 @@ In this case, it would make sense to start a fresh instantiation</p>
             <span class="s2">"llm_call_seconds"</span><span class="p">:</span> <span class="p">(</span>
                 <span class="s2">"Wall-clock time for the LLM request, including local prompt setup."</span>
             <span class="p">),</span>
+            <span class="s2">"cached_input_tokens"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Prompt tokens served from the provider cache for this document. "</span>
+                <span class="s2">"Already included in input_tokens. Zero when the provider reports "</span>
+                <span class="s2">"no cache hit."</span>
+            <span class="p">),</span>
         <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">total_cached_input_tokens</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"Sum of prompt tokens served from the provider cache across documents. "</span>
+        <span class="s2">"Already included in total_input_tokens."</span>
+    <span class="p">)</span>
+    <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"Sum of per-call costs reported by LiteLLM. None when no call could "</span>
+        <span class="s2">"be priced. Reflects prompt-cache discounts and the endpoint that "</span>
+        <span class="s2">"served each call."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -29212,11 +29161,11 @@ In this case, it would make sense to start a fresh instantiation</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/data_models/extraction.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">43</span>
+<span class="normal">44</span>
 <span class="normal">45</span>
 <span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">pipeline_stage_notes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="normal">47</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">pipeline_stage_notes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Return human-readable notes keyed by pipeline stage name."""</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="n">stage</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">PIPELINE_STAGE_NOTES</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">ExtractionPipelineStage</span>
@@ -42013,7 +41962,11 @@ no mapping in the EPPI <code>raw_data</code> pipeline (see
 <span class="normal">655</span>
 <span class="normal">656</span>
 <span class="normal">657</span>
-<span class="normal">658</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseDataExtractor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseDataExtractor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Abstract Base Class defining common methods for data extractors."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DataExtractionConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -42121,6 +42074,7 @@ no mapping in the EPPI <code>raw_data</code> pipeline (see
             <span class="n">stats</span><span class="o">=</span><span class="n">PerDocumentExtractionStats</span><span class="p">(</span>
                 <span class="n">input_tokens</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
                 <span class="n">output_tokens</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
+                <span class="n">cached_input_tokens</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">cached_input_tokens</span><span class="p">,</span>
                 <span class="n">parsing_seconds</span><span class="o">=</span><span class="n">parsing</span><span class="o">.</span><span class="n">parsing_seconds</span><span class="p">,</span>
                 <span class="n">parsing_skipped</span><span class="o">=</span><span class="n">parsing</span><span class="o">.</span><span class="n">parsing_skipped</span><span class="p">,</span>
                 <span class="n">llm_call_seconds</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">llm_call_seconds</span><span class="p">,</span>
@@ -42178,6 +42132,7 @@ no mapping in the EPPI <code>raw_data</code> pipeline (see
         <span class="n">llm_annotated_docs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">GoldStandardAnnotatedDocument</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">total_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">total_output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_cached_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">total_cost</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">documents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">documents</span><span class="p">)</span>
@@ -42212,6 +42167,7 @@ no mapping in the EPPI <code>raw_data</code> pipeline (see
             <span class="n">per_document</span><span class="p">[</span><span class="n">doc_id_str</span><span class="p">]</span> <span class="o">=</span> <span class="n">bundle</span><span class="o">.</span><span class="n">stats</span>
             <span class="n">total_input_tokens</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">input_tokens</span>
             <span class="n">total_output_tokens</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">output_tokens</span>
+            <span class="n">total_cached_input_tokens</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">cached_input_tokens</span>
             <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">total_cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">total_cost</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span>
 
@@ -42219,6 +42175,7 @@ no mapping in the EPPI <code>raw_data</code> pipeline (see
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
             <span class="n">total_input_tokens</span><span class="o">=</span><span class="n">total_input_tokens</span><span class="p">,</span>
             <span class="n">total_output_tokens</span><span class="o">=</span><span class="n">total_output_tokens</span><span class="p">,</span>
+            <span class="n">total_cached_input_tokens</span><span class="o">=</span><span class="n">total_cached_input_tokens</span><span class="p">,</span>
             <span class="n">total_cost_usd</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">total_cost</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="k">if</span> <span class="n">total_cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">per_document</span><span class="o">=</span><span class="n">per_document</span><span class="p">,</span>
         <span class="p">)</span>
@@ -42612,11 +42569,7 @@ Required if payload not set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/extractors/base_extractor.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">606</span>
-<span class="normal">607</span>
-<span class="normal">608</span>
-<span class="normal">609</span>
-<span class="normal">610</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">610</span>
 <span class="normal">611</span>
 <span class="normal">612</span>
 <span class="normal">613</span>
@@ -42645,7 +42598,11 @@ Required if payload not set.</p>
 <span class="normal">636</span>
 <span class="normal">637</span>
 <span class="normal">638</span>
-<span class="normal">639</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="normal">639</span>
+<span class="normal">640</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">extract_from_document</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">attributes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Attribute</span><span class="p">],</span>
@@ -42897,8 +42854,7 @@ keys are document IDs, values are prompt payload (messages).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/extractors/base_extractor.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
-<span class="normal">403</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">403</span>
 <span class="normal">404</span>
 <span class="normal">405</span>
 <span class="normal">406</span>
@@ -43007,7 +42963,11 @@ keys are document IDs, values are prompt payload (messages).</p>
 <span class="normal">509</span>
 <span class="normal">510</span>
 <span class="normal">511</span>
-<span class="normal">512</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_documents</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_documents</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">attributes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Attribute</span><span class="p">],</span>
     <span class="n">documents</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Document</span><span class="p">],</span>
@@ -43058,6 +43018,7 @@ keys are document IDs, values are prompt payload (messages).</p>
     <span class="n">llm_annotated_docs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">GoldStandardAnnotatedDocument</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">total_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">total_output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">total_cached_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">total_cost</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">documents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">documents</span><span class="p">)</span>
@@ -43092,6 +43053,7 @@ keys are document IDs, values are prompt payload (messages).</p>
         <span class="n">per_document</span><span class="p">[</span><span class="n">doc_id_str</span><span class="p">]</span> <span class="o">=</span> <span class="n">bundle</span><span class="o">.</span><span class="n">stats</span>
         <span class="n">total_input_tokens</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">input_tokens</span>
         <span class="n">total_output_tokens</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">output_tokens</span>
+        <span class="n">total_cached_input_tokens</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">cached_input_tokens</span>
         <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">total_cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">total_cost</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">total_cost_usd</span>
 
@@ -43099,6 +43061,7 @@ keys are document IDs, values are prompt payload (messages).</p>
         <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
         <span class="n">total_input_tokens</span><span class="o">=</span><span class="n">total_input_tokens</span><span class="p">,</span>
         <span class="n">total_output_tokens</span><span class="o">=</span><span class="n">total_output_tokens</span><span class="p">,</span>
+        <span class="n">total_cached_input_tokens</span><span class="o">=</span><span class="n">total_cached_input_tokens</span><span class="p">,</span>
         <span class="n">total_cost_usd</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">total_cost</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="k">if</span> <span class="n">total_cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">per_document</span><span class="o">=</span><span class="n">per_document</span><span class="p">,</span>
     <span class="p">)</span>
@@ -46191,6 +46154,75 @@ if greater than <code>DataExtractionConfig.semantic_similarity_threshold</code><
 
 
 
+<h4 id="deet.extractors.llm_data_extractor.LLMCallRecord" class="doc doc-heading">
+            <code>LLMCallRecord</code>
+
+
+</h4>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.NamedTuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
+
+
+
+        <p>Text, messages, and reported usage from one completion call.</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>deet/extractors/llm_data_extractor.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMCallRecord</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Text, messages, and reported usage from one completion call."""</span>
+
+    <span class="n">response_content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">cached_input_tokens</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h4 id="deet.extractors.llm_data_extractor.LLMDataExtractor" class="doc doc-heading">
             <code>LLMDataExtractor</code>
 
@@ -46218,21 +46250,7 @@ customizable prompts.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>deet/extractors/llm_data_extractor.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 47</span>
-<span class="normal"> 48</span>
-<span class="normal"> 49</span>
-<span class="normal"> 50</span>
-<span class="normal"> 51</span>
-<span class="normal"> 52</span>
-<span class="normal"> 53</span>
-<span class="normal"> 54</span>
-<span class="normal"> 55</span>
-<span class="normal"> 56</span>
-<span class="normal"> 57</span>
-<span class="normal"> 58</span>
-<span class="normal"> 59</span>
-<span class="normal"> 60</span>
-<span class="normal"> 61</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
 <span class="normal"> 63</span>
 <span class="normal"> 64</span>
@@ -46716,7 +46734,42 @@ customizable prompts.</p>
 <span class="normal">542</span>
 <span class="normal">543</span>
 <span class="normal">544</span>
-<span class="normal">545</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">(</span><span class="n">BaseDataExtractor</span><span class="p">):</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LLMDataExtractor</span><span class="p">(</span><span class="n">BaseDataExtractor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Generalisable module for LLM-based data extraction from documents.</span>
 
@@ -46801,7 +46854,8 @@ customizable prompts.</p>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            DocumentExtractionResult with annotations, messages, token counts,</span>
-<span class="sd">            cost, model name, LLM call duration, and timestamp.</span>
+<span class="sd">            LiteLLM-reported cost, cached prompt tokens, model name, LLM call</span>
+<span class="sd">            duration, and timestamp.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If no attributes are selected for extraction after filtering.</span>
@@ -46825,22 +46879,22 @@ customizable prompts.</p>
             <span class="n">response_model</span> <span class="o">=</span> <span class="n">LLMResponseSchema</span>
 
         <span class="k">with</span> <span class="n">measure_elapsed</span><span class="p">()</span> <span class="k">as</span> <span class="n">llm_timer</span><span class="p">:</span>
-            <span class="n">llm_response</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">output_tokens</span><span class="p">,</span> <span class="n">input_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_llm</span><span class="p">(</span>
-                <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">response_model</span>
-            <span class="p">)</span>
+            <span class="n">call</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_llm</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">response_model</span><span class="p">)</span>
 
         <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_llm_response</span><span class="p">(</span>
-            <span class="n">response_content</span><span class="o">=</span><span class="n">llm_response</span><span class="p">,</span>
+            <span class="n">response_content</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">response_content</span><span class="p">,</span>
             <span class="n">response_model</span><span class="o">=</span><span class="n">response_model</span><span class="p">,</span>
             <span class="n">attributes</span><span class="o">=</span><span class="n">selected_attributes</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">DocumentExtractionResult</span><span class="p">(</span>
             <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">,</span>
-            <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
-            <span class="n">input_tokens</span><span class="o">=</span><span class="n">input_tokens</span><span class="p">,</span>
-            <span class="n">output_tokens</span><span class="o">=</span><span class="n">output_tokens</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">messages</span><span class="p">,</span>
+            <span class="n">input_tokens</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
+            <span class="n">output_tokens</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
+            <span class="n">cached_input_tokens</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">cached_input_tokens</span><span class="p">,</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">total_cost_usd</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">total_cost_usd</span><span class="p">,</span>
             <span class="n">llm_call_seconds</span><span class="o">=</span><span class="n">llm_timer</span><span class="o">.</span><span class="n">seconds</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -46992,7 +47046,7 @@ customizable prompts.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">response_model</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseLLMResponse</span><span class="p">],</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMCallRecord</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Call the LLM with the given prompt.</span>
 
@@ -47003,8 +47057,9 @@ customizable prompts.</p>
 <span class="sd">                schema so the LLM must return one typed entry per attribute.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            Tuple of (LLM response text, messages list, output token count,</span>
-<span class="sd">            input/prompt token count from the response usage).</span>
+<span class="sd">            Response text, messages, token counts, LiteLLM-reported cost, and</span>
+<span class="sd">            cached prompt tokens. Cost is None when LiteLLM cannot price the</span>
+<span class="sd">            call. The pre-call log line remains an estimate and ignores cache.</span>
 
 <span class="sd">        """</span>
         <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">prompt_config</span><span class="o">.</span><span class="n">system_prompt</span>
@@ -47029,7 +47084,8 @@ customizable prompts.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">prompt_cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"Estimated input cost: $</span><span class="si">{</span><span class="n">prompt_cost</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> USD (</span><span class="si">{</span><span class="n">input_tokens</span><span class="si">}</span><span class="s2"> tokens)"</span>
+                <span class="s2">"Estimated input cost before the call (ignores prompt cache): "</span>
+                <span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">prompt_cost</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> USD (</span><span class="si">{</span><span class="n">input_tokens</span><span class="si">}</span><span class="s2"> tokens)"</span>
             <span class="p">)</span>
 
         <span class="n">completion_kwargs</span> <span class="o">=</span> <span class="p">{</span>
@@ -47060,25 +47116,43 @@ customizable prompts.</p>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span> <span class="o">==</span> <span class="n">LLMProvider</span><span class="o">.</span><span class="n">OLLAMA</span><span class="p">:</span>
             <span class="n">completion_kwargs</span><span class="p">[</span><span class="s2">"num_ctx"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_context_tokens</span>
 
-        <span class="n">response</span> <span class="o">=</span> <span class="n">litellm</span><span class="o">.</span><span class="n">completion</span><span class="p">(</span><span class="o">**</span><span class="n">completion_kwargs</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">"ModelResponse"</span><span class="p">,</span> <span class="n">litellm</span><span class="o">.</span><span class="n">completion</span><span class="p">(</span><span class="o">**</span><span class="n">completion_kwargs</span><span class="p">))</span>
 
         <span class="n">msg</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span>
 
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">response_content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span>
-        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">"tool_calls"</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">response_content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">arguments</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">:</span>
+            <span class="n">call</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">ChatCompletionMessageToolCall</span><span class="p">):</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="s2">"LiteLLM returned an unsupported tool call type"</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">response_content</span> <span class="o">=</span> <span class="n">call</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">arguments</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="s2">"LiteLLM returned neither message content nor tool calls"</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"raw response: </span><span class="si">{</span><span class="n">response_content</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="n">input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="s2">"prompt_tokens"</span><span class="p">):</span>
-                <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">prompt_tokens</span> <span class="ow">or</span> <span class="mi">0</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="s2">"completion_tokens"</span><span class="p">):</span>
-                <span class="n">output_tokens</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">completion_tokens</span> <span class="ow">or</span> <span class="mi">0</span>
+        <span class="n">cached_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># Litellm declares Usage at runtime, so we need to cast this to a Usage object</span>
+        <span class="n">usage</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">"Usage | None"</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s2">"usage"</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">usage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">usage</span><span class="o">.</span><span class="n">prompt_tokens</span> <span class="ow">or</span> <span class="mi">0</span>
+            <span class="n">output_tokens</span> <span class="o">=</span> <span class="n">usage</span><span class="o">.</span><span class="n">completion_tokens</span> <span class="ow">or</span> <span class="mi">0</span>
+            <span class="n">details</span> <span class="o">=</span> <span class="n">usage</span><span class="o">.</span><span class="n">prompt_tokens_details</span>
+            <span class="k">if</span> <span class="n">details</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cached_input_tokens</span> <span class="o">=</span> <span class="n">details</span><span class="o">.</span><span class="n">cached_tokens</span> <span class="ow">or</span> <span class="mi">0</span>
 
-        <span class="k">return</span> <span class="n">response_content</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">output_tokens</span><span class="p">,</span> <span class="n">input_tokens</span>
+        <span class="k">return</span> <span class="n">LLMCallRecord</span><span class="p">(</span>
+            <span class="n">response_content</span><span class="o">=</span><span class="n">response_content</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
+            <span class="n">output_tokens</span><span class="o">=</span><span class="n">output_tokens</span><span class="p">,</span>
+            <span class="n">input_tokens</span><span class="o">=</span><span class="n">input_tokens</span><span class="p">,</span>
+            <span class="n">total_cost_usd</span><span class="o">=</span><span class="n">reported_call_cost_usd</span><span class="p">(</span><span class="n">response</span><span class="p">),</span>
+            <span class="n">cached_input_tokens</span><span class="o">=</span><span class="n">cached_input_tokens</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_gold_standard_annotation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">llm_annotation_response</span><span class="p">:</span> <span class="n">LLMAnnotationResponse</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Attribute</span>
@@ -47315,21 +47389,7 @@ customizable prompts.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/extractors/llm_data_extractor.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 56</span>
-<span class="normal"> 57</span>
-<span class="normal"> 58</span>
-<span class="normal"> 59</span>
-<span class="normal"> 60</span>
-<span class="normal"> 61</span>
-<span class="normal"> 62</span>
-<span class="normal"> 63</span>
-<span class="normal"> 64</span>
-<span class="normal"> 65</span>
-<span class="normal"> 66</span>
-<span class="normal"> 67</span>
-<span class="normal"> 68</span>
-<span class="normal"> 69</span>
-<span class="normal"> 70</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 70</span>
 <span class="normal"> 71</span>
 <span class="normal"> 72</span>
 <span class="normal"> 73</span>
@@ -47363,7 +47423,21 @@ customizable prompts.</p>
 <span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span>
-<span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">DataExtractionConfig</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">DataExtractionSettings</span> <span class="o">=</span> <span class="n">settings</span><span class="p">,</span>
@@ -47556,7 +47630,22 @@ Required if payload not set.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>cost, model name, LLM call duration, and timestamp.</p>
+                <p>LiteLLM-reported cost, cached prompt tokens, model name, LLM call</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code&gt;DocumentExtractionResult&lt;/code&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;deet.data_models.extraction.DocumentExtractionResult&lt;/code&gt;)" href="#deet.data_models.extraction.DocumentExtractionResult">DocumentExtractionResult</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>duration, and timestamp.</p>
               </div>
             </td>
           </tr>
@@ -47599,21 +47688,7 @@ Required if payload not set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/extractors/llm_data_extractor.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">120</span>
 <span class="normal">121</span>
 <span class="normal">122</span>
 <span class="normal">123</span>
@@ -47666,7 +47741,22 @@ Required if payload not set.</p>
 <span class="normal">170</span>
 <span class="normal">171</span>
 <span class="normal">172</span>
-<span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_document</span><span class="p">(</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_document</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">attributes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Attribute</span><span class="p">],</span>
     <span class="n">filter_attribute_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -47692,7 +47782,8 @@ Required if payload not set.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        DocumentExtractionResult with annotations, messages, token counts,</span>
-<span class="sd">        cost, model name, LLM call duration, and timestamp.</span>
+<span class="sd">        LiteLLM-reported cost, cached prompt tokens, model name, LLM call</span>
+<span class="sd">        duration, and timestamp.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If no attributes are selected for extraction after filtering.</span>
@@ -47716,22 +47807,22 @@ Required if payload not set.</p>
         <span class="n">response_model</span> <span class="o">=</span> <span class="n">LLMResponseSchema</span>
 
     <span class="k">with</span> <span class="n">measure_elapsed</span><span class="p">()</span> <span class="k">as</span> <span class="n">llm_timer</span><span class="p">:</span>
-        <span class="n">llm_response</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">output_tokens</span><span class="p">,</span> <span class="n">input_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_llm</span><span class="p">(</span>
-            <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">response_model</span>
-        <span class="p">)</span>
+        <span class="n">call</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_llm</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">response_model</span><span class="p">)</span>
 
     <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_llm_response</span><span class="p">(</span>
-        <span class="n">response_content</span><span class="o">=</span><span class="n">llm_response</span><span class="p">,</span>
+        <span class="n">response_content</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">response_content</span><span class="p">,</span>
         <span class="n">response_model</span><span class="o">=</span><span class="n">response_model</span><span class="p">,</span>
         <span class="n">attributes</span><span class="o">=</span><span class="n">selected_attributes</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">DocumentExtractionResult</span><span class="p">(</span>
         <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">,</span>
-        <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
-        <span class="n">input_tokens</span><span class="o">=</span><span class="n">input_tokens</span><span class="p">,</span>
-        <span class="n">output_tokens</span><span class="o">=</span><span class="n">output_tokens</span><span class="p">,</span>
+        <span class="n">messages</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">messages</span><span class="p">,</span>
+        <span class="n">input_tokens</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
+        <span class="n">output_tokens</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
+        <span class="n">cached_input_tokens</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">cached_input_tokens</span><span class="p">,</span>
         <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">total_cost_usd</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">total_cost_usd</span><span class="p">,</span>
         <span class="n">llm_call_seconds</span><span class="o">=</span><span class="n">llm_timer</span><span class="o">.</span><span class="n">seconds</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -69967,8 +70058,7 @@ a rough character-based estimate (len/4) for unknown models.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/utils/tokenisation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">58</span>
-<span class="normal">59</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">59</span>
 <span class="normal">60</span>
 <span class="normal">61</span>
 <span class="normal">62</span>
@@ -70001,7 +70091,8 @@ a rough character-based estimate (len/4) for unknown models.</p>
 <span class="normal">89</span>
 <span class="normal">90</span>
 <span class="normal">91</span>
-<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">count_tokens</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal">92</span>
+<span class="normal">93</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">count_tokens</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Count the number of tokens in text for a given model.</span>
 
@@ -70149,8 +70240,7 @@ best-effort for callers.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/utils/tokenisation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 95</span>
-<span class="normal"> 96</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
 <span class="normal"> 97</span>
 <span class="normal"> 98</span>
 <span class="normal"> 99</span>
@@ -70193,7 +70283,8 @@ best-effort for callers.</p>
 <span class="normal">136</span>
 <span class="normal">137</span>
 <span class="normal">138</span>
-<span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">estimate_cost_usd</span><span class="p">(</span>
+<span class="normal">139</span>
+<span class="normal">140</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">estimate_cost_usd</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">prompt_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">completion_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -70349,8 +70440,7 @@ whose message indicates an unmapped model (registry message).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/utils/tokenisation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">27</span>
-<span class="normal">28</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">28</span>
 <span class="normal">29</span>
 <span class="normal">30</span>
 <span class="normal">31</span>
@@ -70377,7 +70467,8 @@ whose message indicates an unmapped model (registry message).</p>
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
-<span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_model_max_tokens</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">55</span>
+<span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_model_max_tokens</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Get the maximum input tokens allowed for a model.</span>
 
@@ -70415,17 +70506,19 @@ whose message indicates an unmapped model (registry message).</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="deet.utils.tokenisation.merge_prompt_completion_cost_usd" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">merge_prompt_completion_cost_usd</span><span class="p">(</span><span class="n">prompt_cost_usd</span><span class="p">,</span> <span class="n">completion_cost_usd</span><span class="p">)</span></code>
+<h4 id="deet.utils.tokenisation.reported_call_cost_usd" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">reported_call_cost_usd</span><span class="p">(</span><span class="n">completion_response</span><span class="p">)</span></code>
 
 </h4>
 
 
     <div class="doc doc-contents ">
 
-        <p>Combine litellm prompt and completion cost parts into a single total.</p>
-<p>Either part may be None when the model table lacks that component or
-estimation failed for that side.</p>
+        <p>Read the USD cost LiteLLM reports for one completion response.</p>
+<p><code>litellm.completion_cost</code> prices cached prompt tokens and the call type
+from the response, so the figure follows prompt-cache discounts and the
+endpoint that served the call. Returns None when the model is unpriced
+or the calculation fails.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -70441,30 +70534,14 @@ estimation failed for that side.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>prompt_cost_usd</code>
+                <code>completion_response</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Estimated USD cost for prompt tokens, or None.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>completion_cost_usd</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a> | None</code>
+                  <code><span title="litellm.types.utils.ModelResponse">ModelResponse</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Estimated USD cost for completion tokens, or None.</p>
+                <p>Object returned by <code>litellm.completion</code>.</p>
               </div>
             </td>
             <td>
@@ -70490,7 +70567,7 @@ estimation failed for that side.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Sum when at least one part is known, otherwise None.</p>
+                <p>Cost in USD rounded to 6 decimal places, or None.</p>
               </div>
             </td>
           </tr>
@@ -70500,8 +70577,7 @@ estimation failed for that side.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/utils/tokenisation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">142</span>
-<span class="normal">143</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
 <span class="normal">144</span>
 <span class="normal">145</span>
 <span class="normal">146</span>
@@ -70524,31 +70600,48 @@ estimation failed for that side.</p>
 <span class="normal">163</span>
 <span class="normal">164</span>
 <span class="normal">165</span>
-<span class="normal">166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">merge_prompt_completion_cost_usd</span><span class="p">(</span>
-    <span class="n">prompt_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">completion_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reported_call_cost_usd</span><span class="p">(</span><span class="n">completion_response</span><span class="p">:</span> <span class="n">ModelResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Combine litellm prompt and completion cost parts into a single total.</span>
+<span class="sd">    Read the USD cost LiteLLM reports for one completion response.</span>
 
-<span class="sd">    Either part may be None when the model table lacks that component or</span>
-<span class="sd">    estimation failed for that side.</span>
+<span class="sd">    ``litellm.completion_cost`` prices cached prompt tokens and the call type</span>
+<span class="sd">    from the response, so the figure follows prompt-cache discounts and the</span>
+<span class="sd">    endpoint that served the call. Returns None when the model is unpriced</span>
+<span class="sd">    or the calculation fails.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        prompt_cost_usd: Estimated USD cost for prompt tokens, or None.</span>
-<span class="sd">        completion_cost_usd: Estimated USD cost for completion tokens, or None.</span>
+<span class="sd">        completion_response: Object returned by ``litellm.completion``.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Sum when at least one part is known, otherwise None.</span>
+<span class="sd">        Cost in USD rounded to 6 decimal places, or None.</span>
 
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">prompt_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">completion_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">prompt_cost_usd</span> <span class="o">+</span> <span class="n">completion_cost_usd</span>
-    <span class="k">if</span> <span class="n">prompt_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">prompt_cost_usd</span>
-    <span class="k">if</span> <span class="n">completion_cost_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">completion_cost_usd</span>
-    <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">litellm</span><span class="o">.</span><span class="n">completion_cost</span><span class="p">(</span><span class="n">completion_response</span><span class="o">=</span><span class="n">completion_response</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">_LITELLM_LOOKUP_ERRORS</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not read reported completion cost: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+        <span class="c1"># litellm.completion_cost may raise bare Exception (registry / provider).</span>
+        <span class="k">if</span> <span class="n">_LITELLM_UNMAPPED_MODEL_MSG</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Could not read reported completion cost (unmapped model): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not read reported completion cost: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">cost</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cost</span><span class="p">),</span> <span class="mi">6</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -70659,16 +70752,7 @@ Uses char-based fallback when encode/decode unavailable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>deet/utils/tokenisation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">178</span>
 <span class="normal">179</span>
 <span class="normal">180</span>
 <span class="normal">181</span>
@@ -70689,7 +70773,16 @@ Uses char-based fallback when encode/decode unavailable.</p>
 <span class="normal">196</span>
 <span class="normal">197</span>
 <span class="normal">198</span>
-<span class="normal">199</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">truncate_to_token_limit</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">truncate_to_token_limit</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Truncate text to fit within a token limit.</span>
 
