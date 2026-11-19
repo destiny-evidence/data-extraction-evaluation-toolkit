@@ -446,6 +446,9 @@ def test_call_llm_forwards_max_retries(
 
     kwargs = mock_litellm_completion.call_args.kwargs
     assert kwargs["max_retries"] == 5
+    # ``num_retries`` would switch litellm to its own retry wrapper, which needs
+    # ``tenacity`` (not installed) and replaces every error with a generic one,
+    # so the registry in ``llm_errors`` could no longer recognise them.
     assert "num_retries" not in kwargs
 
 
