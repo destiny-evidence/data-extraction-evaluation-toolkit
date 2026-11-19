@@ -4,6 +4,7 @@ import re
 
 import litellm
 from litellm.exceptions import NotFoundError as LitellmNotFoundError
+from litellm.types.utils import ModelResponse
 from loguru import logger
 
 from deet.exceptions import LitellmModelNotMappedError
@@ -139,31 +140,39 @@ def estimate_cost_usd(
         return (None, None)
 
 
-def merge_prompt_completion_cost_usd(
-    prompt_cost_usd: float | None,
-    completion_cost_usd: float | None,
-) -> float | None:
+def reported_call_cost_usd(completion_response: ModelResponse) -> float | None:
     """
-    Combine litellm prompt and completion cost parts into a single total.
+    Read the USD cost LiteLLM reports for one completion response.
 
-    Either part may be None when the model table lacks that component or
-    estimation failed for that side.
+    ``litellm.completion_cost`` prices cached prompt tokens and the call type
+    from the response, so the figure follows prompt-cache discounts and the
+    endpoint that served the call. Returns None when the model is unpriced
+    or the calculation fails.
 
     Args:
-        prompt_cost_usd: Estimated USD cost for prompt tokens, or None.
-        completion_cost_usd: Estimated USD cost for completion tokens, or None.
+        completion_response: Object returned by ``litellm.completion``.
 
     Returns:
-        Sum when at least one part is known, otherwise None.
+        Cost in USD rounded to 6 decimal places, or None.
 
     """
-    if prompt_cost_usd is not None and completion_cost_usd is not None:
-        return prompt_cost_usd + completion_cost_usd
-    if prompt_cost_usd is not None:
-        return prompt_cost_usd
-    if completion_cost_usd is not None:
-        return completion_cost_usd
-    return None
+    try:
+        cost = litellm.completion_cost(completion_response=completion_response)
+    except _LITELLM_LOOKUP_ERRORS as e:
+        logger.debug(f"Could not read reported completion cost: {e}")
+        return None
+    except Exception as e:  # noqa: BLE001
+        # litellm.completion_cost may raise bare Exception (registry / provider).
+        if _LITELLM_UNMAPPED_MODEL_MSG.search(str(e)):
+            logger.debug(
+                f"Could not read reported completion cost (unmapped model): {e}"
+            )
+        else:
+            logger.debug(f"Could not read reported completion cost: {e}")
+        return None
+    if cost is None:
+        return None
+    return round(float(cost), 6)
 
 
 def truncate_to_token_limit(text: str, model: str, max_tokens: int) -> str:
