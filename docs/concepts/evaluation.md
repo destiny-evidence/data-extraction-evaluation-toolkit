@@ -223,11 +223,17 @@ used for the run. Use these to reproduce or compare runs.
 Run-level cost, token, and timing summary written after extraction:
 
 - Totals such as `total_cost_usd`, `total_input_tokens`, `total_output_tokens`,
-  `total_pipeline_duration_seconds`
+  `total_cached_input_tokens`, `total_pipeline_duration_seconds`
+- `total_cost_usd` is the sum of per-call costs reported by LiteLLM. It
+  includes prompt-cache discounts and the endpoint that served each call.
+  It is null when no call could be priced.
+- `total_cached_input_tokens` counts prompt tokens served from the provider
+  cache. Those tokens are already included in `total_input_tokens`.
 - `stage_durations_seconds` for pipeline stages (annotation conversion, prompt
   population, document preparation, LLM extraction, artefact export)
-- `per_document` entries with per-document token counts and timings
-  (parsing skip flags, `llm_call_seconds`, etc.)
+- `per_document` entries with per-document token counts (including
+  `cached_input_tokens`) and timings (parsing skip flags,
+  `llm_call_seconds`, etc.)
 
 See
 [`ExtractionRunMetadata`](../reference/api.md#deet.data_models.extraction.ExtractionRunMetadata)

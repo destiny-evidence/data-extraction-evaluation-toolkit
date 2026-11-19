@@ -1,7 +1,5 @@
 """Tests for LLM extraction output data models."""
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 from destiny_sdk.references import ReferenceFileInput
 
@@ -75,37 +73,28 @@ def test_document_extraction_result_defaults() -> None:
     assert result.messages == []
     assert result.input_tokens == 0
     assert result.output_tokens == 0
+    assert result.cached_input_tokens == 0
     assert result.model is None
     assert result.total_cost_usd is None
 
 
-@patch("deet.data_models.extraction.estimate_cost_usd")
-def test_document_extraction_result_computes_total_cost_usd(
-    mock_estimate: MagicMock,
-) -> None:
-    """total_cost_usd merges prompt and completion parts from estimate_cost_usd."""
-    mock_estimate.return_value = (0.001, 0.002)
+def test_document_extraction_result_stores_reported_cost() -> None:
+    """total_cost_usd is the caller-supplied reported cost, not a re-estimate."""
     result = DocumentExtractionResult(
         annotations=[_sample_annotation()],
         messages=[{"role": "user", "content": "x"}],
         model="gpt-5.6-luna",
         input_tokens=10,
         output_tokens=5,
+        cached_input_tokens=4,
+        total_cost_usd=0.0015,
     )
-    mock_estimate.assert_called_once_with(
-        "gpt-5.6-luna",
-        prompt_tokens=10,
-        completion_tokens=5,
-    )
-    assert result.total_cost_usd == pytest.approx(0.003)
+    assert result.total_cost_usd == pytest.approx(0.0015)
+    assert result.cached_input_tokens == 4
 
 
-@patch("deet.data_models.extraction.estimate_cost_usd")
-def test_document_extraction_result_cost_none_when_estimate_unknown(
-    mock_estimate: MagicMock,
-) -> None:
-    """When litellm cannot price either side, total_cost_usd stays None."""
-    mock_estimate.return_value = (None, None)
+def test_document_extraction_result_cost_stays_none_without_reported_cost() -> None:
+    """A model and token counts do not invent a cost when none was reported."""
     result = DocumentExtractionResult(
         annotations=[],
         messages=[],
@@ -114,22 +103,7 @@ def test_document_extraction_result_cost_none_when_estimate_unknown(
         output_tokens=1,
     )
     assert result.total_cost_usd is None
-
-
-@patch("deet.data_models.extraction.estimate_cost_usd")
-def test_document_extraction_result_cost_partial_prompt_only(
-    mock_estimate: MagicMock,
-) -> None:
-    """Only prompt cost present is used as total."""
-    mock_estimate.return_value = (0.01, None)
-    result = DocumentExtractionResult(
-        annotations=[],
-        messages=[],
-        model="m",
-        input_tokens=1,
-        output_tokens=0,
-    )
-    assert result.total_cost_usd == pytest.approx(0.01)
+    assert result.cached_input_tokens == 0
 
 
 def test_extraction_run_metadata_defaults() -> None:
@@ -138,8 +112,11 @@ def test_extraction_run_metadata_defaults() -> None:
     assert meta.model is None
     assert meta.total_input_tokens == 0
     assert meta.total_output_tokens == 0
+    assert meta.total_cached_input_tokens == 0
     assert meta.total_cost_usd is None
     assert meta.per_document == {}
+    assert "cache" in meta.notes.total_cached_input_tokens.lower()
+    assert "cached_input_tokens" in meta.notes.per_document
 
 
 def test_extraction_run_metadata_explicit_fields() -> None:
@@ -148,16 +125,23 @@ def test_extraction_run_metadata_explicit_fields() -> None:
         model="gpt-5.6-luna",
         total_input_tokens=100,
         total_output_tokens=50,
+        total_cached_input_tokens=40,
         total_cost_usd=0.05,
         per_document={
-            "1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+            "1": PerDocumentExtractionStats(
+                input_tokens=100,
+                output_tokens=50,
+                cached_input_tokens=40,
+            ),
         },
     )
     assert meta.model == "gpt-5.6-luna"
     assert meta.total_input_tokens == 100
     assert meta.total_output_tokens == 50
+    assert meta.total_cached_input_tokens == 40
     assert meta.total_cost_usd == pytest.approx(0.05)
     assert meta.per_document["1"].input_tokens == 100
+    assert meta.per_document["1"].cached_input_tokens == 40
 
 
 def test_extraction_run_output_round_trip() -> None:
