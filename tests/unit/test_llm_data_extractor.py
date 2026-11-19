@@ -931,6 +931,7 @@ def test_extract_from_documents_saves_finished_documents_when_run_stops(
         message="You exceeded your current quota, please check your plan.",
         model="gpt-4o",
         llm_provider="openai",
+        body={"code": "insufficient_quota"},
     )
     finished = mock_litellm_completion.return_value
     calls = iter(range(len(documents)))

@@ -102,19 +102,27 @@ def test_translate_llm_error_provider_side_unsupported_param(code):
 
 def test_translate_llm_error_quota_exceeded():
     """A rate-limit error caused by an exhausted quota stops the run."""
-    # The message litellm 1.106.5 produces for OpenAI's ``insufficient_quota``
-    # 429; the error code itself is not kept.
-    error = litellm.RateLimitError(
-        message=(
-            "OpenAIException - You exceeded your current quota, please check "
-            "your plan and billing details."
+    # The body litellm (1.103.0 to at least 1.109.1) keeps from OpenAI's
+    # ``insufficient_quota`` 429, while ``code`` is overwritten with "429".
+    body = {
+        "message": (
+            "You exceeded your current quota, please check your plan and "
+            "billing details."
         ),
+        "type": "insufficient_quota",
+        "param": None,
+        "code": "insufficient_quota",
+    }
+    error = litellm.RateLimitError(
+        message=f"OpenAIException - {body['message']}",
         model="gpt-4o",
         llm_provider="openai",
+        body=body,
     )
 
     translated = translate_llm_error(error, model="gpt-4o")
 
+    assert error.code == "429"
     assert type(translated) is LLMQuotaExceededError
     assert isinstance(translated, RunAbortingError)
 

@@ -27,12 +27,18 @@ def _has_error_code(codes: Collection[str]) -> Callable[[Exception], bool]:
     return matches
 
 
-def _message_contains(markers: Collection[str]) -> Callable[[Exception], bool]:
-    """Build a condition matching text in the error message."""
+def _has_body_error_code(codes: Collection[str]) -> Callable[[Exception], bool]:
+    """
+    Build a condition matching the ``code`` in the provider's error body.
+
+    For errors where litellm overwrites ``code`` (``RateLimitError`` always sets
+    it to "429"). litellm keeps the provider's body from 1.103.0, the floor in
+    ``pyproject.toml``.
+    """
 
     def matches(error: Exception) -> bool:
-        message = str(error)
-        return any(marker in message for marker in markers)
+        body = getattr(error, "body", None)
+        return isinstance(body, dict) and body.get("code") in codes
 
     return matches
 
@@ -42,10 +48,7 @@ def _always(_error: Exception) -> bool:
 
 
 UNSUPPORTED_PARAM_CODES = frozenset({"unsupported_value", "unsupported_parameter"})
-# litellm keeps only the provider's message text on ``RateLimitError`` (``code``
-# is always "429"), so an exhausted quota is recognised from OpenAI's wording.
-# Other providers' quota errors fall through to ``LLMRateLimitError``.
-QUOTA_EXCEEDED_MARKERS = frozenset({"exceeded your current quota"})
+QUOTA_EXCEEDED_CODES = frozenset({"insufficient_quota"})
 
 
 @dataclass(frozen=True)
@@ -137,7 +140,7 @@ KNOWN_LLM_ERRORS: tuple[KnownLLMError, ...] = (
             "The provider account for '{model}' has run out of quota. Check "
             "your plan and billing details, then re-run."
         ),
-        matches=_message_contains(QUOTA_EXCEEDED_MARKERS),
+        matches=_has_body_error_code(QUOTA_EXCEEDED_CODES),
     ),
     KnownLLMError(
         source=litellm.RateLimitError,
