@@ -1,5 +1,5 @@
 method: hierarchical_top_down
-model: gpt-4o-mini
+model: gpt-6-luna
 default_context_type: abstract_only
 truncate_on_overflow: true
 dynamic_json_schema: true
