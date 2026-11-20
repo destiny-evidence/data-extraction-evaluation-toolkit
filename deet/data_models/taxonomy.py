@@ -16,6 +16,7 @@ how taxonomies should be applied (such as whether groups of concepts are mandato
 or if multiple concepts can be selected).
 """
 
+import hashlib
 from collections.abc import Sequence
 from enum import StrEnum, auto
 from functools import cached_property
@@ -109,7 +110,10 @@ class Concept(BaseModel):
 
     def create_synthetic_attribute(self) -> Attribute:
         """Create a synthetic attribute from the concept."""
-        synthetic_id = -(abs(hash(self.identifier)) % 1000000 + 1)
+        synthetic_id = -(
+            int(hashlib.sha256(self.identifier.encode()).hexdigest()[:8], 16) % 1000000
+            + 1
+        )
         return Attribute(
             prompt=self.definition,
             output_data_type=AttributeType.BOOL,
