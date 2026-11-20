@@ -5,7 +5,7 @@ A <term:vocabulary> is a set of controlled terms or <term:concept|concepts> used
 A <term:taxonomy> is a type of vocabulary where terms or concepts are grouped hierarchically.
 
 Vocabularies and taxonomies can be very useful for organising documents as part of a systematic map.
-For example, the [DESTINY taxonomy](https://vocab.evidence-repository.org/019db9f2-6c04-7795-a242-3ab8e8e2120a/1.6/) defines around 500 concepts related to climate and health.
+For example, the [DESTINY taxonomy](https://vocab.evidence-repository.org/019db9f2-6c04-7795-a242-3ab8e8e2120a/1.6/) defines around 500 concepts related to climate and health. You can view the exported `.ttl` file [here](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/blob/feature/development/tests/integration/datasets/climate_health_taxonomy/taxonomy.ttl).
 
 Deet supports the use of vocabularies and taxonomies to control data extraction behaviour for boolean attributes.
 Concretely, they can be used to generate prompts,
@@ -54,7 +54,7 @@ but they are not used for evaluation.
 Instead of defining prompts by csv, deet can generate prompts from information
 in a vocabulary.
 
-To do this, you can run extraction with the `--prompt-population taxonomy` flag,
+To do this, you can run extraction with the `--prompt-population taxonomy` flag, which will populate prompts from the taxonomy defined in your config file.
 e.g.
 
 ```sh
@@ -120,7 +120,7 @@ flowchart TD
     A -.-> X["Coal, oil, and gas: never asked"]
 ```
 
-1. The first call asks about the two top-level concepts. The model says
+1. The first call to the LLM asks about the two top-level concepts. The model says
    "Infectious diseases" applies and "Climate mitigation" does not.
 2. The second call asks only about the children of "Infectious diseases".
    "Malaria" applies and "Dengue" does not.
