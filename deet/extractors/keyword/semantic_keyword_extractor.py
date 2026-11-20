@@ -11,6 +11,7 @@ from deet.data_models.documents import ContextType
 from deet.data_models.extraction import DocumentExtractionResult
 from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.keyword.base_keyword_extractor import BaseKeywordDataExtractor
+from deet.settings import DataExtractionSettings
 from deet.ui.messenger import fail_with_message
 
 
@@ -22,9 +23,13 @@ class SemanticKeywordDataExtractor(BaseKeywordDataExtractor):
     exact string matching, so semantically related wording still matches.
     """
 
-    def __init__(self, config: DataExtractionConfig) -> None:
+    def __init__(
+        self,
+        config: DataExtractionConfig,
+        settings: DataExtractionSettings | None = None,
+    ) -> None:
         """Initialise, set the similarity threshold, and load the model."""
-        super().__init__(config)
+        super().__init__(config, settings)
         self.similarity_threshold: float = config.semantic_similarity_threshold
         try:
             from fastembed import TextEmbedding

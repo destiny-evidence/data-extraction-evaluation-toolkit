@@ -5,6 +5,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import pytest
+from loguru import logger
 from pydantic import SecretStr
 from vcr.request import Request
 
@@ -12,6 +13,8 @@ from deet.data_models.base import Attribute, AttributeType
 from deet.processors.converter_register import SupportedImportFormat
 from deet.processors.parser import ParsedOutput
 from deet.settings import get_settings
+
+logger.enable("deet")
 
 try:
     from aiohttp.streams import AsyncStreamReaderMixin  # type: ignore[attr-defined]
@@ -61,7 +64,7 @@ def valid_parsed_html():
 def mock_check_language(monkeypatch):
     """Stub the language checker."""
     monkeypatch.setattr(
-        "deet.processors.parser.check_language",
+        "deet.utils.assess_text_quality.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
     )
 

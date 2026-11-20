@@ -38,6 +38,7 @@ from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
 from deet.settings import (
     DEFAULT_LLM_MAX_CONTEXT_TOKENS_FALLBACK,
+    DataExtractionSettings,
     LLMProvider,
 )
 from deet.ui.terminal.render import optional_progress
@@ -288,9 +289,14 @@ def _iter_completed(
 class BaseDataExtractor(ABC):
     """Abstract Base Class defining common methods for data extractors."""
 
-    def __init__(self, config: DataExtractionConfig) -> None:
-        """Initialise with data extraction config."""
+    def __init__(
+        self,
+        config: DataExtractionConfig,
+        settings: DataExtractionSettings | None = None,
+    ) -> None:
+        """Initialise with data extraction config and optional settings."""
         self.config = config
+        self.settings = settings
 
     SUPPORTED_ATTRIBUTE_TYPES: frozenset[AttributeType] | None = None
 
