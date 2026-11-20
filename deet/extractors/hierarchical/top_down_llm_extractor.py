@@ -17,9 +17,6 @@ from rich.pretty import pretty_repr
 
 from deet.data_models.base import (
     Attribute,
-    BaseLLMResponse,
-    LLMResponseSchema,
-    build_llm_response_model,
 )
 from deet.data_models.documents import (
     ContextType,
@@ -84,12 +81,7 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
 
         context = self._prepare_context(payload=payload, context_type=context_type)
 
-        all_annotations = []
-        all_messages = []
-        total_input_tokens = 0
-        total_output_tokens = 0
-        total_cached_input_tokens = 0
-        total_cost_usd: float | None = 0.0
+        results: list[DocumentExtractionResult] = []
 
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
@@ -100,37 +92,18 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     f"Extracting attributes at level {level} of concept hierarchy."
                 )
                 level_attributes = [concept.attribute for concept in level_concepts]
-                prompt = self._generate_user_message_json(
-                    payload=context, attributes=level_attributes
-                )
-
-                response_model: type[BaseLLMResponse]
-
-                if self.config.dynamic_json_schema:
-                    response_model = build_llm_response_model(level_attributes)
-                else:
-                    response_model = LLMResponseSchema
-                llm_call = self._call_llm(prompt=prompt, response_model=response_model)
-                all_messages.extend(llm_call.messages)
-                total_input_tokens += llm_call.input_tokens
-                total_output_tokens += llm_call.output_tokens
-                total_cached_input_tokens += llm_call.cached_input_tokens
-                if llm_call.total_cost_usd is None:
-                    total_cost_usd = None
-                elif total_cost_usd is not None:
-                    total_cost_usd += llm_call.total_cost_usd
-                annotations = self._parse_llm_response(
-                    response_content=llm_call.response_content,
-                    attributes=level_attributes,
-                    response_model=response_model,
+                result = DocumentExtractionResult.combine(
+                    self._annotate(context=context, attributes=level_attributes)
                 )
                 logger.debug(
                     "Model returned the following annotations:\n{}",
-                    pretty_repr(annotations),
+                    pretty_repr(result.annotations),
                 )
-                all_annotations.extend(annotations)
+                results.append(result)
                 present_attribute_ids = {
-                    ann.attribute.attribute_id for ann in annotations if ann.output_data
+                    ann.attribute.attribute_id
+                    for ann in result.annotations
+                    if ann.output_data
                 }
                 level_concepts = [
                     child
@@ -147,10 +120,4 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                 )
                 level += 1
 
-        return DocumentExtractionResult(
-            annotations=all_annotations,
-            messages=all_messages,
-            input_tokens=total_input_tokens,
-            output_tokens=total_output_tokens,
-            model=self.model,
-        )
+        return DocumentExtractionResult.combine(results)

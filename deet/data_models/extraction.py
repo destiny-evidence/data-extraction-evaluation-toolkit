@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Final
+from typing import Any, Final, Self
 
 from pydantic import BaseModel, Field
 
@@ -107,7 +107,7 @@ class PerDocumentExtractionStats(BaseModel):
 
 
 class DocumentExtractionResult(BaseModel):
-    """Result of extracting data from a single document via an LLM."""
+    """An LLM extraction result for one or more extraction calls for a document."""
 
     annotations: list[GoldStandardAnnotation]
     messages: list[dict[str, Any]]
@@ -118,6 +118,41 @@ class DocumentExtractionResult(BaseModel):
     total_cost_usd: float | None = None
     llm_call_seconds: float = 0.0
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
+
+    @classmethod
+    def combine(cls, parts: list[Self]) -> Self:
+        """Fold per-call parts of one document's extraction into a single result."""
+        annotations: list[GoldStandardAnnotation] = []
+        messages: list[dict[str, Any]] = []
+        models: list[str] = []
+        input_tokens = 0
+        output_tokens = 0
+        cached_input_tokens = 0
+        llm_call_seconds = 0.0
+        total_cost_usd: float | None = None
+
+        for part in parts:
+            annotations.extend(part.annotations)
+            messages.extend(part.messages)
+            input_tokens += part.input_tokens
+            output_tokens += part.output_tokens
+            cached_input_tokens += part.cached_input_tokens
+            llm_call_seconds += part.llm_call_seconds
+            if part.model is not None and part.model not in models:
+                models.append(part.model)
+            if part.total_cost_usd is not None:
+                total_cost_usd = (total_cost_usd or 0.0) + part.total_cost_usd
+
+        return cls(
+            annotations=annotations,
+            messages=messages,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cached_input_tokens=cached_input_tokens,
+            model=" + ".join(models) or None,
+            llm_call_seconds=llm_call_seconds,
+            total_cost_usd=total_cost_usd,
+        )
 
 
 class ExtractionRunMetadata(BaseModel):

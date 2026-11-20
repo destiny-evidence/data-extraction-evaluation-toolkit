@@ -1051,110 +1051,103 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_2\\\":{\\\"output_data\\\":\\\"mouse\\\",\\\"additional_text\\\":\\\"Female
-        Tg2576 mice were generated and confirmed by genotyping as described previously
-        [57,58].\\\",\\\"reasoning\\\":\\\"The experiment used Tg2576 mice, which
+      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_2\\\":{\\\"output_data\\\":\\\"mouse\\\",\\\"additional_text\\\":\\\"Tg2576
+        APP mice\\\",\\\"reasoning\\\":\\\"The experiment used Tg2576 APP mice, which
         are mice.\\\"},\\\"attribute_4\\\":{\\\"output_data\\\":\\\"Tg2576 APP mice\\\",\\\"additional_text\\\":\\\"In
         this study we report the effect of chronic *R*-flurbiprofen treatment on cognition
         and A\u03B2 loads in a transgenic model of AD, Tg2576 APP mice.\\\",\\\"reasoning\\\":\\\"The
-        animal model is explicitly identified as Tg2576 APP mice.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"C57BL/6.SJL\\\",\\\"additional_text\\\":\\\"These
-        crosses generated the F2 Tg2576 APP +/- mice (mixed C57BL/6.SJL background),
-        which were used in all experiments.\\\",\\\"reasoning\\\":\\\"The strain/background
-        specified for the experimental mice is C57BL/6.SJL.\\\"},\\\"attribute_7\\\":{\\\"output_data\\\":\\\"amyloid
-        beta 42 production; amyloid beta plaque pathology\\\",\\\"additional_text\\\":\\\"Based
-        on *R*-flurbiprofen's selective lowering of A\u03B242, reduced COX activity
-        and safety profile in humans we have previously suggested that this drug was
-        a good candidate for clinical testing in AD.\\\",\\\"reasoning\\\":\\\"The
-        intervention was evaluated for its effects on selective A\u03B242 production
-        and amyloid plaque pathology.\\\"},\\\"attribute_8\\\":{\\\"output_data\\\":\\\"R-flurbiprofen\\\",\\\"additional_text\\\":\\\"*R*-Flurbiprofen
+        named animal model in the study is the Tg2576 APP mouse model.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"C57BL/6.SJL;
+        mixed C57BL/6.SJL background\\\",\\\"additional_text\\\":\\\"These crosses
+        generated the F2 Tg2576 APP +/- mice (mixed C57BL/6.SJL background), which
+        were used in all experiments.\\\",\\\"reasoning\\\":\\\"The document identifies
+        the C57BL/6.SJL strain and states that the experimental F2 mice had a mixed
+        C57BL/6.SJL background.\\\"},\\\"attribute_7\\\":{\\\"output_data\\\":\\\"Amyloid
+        beta 42 production\\\",\\\"additional_text\\\":\\\"Based on *R*-flurbiprofen's
+        selective lowering of A\u03B242, reduced COX activity and safety profile in
+        humans we have previously suggested that this drug was a good candidate for
+        clinical testing in AD.\\\",\\\"reasoning\\\":\\\"The intervention was evaluated
+        principally for its ability to selectively lower amyloid beta 42 production.\\\"},\\\"attribute_8\\\":{\\\"output_data\\\":\\\"R-flurbiprofen\\\",\\\"additional_text\\\":\\\"*R*-Flurbiprofen
         was administered at a concentration of 10 mg/kg/day for all experiments.\\\",\\\"reasoning\\\":\\\"R-flurbiprofen
-        was the therapeutic intervention administered in both preventative and therapeutic
+        was the therapeutic intervention administered in preventative and therapeutic
         regimens.\\\"},\\\"attribute_41\\\":{\\\"output_data\\\":\\\"Morris water
-        maze spatial reference memory task; visible-platform cue training; hidden-platform
-        search error; probe-trial spatial bias; strategy preference test\\\",\\\"additional_text\\\":\\\"At
-        the conclusion of the drug-treatment phase, mice were assessed for spatial
-        reference memory in the Morris water maze.\\\",\\\"reasoning\\\":\\\"Behavioral
-        outcomes were measured using cue training, spatial reference memory acquisition,
-        probe trials, and the strategy preference test in the Morris water maze.\\\"},\\\"attribute_33\\\":{\\\"output_data\\\":\\\"detergent-soluble
-        amyloid beta 40 levels; detergent-soluble amyloid beta 42 levels; formic-acid-soluble
-        amyloid beta 40 levels; formic-acid-soluble amyloid beta 42 levels; brain
-        R-flurbiprofen levels; brain S-flurbiprofen levels\\\",\\\"additional_text\\\":\\\"We
-        observed no significant differences in detergent soluble A\u03B240 or A\u03B242
-        levels between the treated and control groups in experiments 1, 2 or 3.\\\",\\\"reasoning\\\":\\\"The
-        study quantified A\u03B240 and A\u03B242 in detergent- and formic-acid-soluble
-        fractions and measured R- and S-flurbiprofen concentrations in brain tissue.\\\"},\\\"attribute_34\\\":{\\\"output_data\\\":\\\"amyloid
-        beta plaque burden\\\",\\\"additional_text\\\":\\\"short-term treatment with
-        *R*flurbiprofen at 20 months of age (experiment 3) resulted in a significant
-        decrease in A\u03B2 plaque burden\\\",\\\"reasoning\\\":\\\"Amyloid plaque
-        burden was measured as an indicator of amyloid disease pathology.\\\"},\\\"attribute_42\\\":{\\\"output_data\\\":\\\"activated
-        microglia; activated astrocytes\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
-        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
-        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"The
-        methods explicitly describe cellular staining for activated microglia and
-        astrocytes.\\\"},\\\"attribute_53\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The
-        document does not report a distinct cell chemistry outcome.\\\"},\\\"attribute_56\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        electron microscopy outcomes are described.\\\"},\\\"attribute_46\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        electrophysiology outcomes are described.\\\"},\\\"attribute_35\\\":{\\\"output_data\\\":\\\"amyloid
-        beta plaque burden\\\",\\\"additional_text\\\":\\\"Computer-assisted quantification
-        of A\u03B2 plaques was performed in a blinded fashion as described previously
-        [62].\\\",\\\"reasoning\\\":\\\"Histopathology included brain-section assessment
-        and computer-assisted quantification of amyloid plaques.\\\"},\\\"attribute_57\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        distinct imaging outcome, apart from histological plaque quantification and
-        water-maze tracking, is reported under an imaging modality.\\\"},\\\"attribute_36\\\":{\\\"output_data\\\":\\\"amyloid
-        beta plaque staining and quantification; activated microglia staining; activated
-        astrocyte staining\\\",\\\"additional_text\\\":\\\"They were then incubated
-        with 33.1.1 (A\u03B21\u201316 mAb) at 1 \u03BCg/ml dilution overnight... Fixed,
-        paraffin-embedded sections were stained for activated microglia using anti-Iba1
-        (1:3000; Wako Chemicals) and for activated astrocytes using anti-GFAP (1:1000,
-        Chemicon).\\\",\\\"reasoning\\\":\\\"Immunohistochemistry was used to stain
-        A\u03B2 plaques, activated microglia, and activated astrocytes.\\\"},\\\"attribute_49\\\":{\\\"output_data\\\":\\\"activated
-        microglia; activated astrocytes\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
-        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
-        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"The
-        study assessed immune-related cellular markers for microglial and astrocyte
-        activation.\\\"},\\\"attribute_43\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        microscopy outcome is separately reported beyond immunohistological plaque
-        assessment.\\\"},\\\"attribute_44\\\":{\\\"output_data\\\":\\\"swimming speed;
-        visible-platform escape latency\\\",\\\"additional_text\\\":\\\"Assessment
-        of sensory and motor ability was determined by measuring the latency of mice
-        to escape to a visible platform and their swimming speed.\\\",\\\"reasoning\\\":\\\"Motor-related
-        performance was assessed by swimming speed and escape latency to a visible
-        platform.\\\"},\\\"attribute_45\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        omics outcomes are described.\\\"},\\\"attribute_37\\\":{\\\"output_data\\\":\\\"selective
-        amyloid beta 42 lowering; reduction in amyloid beta plaque burden\\\",\\\"additional_text\\\":\\\"This
-        treatment regimen improved spatial learning... A modest, though not statistically
-        significant, reduction in formic acid-soluble levels of A\u03B2 was also observed.\\\",\\\"reasoning\\\":\\\"Pharmacodynamic
-        effects were evaluated through drug-associated changes in A\u03B2 levels,
-        plaque burden, and cognition.\\\"},\\\"attribute_48\\\":{\\\"output_data\\\":\\\"brain
-        R-flurbiprofen concentration; brain S-flurbiprofen concentration; R-flurbiprofen
-        conversion to S-flurbiprofen\\\",\\\"additional_text\\\":\\\"*R*- and *S*-flurbiprofen
-        levels in the brain of mice from one water maze (Exp. 3) were analyzed using
-        liquid chromatography and mass spectrometry techniques and were found to be
-        158 \xB1 14.7 and 76.0 \xB1 8.0 ng/gm brain tissue respectively.\\\",\\\"reasoning\\\":\\\"The
-        study measured brain drug concentrations and documented conversion of R-flurbiprofen
-        to the S-enantiomer.\\\"},\\\"attribute_50\\\":{\\\"output_data\\\":\\\"activated
-        microglia; activated astrocytes\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
-        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
-        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"The
-        document reports immunology-related measurements of microglial and astrocyte
-        activation markers.\\\"},\\\"attribute_51\\\":{\\\"output_data\\\":\\\"swimming
-        speed; body weight; general health; mortality\\\",\\\"additional_text\\\":\\\"Kibble
-        consumption, general health and body weight were monitored on a weekly basis.\\\",\\\"reasoning\\\":\\\"Physiological
-        and general health outcomes included swimming performance, body weight, general
-        health, and survival/mortality.\\\"},\\\"attribute_58\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        protein-structure outcomes are described.\\\"},\\\"attribute_38\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
-        spectroscopy outcome is reported; liquid chromatography-mass spectrometry
-        was used for drug-level quantification but was not reported as a spectroscopy
-        outcome.\\\"},\\\"attribute_39\\\":{\\\"output_data\\\":\\\"mortality; morbidity;
-        gastrointestinal toxicity\\\",\\\"additional_text\\\":\\\"However, initial
+        maze spatial reference memory; visible platform cue training; hidden platform
+        search error; spatial bias during probe trials; place-versus-cue strategy
+        preference\\\",\\\"additional_text\\\":\\\"At the conclusion of the drug-treatment
+        phase, mice were assessed for spatial reference memory in the Morris water
+        maze.\\\",\\\"reasoning\\\":\\\"Behavioral outcomes included sensorimotor/cue
+        performance, spatial learning and memory, probe-trial spatial bias, and learning
+        strategy preference.\\\"},\\\"attribute_33\\\":{\\\"output_data\\\":\\\"Detergent-soluble
+        A\u03B240 levels; detergent-soluble A\u03B242 levels; formic acid-soluble
+        A\u03B240 levels; formic acid-soluble A\u03B242 levels; brain R-flurbiprofen
+        levels; brain S-flurbiprofen levels\\\",\\\"additional_text\\\":\\\"We observed
+        no significant differences in detergent soluble A\u03B240 or A\u03B242 levels
+        between the treated and control groups... In experiment 1, preventative *R*-flurbiprofen
+        treatment... resulted in a non-significant reduction in FA A\u03B240 (24%)
+        and A\u03B242 (23%) levels.\\\",\\\"reasoning\\\":\\\"The study quantified
+        A\u03B240 and A\u03B242 in detergent-soluble and formic-acid-soluble fractions
+        and measured R- and S-flurbiprofen concentrations in brain tissue.\\\"},\\\"attribute_34\\\":{\\\"output_data\\\":\\\"Amyloid
+        beta plaque burden; formic acid-soluble A\u03B242 levels\\\",\\\"additional_text\\\":\\\"In
+        contrast, short-term treatment with *R*flurbiprofen at 20 months of age (experiment
+        3) resulted in a significant decrease in A\u03B2 plaque burden as measured
+        by the percent immunoreactive area.\\\",\\\"reasoning\\\":\\\"Plaque burden
+        and A\u03B2 levels were used as measurable indicators of Alzheimer-like disease
+        pathology and treatment response.\\\"},\\\"attribute_42\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        distinct cell biology outcome was reported; the document describes tissue
+        staining but does not report a separate cell-biology measurement.\\\"},\\\"attribute_53\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        cell chemistry outcome was specifically reported.\\\"},\\\"attribute_56\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"Electron
+        microscopy was not used or reported.\\\"},\\\"attribute_46\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        electrophysiology measurements were reported.\\\"},\\\"attribute_35\\\":{\\\"output_data\\\":\\\"Amyloid
+        beta plaque burden in neocortex\\\",\\\"additional_text\\\":\\\"Computer-assisted
+        quantification of A\u03B2 plaques was performed in a blinded fashion... plaques
+        were quantified (calculated as proportional area of plaque burden) in the
+        neocortex of the same plane of section for each mouse.\\\",\\\"reasoning\\\":\\\"Histopathology
+        involved quantification of amyloid plaque burden in brain sections.\\\"},\\\"attribute_57\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        imaging outcome was reported as a distinct experimental measurement; the water-maze
+        tracking data are behavioral outcomes.\\\"},\\\"attribute_36\\\":{\\\"output_data\\\":\\\"Amyloid
+        beta plaque immunoreactive area\\\",\\\"additional_text\\\":\\\"short-term
+        treatment with *R*flurbiprofen at 20 months of age (experiment 3) resulted
+        in a significant decrease in A\u03B2 plaque burden as measured by the percent
+        immunoreactive area\\\",\\\"reasoning\\\":\\\"Immunohistochemical staining
+        with an A\u03B2 antibody was used to quantify plaque immunoreactive area.\\\"},\\\"attribute_49\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"Although
+        immunostaining for activated microglia and astrocytes is described in Methods,
+        no corresponding immunology outcome was reported in the Results.\\\"},\\\"attribute_43\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        microscopy outcome was separately reported beyond histological and immunohistochemical
+        plaque quantification.\\\"},\\\"attribute_44\\\":{\\\"output_data\\\":\\\"Swimming
+        speed\\\",\\\"additional_text\\\":\\\"Both long- and short-term treatment
+        of Tg2576 mice with *R*-flurbiprofen resulted in a decrease in the swim speed
+        of the mice.\\\",\\\"reasoning\\\":\\\"Swimming speed was the reported motor-function
+        outcome.\\\"},\\\"attribute_45\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        omics analysis or omics outcome was reported.\\\"},\\\"attribute_37\\\":{\\\"output_data\\\":\\\"Selective
+        lowering of brain A\u03B242; reduction in amyloid plaque burden\\\",\\\"additional_text\\\":\\\"This
+        approach resulted in a significant decrease in A\u03B2 plaque burden but no
+        significant improvement in spatial learning.\\\",\\\"reasoning\\\":\\\"Pharmacodynamic
+        effects were assessed through treatment-related changes in A\u03B242 and amyloid
+        plaque burden.\\\"},\\\"attribute_48\\\":{\\\"output_data\\\":\\\"Brain distribution
+        of R-flurbiprofen; brain distribution of S-flurbiprofen; conversion of R-flurbiprofen
+        to S-flurbiprofen\\\",\\\"additional_text\\\":\\\"*R*- and *S*-flurbiprofen
+        levels in the brain of mice from one water maze (Exp. 3) were analyzed...
+        and were found to be 158 \xB1 14.7 and 76.0 \xB1 8.0 ng/gm brain tissue respectively.\\\",\\\"reasoning\\\":\\\"The
+        study measured brain concentrations of both enantiomers and discusses conversion
+        of R-flurbiprofen to S-flurbiprofen in mice.\\\"},\\\"attribute_50\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        separate immunology outcome was reported.\\\"},\\\"attribute_51\\\":{\\\"output_data\\\":\\\"Swimming
+        speed\\\",\\\"additional_text\\\":\\\"Table 3 shows that mice treated with
+        *R*-flurbiprofen, regardless of length of administration, had modest but significantly
+        lower swimming speed\\\",\\\"reasoning\\\":\\\"Swimming speed was the physiological/motor
+        performance measure reported.\\\"},\\\"attribute_58\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        protein-structure outcome was measured.\\\"},\\\"attribute_38\\\":{\\\"output_data\\\":\\\"Brain
+        R-flurbiprofen concentration; brain S-flurbiprofen concentration\\\",\\\"additional_text\\\":\\\"*R*-
+        and *S*-flurbiprofen levels in the brain of mice from one water maze (Exp.
+        3) were analyzed using liquid chromatography and mass spectrometry techniques\\\",\\\"reasoning\\\":\\\"Mass
+        spectrometric analysis quantified the concentrations of the two flurbiprofen
+        enantiomers in brain tissue.\\\"},\\\"attribute_39\\\":{\\\"output_data\\\":\\\"Mortality;
+        morbidity; treatment-related toxicity\\\",\\\"additional_text\\\":\\\"initial
         pilot longterm studies using dosing regimens designed to deliver either 25
-        and 50 mg/kg day ... resulted in 85% and 100% mortality, respectively, within
-        2 weeks.\\\",\\\"reasoning\\\":\\\"Toxicology was evaluated through mortality,
-        morbidity, and discussion of gastrointestinal toxicity associated with chronic
-        higher-dose treatment.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795165744,\"id\":\"chatcmpl-EmEu8lxQcISHmYbdcWRI2mI6ewVxX\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r8-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":2210,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":430,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":5,\"engine_ttft_ms\":622,\"engine_ttlt_ms\":11256,\"pre_inference_ms\":290,\"service_tbt_ms\":5,\"service_ttft_ms\":1609,\"service_ttlt_ms\":12201,\"user_visible_ttft_ms\":1318},\"prompt_tokens\":24901,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":24898},\"total_tokens\":27111}}\n"
+        and 50 mg/kg day... resulted in 85% and 100% mortality, respectively, within
+        2 weeks.\\\",\\\"reasoning\\\":\\\"Toxicology was assessed through mortality,
+        morbidity, and adverse effects during chronic dosing.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795171735,\"id\":\"chatcmpl-EmGSlDQgraUhnLzsIlLdc1KrQVqJt\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r7-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":1952,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":294,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":5,\"engine_ttft_ms\":628,\"engine_ttlt_ms\":10513,\"pre_inference_ms\":182,\"service_tbt_ms\":5,\"service_ttft_ms\":1540,\"service_ttlt_ms\":11318,\"user_visible_ttft_ms\":1358},\"prompt_tokens\":24901,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":24898},\"total_tokens\":26853}}\n"
     headers:
       apim-request-id:
-      - 080af0db-fca5-489b-a62b-949a5700231c
+      - 7496d867-be1b-483e-954f-7956b0fa9fa3
       azureai-fe-is-streaming:
       - 'False'
       azureai-fe-offer-type:
@@ -1162,11 +1155,11 @@ interactions:
       azureml-model-session:
       - d20261114101034-7dfcb1a8
       content-length:
-      - '10080'
+      - '9547'
       content-type:
       - application/json
       date:
-      - Fri, 20 Nov 2026 09:09:03 GMT
+      - Fri, 20 Nov 2026 10:48:55 GMT
       server:
       - istio-envoy
       skip-error-remapping:
@@ -1180,7 +1173,7 @@ interactions:
       x-content-type-options:
       - nosniff
       x-http2-stream-id:
-      - '151'
+      - '125'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -1210,7 +1203,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '2'
       x-request-id:
-      - a9a0f6f1-c7d6-4abb-b4dc-67199ddee281
+      - 5a4e096f-1c41-4200-a507-f766a39611fe
     status:
       code: 200
       message: OK

@@ -4,6 +4,7 @@ import re
 
 import litellm
 from litellm.exceptions import NotFoundError as LitellmNotFoundError
+from litellm.types.decisions import OpenAIDecisionResponse
 from litellm.types.utils import ModelResponse
 from loguru import logger
 
@@ -140,9 +141,11 @@ def estimate_cost_usd(
         return (None, None)
 
 
-def reported_call_cost_usd(completion_response: ModelResponse) -> float | None:
+def reported_call_cost_usd(
+    completion_response: ModelResponse | OpenAIDecisionResponse,
+) -> float | None:
     """
-    Read the USD cost LiteLLM reports for one completion response.
+    Read the USD cost LiteLLM reports for one completion or decision response.
 
     ``litellm.completion_cost`` prices cached prompt tokens and the call type
     from the response, so the figure follows prompt-cache discounts and the

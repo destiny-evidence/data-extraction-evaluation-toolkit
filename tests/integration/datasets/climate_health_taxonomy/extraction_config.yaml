@@ -5,3 +5,4 @@ truncate_on_overflow: true
 dynamic_json_schema: true
 vocabulary_path: taxonomy.ttl
 vocabulary_mapping_path: taxonomy_nacsos_mapping.json
+decision_model: gpt-6-luna

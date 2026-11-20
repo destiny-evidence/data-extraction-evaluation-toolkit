@@ -15,6 +15,7 @@ from typer.testing import CliRunner
 
 from deet.data_models.documents import Document
 from deet.data_models.enums import CustomPromptPopulationMethod
+from deet.data_models.extraction import ExtractionRunMetadata
 from deet.data_models.project import DeetProject, ExperimentArtefacts
 from deet.processors.converter_register import SupportedImportFormat
 from deet.scripts.cli import app
@@ -295,6 +296,15 @@ def assert_llm_csv_contains_values(path: Path) -> None:
     assert len(rows) > 0, "CSV contains no rows."
 
 
+def assert_run_reports_cost(artefacts: ExperimentArtefacts) -> None:
+    """Assert the run metadata reports a positive total cost."""
+    metadata = ExtractionRunMetadata.model_validate_json(
+        artefacts.extraction_metadata.read_text()
+    )
+    assert metadata.total_cost_usd is not None
+    assert metadata.total_cost_usd > 0
+
+
 @pytest.mark.vcr
 @pytest.mark.parametrize("dataset_base_path", INTEGRATION_DATASETS)
 def test_extraction_without_evaluating(
@@ -357,6 +367,7 @@ def test_extraction_without_evaluating(
     # She also makes sure that the csv containing llm
     # annotations is not empty
     assert_llm_csv_contains_values(artefacts.llm_annotation_csv)
+    assert_run_reports_cost(artefacts)
 
 
 @pytest.mark.vcr
@@ -420,6 +431,7 @@ def test_extraction_without_evaluating_or_linking(
     # She also makes sure that the csv containing llm
     # annotations is not empty
     assert_llm_csv_contains_values(artefacts.llm_annotation_csv)
+    assert_run_reports_cost(artefacts)
 
 
 @pytest.mark.vcr
@@ -485,3 +497,4 @@ def test_extraction_with_evaluation(
     # She also makes sure that the csv containing llm
     # and human annotations is not empty
     assert_llm_csv_contains_values(artefacts.comparison)
+    assert_run_reports_cost(artefacts)
