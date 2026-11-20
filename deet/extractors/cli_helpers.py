@@ -22,6 +22,7 @@ from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.extractor_registry import get_data_extractor
 from deet.processors.directory_processor import create_documents_from_directory
 from deet.processors.linker import DocumentReferenceLinker, LinkingStrategy
+from deet.settings import DataExtractionSettings
 from deet.ui import fail_with_message, notify
 from deet.ui.terminal import console, render_template
 from deet.ui.terminal.components import info_panel
@@ -145,6 +146,7 @@ def run_extraction_pipeline(  # noqa: PLR0913
     ) = CustomPromptPopulationMethod.FILE,
     run_name: str = "",
     *,
+    settings: DataExtractionSettings | None = None,
     ignore_references: bool = False,
 ) -> tuple[
     ExtractionRunOutput,
@@ -201,7 +203,7 @@ def run_extraction_pipeline(  # noqa: PLR0913
         )
         fail_with_message(no_documents_in_stage)
 
-    data_extractor = get_data_extractor(config=config)
+    data_extractor = get_data_extractor(config=config, settings=settings)
 
     document_parsing: dict[str, DocumentParsingStats] = {}
     with measure_elapsed() as stage_timer:
