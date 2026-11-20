@@ -61,7 +61,7 @@ def valid_parsed_html():
 def mock_check_language(monkeypatch):
     """Stub the language checker."""
     monkeypatch.setattr(
-        "deet.processors.parser.check_language",
+        "deet.utils.assess_text_quality.check_language",
         lambda txt, lang=None, threshold=0.2: txt.strip() != "not english",  # noqa: ARG005
     )
 

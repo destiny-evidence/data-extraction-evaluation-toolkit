@@ -7,9 +7,8 @@ from enum import StrEnum, auto
 from io import StringIO
 from os import PathLike
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-from diskcache import Cache
 from loguru import logger
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -26,18 +25,14 @@ from deet.exceptions import (
     InvalidOutputFileTypeError,
 )
 from deet.settings import get_settings
-from deet.utils.assess_text_quality import check_language
+
+if TYPE_CHECKING:
+    from marker.converters.pdf import PdfConverter
 
 try:
     import pypandoc
 except ImportError:
     pypandoc = None
-
-
-# CACHE init
-CACHE_DIR = get_settings().base_disk_cache_dir / "marker_parser_cache"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
-parser_cache = Cache(str(CACHE_DIR))
 
 
 class InputFileType(StrEnum):
@@ -115,6 +110,8 @@ class ParsedOutput(BaseModel):
             )
             return value
 
+        from deet.utils.assess_text_quality import check_language
+
         if not check_language(value):
             logger.debug("check lang failed")
             bad_language = "Supplied text didn't pass quality check."
@@ -166,15 +163,11 @@ class MarkerParser(ParserLibrary):
     output_file_types = [OutputFileType.MD, OutputFileType.JPEG, OutputFileType.JSON]
 
     @classmethod
-    @parser_cache.memoize(typed=True, expire=None, tag="marker-converter")
-    def _get_converter(cls):  # noqa: ANN206 no return type hint as we don't know PdfConverter yet
-        """Lazy initialization of marker converter with disk caching."""
-        logger.debug("Initializing marker converter...")
-        from marker.converters.pdf import PdfConverter
-        from marker.models import create_model_dict
+    def _get_converter(cls) -> "PdfConverter":
+        """Return the disk-cached marker converter."""
+        from deet.processors.marker_converter import get_converter
 
-        artifact_dict = create_model_dict()
-        return PdfConverter(artifact_dict=artifact_dict)
+        return get_converter()
 
     @classmethod
     def parse(
@@ -201,6 +194,8 @@ class MarkerParser(ParserLibrary):
     @classmethod
     def clear_cache(cls) -> None:
         """Clear the cached converter."""
+        from deet.processors.marker_converter import parser_cache
+
         parser_cache.clear()
         logger.info("Marker converter cache cleared")
 
