@@ -183,9 +183,32 @@ The method we choose also changes how an attribute's `prompt` is interpreted.
 The default method sends the document context and the list of attributes to an
 LLM, and asks it to return a structured answer for every attribute. Here the
 `prompt` is a question or instruction written in natural language, for example
-"Does the article discuss the effects of climate change on human health?". This
-is the only method that produces values for every attribute type, and the LLM is
-chosen with the `provider` and `model` fields.
+"Does the article discuss the effects of climate change on human health?".
+When using the LLM extractor, the LLM model is
+configured with the `provider` and `model` fields.
+
+### Top-down vocabulary descent
+
+The default LLM extractor makes a single call to an LLM, providing the document
+and definitions of all selected attributes. Where we have large vocabularies of
+nested concepts to extract, this may not be optimal.
+
+The top-down vocabulary descent method uses the hierarchical structure of a taxonomy,
+and starts by extracting all of the top-level concepts (those with no parents).
+For each of those concepts which are found to apply to a document, the top-down
+extractor then prompts for all of that concept's child concepts,
+and so on, for each further child concept that is found to apply to a document.
+This method reduces the number of attributes prompted for in one call,
+which may improve performance.
+
+```yaml
+method: hierarchical_top_down
+vocabulary_path: <PATH TO YOUR VOCABULARY TTL FILE>
+vocabulary_mapping_path: <PATH TO MAPPING FILE>
+```
+
+See [Vocabularies and taxonomies](vocabulary.md) for how to prepare the
+vocabulary and mapping files, with a worked example.
 
 ### Keyword
 

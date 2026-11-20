@@ -1,0 +1,306 @@
+"""
+Data models for consuming hierarchical vocabularies that use the [SKOS](https://www.w3.org/TR/skos-reference/)
+(Simple Knowledge Organization System) format.
+
+For more information on and definitions of vocabularies, taxonomies, and concepts,
+see `docs/concepts/vocabulary.md`.
+
+These models are loosely based on [`destiny-evidence/taxonomy-builder`](https://github.com/destiny-evidence/taxonomy-builder)
+
+They implement only those methods required for the initial case (see integration tests)
+of classifiying documents according to a nested set of boolean concepts
+in concept schemes.
+
+TODO: Extend to cover classes and properties, which can encode richer information about
+how taxonomies should be applied (such as whether groups of concepts are mandatory,
+or if multiple concepts can be selected).
+"""
+
+import hashlib
+from collections.abc import Sequence
+from enum import StrEnum, auto
+from functools import cached_property
+from pathlib import Path
+
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, TypeAdapter
+from rdflib import SKOS, Graph, URIRef
+
+from deet.data_models.base import Attribute, AttributeType
+from deet.utils._vendor.taxonomy_builder.rdf_parser import (
+    analyze_graph,
+    detect_format,
+    get_concept_pref_label,
+    get_identifier_from_uri,
+    get_scheme_title,
+    parse_rdf,
+)
+
+
+class ConceptPromptField(StrEnum):
+    """Concept fields usable as prompt text for extraction."""
+
+    PREF_LABEL = auto()
+    DEFINITION = auto()
+    SCOPE_NOTE = auto()
+    ALT_LABELS = auto()
+
+
+class Concept(BaseModel):
+    """
+    A single SKOS concept within a scheme.
+
+    Most fields mirror a SKOS property of the concept node in the source
+    vocabulary file (SKOS reference: https://www.w3.org/TR/skos-reference/),
+    or are conventions of the taxonomy-builder, which is vendored from
+    destiny-evidence/taxonomy-builder, e.g.:
+
+    - uri: the concept node's URI in the source file
+    - identifier: the local name of that URI, after the last '#' or '/',
+    used as the key in ConceptScheme.concepts and as concept_id in
+    mapping files
+    - type_uris: rdf:type assertions on the concept beyond skos:Concept
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    pref_label: str = Field(description="Preferred label.")
+    identifier: str = Field(description="URI-safe identifier segment.")
+    uri: str = Field(description="Full concept URI.")
+    definition: str | None = Field(default=None, description="Concept definition.")
+    scope_note: str | None = Field(
+        default=None, description="Scope note clarifying intended use."
+    )
+    alt_labels: list[str] = Field(
+        default_factory=list,
+        description="Alternative labels (synonyms, abbreviations).",
+    )
+    broader: list[str] = Field(
+        default_factory=list, description="uris of broader (parent) concepts."
+    )
+    related: list[str] = Field(
+        default_factory=list, description="uris of related concepts."
+    )
+    type_uris: list[str] = Field(
+        default_factory=list,
+        description="OWL class type URIs beyond skos:Concept.",
+    )
+
+    @classmethod
+    def from_graph(cls, g: "Graph", concept_uri: "URIRef") -> "Concept":
+        """Load from parsed graph."""
+        pref_label, _ = get_concept_pref_label(g, concept_uri)
+        return cls(
+            uri=str(concept_uri),
+            identifier=get_identifier_from_uri(concept_uri),
+            pref_label=pref_label,
+            alt_labels=[str(lbl) for lbl in g.objects(concept_uri, SKOS.altLabel)],
+            definition=next(
+                (str(d) for d in g.objects(concept_uri, SKOS.definition)),
+                None,
+            ),
+            scope_note=next(
+                (str(s) for s in g.objects(concept_uri, SKOS.scopeNote)),
+                None,
+            ),
+            broader=[
+                get_identifier_from_uri(URIRef(str(b)))
+                for b in g.objects(concept_uri, SKOS.broader)
+            ],
+        )
+
+    def create_synthetic_attribute(self) -> Attribute:
+        """Create a synthetic attribute from the concept."""
+        synthetic_id = -(
+            int(hashlib.sha256(self.identifier.encode()).hexdigest()[:8], 16) % 1000000
+            + 1
+        )
+        return Attribute(
+            prompt=self.definition,
+            output_data_type=AttributeType.BOOL,
+            attribute_id=synthetic_id,
+            attribute_label=self.pref_label,
+        )
+
+    def build_prompt(
+        self, fields: list[ConceptPromptField], delimiter: str = "; "
+    ) -> str:
+        """
+        Concatenate the given concept fields into a single prompt string.
+
+        If a list prompt field is selected,
+        return this as a `delimiter` concatenated string.
+        """
+        parts: list[str] = []
+        for field in fields:
+            value = getattr(self, field)
+            if value is None:
+                continue
+            if isinstance(value, list | tuple):
+                joined = delimiter.join(value)
+                if joined.strip():
+                    parts.append(joined)
+            elif str(value).strip():
+                parts.append(str(value))
+        if not parts:
+            # Fall back to the preferred label when the selected fields yield
+            # nothing (e.g. a concept with no altLabels under
+            # vocab_prompt_locations=[ConceptPromptField.ALT_LABELS]), rather than
+            # failing.
+            if self.pref_label and self.pref_label.strip():
+                return self.pref_label
+            empty = (
+                f"No prompt text for concept {self.identifier} from fields: {fields}"
+            )
+            raise ValueError(empty)
+        return "\n ".join(parts)
+
+
+class ConceptMappingRow(BaseModel):
+    """Defines the expected shape of a mapping from attribute labels to concept_ids."""
+
+    model_config = ConfigDict(extra="ignore")
+    attribute_name: str = Field(
+        validation_alias=AliasChoices("attribute_name", "col_pipe")
+    )
+    concept_id: str
+
+
+class MappedConcept(Concept):
+    """A concept that has been mapped to a deet Attribute."""
+
+    attribute: Attribute
+
+    @classmethod
+    def from_concept(cls, concept: Concept, attribute: Attribute) -> "MappedConcept":
+        """Copy a parsed concept's fields and attach its mapped attribute."""
+        return cls(**concept.model_dump(), attribute=attribute)
+
+
+class ConceptScheme[C: Concept](BaseModel):
+    """
+    A concept scheme: one taxonomy "field" owning a flat map of concepts.
+
+    The scheme's ``broader`` edges define the hierarchy; ``narrower`` and
+    descendant traversal are derived here.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = Field(description="Vocabulary title.")
+    description: str | None = Field(default=None, description="Vocabulary description.")
+    uri: str = Field(description="SKOS ConceptScheme URI.")
+    root_concepts: list[str] = Field(
+        default_factory=list,
+        description=("concept uris of root concepts (concepts with no parents)."),
+    )
+    concepts: dict[str, C] = Field(
+        default_factory=dict, description="Concepts keyed by uri."
+    )
+
+    def get_concept(self, concept_id: str) -> C | None:
+        """Return the concept with ``concept_id``, or None if absent."""
+        return self.concepts.get(concept_id)
+
+    @property
+    def roots(self) -> list[C]:
+        """Return the concepts at the root of the scheme."""
+        return [c for uid in self.root_concepts if (c := self.get_concept(uid))]
+
+    @cached_property
+    def _narrower_index(self) -> dict[str, list[str]]:
+        """
+        Build the inverse of ``broader``: parent id -> ordered child ids.
+
+        Built on first use; assumes concepts are not mutated.
+        """
+        index: dict[str, list[str]] = {}
+        for concept_id, concept in self.concepts.items():
+            for parent_id in concept.broader:
+                index.setdefault(parent_id, []).append(concept_id)
+        return index
+
+    def narrower(self, concept_id: str) -> list[C]:
+        """Return the direct child (narrower) concept ids of ``concept_id``."""
+        narrower_ids = self._narrower_index.get(concept_id, [])
+        return [c for concept_id in narrower_ids if (c := self.get_concept(concept_id))]
+
+    @classmethod
+    def from_graph(
+        cls,
+        g: "Graph",
+        scheme_uri: "URIRef",
+        concept_uris: "set[URIRef]",
+    ) -> "ConceptScheme[Concept]":
+        """Load from parsed graph."""
+        concepts: dict[str, Concept] = {}
+        for concept_uri in sorted(concept_uris):
+            concept = Concept.from_graph(g, concept_uri)
+            concepts[concept.identifier] = concept
+        top = [cid for cid, c in concepts.items() if not c.broader]
+        return ConceptScheme(
+            uri=str(scheme_uri),
+            title=get_scheme_title(g, scheme_uri),
+            root_concepts=top,
+            concepts=concepts,
+        )
+
+    def map_concepts(
+        self, mapping_file: Path | None, attributes: Sequence[Attribute]
+    ) -> "MappedConceptScheme":
+        """
+        Map this scheme's concepts to attributes via a mapping file.
+
+        The mapping file should consist of rows that conform to ConceptMappingRow,
+        where each row links each attribute to its concept.
+        """
+        if mapping_file is None:
+            # TODO: Implement mapping using external IDs in EppiJSON
+            mapping_without_file = "Mapping without a mapping file is not yet supported"
+            raise NotImplementedError(mapping_without_file)
+
+        mapping: list[ConceptMappingRow] = TypeAdapter(
+            list[ConceptMappingRow]
+        ).validate_json(mapping_file.read_bytes())
+
+        mapping_dict = _build_attribute_lookup(mapping, attributes)
+        mapped_concepts: list[MappedConcept] = []
+        for concept_id, concept in self.concepts.items():
+            attr = mapping_dict.get(concept_id) or concept.create_synthetic_attribute()
+            mapped_concepts.append(MappedConcept.from_concept(concept, attribute=attr))
+
+        return MappedConceptScheme(
+            title=self.title,
+            description=self.description,
+            uri=self.uri,
+            root_concepts=[c.identifier for c in mapped_concepts if not c.broader],
+            concepts={c.identifier: c for c in mapped_concepts},
+        )
+
+
+class MappedConceptScheme(ConceptScheme[MappedConcept]):
+    """A concept scheme where concepts have been mapped to attributes."""
+
+    concepts: dict[str, MappedConcept] = Field(default_factory=dict)
+
+
+def load_schemes_from_ttl(path: Path) -> list[ConceptScheme[Concept]]:
+    """Load a list of concept schemes from a ttl file."""
+    g = parse_rdf(path.read_bytes(), detect_format(str(path)))
+    result = analyze_graph(g)
+    return [
+        ConceptScheme.from_graph(g, s, result["concepts_by_scheme"].get(s, set()))
+        for s in result["schemes"]
+    ]
+
+
+def _build_attribute_lookup(
+    rows: list[ConceptMappingRow], attributes: Sequence[Attribute]
+) -> dict[str, Attribute]:
+    """Match mapping rows to attributes by label, dropping unmatched rows."""
+    by_label = {a.attribute_label: a for a in attributes}
+    lookup = {}
+    for row in rows:
+        attr = by_label.get(row.attribute_name)
+        if attr:
+            lookup[row.concept_id] = attr
+    return lookup
