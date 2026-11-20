@@ -1,4 +1,14 @@
-"""Top down LLM Extractor that starts at root and descends through leaves."""
+"""
+Top down LLM Extraction over a vocabulary hierarchy.
+
+Asks about each scheme's root concepts first, then about the children
+of concepts judged to apply, and then their children, all the way to the leaves
+(concepts with no children).
+
+Sub-trees of non-applying concepts are never queried.
+
+See docs/concepts/vocabulary.md for more information.
+"""
 
 from pathlib import Path
 
@@ -75,13 +85,13 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
 
         for scheme in self.mapped_schemes:
             logger.info(f"extracting concepts from scheme: {scheme.title}")
-            leaves = scheme.roots
+            level_concepts = scheme.roots
             level = 1
-            while leaves:
+            while level_concepts:
                 logger.info(
                     f"Extracting attributes at level {level} of concept hierarchy."
                 )
-                level_attributes = [concept.attribute for concept in leaves]
+                level_attributes = [concept.attribute for concept in level_concepts]
                 result = DocumentExtractionResult.combine(
                     self._annotate(context=context, attributes=level_attributes)
                 )
@@ -95,9 +105,9 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                     for ann in result.annotations
                     if ann.output_data
                 }
-                leaves = [
+                level_concepts = [
                     child
-                    for concept in leaves
+                    for concept in level_concepts
                     if concept.attribute.attribute_id in present_attribute_ids
                     for child in scheme.narrower(concept.identifier)
                 ]
@@ -106,7 +116,7 @@ class TopDownLLMExtractor(VocabularyLLMExtractor):
                         "Based on the output above,"
                         " the following child attributes will be prompted for:\n{}"
                     ),
-                    pretty_repr(leaves),
+                    pretty_repr(level_concepts),
                 )
                 level += 1
 

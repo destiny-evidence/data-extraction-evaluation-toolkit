@@ -4,11 +4,10 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Final, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from deet.data_models.base import GoldStandardAnnotation
 from deet.data_models.documents import GoldStandardAnnotatedDocument
-from deet.utils.tokenisation import estimate_cost_usd, merge_prompt_completion_cost_usd
 
 
 class ExtractionPipelineStage(StrEnum):
@@ -49,7 +48,7 @@ def pipeline_stage_notes() -> dict[str, str]:
 
 
 class RunMetadataNotes(BaseModel):
-    """Human-readable notes for timing fields in run metadata."""
+    """Human-readable notes for cost, token, and timing fields in run metadata."""
 
     total_pipeline_duration_seconds: str = (
         "Wall-clock time for the extraction run, from loading project data "
@@ -71,7 +70,21 @@ class RunMetadataNotes(BaseModel):
             "llm_call_seconds": (
                 "Wall-clock time for the LLM request, including local prompt setup."
             ),
+            "cached_input_tokens": (
+                "Prompt tokens served from the provider cache for this document. "
+                "Already included in input_tokens. Zero when the provider reports "
+                "no cache hit."
+            ),
         },
+    )
+    total_cached_input_tokens: str = (
+        "Sum of prompt tokens served from the provider cache across documents. "
+        "Already included in total_input_tokens."
+    )
+    total_cost_usd: str = (
+        "Sum of per-call costs reported by LiteLLM. None when no call could "
+        "be priced. Reflects prompt-cache discounts and the endpoint that "
+        "served each call."
     )
 
 
@@ -83,10 +96,11 @@ class DocumentParsingStats(BaseModel):
 
 
 class PerDocumentExtractionStats(BaseModel):
-    """Per-document tokens and timing for an extraction run."""
+    """Per-document tokens, cached prompt tokens, and timing for an extraction run."""
 
     input_tokens: int = 0
     output_tokens: int = 0
+    cached_input_tokens: int = 0
     parsing_seconds: float | None = None
     parsing_skipped: bool = True
     llm_call_seconds: float = 0.0
@@ -99,28 +113,11 @@ class DocumentExtractionResult(BaseModel):
     messages: list[dict[str, Any]]
     input_tokens: int = 0
     output_tokens: int = 0
+    cached_input_tokens: int = 0
     model: str | None = None
     total_cost_usd: float | None = None
     llm_call_seconds: float = 0.0
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
-
-    @model_validator(mode="after")
-    def compute_total_cost_usd(self) -> Self:
-        """
-        Populate ``total_cost_usd`` from tokens and model (``estimate_cost_usd``).
-
-        Skip when there is no model, or if cost has already been calculated.
-        """
-        if self.model is None or self.total_cost_usd:
-            return self
-        prompt_c, completion_c = estimate_cost_usd(
-            self.model,
-            prompt_tokens=self.input_tokens,
-            completion_tokens=self.output_tokens,
-        )
-        merged = merge_prompt_completion_cost_usd(prompt_c, completion_c)
-        self.total_cost_usd = round(merged, 6) if merged is not None else None
-        return self
 
     @classmethod
     def combine(cls, parts: list[Self]) -> Self:
@@ -130,6 +127,7 @@ class DocumentExtractionResult(BaseModel):
         models: list[str] = []
         input_tokens = 0
         output_tokens = 0
+        cached_input_tokens = 0
         llm_call_seconds = 0.0
         total_cost_usd: float | None = None
 
@@ -138,6 +136,7 @@ class DocumentExtractionResult(BaseModel):
             messages.extend(part.messages)
             input_tokens += part.input_tokens
             output_tokens += part.output_tokens
+            cached_input_tokens += part.cached_input_tokens
             llm_call_seconds += part.llm_call_seconds
             if part.model is not None and part.model not in models:
                 models.append(part.model)
@@ -149,6 +148,7 @@ class DocumentExtractionResult(BaseModel):
             messages=messages,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cached_input_tokens=cached_input_tokens,
             model=" + ".join(models) or None,
             llm_call_seconds=llm_call_seconds,
             total_cost_usd=total_cost_usd,
@@ -161,6 +161,7 @@ class ExtractionRunMetadata(BaseModel):
     model: str | None = None
     total_input_tokens: int = 0
     total_output_tokens: int = 0
+    total_cached_input_tokens: int = 0
     total_cost_usd: float | None = None
     per_document: dict[str, PerDocumentExtractionStats] = Field(default_factory=dict)
     total_pipeline_duration_seconds: float | None = None

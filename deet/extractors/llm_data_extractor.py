@@ -3,10 +3,11 @@
 import json
 from pathlib import Path
 from string import Template
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 import litellm
 from litellm.types.decisions import OpenAIDecisionResponse, OpenAIPredicateAnswer
+from litellm.types.utils import ChatCompletionMessageToolCall, ModelResponse, Usage
 from loguru import logger
 from pydantic import (
     ValidationError,
@@ -43,8 +44,21 @@ from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
     count_tokens,
     estimate_cost_usd,
+    reported_call_cost_usd,
     truncate_to_token_limit,
 )
+
+
+class LLMCallRecord(NamedTuple):
+    """Text, messages, and reported usage from one completion call."""
+
+    response_content: str
+    messages: list[dict[str, Any]]
+    output_tokens: int
+    input_tokens: int
+    total_cost_usd: float | None
+    cached_input_tokens: int
+
 
 settings = get_settings()
 
@@ -153,7 +167,8 @@ class LLMDataExtractor(BaseDataExtractor):
 
         Returns:
             DocumentExtractionResult with annotations, messages, token counts,
-            cost, model name, LLM call duration, and timestamp.
+            LiteLLM-reported cost, cached prompt tokens, model name, LLM call
+            duration, and timestamp.
 
         Raises:
             ValueError: If no attributes are selected for extraction after filtering.
@@ -249,22 +264,22 @@ class LLMDataExtractor(BaseDataExtractor):
             response_model = LLMResponseSchema
 
         with measure_elapsed() as llm_timer:
-            llm_response, messages, output_tokens, input_tokens = self._call_llm(
-                prompt=prompt, response_model=response_model
-            )
+            llm_call = self._call_llm(prompt=prompt, response_model=response_model)
 
         annotations = self._parse_llm_response(
-            response_content=llm_response,
+            response_content=llm_call.response_content,
             response_model=response_model,
             attributes=attributes,
         )
 
         return DocumentExtractionResult(
             annotations=annotations,
-            messages=messages,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
+            messages=llm_call.messages,
+            input_tokens=llm_call.input_tokens,
+            output_tokens=llm_call.output_tokens,
+            cached_input_tokens=llm_call.cached_input_tokens,
             model=self.model,
+            total_cost_usd=llm_call.total_cost_usd,
             llm_call_seconds=llm_timer.seconds,
         )
 
@@ -589,7 +604,7 @@ class LLMDataExtractor(BaseDataExtractor):
         self,
         prompt: str,
         response_model: type[BaseLLMResponse],
-    ) -> tuple[str, list[dict[str, Any]], int, int]:
+    ) -> LLMCallRecord:
         """
         Call the LLM with the given prompt.
 
@@ -600,8 +615,9 @@ class LLMDataExtractor(BaseDataExtractor):
                 schema so the LLM must return one typed entry per attribute.
 
         Returns:
-            Tuple of (LLM response text, messages list, output token count,
-            input/prompt token count from the response usage).
+            Response text, messages, token counts, LiteLLM-reported cost, and
+            cached prompt tokens. Cost is None when LiteLLM cannot price the
+            call. The pre-call log line remains an estimate and ignores cache.
 
         """
         system_prompt = self.config.prompt_config.system_prompt
@@ -626,7 +642,8 @@ class LLMDataExtractor(BaseDataExtractor):
         )
         if prompt_cost is not None:
             logger.info(
-                f"Estimated input cost: ${prompt_cost:.6f} USD ({input_tokens} tokens)"
+                "Estimated input cost before the call (ignores prompt cache): "
+                f"${prompt_cost:.6f} USD ({input_tokens} tokens)"
             )
 
         completion_kwargs = {
@@ -657,25 +674,43 @@ class LLMDataExtractor(BaseDataExtractor):
         if self.config.provider == LLMProvider.OLLAMA:
             completion_kwargs["num_ctx"] = self.config.max_context_tokens
 
-        response = litellm.completion(**completion_kwargs)
+        response = cast("ModelResponse", litellm.completion(**completion_kwargs))
 
         msg = response.choices[0].message
 
-        if getattr(msg, "content", None) is not None:
+        if msg.content is not None:
             response_content = msg.content
-        elif getattr(msg, "tool_calls", None):
-            response_content = msg.tool_calls[0].function.arguments
+        elif msg.tool_calls:
+            call = msg.tool_calls[0]
+            if not isinstance(call, ChatCompletionMessageToolCall):
+                error = "LiteLLM returned an unsupported tool call type"
+                raise ValueError(error)
+            response_content = call.function.arguments
+        else:
+            error = "LiteLLM returned neither message content nor tool calls"
+            raise ValueError(error)
         logger.debug(f"raw response: {response_content}")
 
         input_tokens = 0
         output_tokens = 0
-        if response.usage is not None:
-            if hasattr(response.usage, "prompt_tokens"):
-                input_tokens = response.usage.prompt_tokens or 0
-            if hasattr(response.usage, "completion_tokens"):
-                output_tokens = response.usage.completion_tokens or 0
+        cached_input_tokens = 0
+        # Litellm declares Usage at runtime, so we need to cast this to a Usage object
+        usage = cast("Usage | None", getattr(response, "usage", None))
+        if usage is not None:
+            input_tokens = usage.prompt_tokens or 0
+            output_tokens = usage.completion_tokens or 0
+            details = usage.prompt_tokens_details
+            if details is not None:
+                cached_input_tokens = details.cached_tokens or 0
 
-        return response_content, messages, output_tokens, input_tokens
+        return LLMCallRecord(
+            response_content=response_content,
+            messages=messages,
+            output_tokens=output_tokens,
+            input_tokens=input_tokens,
+            total_cost_usd=reported_call_cost_usd(response),
+            cached_input_tokens=cached_input_tokens,
+        )
 
     def _create_gold_standard_annotation(
         self, llm_annotation_response: LLMAnnotationResponse, attribute: Attribute

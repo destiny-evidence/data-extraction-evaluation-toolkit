@@ -1,7 +1,6 @@
 """Tests for LLM extraction output data models."""
 
 from collections.abc import Sequence
-from unittest.mock import MagicMock, patch
 
 import pytest
 from destiny_sdk.references import ReferenceFileInput
@@ -76,37 +75,28 @@ def test_document_extraction_result_defaults() -> None:
     assert result.messages == []
     assert result.input_tokens == 0
     assert result.output_tokens == 0
+    assert result.cached_input_tokens == 0
     assert result.model is None
     assert result.total_cost_usd is None
 
 
-@patch("deet.data_models.extraction.estimate_cost_usd")
-def test_document_extraction_result_computes_total_cost_usd(
-    mock_estimate: MagicMock,
-) -> None:
-    """total_cost_usd merges prompt and completion parts from estimate_cost_usd."""
-    mock_estimate.return_value = (0.001, 0.002)
+def test_document_extraction_result_stores_reported_cost() -> None:
+    """total_cost_usd is the caller-supplied reported cost, not a re-estimate."""
     result = DocumentExtractionResult(
         annotations=[_sample_annotation()],
         messages=[{"role": "user", "content": "x"}],
         model="gpt-5.6-luna",
         input_tokens=10,
         output_tokens=5,
+        cached_input_tokens=4,
+        total_cost_usd=0.0015,
     )
-    mock_estimate.assert_called_once_with(
-        "gpt-5.6-luna",
-        prompt_tokens=10,
-        completion_tokens=5,
-    )
-    assert result.total_cost_usd == pytest.approx(0.003)
+    assert result.total_cost_usd == pytest.approx(0.0015)
+    assert result.cached_input_tokens == 4
 
 
-@patch("deet.data_models.extraction.estimate_cost_usd")
-def test_document_extraction_result_cost_none_when_estimate_unknown(
-    mock_estimate: MagicMock,
-) -> None:
-    """When litellm cannot price either side, total_cost_usd stays None."""
-    mock_estimate.return_value = (None, None)
+def test_document_extraction_result_cost_stays_none_without_reported_cost() -> None:
+    """A model and token counts do not invent a cost when none was reported."""
     result = DocumentExtractionResult(
         annotations=[],
         messages=[],
@@ -115,22 +105,7 @@ def test_document_extraction_result_cost_none_when_estimate_unknown(
         output_tokens=1,
     )
     assert result.total_cost_usd is None
-
-
-@patch("deet.data_models.extraction.estimate_cost_usd")
-def test_document_extraction_result_cost_partial_prompt_only(
-    mock_estimate: MagicMock,
-) -> None:
-    """Only prompt cost present is used as total."""
-    mock_estimate.return_value = (0.01, None)
-    result = DocumentExtractionResult(
-        annotations=[],
-        messages=[],
-        model="m",
-        input_tokens=1,
-        output_tokens=0,
-    )
-    assert result.total_cost_usd == pytest.approx(0.01)
+    assert result.cached_input_tokens == 0
 
 
 class TestDocumentExtractionResultCombine:
@@ -144,7 +119,9 @@ class TestDocumentExtractionResultCombine:
         messages: Sequence[dict] = (),
         input_tokens: int = 0,
         output_tokens: int = 0,
+        cached_input_tokens: int = 0,
         llm_call_seconds: float = 0.0,
+        total_cost_usd: float | None = None,
     ) -> DocumentExtractionResult:
         """Build one per-call result for combine tests."""
         return DocumentExtractionResult(
@@ -153,7 +130,9 @@ class TestDocumentExtractionResultCombine:
             model=model,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cached_input_tokens=cached_input_tokens,
             llm_call_seconds=llm_call_seconds,
+            total_cost_usd=total_cost_usd,
         )
 
     def test_empty_parts_yields_empty_result(self) -> None:
@@ -201,12 +180,23 @@ class TestDocumentExtractionResultCombine:
         assert combined.messages == first.messages + second.messages
 
     def test_tokens_and_seconds_sum(self) -> None:
-        """Token counts and call durations add across parts."""
-        first = self._make_part(input_tokens=10, output_tokens=3, llm_call_seconds=1.0)
-        second = self._make_part(input_tokens=7, output_tokens=2, llm_call_seconds=0.5)
+        """Token counts, cached tokens, and call durations add across parts."""
+        first = self._make_part(
+            input_tokens=10,
+            output_tokens=3,
+            cached_input_tokens=4,
+            llm_call_seconds=1.0,
+        )
+        second = self._make_part(
+            input_tokens=7,
+            output_tokens=2,
+            cached_input_tokens=2,
+            llm_call_seconds=0.5,
+        )
         combined = DocumentExtractionResult.combine([first, second])
         assert combined.input_tokens == 17
         assert combined.output_tokens == 5
+        assert combined.cached_input_tokens == 6
         assert combined.llm_call_seconds == pytest.approx(1.5)
 
     def test_same_model_dedupes(self) -> None:
@@ -234,19 +224,16 @@ class TestDocumentExtractionResultCombine:
         )
         assert combined.model is None
 
-    @patch("deet.data_models.extraction.estimate_cost_usd")
-    def test_combined_cost_is_never_re_estimated(
-        self, mock_estimate: MagicMock
-    ) -> None:
-        """Estimation runs once per part, zero times on the combined result."""
-        mock_estimate.return_value = (0.001, 0.002)
-        parts = [
-            self._make_part(model="model-a", input_tokens=10, output_tokens=5),
-            self._make_part(model="model-a", input_tokens=10, output_tokens=5),
-        ]
-        combined = DocumentExtractionResult.combine(parts)
-        assert mock_estimate.call_count == 2
-        assert combined.total_cost_usd == pytest.approx(0.006)
+    def test_reported_costs_sum_and_unpriced_parts_are_skipped(self) -> None:
+        """Reported costs add across parts; parts without a cost contribute nothing."""
+        combined = DocumentExtractionResult.combine(
+            [
+                self._make_part(model="model-a", total_cost_usd=0.002),
+                self._make_part(model="model-a", total_cost_usd=None),
+                self._make_part(model="model-a", total_cost_usd=0.001),
+            ]
+        )
+        assert combined.total_cost_usd == pytest.approx(0.003)
 
     def test_cost_none_when_all_parts_unknown(self) -> None:
         """Parts without a cost combine to no cost."""
@@ -262,8 +249,11 @@ def test_extraction_run_metadata_defaults() -> None:
     assert meta.model is None
     assert meta.total_input_tokens == 0
     assert meta.total_output_tokens == 0
+    assert meta.total_cached_input_tokens == 0
     assert meta.total_cost_usd is None
     assert meta.per_document == {}
+    assert "cache" in meta.notes.total_cached_input_tokens.lower()
+    assert "cached_input_tokens" in meta.notes.per_document
 
 
 def test_extraction_run_metadata_explicit_fields() -> None:
@@ -272,16 +262,23 @@ def test_extraction_run_metadata_explicit_fields() -> None:
         model="gpt-5.6-luna",
         total_input_tokens=100,
         total_output_tokens=50,
+        total_cached_input_tokens=40,
         total_cost_usd=0.05,
         per_document={
-            "1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+            "1": PerDocumentExtractionStats(
+                input_tokens=100,
+                output_tokens=50,
+                cached_input_tokens=40,
+            ),
         },
     )
     assert meta.model == "gpt-5.6-luna"
     assert meta.total_input_tokens == 100
     assert meta.total_output_tokens == 50
+    assert meta.total_cached_input_tokens == 40
     assert meta.total_cost_usd == pytest.approx(0.05)
     assert meta.per_document["1"].input_tokens == 100
+    assert meta.per_document["1"].cached_input_tokens == 40
 
 
 def test_extraction_run_output_round_trip() -> None:

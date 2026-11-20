@@ -134,9 +134,14 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
         model="gpt-5.6-luna",
         total_input_tokens=100,
         total_output_tokens=50,
+        total_cached_input_tokens=40,
         total_cost_usd=0.0123,
         per_document={
-            "doc-1": PerDocumentExtractionStats(input_tokens=100, output_tokens=50),
+            "doc-1": PerDocumentExtractionStats(
+                input_tokens=100,
+                output_tokens=50,
+                cached_input_tokens=40,
+            ),
         },
     )
     run_output = ExtractionRunOutput(annotated_documents=[], metadata=run_metadata)
@@ -170,7 +175,9 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert written["model"] == "gpt-5.6-luna"
     assert written["total_input_tokens"] == 100
     assert written["total_output_tokens"] == 50
+    assert written["total_cached_input_tokens"] == 40
     assert written["total_cost_usd"] == 0.0123
+    assert written["per_document"]["doc-1"]["cached_input_tokens"] == 40
 
 
 def test_run_extraction_pipeline_fails_when_project_has_no_documents(tmp_path, config):

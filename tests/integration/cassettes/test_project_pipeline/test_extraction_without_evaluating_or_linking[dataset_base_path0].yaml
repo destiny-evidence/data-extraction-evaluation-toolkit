@@ -28,30 +28,29 @@ interactions:
       most direct citation\n- If the document does not contain sufficient information
       to answer the question:\n     explain in Reasoning why the information is missing\n     leave
       Additional_text blank\n\nOutput Format:\n-Provide one response per question,
-      preserving the original question order\n-Return results in json format\n\nInput
-      JSON:\n{input_json}\n"},{"role":"user","content":"{\"context\": \"The anesthetic
-      and recovery profile of two doses ( 60 and 80 mg ) of plain mepivacaine for
-      ambulatory spinal anesthesia . UNLABELLED Reports of transient neurological
-      symptoms with the use of subarachnoid lidocaine has generated interest in alternate
-      local anesthetics of intermediate duration , such as mepivacaine . This prospective
-      randomized , double-blinded , dose-response study examined the anesthetic and
-      recovery profiles of 60- and 80-mg doses of preservative-free plain mepivacaine
-      for ambulatory spinal anesthesia . Sixty patients undergoing ambulatory anterior
-      cruciate ligament repair of the knee under spinal anesthesia were randomized
-      into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5 % ( 60-mg dose
-      ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose ) of plain mepivacaine
-      . All patients received a combined spinal-epidural anesthetic technique . The
-      epidural catheter was used only in the event the surgery outlasted the duration
-      of surgical anesthesia with subarachnoid mepivacaine . Epidural supplementation
-      was administered in three patients ( 12 % ) in Group 1 and one patient ( 3 %
-      ) in Group 2 when the sensory block regressed to L-1 with surgery expected to
-      last longer than 15 min . The cephalad dermatome level of the block and degree
-      of motor block was comparable in the two groups . Times to two-segment and T-10
-      regression were comparable in the two groups ( 112 +/- 26 min in Group 1 versus
-      122 +/- 28 min in Group 2 ) . Time to L-1 regression was significantly longer
-      in Group 2 ( 146 +/- 28 min in Group 1 versus 159 +/- 19 min in Group 2 ) .
-      All of the ambulatory milestones were significantly faster in Group 1 . Side
-      effects , such as hypotension and emesis were negligible , severe bradycardia
+      preserving the original question order\n-Return results in json format\n"},{"role":"user","content":"{\"context\":
+      \"The anesthetic and recovery profile of two doses ( 60 and 80 mg ) of plain
+      mepivacaine for ambulatory spinal anesthesia . UNLABELLED Reports of transient
+      neurological symptoms with the use of subarachnoid lidocaine has generated interest
+      in alternate local anesthetics of intermediate duration , such as mepivacaine
+      . This prospective randomized , double-blinded , dose-response study examined
+      the anesthetic and recovery profiles of 60- and 80-mg doses of preservative-free
+      plain mepivacaine for ambulatory spinal anesthesia . Sixty patients undergoing
+      ambulatory anterior cruciate ligament repair of the knee under spinal anesthesia
+      were randomized into two groups ; Group 1 ( 29 patients ) received 4 mL of 1.5
+      % ( 60-mg dose ) and Group 2 ( 31 patients ) received 4 mL of 2 % ( 80-mg dose
+      ) of plain mepivacaine . All patients received a combined spinal-epidural anesthetic
+      technique . The epidural catheter was used only in the event the surgery outlasted
+      the duration of surgical anesthesia with subarachnoid mepivacaine . Epidural
+      supplementation was administered in three patients ( 12 % ) in Group 1 and one
+      patient ( 3 % ) in Group 2 when the sensory block regressed to L-1 with surgery
+      expected to last longer than 15 min . The cephalad dermatome level of the block
+      and degree of motor block was comparable in the two groups . Times to two-segment
+      and T-10 regression were comparable in the two groups ( 112 +/- 26 min in Group
+      1 versus 122 +/- 28 min in Group 2 ) . Time to L-1 regression was significantly
+      longer in Group 2 ( 146 +/- 28 min in Group 1 versus 159 +/- 19 min in Group
+      2 ) . All of the ambulatory milestones were significantly faster in Group 1
+      . Side effects , such as hypotension and emesis were negligible , severe bradycardia
       and urinary retention did not occur , and none of the patients in the two groups
       reported transient neurological symptoms over 24 h. In conclusion , plain mepivacaine
       in a 60- or 80-mg dose is a suitable local anesthetic choice for ambulatory
@@ -75,91 +74,92 @@ interactions:
       brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
       the source context and if applicable, divide extracted text snippets with double
       semicolon (;;). Do not extract any text if participant information is not reported.\",
-      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-4o-mini","response_format":{"type":"json_schema","json_schema":{"name":"llm_annotation_response","schema":{"$defs":{"LLMSTRINGAnnotationResponse":{"additionalProperties":false,"properties":{"output_data":{"description":"The
+      \"attribute_id\": 5, \"output_data_type\": \"string\"}]}"}],"model":"gpt-5.6-luna","response_format":{"type":"json_schema","json_schema":{"name":"llm_annotation_response","schema":{"$defs":{"LLMSTRINGAnnotationResponse":{"additionalProperties":false,"properties":{"output_data":{"description":"The
       LLM''s annotation for this attribute.","title":"Output Data","type":"string"},"additional_text":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Supporting
       text from document containing the context window where the attribute is found","title":"Additional
       Text"},"reasoning":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Reasoning
-      or explanation for the annotation decision","title":"Reasoning"}},"required":["output_data","additional_text","reasoning"],"title":"LLMSTRINGAnnotationResponse","type":"object"}},"additionalProperties":false,"properties":{"attribute_1":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse"},"attribute_5":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse"}},"required":["attribute_1","attribute_5"],"title":"DynamicLLMResponse","type":"object"},"strict":true}},"temperature":0.1}'
+      or explanation for the annotation decision","title":"Reasoning"}},"required":["output_data","additional_text","reasoning"],"title":"LLMSTRINGAnnotationResponse","type":"object"}},"additionalProperties":false,"properties":{"attribute_1":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse"},"attribute_5":{"$ref":"#/$defs/LLMSTRINGAnnotationResponse"}},"required":["attribute_1","attribute_5"],"title":"DynamicLLMResponse","type":"object"},"strict":true}},"temperature":1.0}'
     headers:
-      Accept:
+      accept:
       - application/json
-      Accept-Encoding:
+      accept-encoding:
       - gzip, deflate
-      Connection:
+      connection:
       - keep-alive
-      Content-Length:
-      - '7112'
-      Content-Type:
+      content-length:
+      - '7084'
+      content-type:
       - application/json
-      Host:
+      host:
       - DUMMY_SECRET
-      User-Agent:
-      - AzureOpenAI/Python 1.109.1
-      X-Stainless-Arch:
+      user-agent:
+      - AzureOpenAI/Python 2.54.0
+      x-stainless-arch:
       - x64
-      X-Stainless-Async:
+      x-stainless-async:
       - 'false'
-      X-Stainless-Lang:
+      x-stainless-lang:
       - python
-      X-Stainless-OS:
+      x-stainless-os:
       - Linux
-      X-Stainless-Package-Version:
-      - 1.109.1
-      X-Stainless-Raw-Response:
+      x-stainless-package-version:
+      - 2.54.0
+      x-stainless-raw-response:
       - 'true'
-      X-Stainless-Runtime:
-      - CPython
-      X-Stainless-Runtime-Version:
-      - 3.12.11
       x-stainless-read-timeout:
       - '600.0'
       x-stainless-retry-count:
       - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.12.16
     method: POST
     uri: https://dummy.secret/
   response:
     body:
       string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":"{\"attribute_1\":{\"output_data\":\"Sixty
-        patients;; Group 1 ( 29 patients );; Group 2 ( 31 patients );; ambulatory
-        anterior cruciate ligament repair of the knee\",\"additional_text\":\"Sixty
-        patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
+        patients undergoing ambulatory anterior cruciate ligament repair of the knee;;Group
+        1 ( 29 patients );;Group 2 ( 31 patients )\",\"additional_text\":\"Sixty patients
+        undergoing ambulatory anterior cruciate ligament repair of the knee under
+        spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
         ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received
-        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The answer
-        was derived from the context where the total number of participants and their
-        grouping is explicitly mentioned. The specific condition they were undergoing
-        surgery for is also included.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":\"\",\"reasoning\":\"The
-        document does not provide any specific information regarding the age of the
-        study participants.\"}}","refusal":null,"role":"assistant"}}],"created":1785424075,"id":"chatcmpl-E7MeRgTKQf2fTTKoXpLkQbkO2JWKQ","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":194,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":30,"engine_ttlt_ms":1835,"pre_inference_ms":123,"service_tbt_ms":9,"service_ttft_ms":290,"service_ttlt_ms":2049,"total_duration_ms":1934,"user_visible_ttft_ms":167},"prompt_tokens":1435,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1408},"total_tokens":1629}}
+        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The participant
+        information reported in the context includes the total sample size, the condition/procedure
+        for which participants were undergoing anesthesia, and the numbers assigned
+        to each study group. Sex and age are not reported.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":\"\",\"reasoning\":\"The
+        source context does not report the age of the study participants.\"}}","refusal":null,"role":"assistant"}}],"created":1795165718,"id":"chatcmpl-EmEtisQ0brjxaRDta1473yzECmkKw","model":"gpt-5.6-luna-2026-07-09","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"routing":{"serving_pipereplica":"d20261114101034-7dfcb1a8-prefill-r1-dp0-prefill"},"service_tier":"default","system_fingerprint":null,"usage":{"completion_tokens":324,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":111,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":5,"engine_ttft_ms":84,"engine_ttlt_ms":1856,"pre_inference_ms":123,"service_tbt_ms":5,"service_ttft_ms":861,"service_ttlt_ms":2333,"user_visible_ttft_ms":738},"prompt_tokens":1424,"prompt_tokens_details":{"audio_tokens":0,"cache_write_tokens":0,"cached_tokens":1421},"total_tokens":1748}}
 
         '
     headers:
-      Content-Length:
-      - '2342'
-      Content-Type:
-      - application/json
-      Date:
-      - Thu, 30 Jul 2026 15:07:57 GMT
-      Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - e8192a37-5574-4beb-84db-2f4fcf2810ff
+      - 2d8ed7e4-7a26-4ede-b80a-60a7a8f827eb
       azureai-fe-is-streaming:
       - 'False'
-      azureai-fe-requested-service-tier:
-      - PayGo
-      azureai-fe-requested-zone:
-      - default
+      azureai-fe-offer-type:
+      - paygo
       azureml-model-session:
-      - d20260721024335-41ad77c6
+      - d20261114101034-7dfcb1a8
+      content-length:
+      - '2431'
+      content-type:
+      - application/json
+      date:
+      - Fri, 20 Nov 2026 09:08:37 GMT
+      server:
+      - istio-envoy
       skip-error-remapping:
       - 'true'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      vary:
+      - Origin
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
+      x-http2-stream-id:
+      - '951'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -167,19 +167,19 @@ interactions:
       x-ms-region:
       - Sweden Central
       x-ms-served-model:
-      - gpt-4o-mini-2024-07-18
+      - gpt-5.6-luna-2026-07-09
       x-ratelimit-abusepenalty-active:
       - 'False'
       x-ratelimit-key:
-      - gpt-4o-mini
+      - gpt-5.6-luna
       x-ratelimit-limit-requests:
-      - '13900'
+      - '505'
       x-ratelimit-limit-tokens:
-      - '1390000'
+      - '505000'
       x-ratelimit-remaining-requests:
-      - '13899'
+      - '504'
       x-ratelimit-remaining-tokens:
-      - '1388565'
+      - '503576'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -189,7 +189,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - e8192a37-5574-4beb-84db-2f4fcf2810ff
+      - debbe384-cf55-4990-9a84-ee483abe4aaa
     status:
       code: 200
       message: OK
@@ -223,8 +223,8 @@ interactions:
       to answer the question:\\n     explain in Reasoning why the information is missing\\n
       \    leave Additional_text blank\\n\\nOutput Format:\\n-Provide one response
       per question, preserving the original question order\\n-Return results in json
-      format\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
-      \\\"Acute effects of static active or dynamic active stretching on eccentric-exercise-induced
+      format\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\": \\\"Acute effects
+      of static active or dynamic active stretching on eccentric-exercise-induced
       hamstring muscle damage . OBJECTIVES To examine whether an acute bout of active
       or dynamic hamstring-stretching exercises would reduce the amount of muscle
       damage observed after a strenuous eccentric task and to determine whether the
@@ -259,92 +259,87 @@ interactions:
       brief snippets of text or phrases. Extract text EXACTLY as it is mentioned in
       the source context and if applicable, divide extracted text snippets with double
       semicolon (;;). Do not extract any text if participant information is not reported.\\\",
-      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"llm_annotation_response\",\"schema\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
+      \\\"attribute_id\\\": 5, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-5.6-luna\",\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"llm_annotation_response\",\"schema\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
       LLM's annotation for this attribute.\",\"title\":\"Output Data\",\"type\":\"string\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
       text from document containing the context window where the attribute is found\",\"title\":\"Additional
       Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
-      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_1\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"}},\"required\":[\"attribute_1\",\"attribute_5\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":0.1}"
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_1\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"}},\"required\":[\"attribute_1\",\"attribute_5\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":1.0}"
     headers:
-      Accept:
+      accept:
       - application/json
-      Accept-Encoding:
+      accept-encoding:
       - gzip, deflate
-      Connection:
+      connection:
       - keep-alive
-      Content-Length:
-      - '6284'
-      Content-Type:
+      content-length:
+      - '6256'
+      content-type:
       - application/json
-      Host:
+      host:
       - DUMMY_SECRET
-      User-Agent:
-      - AzureOpenAI/Python 1.109.1
-      X-Stainless-Arch:
+      user-agent:
+      - AzureOpenAI/Python 2.54.0
+      x-stainless-arch:
       - x64
-      X-Stainless-Async:
+      x-stainless-async:
       - 'false'
-      X-Stainless-Lang:
+      x-stainless-lang:
       - python
-      X-Stainless-OS:
+      x-stainless-os:
       - Linux
-      X-Stainless-Package-Version:
-      - 1.109.1
-      X-Stainless-Raw-Response:
+      x-stainless-package-version:
+      - 2.54.0
+      x-stainless-raw-response:
       - 'true'
-      X-Stainless-Runtime:
-      - CPython
-      X-Stainless-Runtime-Version:
-      - 3.12.11
       x-stainless-read-timeout:
       - '600.0'
       x-stainless-retry-count:
       - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.12.16
     method: POST
     uri: https://dummy.secret/
   response:
     body:
-      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":"{\"attribute_1\":{\"output_data\":\"Thirty-six
-        young male students\",\"additional_text\":\"Thirty-six young male students
-        performed 5 min of jogging as a warm-up and were allocated to 1 of 3 groups
-        : 3 min of static active stretching ( SAS ) , 3 min of dynamic active stretching
-        ( DAS ) , or control ( CON ) .\",\"reasoning\":\"The answer was derived from
-        the context where the study participants are described as ''Thirty-six young
-        male students''. This phrase includes the sample size, sex, and age descriptor
-        (young). There are no diseases or conditions mentioned in the context.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"Thirty-six
-        young male students performed 5 min of jogging as a warm-up and were allocated
-        to 1 of 3 groups : 3 min of static active stretching ( SAS ) , 3 min of dynamic
-        active stretching ( DAS ) , or control ( CON ) .\",\"reasoning\":\"The age
-        of the study participants is described as ''young'', which is the only specific
-        age descriptor provided in the context.\"}}","refusal":null,"role":"assistant"}}],"created":1785424078,"id":"chatcmpl-E7MeUcYvBUGtIwTmnYFqwTTOPtpeO","model":"gpt-4o-mini-2024-07-18","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"service_tier":"default","system_fingerprint":"fp_27599ce29d","usage":{"completion_tokens":219,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":9,"engine_ttft_ms":31,"engine_ttlt_ms":2094,"pre_inference_ms":119,"service_tbt_ms":9,"service_ttft_ms":238,"service_ttlt_ms":2297,"total_duration_ms":2188,"user_visible_ttft_ms":119},"prompt_tokens":1208,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":1152},"total_tokens":1427}}
-
-        '
+      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_1\\\":{\\\"output_data\\\":\\\"Thirty-six
+        young male students;;eccentric-exercise-induced hamstring muscle damage\\\",\\\"additional_text\\\":\\\"Thirty-six
+        young male students performed 5 min of jogging as a warm-up\\\",\\\"reasoning\\\":\\\"The
+        participant description reports a sample of 36 young male students. The study
+        context also identifies the experimentally induced condition as eccentric-exercise-induced
+        hamstring muscle damage.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"young\\\",\\\"additional_text\\\":\\\"Thirty-six
+        young male students\\\",\\\"reasoning\\\":\\\"The participants' age is described
+        only as \u201Cyoung\u201D; no specific numerical age is reported.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795165721,\"id\":\"chatcmpl-EmEtlmfsIfAvg4BaoC7NMqJPvaf81\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r8-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":370,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":236,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":6,\"engine_ttft_ms\":66,\"engine_ttlt_ms\":2321,\"pre_inference_ms\":92,\"service_tbt_ms\":6,\"service_ttft_ms\":792,\"service_ttlt_ms\":3035,\"user_visible_ttft_ms\":701},\"prompt_tokens\":1197,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":1194},\"total_tokens\":1567}}\n"
     headers:
-      Content-Length:
-      - '2481'
-      Content-Type:
-      - application/json
-      Date:
-      - Thu, 30 Jul 2026 15:07:59 GMT
-      Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - c8a8fcf7-2ecb-426b-a885-a5fe6e28ea44
+      - 3226c249-2bfc-4645-89a1-37d7ff1e2530
       azureai-fe-is-streaming:
       - 'False'
-      azureai-fe-requested-service-tier:
-      - PayGo
-      azureai-fe-requested-zone:
-      - default
+      azureai-fe-offer-type:
+      - paygo
       azureml-model-session:
-      - d20260721024335-41ad77c6
+      - d20261114101034-7dfcb1a8
+      content-length:
+      - '2184'
+      content-type:
+      - application/json
+      date:
+      - Fri, 20 Nov 2026 09:08:41 GMT
+      server:
+      - istio-envoy
       skip-error-remapping:
       - 'true'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      vary:
+      - Origin
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
+      x-http2-stream-id:
+      - '761'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -352,19 +347,19 @@ interactions:
       x-ms-region:
       - Sweden Central
       x-ms-served-model:
-      - gpt-4o-mini-2024-07-18
+      - gpt-5.6-luna-2026-07-09
       x-ratelimit-abusepenalty-active:
       - 'False'
       x-ratelimit-key:
-      - gpt-4o-mini
+      - gpt-5.6-luna
       x-ratelimit-limit-requests:
-      - '13900'
+      - '505'
       x-ratelimit-limit-tokens:
-      - '1390000'
+      - '505000'
       x-ratelimit-remaining-requests:
-      - '13899'
+      - '504'
       x-ratelimit-remaining-tokens:
-      - '1388792'
+      - '503803'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -374,7 +369,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - c8a8fcf7-2ecb-426b-a885-a5fe6e28ea44
+      - 67920753-7571-47c1-93cc-338429009b1a
     status:
       code: 200
       message: OK

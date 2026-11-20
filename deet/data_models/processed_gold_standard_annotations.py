@@ -457,7 +457,7 @@ class ProcessedAnnotationData[
             if adoc.document.safe_identity.document_id in target_set
         ]
         doc_count = len(self.documents)
-        logger.info(f"Filtered from {initial_doc_count}" f" to {doc_count}")
+        logger.info(f"Filtered from {initial_doc_count} to {doc_count}")
 
 
 class ProcessedEppiAnnotationData(
