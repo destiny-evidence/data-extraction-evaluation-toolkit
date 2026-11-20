@@ -8,7 +8,7 @@ from typing import Annotated
 
 import typer
 
-from deet.logger import logger
+from deet.logger import configure_logging, logger
 from deet.scripts.commands import experiments, project
 from deet.scripts.commands.deprecated import (
     export_config_template_legacy,
@@ -67,6 +67,7 @@ def global_options(
     """Set global options for all deet commands."""
     from deet.data_models.project import DeetProject
 
+    configure_logging()
     log_level = "DEBUG" if verbose else "INFO"
     logger.add(
         typer.echo,
