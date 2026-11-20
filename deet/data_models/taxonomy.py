@@ -1,12 +1,19 @@
 """
-Data models for consuming hierarchical vocabularies.
+Data models for consuming hierarchical vocabularies that use the [SKOS](https://www.w3.org/TR/skos-reference/)
+(Simple Knowledge Organization System) format.
+
+For more information on and definitions of vocabularies, taxonomies, and concepts,
+see `docs/concepts/vocabulary.md`.
 
 These models are loosely based on [`destiny-evidence/taxonomy-builder`](https://github.com/destiny-evidence/taxonomy-builder)
 
-implementing only those methods required for the initial case (see integration tests)
-of a nested set of concepts in concept schemes.
+They implement only those methods required for the initial case (see integration tests)
+of classifiying documents according to a nested set of boolean concepts
+in concept schemes.
 
-TODO: Extend to cover classes and properties.
+TODO: Extend to cover classes and properties, which can encode richer information about
+how taxonomies should be applied (such as whether groups of concepts are mandatory,
+or if multiple concepts can be selected).
 """
 
 from collections.abc import Sequence
@@ -37,7 +44,20 @@ class ConceptPromptField(StrEnum):
 
 
 class Concept(BaseModel):
-    """A single SKOS concept within a scheme."""
+    """
+    A single SKOS concept within a scheme.
+
+    Most fields mirror a SKOS property of the concept node in the source
+    vocabulary file (SKOS reference: https://www.w3.org/TR/skos-reference/),
+    or are conventions of the taxonomy-builder, which is vendored from
+    destiny-evidence/taxonomy-builder, e.g.:
+
+    - uri: the concept node's URI in the source file
+    - identifier: the local name of that URI, after the last '#' or '/',
+    used as the key in ConceptScheme.concepts and as concept_id in
+    mapping files
+    - type_uris: rdf:type assertions on the concept beyond skos:Concept
+    """
 
     model_config = ConfigDict(extra="ignore")
 
@@ -96,12 +116,12 @@ class Concept(BaseModel):
             attribute_label=self.pref_label,
         )
 
-    def build_prompt(self, fields: list[str]) -> str:
+    def build_prompt(self, fields: list[str], delimiter: str = "; ") -> str:
         """
         Concatenate the given concept fields into a single prompt string.
 
         If a list prompt field is selected,
-        return this as a semi-colon concatenated string.
+        return this as a `delimiter` concatenated string.
         """
         parts: list[str] = []
         for field in fields:
@@ -109,7 +129,7 @@ class Concept(BaseModel):
             if value is None:
                 continue
             if isinstance(value, list | tuple):
-                joined = "; ".join(value)
+                joined = delimiter.join(value)
                 if joined.strip():
                     parts.append(joined)
             elif str(value).strip():
@@ -121,8 +141,7 @@ class Concept(BaseModel):
             if self.pref_label and self.pref_label.strip():
                 return self.pref_label
             empty = (
-                f"No prompt text for concept {self.identifier}"
-                f" from fields: {fields}"
+                f"No prompt text for concept {self.identifier} from fields: {fields}"
             )
             raise ValueError(empty)
         return "\n ".join(parts)
@@ -157,8 +176,9 @@ class ConceptScheme[C: Concept](BaseModel):
     title: str = Field(description="Vocabulary title.")
     description: str | None = Field(default=None, description="Vocabulary description.")
     uri: str = Field(description="SKOS ConceptScheme URI.")
-    top_concepts: list[str] = Field(
-        default_factory=list, description="concept uris of root concepts (no broader)."
+    root_concepts: list[str] = Field(
+        default_factory=list,
+        description=("concept uris of root concepts (concepts with no parents)."),
     )
     concepts: dict[str, C] = Field(
         default_factory=dict, description="Concepts keyed by uri."
@@ -171,7 +191,7 @@ class ConceptScheme[C: Concept](BaseModel):
     @property
     def roots(self) -> list[C]:
         """Return the concepts at the root of the scheme."""
-        return [c for uid in self.top_concepts if (c := self.get_concept(uid))]
+        return [c for uid in self.root_concepts if (c := self.get_concept(uid))]
 
     def _narrower_index(self) -> dict[str, list[str]]:
         """Build the inverse of ``broader``: parent id -> ordered child ids."""
@@ -201,7 +221,7 @@ class ConceptScheme[C: Concept](BaseModel):
         return ConceptScheme(
             uri=str(scheme_uri),
             title=get_scheme_title(g, scheme_uri),
-            top_concepts=top,
+            root_concepts=top,
             concepts=concepts,
         )
 
@@ -245,7 +265,7 @@ class ConceptScheme[C: Concept](BaseModel):
             title=self.title,
             description=self.description,
             uri=self.uri,
-            top_concepts=[c.identifier for c in mapped_concepts if not c.broader],
+            root_concepts=[c.identifier for c in mapped_concepts if not c.broader],
             concepts={c.identifier: c for c in mapped_concepts},
         )
 
