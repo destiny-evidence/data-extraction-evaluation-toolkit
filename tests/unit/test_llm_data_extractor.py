@@ -233,6 +233,25 @@ def test_llm_extractor_init_custom_prompt(
     assert extractor.config.prompt_config.system_prompt == "This is a custom prompt."
 
 
+def test_settings_resolved_at_construction_only_when_not_injected(
+    default_config, mock_settings
+):
+    """get_settings() is called by __init__ when settings is None, never otherwise."""
+    with (
+        patch(
+            "deet.extractors.llm_data_extractor.get_settings",
+            return_value=mock_settings,
+        ) as mock_get_settings,
+        patch("pathlib.Path.read_text", return_value="Default system prompt"),
+    ):
+        LLMDataExtractor(config=default_config)
+        mock_get_settings.assert_called_once()
+
+        mock_get_settings.reset_mock()
+        LLMDataExtractor(config=default_config, settings=mock_settings)
+        mock_get_settings.assert_not_called()
+
+
 def test_filter_attributes(llm_extractor, sample_eppi_attributes):
     """Test the _filter_attributes method."""
     filter_ids = [1234]

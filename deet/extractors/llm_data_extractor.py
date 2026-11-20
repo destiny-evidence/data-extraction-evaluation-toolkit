@@ -30,11 +30,7 @@ from deet.data_models.extraction import (
     DocumentExtractionResult,
 )
 from deet.extractors.base_extractor import BaseDataExtractor, DataExtractionConfig
-from deet.settings import (
-    DataExtractionSettings,
-    LLMProvider,
-    get_settings,
-)
+from deet.settings import DataExtractionSettings, LLMProvider, get_settings
 from deet.utils.timing import measure_elapsed
 from deet.utils.tokenisation import (
     count_tokens,
@@ -55,9 +51,6 @@ class LLMCallRecord(NamedTuple):
     cached_input_tokens: int
 
 
-settings = get_settings()
-
-
 class LLMDataExtractor(BaseDataExtractor):
     """
     Generalisable module for LLM-based data extraction from documents.
@@ -70,7 +63,7 @@ class LLMDataExtractor(BaseDataExtractor):
     def __init__(
         self,
         config: DataExtractionConfig,
-        settings: DataExtractionSettings = settings,
+        settings: DataExtractionSettings | None = None,
         custom_system_prompt_file: Path | None = None,
         *,
         show_litellm_debug_messages: bool = False,
@@ -80,12 +73,16 @@ class LLMDataExtractor(BaseDataExtractor):
 
         Args:
             config (DataExtractionConfig): config obj for data extraction run
-            custom_system_prompt_file (Path | None, optional): path to non-defualt
-            sys prompt file. Defaults to None.
+            settings (DataExtractionSettings | None, optional): provider
+                credentials. Defaults to get_settings() when None.
+            custom_system_prompt_file (Path | None, optional): path to non-default
+                sys prompt file. Defaults to None.
             show_litellm_debug_messages (bool, optional): show verbose litellm logs.
             Defaults to False.
 
         """
+        if settings is None:
+            settings = get_settings()
         self.config = config
         self.custom_system_prompt_file = custom_system_prompt_file
         if self.config.provider == LLMProvider.AZURE:
