@@ -203,6 +203,18 @@ def run_extraction_pipeline(  # noqa: PLR0913
 
     data_extractor = get_data_extractor(config=config)
 
+    processed_annotation_data.export_attributes_csv_file(
+        experiment_artefacts.prompts_snapshot
+    )
+
+    experiment_artefacts.config_snapshot.write_text(
+        yaml.safe_dump(data_extractor.config.model_dump(mode="json"), sort_keys=False),
+        encoding="utf-8",
+    )
+    logger.info(
+        f"Experiment config and prompts saved to {experiment_artefacts.base_dir}."
+    )
+
     document_parsing: dict[str, DocumentParsingStats] = {}
     with measure_elapsed() as stage_timer:
         if ignore_references:
@@ -235,19 +247,6 @@ def run_extraction_pipeline(  # noqa: PLR0913
             show_progress=True,
         )
     stage_durations[ExtractionPipelineStage.llm_extraction] = stage_timer.seconds
-
-    with measure_elapsed() as stage_timer:
-        processed_annotation_data.export_attributes_csv_file(
-            experiment_artefacts.prompts_snapshot
-        )
-
-        experiment_artefacts.config_snapshot.write_text(
-            yaml.safe_dump(
-                data_extractor.config.model_dump(mode="json"), sort_keys=False
-            ),
-            encoding="utf-8",
-        )
-    stage_durations[ExtractionPipelineStage.artifact_export] = stage_timer.seconds
 
     run_output.metadata.total_pipeline_duration_seconds = round(
         time.perf_counter() - pipeline_start, 3
