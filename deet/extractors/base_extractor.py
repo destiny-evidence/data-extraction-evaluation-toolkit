@@ -33,6 +33,7 @@ from deet.data_models.extraction import (
     ExtractionRunOutput,
     PerDocumentExtractionStats,
 )
+from deet.data_models.taxonomy import ConceptPromptField
 from deet.data_models.ui_schema import UI
 from deet.evaluators.metrics import DEFAULT_EDIT_DISTANCE_MATCH_THRESHOLD
 from deet.exceptions import LitellmModelNotMappedError, NoAbstractError
@@ -210,8 +211,8 @@ class DataExtractionConfig(BaseModel):
         default=True, description="Include additional text/citations in output"
     )
 
-    vocab_prompt_locations: list[str] = Field(
-        default=["definition", "scope_note"],
+    vocab_prompt_locations: list[ConceptPromptField] = Field(
+        default=[ConceptPromptField.DEFINITION, ConceptPromptField.SCOPE_NOTE],
         description="Concept fields used to set prompts from vocabulary.",
     )
 

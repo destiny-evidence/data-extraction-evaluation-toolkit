@@ -29,9 +29,9 @@ interactions:
       to answer the question:\\n     explain in Reasoning why the information is missing\\n
       \    leave Additional_text blank\\n\\nOutput Format:\\n-Provide one response
       per question, preserving the original question order\\n-Return results in json
-      format\\n\\nInput JSON:\\n{input_json}\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\":
-      \\\"# **BMC Neuroscience**\\\\n\\\\n![](_page_0_Picture_1.jpeg)\\\\n\\\\nResearch
-      article **[Open Access](http://www.biomedcentral.com/info/about/charter/)**\\\\n\\\\n#
+      format\\n\"},{\"role\":\"user\",\"content\":\"{\\\"context\\\": \\\"# **BMC
+      Neuroscience**\\\\n\\\\n![](_page_0_Picture_1.jpeg)\\\\n\\\\nResearch article
+      **[Open Access](http://www.biomedcentral.com/info/about/charter/)**\\\\n\\\\n#
       **Chronic administration of R-flurbiprofen attenuates learning impairments in
       transgenic amyloid precursor protein mice**\\\\n\\\\nThomas Kukar1, Sonya Prescott1,
       Jason L Eriksen1, Vallie Holloway1, M Paul Murphy2, Edward H Koo3, Todd E Golde1
@@ -740,239 +740,447 @@ interactions:
       *J Neurol* 2003, **250(7):**788-792.\\\\n- 23. McGeer PL, McGeer EG: **NSAIDs
       and Alzheimer disease: Epidemiological, animal model and clinical studies.**
       *Neurobiol Aging* 2006.\\\\n- 24. Lim GP, Yang F, Chu T, Chen P, Beech W, Teter
-      B, Tran T, Ubeda O, Ashe KH, Frautschy SA, Cole GM\\\", \\\"attributes\\\":
-      [{\\\"prompt\\\": \\\"List the given names of the species used in this experiment.
-      Separate each model with a semicolon, using the format: species; species; specis.\\\",
-      \\\"attribute_id\\\": 2, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\":
-      \\\"List the given names of the animal models used in this experiment. Separate
-      each model with a semicolon, using the format: model; model; model.\\\", \\\"attribute_id\\\":
-      4, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      strains of animal species involved in this experiment. Separate each strain
-      with a semicolon, using the format strain; strain; strain.\\\", \\\"attribute_id\\\":
-      5, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      target of therapeutic interventions evaluation in the experiment. Separate each
-      target with a semicolon, using the format target; target; target. If a combined
-      target is used for a single intervention, you may classify this as \\\\\\\"Multi-target\\\\\\\".
-      If multiple interventions are tested, list all targets separately. Use the full
-      name of the target.\\\", \\\"attribute_id\\\": 7, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the therapeutic interventions evaluated
-      in the experiment. Separate each intervention with a semicolon, using the format:
-      intervention\\\", \\\"attribute_id\\\": 8, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\"List all the outcomes measured in the experiment which
-      quantify behavioural changes (including motor, cognitive, affective). Specify
-      each of the assay/paradigm/test name in full with no abbreviations. Separate
+      B, Tran T, Ubeda O, Ashe KH, Frautschy SA, Cole GM: **[Ibuprofen Suppresses
+      Plaque](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10908610)
+      [Pathology and Inflammation in a Mouse Model for Alzhe](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10908610)[imer's
+      Disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10908610)**
+      *J Neurosci* 2000, **20(15):**5709-5714.\\\\n- 25. Gasparini L, Ongini E, Wilcock
+      D, Morgan D: **[Activity of flurbipro](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15850679)[fen
+      and chemically related anti-inflammatory drugs in mod](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15850679)[els
+      of Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15850679)**
+      *Brain Research Reviews* 2005, **48(2):**400-408.\\\\n- 26. Prosperi C, Scali
+      C, Barba M, Bellucci A, Giovannini MG, Pepeu G, Casamenti F: **[Comparison between
+      flurbiprofen and its nitric](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15461866)
+      [oxide-releasing derivatives HCT-1026 and NCX-2216 on](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15461866)
+      Abeta(1-42)-induced brain inflammation and neuronal dam[age in the rat.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15461866)**
+      *Int J Immunopathol Pharmacol* 2004, **17(3):**317-330.\\\\n- 27. Jantzen PT,
+      Connor KE, DiCarlo G, Wenk GL, Wallace JL, Rojiani AM, Coppola D, Morgan D,
+      Gordon MN: **[Microglial Activation](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11896164)
+      [and beta -Amyloid Deposit Reduction Caused by a Nitric](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11896164)
+      Oxide-Releasing Nonsteroidal Anti-Inflammatory Drug in Amyloid Precursor Protein
+      Plus Presenilin-1 Transgenic [Mice.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11896164)**
+      *J Neurosci* 2002, **22(6):**2246-2254.\\\\n- 28. Sung S, Yang H, Uryu K, Lee
+      EB, Zhao L, Shineman D, Trojanowski JQ, Lee VMY, Pratico D: **[Modulation of
+      Nuclear Factor-](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15579461)
+      [{kappa}B Activity by Indomethacin Influences A{beta} Lev](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15579461)els
+      but Not A{beta} Precursor Protein Metabolism in a [Model of Alzheimer's Disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15579461)**
+      *Am J Pathol* 2004, **165(6):**2197-2206.\\\\n- 29. Weggen S, Eriksen JL, Das
+      P, Sagi SA, Wang R, Pietrzik CU, Findlay KA, Smith TE, Murphy MP, Bulter T,
+      Kang DE, Marquez-Sterling N, Golde TE, Koo EH: **[A subset of NSAIDs lower amyloidogenic](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11700559)
+      [A\\\\\\\\[beta\\\\\\\\]42 independently of cyclooxygenase activity.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11700559)**
+      *Nature* 2001, **414(6860):**212-216.\\\\n- 30. Eriksen JL, Sagi SA, Smith TE,
+      Weggen S, Das P, McLendon DC, Ozols VV, Jessing KW, Zavitz KH, Koo EH, Golde
+      TE: **[NSAIDs and enan](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12897211)[tiomers
+      of flurbiprofen target {gamma}-secretase and lower](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12897211)
+      [A{beta}42 in vivo.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12897211)**
+      *J Clin Invest* 2003, **112(3):**440-449.\\\\n- 31. Kukar T, Murphy MP, Eriksen
+      JL, Sagi SA, Weggen S, Smith TE, Ladd T, Khan MA, Kache R, Beard J, Dodson M,
+      Merit S, Ozols VV, Anastasiadis PZ, Das P, Fauq A, Koo EH, Golde TE: **[Diverse
+      compounds](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15834426)
+      [mimic Alzheimer disease-causing mutations by augmenting](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15834426)
+      [Abeta42 production.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15834426)**
+      *Nat Med* 2005, **11(5):**545-550.\\\\n- 32. Sagi SA, Weggen S, Eriksen J, Golde
+      TE, Koo EH: **[The Non-cycloox](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12805355)[ygenase
+      Targets of Non-steroidal Anti-inflammatory Drugs,](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12805355)
+      Lipoxygenases, Peroxisome Proliferator-activated Receptor, Inhibitor of {kappa}B
+      Kinase, and NF{kappa}B, Do Not [Reduce Amyloid {beta}42 Production.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12805355)**
+      *J Biol Chem* 2003, **278(34):**31825-31830.\\\\n- 33. Weggen S, Eriksen JL,
+      Sagi SA, Pietrzik CU, Ozols V, Fauq A, Golde TE, Koo EH: **[Evidence That Nonsteroidal
+      Anti-inflammatory](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12805356)
+      [Drugs Decrease Amyloid {beta}42 Production by Direct](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12805356)
+      [Modulation of {gamma}-Secretase Activity.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12805356)**
+      *J Biol Chem* 2003, **278(34):**31831-31837.\\\\n\\\\n- 34. Takahashi Y, Hayashi
+      I, Tominari Y, Rikimaru K, Morohashi Y, Kan T, Natsugari H, Fukuyama T, Tomita
+      T, Iwatsubo T: **[Sulindac Sulfide](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12637581)
+      [Is a Noncompetitive gamma -Secretase Inhibitor That Pref](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12637581)[erentially
+      Reduces Abeta 42 Generation.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12637581)**
+      *J Biol Chem* 2003, **278(20):**18664-18670.\\\\n- 35. Beher D, Clarke EE, Wrigley
+      JDJ, Martin ACL, Nadin A, Churcher I, Shearman MS: **[Selected Non-steroidal
+      Anti-inflammatory](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15304503)
+      [Drugs and Their Derivatives Target {gamma}-Secretase at a](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15304503)
+      Novel Site: EVIDENCE FOR AN ALLOSTERIC MECHA-[NISM.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15304503)**
+      *J Biol Chem* 2004, **279(42):**43419-43426.\\\\n- 36. Geisslinger G, Lotsch
+      J, Menzel S, Kobal G, Brune K: **[Stereoselec](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8018462)[tive
+      disposition of flurbiprofen in healthy subjects following](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8018462)
+      [administration of the single enantiomers.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8018462)**
+      *Br J Clin Pharmacol* 1994, **37(4):**392-394.\\\\n- 37. Geisslinger G, Muth-Selbach
+      U, Coste O, Vetter G, Schrodter A, Schaible HG, Brune K, Tegeder I: **[Inhibition
+      of Noxious Stimulus-](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10800954)[Induced
+      Spinal Prostaglandin E2 Release by Flurbiprofen](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10800954)
+      [Enantiomers. A Microdialysis Study.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=10800954)**
+      *Journal of Neurochemistry* 2000, **74(5):**2094-2100.\\\\n- 38. Morihara T,
+      Chu T, Ubeda O, Beech W, Cole GM: **[Selective inhibi](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12421374)[tion
+      of Abeta42 production by NSAID R-enantiomers.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12421374)**
+      *Journal of Neurochemistry* 2002, **83(4):**1009-1012.\\\\n- 39. Black S Wilcock,
+      G.K., Hawworth, J., Hendrix, S., Zavitz, K., Christensen, D.b., M-H., Bass,
+      S., Laughlin, M., and Swabb, E.: **Efficacy and safety of MPC-7869 (R-flurbiprofen),
+      a selective Abeta42 lowering agent in mild Alzheimer's disease: results of a
+      12 month phase 2 trial and 1-year follow on study.** *Neurology* 2006, **66(Suppl2)(A347):**.\\\\n-
+      40. McDonald RJ, White NM: **[Parallel information processing in the](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8067981)
+      [water maze: evidence for independent memory systems](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8067981)
+      [involving dorsal striatum and hippocampus.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8067981)**
+      *Behav Neural Biol* 1994, **61(3):**260-270.\\\\n- 41. Stackman RW, Eckenstein
+      F, Frei B, Kulhanek D, Nowlin J, Quinn JF: **[Prevention of age-related spatial
+      memory deficits in a trans](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=14637120)genic
+      mouse model of Alzheimer's disease by chronic [Ginkgo biloba treatment.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=14637120)**
+      *Exp Neurol* 2003, **184(1):**510-520.\\\\n- 42. Quinn JF, Bussiere JR, Hammond
+      RS, Montine TJ, Henson E, Jones RE, Stackman RW Jr.: **[Chronic dietary alpha-lipoic
+      acid reduces](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16448723)
+      [deficits in hippocampal memory of aged Tg2576 mice.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16448723)**
+      *Neurobiol Aging* 2007, **28(2):**213-225.\\\\n- 43. Westerman MA, Cooper-Blacketer
+      D, Mariash A, Kotilinek L, Kawarabayashi T, Younkin LH, Carlson GA, Younkin
+      SG, Ashe KH: **[The relationship between Abeta and memory in the Tg2576](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11880515)
+      [mouse model of Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11880515)**
+      *J Neurosci* 2002, **22(5):**1858-1867.\\\\n- 44. Lesne S, Koh MT, Kotilinek
+      L, Kayed R, Glabe CG, Yang A, Gallagher M, Ashe KH: **[A specific amyloid-beta
+      protein assembly in the](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16541076)
+      [brain impairs memory.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16541076)**
+      *Nature* 2006, **440(7082):**352-357.\\\\n- 45. Janus C, Pearson J, McLaurin
+      J, Mathews PM, Jiang Y, Schmidt SD, Chishti MA, Horne P, Heslin D, French J,
+      Mount HT, Nixon RA, Mercken M, Bergeron C, Fraser PE, St George-Hyslop P, Westaway
+      D: **[A](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11140685)
+      [beta peptide immunization reduces behavioural impairment](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11140685)
+      [and plaques in a model of Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11140685)**
+      *Nature* 2000, **408(6815):**979-982.\\\\n- 46. Morgan D, Diamond DM, Gottschall
+      PE, Ugen KE, Dickey C, Hardy J, Duff K, Jantzen P, DiCarlo G, Wilcock D, Connor
+      K, Hatcher J, Hope C, Gordon M, Arendash GW: **[A beta peptide vaccination pre](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11140686)[vents
+      memory loss in an animal model of Alzheimer's dis](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11140686)[ease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11140686)**
+      *Nature* 2000, **408(6815):**982-985.\\\\n- 47. Arendash GW, Gordon MN, Diamond
+      DM, Austin LA, Hatcher JM, Jantzen P, DiCarlo G, Wilcock D, Morgan D: **[Behavioral
+      assess](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11788052)[ment
+      of Alzheimer's transgenic mice following long-term](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11788052)
+      Abeta vaccination: task specificity and correlations between [Abeta deposition
+      and spatial memory.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11788052)**
+      *DNA Cell Biol* 2001, **20(11):**737-744.\\\\n- 48. Dodart JC, Bales KR, Gannon
+      KS, Greene SJ, DeMattos RB, Mathis C, DeLong CA, Wu S, Wu X, Holtzman DM, Paul
+      SM: **[Immunization](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11941374)
+      [reverses memory deficits without reducing brain Abeta bur](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11941374)[den
+      in Alzheimer's disease model.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11941374)**
+      *Nat Neurosci* 2002, **5(5):**452-457.\\\\n- 49. Kotilinek LA, Bacskai B, Westerman
+      M, Kawarabayashi T, Younkin L, Hyman BT, Younkin S, Ashe KH: **[Reversible memory
+      loss in a](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12151510)
+      [mouse transgenic model of Alzheimer's disease.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=12151510)**
+      *J Neurosci* 2002, **22(15):**6331-6335.\\\\n- 50. Lazarov O, Robinson J, Tang
+      YP, Hairston IS, Korade-Mirnics Z, Lee VM, Hersh LB, Sapolsky RM, Mirnics K,
+      Sisodia SS: **[Environmental](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15766532)**\\\\n\\\\n-
+      **[enrichment reduces Abeta levels and amyloid deposition in](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15766532)
+      [transgenic mice.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15766532)**
+      *Cell* 2005, **120(5):**701-713.\\\\n- 51. Costa DA, Cracchiolo JR, Bachstetter
+      AD, Hughes TF, Bales KR, Paul SM, Mervis RF, Arendash GW, Potter H: **[Enrichment
+      improves](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16730391)
+      [cognition in AD mice by amyloid-related and unrelated](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16730391)
+      [mechanisms.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16730391)**
+      *Neurobiol Aging* 2006.\\\\n- 52. Leipold DD, Kantoci D, Murray ED Jr., Quiggle
+      DD, Wechter WJ: **[Bioinversion of R-flurbiprofen to S-flurbiprofen at various](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15190583)
+      [dose levels in rat, mouse, and monkey.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15190583)**
+      *Chirality* 2004, **16(6):**379-387.\\\\n- 53. Wallace JL, Muscara MN, de Nucci
+      G, Zamuner S, Cirino G, del Soldato P, Ongini E: **[Gastric Tolerability and
+      Prolonged Prostag](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=14755007)[landin
+      Inhibition in the Brain with a Nitric Oxide-Releasing](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=14755007)
+      Flurbiprofen Derivative, NCX-2216 [3-[4-(2-Fluoro-{alpha} methyl-[1,1'-biphenyl]-4-acetyloxy)-3-methoxyphenyl]-2
+      [propenoic acid 4-nitrooxy butyl ester\\\\\\\\].](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=14755007)**
+      *J Pharmacol Exp Ther* 2004, **309(2):**626-633.\\\\n- 54. Thomas T, Nadackal
+      TG, Thomas K: **[Aspirin and non-steroidal](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11711868)
+      [anti-inflammatory drugs inhibit amyloid-beta aggregation.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=11711868)**
+      *Neuroreport* 2001, **12(15):**3263-3267.\\\\n- 55. Hirohata M, Ono K, Naiki
+      H, Yamada M: **[Non-steroidal anti](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16125740)[inflammatory
+      drugs have anti-amyloidogenic effects for](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16125740)
+      [Alzheimer's \\\\\\\\[beta\\\\\\\\]-amyloid fibrils in vitro.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16125740)**
+      *Neuropharmacology* 2005, **49(7):**1088-1099.\\\\n- 56. Sastre M, Dewachter
+      I, Rossner S, Bogdanovic N, Rosen E, Borghgraef P, Evert BO, Dumitrescu-Ozimek
+      L, Thal DR, Landreth G, Walter J, Klockgether T, van Leuven F, Heneka MT: **[Nonsteroidal
+      anti](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16407166)[inflammatory
+      drugs repress {beta}-secretase gene promoter](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16407166)
+      [activity by the activation of PPAR{gamma}.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16407166)**
+      *PNAS* 2006, **103(2):**443-448.\\\\n- 57. Hsiao K, Chapman P, Nilsen S, Eckman
+      C, Harigaya Y, Younkin S, Yang F, Cole G: **[Correlative Memory Deficits, Abeta
+      Elevation, and](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8810256)
+      [Amyloid Plaques in Transgenic Mice.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8810256)**
+      *Science* 1996, **274(5284):**99-103.\\\\n- 58. McGowan E, Pickford F, Kim J,
+      Onstead L, Eriksen J, Yu C, Skipper L, Murphy MP, Beard J, Das P, Jansen K,
+      Delucia M, Lin WL, Dolios G, Wang R, Eckman CB, Dickson DW, Hutton M, Hardy
+      J, Golde T: **[Abeta42 is essential for parenchymal and vascular amyloid](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16039562)
+      [deposition in mice.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16039562)**
+      *Neuron* 2005, **47(2):**191-199.\\\\n- 59. Garcia MF, Gordon MN, Hutton M,
+      Lewis J, McGowan E, Dickey CA, Morgan D, Arendash GW: **[The retinal degeneration
+      \\\\\\\\(rd\\\\\\\\) gene](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15106834)
+      [seriously impairs spatial cognitive performance in normal](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15106834)
+      [and Alzheimer's transgenic mice.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=15106834)**
+      *Neuroreport* 2004, **15(1):**73-77.\\\\n- 60. Gallagher M, Burwell R, Burchinal
+      M: **[Severity of spatial learning](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8397866)
+      [impairment in aging: development of a learning index for](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8397866)
+      [performance in the Morris water maze.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=8397866)**
+      *Behav Neurosci* 1993, **107(4):**618-626.\\\\n- 61. Levites Y, Das P, Price
+      RW, Rochette MJ, Kostura LA, McGowan EM, Murphy MP, Golde TE: **[Anti-A{beta}42-
+      and anti-A{beta}40](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16341263)
+      [specific mAbs attenuate amyloid deposition in an Alzheimer](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16341263)
+      [disease mouse model.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16341263)**
+      *J Clin Invest* 2006, **116(1):**193-201.\\\\n- 62. Das P, Smithson LA, Price
+      RW, Holloway VM, Levites Y, Chakrabarty P, Golde TE: **[Interleukin-1 receptor
+      1 knockout has no effect](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16872492)
+      [on amyloid deposition in Tg2576 mice and does not alter effi](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16872492)[cacy
+      following Abeta immunotherapy.](http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=16872492)**
+      *J Neuroinflammation* 2006, **3:**17.\\\\n\\\\n#### Publish with **[BioMed Central](http://www.biomedcentral.com/)**
+      and every scientist can read your work free of charge\\\\n\\\\n*\\\\\\\"BioMed
+      Central will be the most significant development for disseminating the results
+      of biomedical research in our lifetime.\\\\\\\"* Sir Paul Nurse, Cancer Research
+      UK\\\\n\\\\nYour research papers will be:\\\\n\\\\n- available free of charge
+      to the entire biomedical community\\\\n- peer reviewed and published immediately
+      upon acceptance\\\\n- cited in PubMed and archived on PubMed Central\\\\n- yours
+      you keep the copyright\\\\n\\\\nSubmit your manuscript here: [http://www.biomedcentral.com/info/publishing\\\\\\\\\\\\\\\\_adv.asp](http://www.biomedcentral.com/info/publishing_adv.asp)\\\\n\\\\n![](_page_11_Picture_40.jpeg)\\\",
+      \\\"attributes\\\": [{\\\"prompt\\\": \\\"List the given names of the species
+      used in this experiment. Separate each model with a semicolon, using the format:
+      species; species; specis.\\\", \\\"attribute_id\\\": 2, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the given names of the animal models
+      used in this experiment. Separate each model with a semicolon, using the format:
+      model; model; model.\\\", \\\"attribute_id\\\": 4, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the strains of animal species involved
+      in this experiment. Separate each strain with a semicolon, using the format
+      strain; strain; strain.\\\", \\\"attribute_id\\\": 5, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the target of therapeutic interventions
+      evaluation in the experiment. Separate each target with a semicolon, using the
+      format target; target; target. If a combined target is used for a single intervention,
+      you may classify this as \\\\\\\"Multi-target\\\\\\\". If multiple interventions
+      are tested, list all targets separately. Use the full name of the target.\\\",
+      \\\"attribute_id\\\": 7, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\":
+      \\\"List the therapeutic interventions evaluated in the experiment. Separate
+      each intervention with a semicolon, using the format: intervention\\\", \\\"attribute_id\\\":
+      8, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List all
+      the outcomes measured in the experiment which quantify behavioural changes (including
+      motor, cognitive, affective). Specify each of the assay/paradigm/test name in
+      full with no abbreviations. Separate each outcome with a semicolon, using the
+      format: outcome\\\", \\\"attribute_id\\\": 41, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the molecular outcomes measured in the experiment
+      including quantitative or qualitative measurements of molecules such as genes,
+      proteins, metabolites, signalling molecules, or biochemical markers. Separate
       each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      41, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      molecular outcomes measured in the experiment including quantitative or qualitative
-      measurements of molecules such as genes, proteins, metabolites, signalling molecules,
-      or biochemical markers. Separate each outcome with a semicolon, using the format:
-      outcome\\\", \\\"attribute_id\\\": 33, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\"List the biomarker outcomes measured in the experiment
-      i.e. measurable indicators that often support diagnosis, indicate disease progression,
-      or health status. Separate each outcome with a semicolon, using the format:
-      outcome\\\", \\\"attribute_id\\\": 34, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\"List the cell biology outcomes measured in the experiment.
-      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      42, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      cell chemistry outcomes measured in the experiment. Separate each outcome with
-      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 53, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the electron microscopy outcomes
-      measured in the experiment. Separate each outcome with a semicolon, using the
-      format: outcome\\\", \\\"attribute_id\\\": 56, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\"List the electrophysiology outcomes measured in the experiment.
-      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      46, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      histopathology outcomes measured in the experiment. Separate each outcome with
-      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 35, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the imaging outcomes measured in
-      the experiment. Separate each outcome with a semicolon, using the format: outcome\\\",
-      \\\"attribute_id\\\": 57, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\":
-      \\\"List the immunohistochemistry outcomes measured in the experiment. Separate
+      33, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      biomarker outcomes measured in the experiment i.e. measurable indicators that
+      often support diagnosis, indicate disease progression, or health status. Separate
       each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      36, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      immunology outcomes measured in the experiment. Separate each outcome with a
-      semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 49, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Microscopy outcomes measured
+      34, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      cell biology outcomes measured in the experiment. Separate each outcome with
+      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 42, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the cell chemistry outcomes measured
       in the experiment. Separate each outcome with a semicolon, using the format:
-      outcome\\\", \\\"attribute_id\\\": 43, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\"List the Motor Function outcomes measured in the experiment.
+      outcome\\\", \\\"attribute_id\\\": 53, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the electron microscopy outcomes measured in the experiment.
       Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      44, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      Omics outcomes measured in the experiment. Separate each outcome with a semicolon,
-      using the format: outcome\\\", \\\"attribute_id\\\": 45, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Pharmacodynamics outcomes measured
+      56, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      electrophysiology outcomes measured in the experiment. Separate each outcome
+      with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 46, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the histopathology outcomes measured
       in the experiment. Separate each outcome with a semicolon, using the format:
-      outcome\\\", \\\"attribute_id\\\": 37, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\" List the Pharmacokinetics or ADME outcomes (Absorption,
-      Distribution, Metabolism, or Excretion) measured in the experiment. Separate
+      outcome\\\", \\\"attribute_id\\\": 35, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the imaging outcomes measured in the experiment. Separate
       each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      48, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      immunology outcomes measured in the experiment. Separate each outcome with a
-      semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 50, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Physiology outcomes measured
+      57, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      immunohistochemistry outcomes measured in the experiment. Separate each outcome
+      with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 36, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the immunology outcomes measured
       in the experiment. Separate each outcome with a semicolon, using the format:
-      outcome\\\", \\\"attribute_id\\\": 51, \\\"output_data_type\\\": \\\"string\\\"},
-      {\\\"prompt\\\": \\\"List the Protein Structures outcomes measured in the experiment.
+      outcome\\\", \\\"attribute_id\\\": 49, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the Microscopy outcomes measured in the experiment.
       Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
-      58, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
-      Spectroscopy outcomes measured in the experiment. Separate each outcome with
-      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 38, \\\"output_data_type\\\":
-      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Toxicology outcomes measured
+      43, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      Motor Function outcomes measured in the experiment. Separate each outcome with
+      a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 44, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Omics outcomes measured in the
+      experiment. Separate each outcome with a semicolon, using the format: outcome\\\",
+      \\\"attribute_id\\\": 45, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\":
+      \\\"List the Pharmacodynamics outcomes measured in the experiment. Separate
+      each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      37, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\" List the
+      Pharmacokinetics or ADME outcomes (Absorption, Distribution, Metabolism, or
+      Excretion) measured in the experiment. Separate each outcome with a semicolon,
+      using the format: outcome\\\", \\\"attribute_id\\\": 48, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the immunology outcomes measured
       in the experiment. Separate each outcome with a semicolon, using the format:
-      outcome\\\", \\\"attribute_id\\\": 39, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-4o-mini\",\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"llm_annotation_response\",\"schema\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
+      outcome\\\", \\\"attribute_id\\\": 50, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the Physiology outcomes measured in the experiment.
+      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      51, \\\"output_data_type\\\": \\\"string\\\"}, {\\\"prompt\\\": \\\"List the
+      Protein Structures outcomes measured in the experiment. Separate each outcome
+      with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\": 58, \\\"output_data_type\\\":
+      \\\"string\\\"}, {\\\"prompt\\\": \\\"List the Spectroscopy outcomes measured
+      in the experiment. Separate each outcome with a semicolon, using the format:
+      outcome\\\", \\\"attribute_id\\\": 38, \\\"output_data_type\\\": \\\"string\\\"},
+      {\\\"prompt\\\": \\\"List the Toxicology outcomes measured in the experiment.
+      Separate each outcome with a semicolon, using the format: outcome\\\", \\\"attribute_id\\\":
+      39, \\\"output_data_type\\\": \\\"string\\\"}]}\"}],\"model\":\"gpt-5.6-luna\",\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"llm_annotation_response\",\"schema\":{\"$defs\":{\"LLMSTRINGAnnotationResponse\":{\"additionalProperties\":false,\"properties\":{\"output_data\":{\"description\":\"The
       LLM's annotation for this attribute.\",\"title\":\"Output Data\",\"type\":\"string\"},\"additional_text\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Supporting
       text from document containing the context window where the attribute is found\",\"title\":\"Additional
       Text\"},\"reasoning\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Reasoning
-      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_2\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_4\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_7\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_8\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_41\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_33\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_34\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_42\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_53\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_56\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_46\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_35\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_57\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_36\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_49\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_43\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_44\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_45\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_37\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_48\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_50\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_51\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_58\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_38\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_39\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"}},\"required\":[\"attribute_2\",\"attribute_4\",\"attribute_5\",\"attribute_7\",\"attribute_8\",\"attribute_41\",\"attribute_33\",\"attribute_34\",\"attribute_42\",\"attribute_53\",\"attribute_56\",\"attribute_46\",\"attribute_35\",\"attribute_57\",\"attribute_36\",\"attribute_49\",\"attribute_43\",\"attribute_44\",\"attribute_45\",\"attribute_37\",\"attribute_48\",\"attribute_50\",\"attribute_51\",\"attribute_58\",\"attribute_38\",\"attribute_39\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":0.1}"
+      or explanation for the annotation decision\",\"title\":\"Reasoning\"}},\"required\":[\"output_data\",\"additional_text\",\"reasoning\"],\"title\":\"LLMSTRINGAnnotationResponse\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"attribute_2\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_4\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_5\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_7\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_8\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_41\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_33\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_34\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_42\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_53\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_56\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_46\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_35\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_57\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_36\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_49\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_43\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_44\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_45\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_37\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_48\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_50\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_51\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_58\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_38\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"},\"attribute_39\":{\"$ref\":\"#/$defs/LLMSTRINGAnnotationResponse\"}},\"required\":[\"attribute_2\",\"attribute_4\",\"attribute_5\",\"attribute_7\",\"attribute_8\",\"attribute_41\",\"attribute_33\",\"attribute_34\",\"attribute_42\",\"attribute_53\",\"attribute_56\",\"attribute_46\",\"attribute_35\",\"attribute_57\",\"attribute_36\",\"attribute_49\",\"attribute_43\",\"attribute_44\",\"attribute_45\",\"attribute_37\",\"attribute_48\",\"attribute_50\",\"attribute_51\",\"attribute_58\",\"attribute_38\",\"attribute_39\"],\"title\":\"DynamicLLMResponse\",\"type\":\"object\"},\"strict\":true}},\"temperature\":1.0}"
     headers:
-      Accept:
+      accept:
       - application/json
-      Accept-Encoding:
+      accept-encoding:
       - gzip, deflate
-      Connection:
+      connection:
       - keep-alive
-      Content-Length:
-      - '70534'
-      Content-Type:
+      content-length:
+      - '92483'
+      content-type:
       - application/json
-      Host:
+      host:
       - DUMMY_SECRET
-      User-Agent:
-      - AzureOpenAI/Python 1.109.1
-      X-Stainless-Arch:
+      user-agent:
+      - AzureOpenAI/Python 2.54.0
+      x-stainless-arch:
       - x64
-      X-Stainless-Async:
+      x-stainless-async:
       - 'false'
-      X-Stainless-Lang:
+      x-stainless-lang:
       - python
-      X-Stainless-OS:
+      x-stainless-os:
       - Linux
-      X-Stainless-Package-Version:
-      - 1.109.1
-      X-Stainless-Raw-Response:
+      x-stainless-package-version:
+      - 2.54.0
+      x-stainless-raw-response:
       - 'true'
-      X-Stainless-Runtime:
-      - CPython
-      X-Stainless-Runtime-Version:
-      - 3.12.11
       x-stainless-read-timeout:
       - '600.0'
       x-stainless-retry-count:
       - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.12.16
     method: POST
     uri: https://dummy.secret/
   response:
     body:
-      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\n
-        \ \\\"attribute_2\\\": {\\n    \\\"output_data\\\": \\\"Tg2576\\\",\\n    \\\"additional_text\\\":
-        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document mentions the use of Tg2576
-        mice as the primary animal model in the experiments conducted. No other species
-        are specified in the context provided.\\\"\\n  },\\n  \\\"attribute_4\\\":
-        {\\n    \\\"output_data\\\": \\\"Tg2576 APP mice\\\",\\n    \\\"additional_text\\\":
-        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document specifically refers to
-        Tg2576 APP mice as the animal model used in the experiments, indicating that
-        this is the model being evaluated.\\\"\\n  },\\n  \\\"attribute_5\\\": {\\n
-        \   \\\"output_data\\\": \\\"Tg2576\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"The only strain mentioned in the context is Tg2576,
-        which is a transgenic mouse model used in the study.\\\"\\n  },\\n  \\\"attribute_7\\\":
-        {\\n    \\\"output_data\\\": \\\"A\u03B242\\\",\\n    \\\"additional_text\\\":
-        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The therapeutic interventions evaluated
-        in the experiment target A\u03B242 levels, as indicated by the focus on R-flurbiprofen's
-        ability to lower A\u03B242.\\\"\\n  },\\n  \\\"attribute_8\\\": {\\n    \\\"output_data\\\":
-        \\\"R-flurbiprofen\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"The document discusses the evaluation of R-flurbiprofen as a therapeutic
-        intervention in the context of Alzheimer's disease.\\\"\\n  },\\n  \\\"attribute_41\\\":
-        {\\n    \\\"output_data\\\": \\\"Morris water maze; spatial reference memory;
-        strategy preference test\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"The outcomes measured for behavioral changes include
-        performance in the Morris water maze and assessments of spatial reference
-        memory and strategy preference.\\\"\\n  },\\n  \\\"attribute_33\\\": {\\n
-        \   \\\"output_data\\\": \\\"A\u03B2 levels; A\u03B2 plaque burden\\\",\\n
-        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document
-        mentions measuring A\u03B2 levels and A\u03B2 plaque burden as molecular outcomes
-        in the experiments.\\\"\\n  },\\n  \\\"attribute_34\\\": {\\n    \\\"output_data\\\":
-        \\\"A\u03B2 plaque burden\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"The A\u03B2 plaque burden is mentioned as a measurable
-        indicator of the treatment's effect, qualifying it as a biomarker outcome.\\\"\\n
-        \ },\\n  \\\"attribute_42\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
-        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not specify any cell
-        biology outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_53\\\":
-        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"No cell chemistry outcomes are mentioned in the
-        context provided.\\\"\\n  },\\n  \\\"attribute_56\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"The document does not mention any electron microscopy outcomes measured
-        in the experiment.\\\"\\n  },\\n  \\\"attribute_46\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"There are no electrophysiology outcomes mentioned in the provided context.\\\"\\n
-        \ },\\n  \\\"attribute_35\\\": {\\n    \\\"output_data\\\": \\\"A\u03B2 plaque
-        burden\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"The document discusses the measurement of A\u03B2 plaque burden as a histopathology
-        outcome.\\\"\\n  },\\n  \\\"attribute_57\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"No imaging outcomes are specified in the context provided.\\\"\\n  },\\n
-        \ \\\"attribute_36\\\": {\\n    \\\"output_data\\\": \\\"A\u03B2 plaques\\\",\\n
-        \   \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document
-        mentions the measurement of A\u03B2 plaques through immunohistochemistry as
-        part of the experimental outcomes.\\\"\\n  },\\n  \\\"attribute_49\\\": {\\n
-        \   \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"There are no immunology outcomes mentioned in the
-        provided context.\\\"\\n  },\\n  \\\"attribute_43\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"The document does not specify any microscopy outcomes measured in the
-        experiment.\\\"\\n  },\\n  \\\"attribute_44\\\": {\\n    \\\"output_data\\\":
-        \\\"swim speed\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"The document mentions swim speed as a measured outcome related to motor
-        function in the experiments.\\\"\\n  },\\n  \\\"attribute_45\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"No omics outcomes are mentioned in the context provided.\\\"\\n  },\\n
-        \ \\\"attribute_37\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
-        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not specify any pharmacodynamics
-        outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_48\\\":
-        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"There are no pharmacokinetics or ADME outcomes
-        mentioned in the provided context.\\\"\\n  },\\n  \\\"attribute_50\\\": {\\n
-        \   \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"No immunology outcomes are mentioned in the context
-        provided.\\\"\\n  },\\n  \\\"attribute_51\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"The document does not specify any physiology outcomes measured in the
-        experiment.\\\"\\n  },\\n  \\\"attribute_58\\\": {\\n    \\\"output_data\\\":
-        \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n    \\\"reasoning\\\":
-        \\\"No protein structures outcomes are mentioned in the context provided.\\\"\\n
-        \ },\\n  \\\"attribute_38\\\": {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\":
-        \\\"\\\",\\n    \\\"reasoning\\\": \\\"The document does not mention any spectroscopy
-        outcomes measured in the experiment.\\\"\\n  },\\n  \\\"attribute_39\\\":
-        {\\n    \\\"output_data\\\": \\\"\\\",\\n    \\\"additional_text\\\": \\\"\\\",\\n
-        \   \\\"reasoning\\\": \\\"No toxicology outcomes are mentioned in the context
-        provided.\\\"\\n  }\\n}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1785424099,\"id\":\"chatcmpl-E7Mep4yocVCt9TPp0oNhPenh8cgB5\",\"model\":\"gpt-4o-mini-2024-07-18\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"service_tier\":\"default\",\"system_fingerprint\":\"fp_27599ce29d\",\"usage\":{\"completion_tokens\":1218,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":0,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":11,\"engine_ttft_ms\":152,\"engine_ttlt_ms\":13660,\"pre_inference_ms\":148,\"service_tbt_ms\":11,\"service_ttft_ms\":384,\"service_ttlt_ms\":13886,\"total_duration_ms\":13746,\"user_visible_ttft_ms\":235},\"prompt_tokens\":17203,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":17152},\"total_tokens\":18421}}\n"
+      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_2\\\":{\\\"output_data\\\":\\\"mouse\\\",\\\"additional_text\\\":\\\"Female
+        Tg2576 mice were generated and confirmed by genotyping as described previously
+        [57,58].\\\",\\\"reasoning\\\":\\\"The experiment used Tg2576 mice, which
+        are mice.\\\"},\\\"attribute_4\\\":{\\\"output_data\\\":\\\"Tg2576 APP mice\\\",\\\"additional_text\\\":\\\"In
+        this study we report the effect of chronic *R*-flurbiprofen treatment on cognition
+        and A\u03B2 loads in a transgenic model of AD, Tg2576 APP mice.\\\",\\\"reasoning\\\":\\\"The
+        animal model is explicitly identified as Tg2576 APP mice.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"C57BL/6.SJL\\\",\\\"additional_text\\\":\\\"These
+        crosses generated the F2 Tg2576 APP +/- mice (mixed C57BL/6.SJL background),
+        which were used in all experiments.\\\",\\\"reasoning\\\":\\\"The strain/background
+        specified for the experimental mice is C57BL/6.SJL.\\\"},\\\"attribute_7\\\":{\\\"output_data\\\":\\\"amyloid
+        beta 42 production; amyloid beta plaque pathology\\\",\\\"additional_text\\\":\\\"Based
+        on *R*-flurbiprofen's selective lowering of A\u03B242, reduced COX activity
+        and safety profile in humans we have previously suggested that this drug was
+        a good candidate for clinical testing in AD.\\\",\\\"reasoning\\\":\\\"The
+        intervention was evaluated for its effects on selective A\u03B242 production
+        and amyloid plaque pathology.\\\"},\\\"attribute_8\\\":{\\\"output_data\\\":\\\"R-flurbiprofen\\\",\\\"additional_text\\\":\\\"*R*-Flurbiprofen
+        was administered at a concentration of 10 mg/kg/day for all experiments.\\\",\\\"reasoning\\\":\\\"R-flurbiprofen
+        was the therapeutic intervention administered in both preventative and therapeutic
+        regimens.\\\"},\\\"attribute_41\\\":{\\\"output_data\\\":\\\"Morris water
+        maze spatial reference memory task; visible-platform cue training; hidden-platform
+        search error; probe-trial spatial bias; strategy preference test\\\",\\\"additional_text\\\":\\\"At
+        the conclusion of the drug-treatment phase, mice were assessed for spatial
+        reference memory in the Morris water maze.\\\",\\\"reasoning\\\":\\\"Behavioral
+        outcomes were measured using cue training, spatial reference memory acquisition,
+        probe trials, and the strategy preference test in the Morris water maze.\\\"},\\\"attribute_33\\\":{\\\"output_data\\\":\\\"detergent-soluble
+        amyloid beta 40 levels; detergent-soluble amyloid beta 42 levels; formic-acid-soluble
+        amyloid beta 40 levels; formic-acid-soluble amyloid beta 42 levels; brain
+        R-flurbiprofen levels; brain S-flurbiprofen levels\\\",\\\"additional_text\\\":\\\"We
+        observed no significant differences in detergent soluble A\u03B240 or A\u03B242
+        levels between the treated and control groups in experiments 1, 2 or 3.\\\",\\\"reasoning\\\":\\\"The
+        study quantified A\u03B240 and A\u03B242 in detergent- and formic-acid-soluble
+        fractions and measured R- and S-flurbiprofen concentrations in brain tissue.\\\"},\\\"attribute_34\\\":{\\\"output_data\\\":\\\"amyloid
+        beta plaque burden\\\",\\\"additional_text\\\":\\\"short-term treatment with
+        *R*flurbiprofen at 20 months of age (experiment 3) resulted in a significant
+        decrease in A\u03B2 plaque burden\\\",\\\"reasoning\\\":\\\"Amyloid plaque
+        burden was measured as an indicator of amyloid disease pathology.\\\"},\\\"attribute_42\\\":{\\\"output_data\\\":\\\"activated
+        microglia; activated astrocytes\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
+        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
+        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"The
+        methods explicitly describe cellular staining for activated microglia and
+        astrocytes.\\\"},\\\"attribute_53\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The
+        document does not report a distinct cell chemistry outcome.\\\"},\\\"attribute_56\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        electron microscopy outcomes are described.\\\"},\\\"attribute_46\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        electrophysiology outcomes are described.\\\"},\\\"attribute_35\\\":{\\\"output_data\\\":\\\"amyloid
+        beta plaque burden\\\",\\\"additional_text\\\":\\\"Computer-assisted quantification
+        of A\u03B2 plaques was performed in a blinded fashion as described previously
+        [62].\\\",\\\"reasoning\\\":\\\"Histopathology included brain-section assessment
+        and computer-assisted quantification of amyloid plaques.\\\"},\\\"attribute_57\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        distinct imaging outcome, apart from histological plaque quantification and
+        water-maze tracking, is reported under an imaging modality.\\\"},\\\"attribute_36\\\":{\\\"output_data\\\":\\\"amyloid
+        beta plaque staining and quantification; activated microglia staining; activated
+        astrocyte staining\\\",\\\"additional_text\\\":\\\"They were then incubated
+        with 33.1.1 (A\u03B21\u201316 mAb) at 1 \u03BCg/ml dilution overnight... Fixed,
+        paraffin-embedded sections were stained for activated microglia using anti-Iba1
+        (1:3000; Wako Chemicals) and for activated astrocytes using anti-GFAP (1:1000,
+        Chemicon).\\\",\\\"reasoning\\\":\\\"Immunohistochemistry was used to stain
+        A\u03B2 plaques, activated microglia, and activated astrocytes.\\\"},\\\"attribute_49\\\":{\\\"output_data\\\":\\\"activated
+        microglia; activated astrocytes\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
+        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
+        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"The
+        study assessed immune-related cellular markers for microglial and astrocyte
+        activation.\\\"},\\\"attribute_43\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        microscopy outcome is separately reported beyond immunohistological plaque
+        assessment.\\\"},\\\"attribute_44\\\":{\\\"output_data\\\":\\\"swimming speed;
+        visible-platform escape latency\\\",\\\"additional_text\\\":\\\"Assessment
+        of sensory and motor ability was determined by measuring the latency of mice
+        to escape to a visible platform and their swimming speed.\\\",\\\"reasoning\\\":\\\"Motor-related
+        performance was assessed by swimming speed and escape latency to a visible
+        platform.\\\"},\\\"attribute_45\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        omics outcomes are described.\\\"},\\\"attribute_37\\\":{\\\"output_data\\\":\\\"selective
+        amyloid beta 42 lowering; reduction in amyloid beta plaque burden\\\",\\\"additional_text\\\":\\\"This
+        treatment regimen improved spatial learning... A modest, though not statistically
+        significant, reduction in formic acid-soluble levels of A\u03B2 was also observed.\\\",\\\"reasoning\\\":\\\"Pharmacodynamic
+        effects were evaluated through drug-associated changes in A\u03B2 levels,
+        plaque burden, and cognition.\\\"},\\\"attribute_48\\\":{\\\"output_data\\\":\\\"brain
+        R-flurbiprofen concentration; brain S-flurbiprofen concentration; R-flurbiprofen
+        conversion to S-flurbiprofen\\\",\\\"additional_text\\\":\\\"*R*- and *S*-flurbiprofen
+        levels in the brain of mice from one water maze (Exp. 3) were analyzed using
+        liquid chromatography and mass spectrometry techniques and were found to be
+        158 \xB1 14.7 and 76.0 \xB1 8.0 ng/gm brain tissue respectively.\\\",\\\"reasoning\\\":\\\"The
+        study measured brain drug concentrations and documented conversion of R-flurbiprofen
+        to the S-enantiomer.\\\"},\\\"attribute_50\\\":{\\\"output_data\\\":\\\"activated
+        microglia; activated astrocytes\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
+        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
+        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"The
+        document reports immunology-related measurements of microglial and astrocyte
+        activation markers.\\\"},\\\"attribute_51\\\":{\\\"output_data\\\":\\\"swimming
+        speed; body weight; general health; mortality\\\",\\\"additional_text\\\":\\\"Kibble
+        consumption, general health and body weight were monitored on a weekly basis.\\\",\\\"reasoning\\\":\\\"Physiological
+        and general health outcomes included swimming performance, body weight, general
+        health, and survival/mortality.\\\"},\\\"attribute_58\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        protein-structure outcomes are described.\\\"},\\\"attribute_38\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        spectroscopy outcome is reported; liquid chromatography-mass spectrometry
+        was used for drug-level quantification but was not reported as a spectroscopy
+        outcome.\\\"},\\\"attribute_39\\\":{\\\"output_data\\\":\\\"mortality; morbidity;
+        gastrointestinal toxicity\\\",\\\"additional_text\\\":\\\"However, initial
+        pilot longterm studies using dosing regimens designed to deliver either 25
+        and 50 mg/kg day ... resulted in 85% and 100% mortality, respectively, within
+        2 weeks.\\\",\\\"reasoning\\\":\\\"Toxicology was evaluated through mortality,
+        morbidity, and discussion of gastrointestinal toxicity associated with chronic
+        higher-dose treatment.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795165744,\"id\":\"chatcmpl-EmEu8lxQcISHmYbdcWRI2mI6ewVxX\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r8-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":2210,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":430,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":5,\"engine_ttft_ms\":622,\"engine_ttlt_ms\":11256,\"pre_inference_ms\":290,\"service_tbt_ms\":5,\"service_ttft_ms\":1609,\"service_ttlt_ms\":12201,\"user_visible_ttft_ms\":1318},\"prompt_tokens\":24901,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":24898},\"total_tokens\":27111}}\n"
     headers:
-      Content-Length:
-      - '7111'
-      Content-Type:
-      - application/json
-      Date:
-      - Thu, 30 Jul 2026 15:08:33 GMT
-      Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
       apim-request-id:
-      - 01e53005-2264-4e5d-87a3-1d8aa924bf28
+      - 080af0db-fca5-489b-a62b-949a5700231c
       azureai-fe-is-streaming:
       - 'False'
-      azureai-fe-requested-service-tier:
-      - PayGo
-      azureai-fe-requested-zone:
-      - default
+      azureai-fe-offer-type:
+      - paygo
       azureml-model-session:
-      - d20260721024335-41ad77c6
+      - d20261114101034-7dfcb1a8
+      content-length:
+      - '10080'
+      content-type:
+      - application/json
+      date:
+      - Fri, 20 Nov 2026 09:09:03 GMT
+      server:
+      - istio-envoy
       skip-error-remapping:
       - 'true'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      vary:
+      - Origin
       x-accel-buffering:
       - 'no'
       x-content-type-options:
       - nosniff
-      x-ms-deployment-name:
-      - gpt-4o-mini
+      x-http2-stream-id:
+      - '151'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -980,19 +1188,19 @@ interactions:
       x-ms-region:
       - Sweden Central
       x-ms-served-model:
-      - gpt-4o-mini-2024-07-18
+      - gpt-5.6-luna-2026-07-09
       x-ratelimit-abusepenalty-active:
       - 'False'
       x-ratelimit-key:
-      - gpt-4o-mini
+      - gpt-5.6-luna
       x-ratelimit-limit-requests:
-      - '13900'
+      - '505'
       x-ratelimit-limit-tokens:
-      - '1390000'
+      - '505000'
       x-ratelimit-remaining-requests:
-      - '13899'
+      - '504'
       x-ratelimit-remaining-tokens:
-      - '1372797'
+      - '480099'
       x-ratelimit-renewalperiod-requests:
       - '60'
       x-ratelimit-renewalperiod-tokens:
@@ -1000,9 +1208,9 @@ interactions:
       x-ratelimit-reset-requests:
       - '0'
       x-ratelimit-reset-tokens:
-      - '0'
+      - '2'
       x-request-id:
-      - 01e53005-2264-4e5d-87a3-1d8aa924bf28
+      - a9a0f6f1-c7d6-4abb-b4dc-67199ddee281
     status:
       code: 200
       message: OK
