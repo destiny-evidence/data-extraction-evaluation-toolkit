@@ -83,7 +83,7 @@ class LLMDataExtractor(BaseDataExtractor):
         """
         if settings is None:
             settings = get_settings()
-        self.config = config
+        super().__init__(config, settings)
         self.custom_system_prompt_file = custom_system_prompt_file
         if self.config.provider == LLMProvider.AZURE:
             self.model = f"azure/{self.config.model}"
