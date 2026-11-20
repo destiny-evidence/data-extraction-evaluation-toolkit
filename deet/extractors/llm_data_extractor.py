@@ -335,9 +335,11 @@ class LLMDataExtractor(BaseDataExtractor):
         return DocumentExtractionResult(
             annotations=annotations,
             messages=messages,
-            input_tokens=usage.input_tokens if usage else 0,
-            output_tokens=usage.output_tokens if usage else 0,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cached_input_tokens=usage.input_tokens_details.cached_tokens,
             model=self.decision_model,
+            total_cost_usd=reported_call_cost_usd(response),
             llm_call_seconds=llm_timer.seconds,
         )
 
