@@ -117,7 +117,9 @@ class Concept(BaseModel):
             attribute_label=self.pref_label,
         )
 
-    def build_prompt(self, fields: list[str], delimiter: str = "; ") -> str:
+    def build_prompt(
+        self, fields: list[ConceptPromptField], delimiter: str = "; "
+    ) -> str:
         """
         Concatenate the given concept fields into a single prompt string.
 
