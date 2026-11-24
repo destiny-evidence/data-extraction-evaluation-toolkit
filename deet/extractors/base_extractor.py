@@ -349,6 +349,15 @@ def _document_key(document: Document) -> str:
         return document.name
 
 
+def _stopped_run_summary(*, extracted: int, failed: int, total: int) -> str:
+    """Describe how far a run got before it stopped."""
+    not_tried = total - extracted - failed
+    return (
+        f"Run stopped: extracted {extracted} of {total} documents "
+        f"({failed} failed, {not_tried} not tried)."
+    )
+
+
 def _failure_from(error: Exception) -> DocumentExtractionFailure:
     return DocumentExtractionFailure(
         error_type=type(error).__name__, message=str(error)
@@ -515,7 +524,7 @@ class BaseDataExtractor(ABC):
 
         failures.reset()
 
-        doc_id_str = str(document.safe_identity.document_id)
+        doc_id_str = _document_key(document)
         parsing = parsing_by_doc.get(doc_id_str, DocumentParsingStats())
         return index, _ProcessedDocument(
             document=document,
@@ -680,8 +689,11 @@ class BaseDataExtractor(ABC):
 
         if aborting_error is not None:
             logger.warning(
-                f"Run stopped after extracting {len(llm_annotated_docs)} of "
-                f"{len(documents)} documents."
+                _stopped_run_summary(
+                    extracted=len(llm_annotated_docs),
+                    failed=len(failed_documents),
+                    total=len(documents),
+                )
             )
             raise aborting_error
 

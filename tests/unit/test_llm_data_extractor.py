@@ -1068,15 +1068,16 @@ def test_extract_from_documents_known_skips_do_not_reset_consecutive_failures(
     assert mock_litellm_completion.call_count == DEFAULT_MAX_CONSECUTIVE_FAILURES + 1
 
 
-def test_extract_from_documents_different_unexpected_errors_fail_at_the_end(
+def test_extract_from_documents_mixed_errors_try_every_document_then_fail(
     llm_extractor,
     sample_eppi_attributes,
     mock_litellm_completion,
 ):
     """
-    Alternating error types are not counted as the same repeated failure.
+    Alternating error types don't trigger the consecutive-failure stop.
 
-    Every document is still tried, then the run fails because none succeeded.
+    Checks two things: every document is still tried, and the final check then
+    fails the run because none succeeded.
     """
     documents = _abstract_documents(2 * DEFAULT_MAX_CONSECUTIVE_FAILURES)
     mock_litellm_completion.side_effect = [
