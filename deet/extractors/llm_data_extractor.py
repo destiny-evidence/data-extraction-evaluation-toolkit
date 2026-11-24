@@ -399,6 +399,12 @@ class LLMDataExtractor(BaseDataExtractor):
             input=context,
             questions=questions,
         )
+        if not isinstance(response, OpenAIDecisionResponse):
+            msg = (
+                "litellm returned an unexpected response type from decisions():"
+                f" {type(response)}"
+            )
+            raise TypeError(msg)
 
         logger.debug(
             "Decision answers: "
