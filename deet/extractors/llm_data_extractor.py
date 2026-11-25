@@ -252,6 +252,13 @@ class LLMDataExtractor(BaseDataExtractor):
             messages, token counts, model, and call duration.
 
         """
+        system_prompt = str(self.config.prompt_config.system_prompt)
+        empty_prompt = self._generate_user_message_json(
+            payload="", attributes=attributes
+        )
+        context = self._enforce_context_limit(
+            context, f"{system_prompt} {empty_prompt}", self.model
+        )
         prompt = self._generate_user_message_json(
             payload=context, attributes=attributes
         )
@@ -321,6 +328,9 @@ class LLMDataExtractor(BaseDataExtractor):
 
         """
         questions = self._build_decision_questions(attributes)
+        context = self._enforce_context_limit(
+            context, json.dumps(questions), cast("str", self.decision_model)
+        )
 
         with measure_elapsed() as llm_timer:
             response, messages = self._call_decisions_api(
@@ -523,90 +533,69 @@ class LLMDataExtractor(BaseDataExtractor):
         return prompt_json
 
     def _enforce_context_limit(
-        self,
-        messages: list[dict[str, Any]],
-        prompt: str,
-        system_prompt: str,
-    ) -> None:
+        self, context: str, overhead: str, model: str, *, buffer: int = 50
+    ) -> str:
         """
-        Enforce max_context_tokens on the messages payload.
+        Fit context into `max_context_tokens`-`buffer` considering rest of the request.
 
-        When the total token count exceeds max_context_tokens:
+        Calculate the number of tokens given by the context and the overhead
+        (system prompt, attribute prompts, and anything else sent with the document).
+
+        When the total token count exceeds our budget:
         - If ``truncate_on_overflow`` is False (default), raises ValueError.
-        - If ``truncate_on_overflow`` is True, truncates the "context" field
-          inside the user prompt JSON to fit. Mutates messages in place.
+        - If ``truncate_on_overflow`` is True, returns a truncated context.
+        - If the whole context limit is taken up by overhead, raises ValueError.
 
         Args:
-            messages: List of message dicts with "role" and "content";
-                messages[1] is the user message (prompt JSON).
-            prompt: Current user prompt JSON string.
-            system_prompt: System prompt text (for token counting).
+            context: Document text sent to the model.
+            overhead: All other text in the request, counted against the budget.
+            model: Model whose tokeniser does the counting.
+            buffer: Buffer added to calculated token usage, to absorb differences
+                between our count and the provider's, such as JSON escaping.
+
+        Returns:
+            The context, truncated when over budget and ``truncate_on_overflow``
+            is True.
 
         Raises:
-            ValueError: When payload exceeds max_context_tokens and
-                truncate_on_overflow is False, or when truncate_on_overflow is
-                True but the prompt JSON cannot be parsed or messages are not
-                in the expected shape so truncation cannot be applied.
+            ValueError: When over budget and truncate_on_overflow is False.
+            ValueError: When truncation is necessary but not possible because
+                overhead exceeds budget.
 
         """
         max_ctx = self.config.max_context_tokens
         if max_ctx is None:
-            return
-        messages_text = " ".join(str(m.get("content", "")) for m in messages)
-        total_tokens = count_tokens(self.model, messages_text)
-        if total_tokens <= max_ctx:
-            return
+            return context
+
+        budget = max_ctx - buffer
+        total_tokens = count_tokens(model, f"{overhead} {context}")
+        if total_tokens <= budget:
+            return context
 
         if not self.config.truncate_on_overflow:
             msg = (
                 f"Payload ({total_tokens} tokens) exceeds "
-                f"max_context_tokens ({max_ctx} tokens). "
+                f"max_context_tokens - buffer ({budget} tokens). "
                 "Set truncate_on_overflow=True in your config to "
                 "automatically truncate, or increase max_context_tokens."
             )
             raise ValueError(msg)
 
-        try:
-            prompt_data = json.loads(prompt)
-            context = prompt_data.get("context", "")
-            attributes_payload = prompt_data.get("attributes", [])
-            attributes_part = json.dumps(
-                {"context": "", "attributes": attributes_payload},
-                ensure_ascii=False,
-            )
-            system_tokens = count_tokens(self.model, str(system_prompt))
-            attributes_tokens = count_tokens(self.model, attributes_part)
-            # Buffer for token-count discrepancies or extra tokens from
-            # serialization/whitespace that LLM APIs may add.
-            buffer = 50
-            context_limit = max_ctx - system_tokens - attributes_tokens - buffer
-            if context_limit > 0:
-                context = truncate_to_token_limit(context, self.model, context_limit)
-                prompt_data["context"] = context
-                truncated_prompt = json.dumps(prompt_data, ensure_ascii=False)
-                messages[1]["content"] = truncated_prompt
-                logger.warning(
-                    f"Truncated context to fit {max_ctx} "
-                    "tokens. Edit `max_context_tokens` in your config."
-                )
-            else:
-                logger.warning(
-                    "System prompt and attributes exceed "
-                    "max_context_tokens; context will be empty."
-                )
-                prompt_data["context"] = ""
-                messages[1]["content"] = json.dumps(prompt_data, ensure_ascii=False)
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.debug(f"Could not truncate by tokens: {e}")
-            logger.warning(
-                "Could not enforce max_context_tokens by truncating the prompt JSON; "
-                "prompt appears to be invalid or not in the expected shape."
-            )
+        overhead_tokens = count_tokens(model, overhead)
+        if overhead_tokens >= budget:
             msg = (
-                "Failed to enforce max_context_tokens: invalid or unexpected prompt "
-                "JSON structure while truncate_on_overflow=True."
+                f"The request without the document ({overhead_tokens} tokens)"
+                f" plus our buffer ({buffer} tokens)"
+                f" leaves no room within max_context_tokens ({max_ctx} tokens)."
+                " Increase max_context_tokens, send fewer attributes,"
+                " or reduce prompt lengths."
             )
-            raise ValueError(msg) from e
+            raise ValueError(msg)
+        logger.warning(
+            f"Truncated context to fit {max_ctx} "
+            "tokens. Edit `max_context_tokens` in your config."
+        )
+        return truncate_to_token_limit(context, model, budget - overhead_tokens)
 
     def _call_llm(
         self,
@@ -633,8 +622,6 @@ class LLMDataExtractor(BaseDataExtractor):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
-
-        self._enforce_context_limit(messages, prompt, str(system_prompt))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")

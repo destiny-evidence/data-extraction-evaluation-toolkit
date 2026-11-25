@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from litellm.types.decisions import (
+    DecisionsResponse,
     OpenAIDecisionResponse,
     OpenAIDecisionUsage,
     OpenAIPredicateAnswer,
@@ -36,6 +37,7 @@ from deet.extractors.llm_data_extractor import (
 )
 from deet.processors.csv_annotation_converter import CSVAnnotationConverter
 from deet.settings import DecisionApiType, LLMProvider
+from deet.utils.tokenisation import count_tokens
 
 # @pytest.fixture(autouse=True)
 # def mock_settings(monkeypatch):
@@ -297,56 +299,20 @@ def test_prepare_context_abstract_only(llm_extractor, sample_eppi_document):
     assert sample_eppi_document.context == sample_eppi_document.abstract
 
 
-def test_call_llm_raises_when_payload_exceeds_max_by_default(
-    llm_extractor, sample_eppi_attributes, mock_litellm_completion
-):
-    """Test _call_llm raises when payload exceeds max and truncation is off."""
-    long_context = " ".join(["word"] * 2000)
-    prompt = json.dumps(
-        {"context": long_context, "attributes": []},
-        ensure_ascii=False,
+def test_enforce_context_limit_raises_when_buffer_leaves_no_room(llm_extractor):
+    """Overhead that fits max_context_tokens but not the buffered budget raises."""
+    context = "word " * 100
+    overhead = "word " * 100
+    llm_extractor.config.max_context_tokens = (
+        count_tokens(llm_extractor.model, overhead) + 10
     )
-    llm_extractor.config.max_context_tokens = 1000
-    llm_extractor.config.truncate_on_overflow = False
-    response_model = build_llm_response_model(sample_eppi_attributes)
-    with pytest.raises(ValueError, match="exceeds max_context_tokens"):
-        llm_extractor._call_llm(prompt=prompt, response_model=response_model)
-
-
-def test_call_llm_truncates_when_truncate_on_overflow_enabled(
-    llm_extractor, sample_eppi_attributes, mock_litellm_completion
-):
-    """Test that _call_llm truncates context when truncate_on_overflow is True."""
-    long_context = " ".join(["word"] * 2000)
-    prompt = json.dumps(
-        {"context": long_context, "attributes": []},
-        ensure_ascii=False,
-    )
-    llm_extractor.config.max_context_tokens = 1000
     llm_extractor.config.truncate_on_overflow = True
-    response_model = build_llm_response_model(sample_eppi_attributes)
-    llm_extractor._call_llm(prompt=prompt, response_model=response_model)
-    call_args = mock_litellm_completion.call_args
-    user_content = json.loads(call_args.kwargs["messages"][1]["content"])
-    assert len(user_content["context"]) < len(long_context)
-
-
-def test_call_llm_truncates_to_empty_when_system_and_attributes_exceed_max(
-    llm_extractor, sample_eppi_attributes, mock_litellm_completion
-):
-    """Test that _call_llm sets context to empty when system+attributes exceed max."""
-    long_context = " ".join(["word"] * 100)
-    prompt = json.dumps(
-        {"context": long_context, "attributes": []},
-        ensure_ascii=False,
+    with pytest.raises(ValueError, match="leaves no room"):
+        llm_extractor._enforce_context_limit(context, overhead, llm_extractor.model)
+    truncated = llm_extractor._enforce_context_limit(
+        context, overhead, llm_extractor.model, buffer=0
     )
-    llm_extractor.config.max_context_tokens = 5
-    llm_extractor.config.truncate_on_overflow = True
-    response_model = build_llm_response_model(sample_eppi_attributes)
-    llm_extractor._call_llm(prompt=prompt, response_model=response_model)
-    call_args = mock_litellm_completion.call_args
-    user_content = json.loads(call_args.kwargs["messages"][1]["content"])
-    assert user_content["context"] == ""
+    assert 0 < len(truncated) < len(context)
 
 
 def test_generate_user_message_json(llm_extractor, sample_eppi_attributes):
@@ -932,6 +898,112 @@ class TestCallDecision:
         assert result.messages[0]["role"] == "system"
         assert "decisions_questions" in result.messages[0]["content"]
         assert result.messages[1] == {"role": "user", "content": "doc text"}
+
+    def test_raises_on_unexpected_response_type(
+        self, mock_settings, mock_litellm_decisions, sample_bool_attrs
+    ):
+        """A response in the System One DecisionsResponse shape is refused."""
+        mock_litellm_decisions.return_value = DecisionsResponse(answers={})
+        extractor = create_decision_extractor(mock_settings)
+        with pytest.raises(TypeError, match="unexpected response type"):
+            extractor._call_decision(context="doc text", attributes=sample_bool_attrs)
+
+
+def completion_context_sent(completion, _decisions) -> str:
+    """Document text inside the prompt JSON sent to litellm.completion."""
+    prompt = completion.call_args.kwargs["messages"][1]["content"]
+    return json.loads(prompt)["context"]
+
+
+def decision_context_sent(_completion, decisions) -> str:
+    """Document text sent to litellm.decisions as input."""
+    return decisions.call_args.kwargs["input"]
+
+
+def create_completion_extractor(mock_settings: MagicMock) -> LLMDataExtractor:
+    """Build an Azure-provider extractor without decision routing."""
+    return create_llm_extractor(
+        DataExtractionConfig(model="test-model", provider=LLMProvider.AZURE),
+        mock_settings,
+    )
+
+
+ROUTES = [
+    pytest.param(
+        create_completion_extractor,
+        LLMDataExtractor._call_completion,
+        completion_context_sent,
+        id="completion",
+    ),
+    pytest.param(
+        create_decision_extractor,
+        LLMDataExtractor._call_decision,
+        decision_context_sent,
+        id="decision",
+    ),
+]
+
+
+@pytest.mark.parametrize(("create_extractor", "call", "context_sent"), ROUTES)
+class TestContextLimit:
+    """Both routes enforce max_context_tokens before calling litellm."""
+
+    def test_raises_when_context_exceeds_max(
+        self,
+        mock_settings,
+        mock_litellm_completion,
+        mock_litellm_decisions,
+        sample_bool_attrs,
+        create_extractor,
+        call,
+        context_sent,
+    ):
+        """Over-budget input with truncation off raises before the API call."""
+        extractor = create_extractor(mock_settings)
+        extractor.config.max_context_tokens = 1000
+        extractor.config.truncate_on_overflow = False
+        with pytest.raises(ValueError, match="exceeds max_context_tokens"):
+            call(extractor, context="word " * 2000, attributes=sample_bool_attrs)
+        mock_litellm_completion.assert_not_called()
+        mock_litellm_decisions.assert_not_called()
+
+    def test_truncates_when_truncate_on_overflow_enabled(
+        self,
+        mock_settings,
+        mock_litellm_completion,
+        mock_litellm_decisions,
+        sample_bool_attrs,
+        create_extractor,
+        call,
+        context_sent,
+    ):
+        """With truncate_on_overflow, a shortened context is sent."""
+        extractor = create_extractor(mock_settings)
+        extractor.config.max_context_tokens = 1000
+        extractor.config.truncate_on_overflow = True
+        long_context = "word " * 2000
+        call(extractor, context=long_context, attributes=sample_bool_attrs)
+        sent = context_sent(mock_litellm_completion, mock_litellm_decisions)
+        assert 0 < len(sent) < len(long_context)
+
+    def test_raises_when_overhead_leaves_no_room(
+        self,
+        mock_settings,
+        mock_litellm_completion,
+        mock_litellm_decisions,
+        sample_bool_attrs,
+        create_extractor,
+        call,
+        context_sent,
+    ):
+        """Overhead that leaves no room for the document raises before the call."""
+        extractor = create_extractor(mock_settings)
+        extractor.config.max_context_tokens = 5
+        extractor.config.truncate_on_overflow = True
+        with pytest.raises(ValueError, match="leaves no room"):
+            call(extractor, context="doc text", attributes=sample_bool_attrs)
+        mock_litellm_completion.assert_not_called()
+        mock_litellm_decisions.assert_not_called()
 
 
 class TestParseDecisionResponse:
