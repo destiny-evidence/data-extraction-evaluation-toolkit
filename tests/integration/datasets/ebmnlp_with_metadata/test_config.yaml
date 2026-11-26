@@ -1,0 +1,6 @@
+  gold_standard_file: reports.json
+  gold_standard_format: eppi_json
+  prompt_population: file
+  link_map: link_map.csv
+  prompt_csv: prompt_definitions.csv
+  pdf_dir: pdfs

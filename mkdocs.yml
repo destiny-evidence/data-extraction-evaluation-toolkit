@@ -47,6 +47,7 @@ nav:
     - concepts/project.md
     - concepts/experiment.md
     - concepts/prompting-strategies.md
+    - concepts/vocabulary.md
   - CLI User Guide:
     - cli/cli.md
   - Python Guide:
