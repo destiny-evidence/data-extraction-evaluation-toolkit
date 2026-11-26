@@ -315,8 +315,24 @@ class CSVAnnotationConverter(AnnotationConverter):
                 row_num += 1
 
         resolved_column_types: dict[str, AttributeType] = {}
+        mixed_type_columns: dict[str, set[type]] = {}
         for col_name, col_types in column_type_evidence.items():
-            resolved_column_types[col_name] = self._resolve_types(col_types)
+            try:
+                resolved_column_types[col_name] = self._resolve_types(col_types)
+            except ColumnTypeInferenceError:
+                mixed_type_columns[col_name] = set(col_types) - {None}
+
+        if mixed_type_columns:
+            details = "; ".join(
+                f"{col!r} ({', '.join(sorted(t.__name__ for t in types))})"
+                for col, types in mixed_type_columns.items()
+            )
+            msg = (
+                f"{len(mixed_type_columns)} column(s) contain mixed value types: "
+                f"{details}. Each column must hold a single type "
+                "(all numbers, all true/false, or all text)."
+            )
+            raise ColumnTypeInferenceError(msg)
 
         return resolved_column_types
 
