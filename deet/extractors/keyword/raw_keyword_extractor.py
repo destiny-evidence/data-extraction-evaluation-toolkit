@@ -12,6 +12,7 @@ from deet.data_models.extraction import (
 )
 from deet.extractors.base_extractor import DataExtractionConfig
 from deet.extractors.keyword.base_keyword_extractor import BaseKeywordDataExtractor
+from deet.settings import DataExtractionSettings
 
 
 class RawKeywordDataExtractor(BaseKeywordDataExtractor):
@@ -22,9 +23,14 @@ class RawKeywordDataExtractor(BaseKeywordDataExtractor):
     match the document content.
     """
 
-    def __init__(self, config: DataExtractionConfig, snippet_window: int = 80) -> None:
+    def __init__(
+        self,
+        config: DataExtractionConfig,
+        settings: DataExtractionSettings | None = None,
+        snippet_window: int = 80,
+    ) -> None:
         """Initialise and set snippet window."""
-        super().__init__(config)
+        super().__init__(config, settings)
         self.snippet_window = snippet_window
 
     def _find_phrase(self, context: str, context_lower: str, phrase: str) -> int:
