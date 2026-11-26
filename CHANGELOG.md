@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v0.5.0-dev.7 (2026-11-26)
+
+### Bug Fixes
+
+- Write config.yaml and prompts_used before llm extraction
+  ([`4c4c3f4`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/4c4c3f45f2c7d4079e434521e281ee2dcd2d3128))
+
+### Chores
+
+- Unpin gitpython and upgrade python-semantic-release to 10.7.0
+  ([`9a06ffe`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/9a06ffe623542fcb2c4bf2feed94ae8bc29f6329))
+
+- **deps**: Lock file maintenance
+  ([`1d22c43`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/1d22c435c8bede9db06b9ef225451f195d413e9e))
+
+- **deps**: Update actions/create-github-app-token action to v3.4.0
+  ([`2b0ba67`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/2b0ba67b5554b2be284865381ad1718b89976a68))
+
+- **deps**: Update astral-sh/setup-uv action to v10.4.0
+  ([`3c05cd9`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/3c05cd92d8e454407c163b802f2863056c2cb7bc))
+
+
 ## v0.5.0-dev.6 (2026-11-19)
 
 ### Chores
