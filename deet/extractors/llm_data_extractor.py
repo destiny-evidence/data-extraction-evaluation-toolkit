@@ -2,9 +2,11 @@
 
 import json
 from pathlib import Path
+from string import Template
 from typing import Any, NamedTuple, cast
 
 import litellm
+from litellm.types.decisions import OpenAIDecisionResponse, OpenAIPredicateAnswer
 from litellm.types.utils import ChatCompletionMessageToolCall, ModelResponse, Usage
 from loguru import logger
 from pydantic import (
@@ -14,6 +16,7 @@ from pydantic import (
 from deet.data_models.base import (
     AnnotationType,
     Attribute,
+    AttributeType,
     BaseLLMResponse,
     DynamicLLMResponseBase,
     GoldStandardAnnotation,
@@ -21,6 +24,7 @@ from deet.data_models.base import (
     LLMInputSchema,
     LLMResponseSchema,
     attribute_id_from_response_key,
+    attribute_response_key,
     build_llm_response_model,
 )
 from deet.data_models.documents import (
@@ -32,6 +36,7 @@ from deet.data_models.extraction import (
 from deet.extractors.base_extractor import BaseDataExtractor, DataExtractionConfig
 from deet.settings import (
     DataExtractionSettings,
+    DecisionApiType,
     LLMProvider,
     get_settings,
 )
@@ -100,6 +105,25 @@ class LLMDataExtractor(BaseDataExtractor):
             error_message = f"Unsupported LLM provider: {self.config.provider}"
             raise ValueError(error_message)
 
+        self.decision_model: str | None = None
+        self.decision_api_base = self.api_base
+        if self.config.decision_model is not None:
+            if self.config.provider is not LLMProvider.AZURE:
+                error_message = (
+                    "decision_model requires the Azure provider, got"
+                    f" {self.config.provider}"
+                )
+                raise ValueError(error_message)
+            deployment = self.config.decision_model
+            match self.config.decision_api_type:
+                case DecisionApiType.OPENAI:
+                    # Azure mounts the OpenAI-compatible interface at /openai;
+                    # litellm has no azure/ decisions config.
+                    self.decision_model = f"openai/{deployment}"
+                    self.decision_api_base = f"{self.api_base.rstrip('/')}/openai"
+                case DecisionApiType.SYSTEM_ONE:
+                    self.decision_model = f"azure_ai/{deployment}"
+
         logger.info(f"Using {self.config.provider} with model: {self.model}")
         if self.config.max_tokens is not None:
             logger.info(f"max_tokens={self.config.max_tokens}")
@@ -156,35 +180,9 @@ class LLMDataExtractor(BaseDataExtractor):
         selected_attributes = self._select_attributes(attributes, filter_attribute_ids)
 
         context = self._prepare_context(payload=payload, context_type=context_type)
-        prompt = self._generate_user_message_json(
-            payload=context, attributes=selected_attributes
-        )
 
-        response_model: type[BaseLLMResponse]
-
-        if self.config.dynamic_json_schema:
-            response_model = build_llm_response_model(selected_attributes)
-        else:
-            response_model = LLMResponseSchema
-
-        with measure_elapsed() as llm_timer:
-            call = self._call_llm(prompt=prompt, response_model=response_model)
-
-        annotations = self._parse_llm_response(
-            response_content=call.response_content,
-            response_model=response_model,
-            attributes=selected_attributes,
-        )
-
-        return DocumentExtractionResult(
-            annotations=annotations,
-            messages=call.messages,
-            input_tokens=call.input_tokens,
-            output_tokens=call.output_tokens,
-            cached_input_tokens=call.cached_input_tokens,
-            model=self.model,
-            total_cost_usd=call.total_cost_usd,
-            llm_call_seconds=llm_timer.seconds,
+        return DocumentExtractionResult.combine(
+            self._annotate(context=context, attributes=selected_attributes)
         )
 
     def _write_json_if_path(
@@ -200,6 +198,295 @@ class LLMDataExtractor(BaseDataExtractor):
         """
         if path is not None:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    def _annotate(
+        self, *, context: str, attributes: list[Attribute]
+    ) -> list[DocumentExtractionResult]:
+        """
+        Annotate attributes, routing booleans to a decision model if configured.
+
+        Args:
+            context: The content of the document from which data should be extracted
+            attributes: The attributes defining what should be extracted
+
+        Returns:
+            One DocumentExtractionResult per endpoint called: booleans and others
+            separately when decision routing is on, one completion call otherwise.
+
+        """
+        if self.decision_model is None:
+            return [self._call_completion(context=context, attributes=attributes)]
+        booleans = [
+            attribute
+            for attribute in attributes
+            if attribute.output_data_type is AttributeType.BOOL
+        ]
+        others = [
+            attribute
+            for attribute in attributes
+            if attribute.output_data_type is not AttributeType.BOOL
+        ]
+        logger.debug(
+            f"Routing {len(booleans)} attribute(s) to decision model,"
+            f" {len(others)} to completion"
+        )
+        calls: list[DocumentExtractionResult] = []
+        if booleans:
+            calls.append(self._call_decision(context=context, attributes=booleans))
+        if others:
+            calls.append(self._call_completion(context=context, attributes=others))
+        return calls
+
+    def _call_completion(
+        self, *, context: str, attributes: list[Attribute]
+    ) -> DocumentExtractionResult:
+        """
+        Make one completion-API call: build the prompt, request, parse annotations.
+
+        Args:
+            context: The content of the document from which data should be extracted
+            attributes: The attributes defining what should be extracted
+
+        Returns:
+            DocumentExtractionResult for this single call: annotations,
+            messages, token counts, model, and call duration.
+
+        """
+        system_prompt = str(self.config.prompt_config.system_prompt)
+        empty_prompt = self._generate_user_message_json(
+            payload="", attributes=attributes
+        )
+        context = self._enforce_context_limit(
+            context, f"{system_prompt} {empty_prompt}", self.model
+        )
+        prompt = self._generate_user_message_json(
+            payload=context, attributes=attributes
+        )
+
+        response_model: type[BaseLLMResponse]
+
+        if self.config.dynamic_json_schema:
+            response_model = build_llm_response_model(attributes)
+        else:
+            response_model = LLMResponseSchema
+
+        with measure_elapsed() as llm_timer:
+            llm_call = self._call_llm(prompt=prompt, response_model=response_model)
+
+        annotations = self._parse_llm_response(
+            response_content=llm_call.response_content,
+            response_model=response_model,
+            attributes=attributes,
+        )
+
+        return DocumentExtractionResult(
+            annotations=annotations,
+            messages=llm_call.messages,
+            input_tokens=llm_call.input_tokens,
+            output_tokens=llm_call.output_tokens,
+            cached_input_tokens=llm_call.cached_input_tokens,
+            model=self.model,
+            total_cost_usd=llm_call.total_cost_usd,
+            llm_call_seconds=llm_timer.seconds,
+        )
+
+    def _decision_instructions(self, attribute: Attribute) -> str:
+        """
+        Build predicate question text for one attribute.
+
+        Prompts ending in '?' pass through; otherwise the configured
+        ``decision_question_template`` frames label and prompt as a question.
+
+        Args:
+            attribute: The boolean attribute being asked about.
+
+        Returns:
+            Question text to send as the predicate ``instructions``.
+
+        """
+        prompt = (attribute.prompt or "").strip()
+        if prompt.endswith("?"):
+            return prompt
+        template = Template(self.config.prompt_config.decision_question_template)
+        return template.substitute(
+            label=attribute.attribute_label, prompt=prompt
+        ).strip()
+
+    def _call_decision(
+        self, *, context: str, attributes: list[Attribute]
+    ) -> DocumentExtractionResult:
+        """
+        Make one decisions-API call: one predicate question per boolean attribute.
+
+        Args:
+            context: The content of the document from which data should be extracted
+            attributes: The boolean attributes defining what should be extracted
+
+        Returns:
+            DocumentExtractionResult for this single call: annotations,
+            messages, token counts, model, and call duration.
+
+        """
+        questions = self._build_decision_questions(attributes)
+        context = self._enforce_context_limit(
+            context, json.dumps(questions), cast("str", self.decision_model)
+        )
+
+        with measure_elapsed() as llm_timer:
+            response, messages = self._call_decisions_api(
+                context=context, questions=questions
+            )
+
+        annotations = self._parse_decision_response(
+            response=response, attributes=attributes
+        )
+
+        usage = response.usage
+        return DocumentExtractionResult(
+            annotations=annotations,
+            messages=messages,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cached_input_tokens=usage.input_tokens_details.cached_tokens,
+            model=self.decision_model,
+            total_cost_usd=reported_call_cost_usd(response),
+            llm_call_seconds=llm_timer.seconds,
+        )
+
+    def _build_decision_questions(
+        self, attributes: list[Attribute]
+    ) -> list[dict[str, str]]:
+        """
+        Build one predicate question per boolean attribute.
+
+        Args:
+            attributes: The boolean attributes defining what should be extracted
+
+        Returns:
+            Predicate questions named by each attribute's response key.
+
+        Raises:
+            ValueError: If any attribute is not boolean.
+
+        """
+        for attribute in attributes:
+            if attribute.output_data_type is not AttributeType.BOOL:
+                msg = (
+                    "The decision backend only supports BOOL attributes, got "
+                    f"{attribute.output_data_type} for attribute "
+                    f"{attribute.attribute_id}"
+                )
+                raise ValueError(msg)
+
+        return [
+            {
+                "type": "predicate",
+                "name": attribute_response_key(attribute.attribute_id),
+                "instructions": self._decision_instructions(attribute),
+            }
+            for attribute in attributes
+        ]
+
+    def _call_decisions_api(
+        self, *, context: str, questions: list[dict[str, str]]
+    ) -> tuple[OpenAIDecisionResponse, list[dict[str, str]]]:
+        """
+        Send predicate questions about the context to the decision model.
+
+        Args:
+            context: The content of the document the questions are about
+            questions: Predicate questions from ``_build_decision_questions``
+
+        Returns:
+            The decisions response, and the request recorded as a system
+            message holding the questions and a user message holding the context.
+
+        """
+        response = litellm.decisions(
+            model=self.decision_model,
+            api_key=self.llm_api_key,
+            api_base=self.decision_api_base,
+            input=context,
+            questions=questions,
+        )
+        if not isinstance(response, OpenAIDecisionResponse):
+            msg = (
+                "litellm returned an unexpected response type from decisions():"
+                f" {type(response)}"
+            )
+            raise TypeError(msg)
+
+        logger.debug(
+            "Decision answers: "
+            f"{[(answer.type, answer.name) for answer in response.answers]}"
+        )
+
+        messages = [
+            {
+                "role": "system",
+                "content": json.dumps({"decisions_questions": questions}),
+            },
+            {"role": "user", "content": context},
+        ]
+        return response, messages
+
+    def _parse_decision_response(
+        self, *, response: OpenAIDecisionResponse, attributes: list[Attribute]
+    ) -> list[GoldStandardAnnotation]:
+        """
+        Threshold predicate probabilities into boolean annotations.
+
+        Attributes without a predicate answer (a refusal or a missing answer)
+        get no annotation and are reported in a warning, as are answers whose
+        names match no attribute.
+
+        Args:
+            response: The decisions response to parse
+            attributes: The boolean attributes the questions were built from
+
+        Returns:
+            One annotation per answered attribute: raw_data holds the
+            thresholded decision, reasoning the probability to 4 decimals.
+
+        """
+        probabilities: dict[str | None, float] = {}
+        for answer in response.answers:
+            if isinstance(answer, OpenAIPredicateAnswer):
+                probabilities[answer.name] = answer.probability
+
+        expected = {attribute_response_key(a.attribute_id) for a in attributes}
+        unanswered = sorted(expected - probabilities.keys())
+        unexpected = sorted(
+            str(answer.name)
+            for answer in response.answers
+            if answer.name not in expected
+        )
+        if unanswered:
+            logger.warning(
+                f"Decision model gave no predicate answer for {len(unanswered)}"
+                f" of {len(expected)} attribute(s), skipping them: {unanswered}"
+            )
+        if unexpected:
+            logger.warning(
+                f"Decision model returned answers with unexpected names: {unexpected}"
+            )
+
+        annotations = []
+        for attribute in attributes:
+            probability = probabilities.get(
+                attribute_response_key(attribute.attribute_id)
+            )
+            if probability is None:
+                continue
+            annotations.append(
+                GoldStandardAnnotation(
+                    attribute=attribute,
+                    raw_data=probability >= self.config.decision_threshold,
+                    annotation_type=AnnotationType.LLM,
+                    reasoning=f"{probability:.4f}",
+                )
+            )
+        return annotations
 
     def _generate_user_message_json(
         self,
@@ -246,90 +533,69 @@ class LLMDataExtractor(BaseDataExtractor):
         return prompt_json
 
     def _enforce_context_limit(
-        self,
-        messages: list[dict[str, Any]],
-        prompt: str,
-        system_prompt: str,
-    ) -> None:
+        self, context: str, overhead: str, model: str, *, buffer: int = 50
+    ) -> str:
         """
-        Enforce max_context_tokens on the messages payload.
+        Fit context into `max_context_tokens`-`buffer` considering rest of the request.
 
-        When the total token count exceeds max_context_tokens:
+        Calculate the number of tokens given by the context and the overhead
+        (system prompt, attribute prompts, and anything else sent with the document).
+
+        When the total token count exceeds our budget:
         - If ``truncate_on_overflow`` is False (default), raises ValueError.
-        - If ``truncate_on_overflow`` is True, truncates the "context" field
-          inside the user prompt JSON to fit. Mutates messages in place.
+        - If ``truncate_on_overflow`` is True, returns a truncated context.
+        - If the whole context limit is taken up by overhead, raises ValueError.
 
         Args:
-            messages: List of message dicts with "role" and "content";
-                messages[1] is the user message (prompt JSON).
-            prompt: Current user prompt JSON string.
-            system_prompt: System prompt text (for token counting).
+            context: Document text sent to the model.
+            overhead: All other text in the request, counted against the budget.
+            model: Model whose tokeniser does the counting.
+            buffer: Buffer added to calculated token usage, to absorb differences
+                between our count and the provider's, such as JSON escaping.
+
+        Returns:
+            The context, truncated when over budget and ``truncate_on_overflow``
+            is True.
 
         Raises:
-            ValueError: When payload exceeds max_context_tokens and
-                truncate_on_overflow is False, or when truncate_on_overflow is
-                True but the prompt JSON cannot be parsed or messages are not
-                in the expected shape so truncation cannot be applied.
+            ValueError: When over budget and truncate_on_overflow is False.
+            ValueError: When truncation is necessary but not possible because
+                overhead exceeds budget.
 
         """
         max_ctx = self.config.max_context_tokens
         if max_ctx is None:
-            return
-        messages_text = " ".join(str(m.get("content", "")) for m in messages)
-        total_tokens = count_tokens(self.model, messages_text)
-        if total_tokens <= max_ctx:
-            return
+            return context
+
+        budget = max_ctx - buffer
+        total_tokens = count_tokens(model, f"{overhead} {context}")
+        if total_tokens <= budget:
+            return context
 
         if not self.config.truncate_on_overflow:
             msg = (
                 f"Payload ({total_tokens} tokens) exceeds "
-                f"max_context_tokens ({max_ctx} tokens). "
+                f"max_context_tokens - buffer ({budget} tokens). "
                 "Set truncate_on_overflow=True in your config to "
                 "automatically truncate, or increase max_context_tokens."
             )
             raise ValueError(msg)
 
-        try:
-            prompt_data = json.loads(prompt)
-            context = prompt_data.get("context", "")
-            attributes_payload = prompt_data.get("attributes", [])
-            attributes_part = json.dumps(
-                {"context": "", "attributes": attributes_payload},
-                ensure_ascii=False,
-            )
-            system_tokens = count_tokens(self.model, str(system_prompt))
-            attributes_tokens = count_tokens(self.model, attributes_part)
-            # Buffer for token-count discrepancies or extra tokens from
-            # serialization/whitespace that LLM APIs may add.
-            buffer = 50
-            context_limit = max_ctx - system_tokens - attributes_tokens - buffer
-            if context_limit > 0:
-                context = truncate_to_token_limit(context, self.model, context_limit)
-                prompt_data["context"] = context
-                truncated_prompt = json.dumps(prompt_data, ensure_ascii=False)
-                messages[1]["content"] = truncated_prompt
-                logger.warning(
-                    f"Truncated context to fit {max_ctx} "
-                    "tokens. Edit `max_context_tokens` in your config."
-                )
-            else:
-                logger.warning(
-                    "System prompt and attributes exceed "
-                    "max_context_tokens; context will be empty."
-                )
-                prompt_data["context"] = ""
-                messages[1]["content"] = json.dumps(prompt_data, ensure_ascii=False)
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.debug(f"Could not truncate by tokens: {e}")
-            logger.warning(
-                "Could not enforce max_context_tokens by truncating the prompt JSON; "
-                "prompt appears to be invalid or not in the expected shape."
-            )
+        overhead_tokens = count_tokens(model, overhead)
+        if overhead_tokens >= budget:
             msg = (
-                "Failed to enforce max_context_tokens: invalid or unexpected prompt "
-                "JSON structure while truncate_on_overflow=True."
+                f"The request without the document ({overhead_tokens} tokens)"
+                f" plus our buffer ({buffer} tokens)"
+                f" leaves no room within max_context_tokens ({max_ctx} tokens)."
+                " Increase max_context_tokens, send fewer attributes,"
+                " or reduce prompt lengths."
             )
-            raise ValueError(msg) from e
+            raise ValueError(msg)
+        logger.warning(
+            f"Truncated context to fit {max_ctx} "
+            "tokens. Edit `max_context_tokens` in your config."
+        )
+        return truncate_to_token_limit(context, model, budget - overhead_tokens)
 
     def _call_llm(
         self,
@@ -356,8 +622,6 @@ class LLMDataExtractor(BaseDataExtractor):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
-
-        self._enforce_context_limit(messages, prompt, str(system_prompt))
 
         logger.debug(f"Model: {self.model}")
         logger.debug(f"Temperature: {self.config.temperature}")

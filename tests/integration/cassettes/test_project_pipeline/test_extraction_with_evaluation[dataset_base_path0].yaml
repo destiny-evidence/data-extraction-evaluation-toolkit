@@ -109,17 +109,17 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_1\\\":{\\\"output_data\\\":\\\"Thirty-six
-        young male students\\\",\\\"additional_text\\\":\\\"Thirty-six young male
-        students performed 5 min of jogging as a warm-up\\\",\\\"reasoning\\\":\\\"The
-        study identifies the participants as thirty-six young male students. No diseases
-        or other participant-specific conditions are explicitly reported.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"young\\\",\\\"additional_text\\\":\\\"Thirty-six
-        young male students performed 5 min of jogging as a warm-up\\\",\\\"reasoning\\\":\\\"The
-        participants' age is described qualitatively as \u201Cyoung\u201D; no numerical
-        age is provided.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795165737,\"id\":\"chatcmpl-EmEu1ll872PsBXSgJlkxMtr3faoOg\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r8-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":253,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":128,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":6,\"engine_ttft_ms\":71,\"engine_ttlt_ms\":1651,\"pre_inference_ms\":129,\"service_tbt_ms\":6,\"service_ttft_ms\":797,\"service_ttlt_ms\":2373,\"user_visible_ttft_ms\":668},\"prompt_tokens\":1197,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":1194},\"total_tokens\":1450}}\n"
+      string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":"{\"attribute_1\":{\"output_data\":\"Thirty-six
+        young male students\",\"additional_text\":\"Thirty-six young male students
+        performed 5 min of jogging as a warm-up\",\"reasoning\":\"The participant
+        description identifies the sample size, sex, and participant status as students.\"},\"attribute_5\":{\"output_data\":\"young\",\"additional_text\":\"Thirty-six
+        young male students\",\"reasoning\":\"The source describes the participants
+        as \\\"young\\\" but does not provide a specific numerical age.\"}}","refusal":null,"role":"assistant"}}],"created":1795171729,"id":"chatcmpl-EmGSfBRnEu61NYdiJVr0v5ec0lkWI","model":"gpt-5.6-luna-2026-07-09","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"routing":{"serving_pipereplica":"d20261114101034-7dfcb1a8-prefill-r14-dp0-prefill"},"service_tier":"default","system_fingerprint":null,"usage":{"completion_tokens":201,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":93,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":6,"engine_ttft_ms":86,"engine_ttlt_ms":1377,"pre_inference_ms":112,"service_tbt_ms":6,"service_ttft_ms":793,"service_ttlt_ms":2067,"user_visible_ttft_ms":680},"prompt_tokens":1197,"prompt_tokens_details":{"audio_tokens":0,"cache_write_tokens":0,"cached_tokens":1194},"total_tokens":1398}}
+
+        '
     headers:
       apim-request-id:
-      - 164d689f-f624-410b-bef1-f71482791ead
+      - a23e848d-ee73-4f9a-b5c8-4dfcb64628c9
       azureai-fe-is-streaming:
       - 'False'
       azureai-fe-offer-type:
@@ -127,11 +127,11 @@ interactions:
       azureml-model-session:
       - d20261114101034-7dfcb1a8
       content-length:
-      - '2126'
+      - '2039'
       content-type:
       - application/json
       date:
-      - Fri, 20 Nov 2026 09:08:57 GMT
+      - Fri, 20 Nov 2026 10:48:49 GMT
       server:
       - istio-envoy
       skip-error-remapping:
@@ -145,7 +145,7 @@ interactions:
       x-content-type-options:
       - nosniff
       x-http2-stream-id:
-      - '523'
+      - '555'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -175,7 +175,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 63a885cf-3097-4ca7-86cf-bf0eaee31daa
+      - 7dd486fa-6713-4914-aa1f-3b424895e73b
     status:
       code: 200
       message: OK
@@ -299,21 +299,21 @@ interactions:
   response:
     body:
       string: '{"choices":[{"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"protected_material_code":{"detected":false,"filtered":false},"protected_material_text":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}},"finish_reason":"stop","index":0,"logprobs":null,"message":{"annotations":[],"content":"{\"attribute_1\":{\"output_data\":\"Sixty
-        patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia;;29 patients;;31 patients\",\"additional_text\":\"Sixty
-        patients undergoing ambulatory anterior cruciate ligament repair of the knee
-        under spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
+        patients undergoing ambulatory anterior cruciate ligament repair of the knee;;Group
+        1 ( 29 patients );;Group 2 ( 31 patients )\",\"additional_text\":\"Sixty patients
+        undergoing ambulatory anterior cruciate ligament repair of the knee under
+        spinal anesthesia were randomized into two groups ; Group 1 ( 29 patients
         ) received 4 mL of 1.5 % ( 60-mg dose ) and Group 2 ( 31 patients ) received
-        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine.\",\"reasoning\":\"The source
-        identifies the total sample size, the knee condition/procedure for which participants
-        were undergoing anesthesia, and the number of patients in each randomized
+        4 mL of 2 % ( 80-mg dose ) of plain mepivacaine .\",\"reasoning\":\"The context
+        identifies the total participant sample, the procedure/condition for which
+        they were undergoing treatment, and the number of participants in each randomized
         group. No sex or age descriptors are reported.\"},\"attribute_5\":{\"output_data\":\"\",\"additional_text\":\"\",\"reasoning\":\"The
-        source does not report the age of the study participants.\"}}","refusal":null,"role":"assistant"}}],"created":1795165740,"id":"chatcmpl-EmEu4vFa0rhuLZG1QwO1Tsk9zRaSm","model":"gpt-5.6-luna-2026-07-09","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"routing":{"serving_pipereplica":"d20261114101034-7dfcb1a8-prefill-r6-dp0-prefill"},"service_tier":"default","system_fingerprint":null,"usage":{"completion_tokens":302,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":102,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":6,"engine_ttft_ms":87,"engine_ttlt_ms":1868,"pre_inference_ms":149,"service_tbt_ms":7,"service_ttft_ms":880,"service_ttlt_ms":2909,"user_visible_ttft_ms":731},"prompt_tokens":1424,"prompt_tokens_details":{"audio_tokens":0,"cache_write_tokens":0,"cached_tokens":1421},"total_tokens":1726}}
+        source context does not report the age of the study participants.\"}}","refusal":null,"role":"assistant"}}],"created":1795171732,"id":"chatcmpl-EmGSie3loIj1WgQADdMM7OOAlCP9J","model":"gpt-5.6-luna-2026-07-09","object":"chat.completion","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"jailbreak":{"detected":false,"filtered":false},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}],"routing":{"serving_pipereplica":"d20261114101034-7dfcb1a8-prefill-r1-dp0-prefill"},"service_tier":"default","system_fingerprint":null,"usage":{"completion_tokens":337,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":127,"rejected_prediction_tokens":0},"latency_checkpoint":{"engine_tbt_ms":6,"engine_ttft_ms":90,"engine_ttlt_ms":2022,"pre_inference_ms":89,"service_tbt_ms":6,"service_ttft_ms":799,"service_ttlt_ms":2726,"user_visible_ttft_ms":709},"prompt_tokens":1424,"prompt_tokens_details":{"audio_tokens":0,"cache_write_tokens":0,"cached_tokens":1421},"total_tokens":1761}}
 
         '
     headers:
       apim-request-id:
-      - 63edfdcb-06c1-4d8a-9572-8ba83f897309
+      - f0a4f3a9-60f8-435e-add3-426d9956e5ce
       azureai-fe-is-streaming:
       - 'False'
       azureai-fe-offer-type:
@@ -321,11 +321,11 @@ interactions:
       azureml-model-session:
       - d20261114101034-7dfcb1a8
       content-length:
-      - '2405'
+      - '2411'
       content-type:
       - application/json
       date:
-      - Fri, 20 Nov 2026 09:08:59 GMT
+      - Fri, 20 Nov 2026 10:48:51 GMT
       server:
       - istio-envoy
       skip-error-remapping:
@@ -339,7 +339,7 @@ interactions:
       x-content-type-options:
       - nosniff
       x-http2-stream-id:
-      - '799'
+      - '935'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -369,7 +369,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '0'
       x-request-id:
-      - 5f6a8381-5585-45aa-aa01-a27c5d163ba6
+      - ccc379a9-3540-4b55-8ee8-76d3cc6bc19c
     status:
       code: 200
       message: OK

@@ -1051,107 +1051,101 @@ interactions:
     uri: https://dummy.secret/
   response:
     body:
-      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_2\\\":{\\\"output_data\\\":\\\"mouse\\\",\\\"additional_text\\\":\\\"Acute
-        3-day oral dosing of R-flurbiprofen in Tg2576 mice is well-tolerated\\\",\\\"reasoning\\\":\\\"The
-        experiment used Tg2576 mice, which are mice of the species mouse.\\\"},\\\"attribute_4\\\":{\\\"output_data\\\":\\\"Tg2576
-        APP mice\\\",\\\"additional_text\\\":\\\"In this study we report the effect
-        of chronic R-flurbiprofen treatment on cognition and A\u03B2 loads in a transgenic
-        model of AD, Tg2576 APP mice.\\\",\\\"reasoning\\\":\\\"The animal model is
-        explicitly identified as Tg2576 APP mice.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"C57BL/6.SJL\\\",\\\"additional_text\\\":\\\"These
+      string: "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"detected\":false,\"filtered\":false},\"protected_material_text\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"{\\\"attribute_2\\\":{\\\"output_data\\\":\\\"mouse\\\",\\\"additional_text\\\":\\\"Female
+        Tg2576 mice were generated and confirmed by genotyping as described previously
+        [57,58].\\\",\\\"reasoning\\\":\\\"The experiment used Tg2576 mice, which
+        are mice.\\\"},\\\"attribute_4\\\":{\\\"output_data\\\":\\\"Tg2576 APP mice\\\",\\\"additional_text\\\":\\\"In
+        this study we report the effect of chronic R-flurbiprofen treatment on cognition
+        and A\u03B2 loads in a transgenic model of AD, Tg2576 APP mice.\\\",\\\"reasoning\\\":\\\"The
+        named animal model is Tg2576 APP mice.\\\"},\\\"attribute_5\\\":{\\\"output_data\\\":\\\"C57BL/6.SJL\\\",\\\"additional_text\\\":\\\"These
         crosses generated the F2 Tg2576 APP +/- mice (mixed C57BL/6.SJL background),
-        which were used in all experiments.\\\",\\\"reasoning\\\":\\\"The reported
-        strain/background is C57BL/6.SJL.\\\"},\\\"attribute_7\\\":{\\\"output_data\\\":\\\"amyloid
-        beta 42 production and levels\\\",\\\"additional_text\\\":\\\"Based on R-flurbiprofen's
-        selective lowering of A\u03B242, reduced COX activity and safety profile in
-        humans\\\",\\\"reasoning\\\":\\\"The intervention is evaluated in relation
-        to its selective A\u03B242-lowering effect, including A\u03B242 production
-        and levels.\\\"},\\\"attribute_8\\\":{\\\"output_data\\\":\\\"R-flurbiprofen\\\",\\\"additional_text\\\":\\\"R-Flurbiprofen
-        was administered at a concentration of 10 mg/kg/day for all experiments.\\\",\\\"reasoning\\\":\\\"R-flurbiprofen
-        was the therapeutic intervention administered in preventative and therapeutic
-        regimens.\\\"},\\\"attribute_41\\\":{\\\"output_data\\\":\\\"Morris water
-        maze visible-platform escape latency; Morris water maze swimming speed; Morris
-        water maze visible-platform pathlength; Morris water maze spatial reference
-        memory search error; Morris water maze hidden-platform escape latency; Morris
-        water maze hidden-platform pathlength; Morris water maze probe-trial spatial
-        bias; strategy preference test place-versus-cue strategy\\\",\\\"additional_text\\\":\\\"The
-        spatial bias of the mice for the location of the hidden escape platform is
-        shown by the percent of time the mice spent in the quadrant of the maze that
-        contained the platform during the three interpolated probe trials\\\",\\\"reasoning\\\":\\\"The
-        study measured sensorimotor performance, spatial learning and memory, probe-trial
-        spatial bias, and strategy preference using the Morris water maze and related
-        tests.\\\"},\\\"attribute_33\\\":{\\\"output_data\\\":\\\"detergent-soluble
+        which were used in all experiments.\\\",\\\"reasoning\\\":\\\"The document
+        identifies the C57BL/6.SJL background/strain for the Tg2576 mice.\\\"},\\\"attribute_7\\\":{\\\"output_data\\\":\\\"amyloid
+        beta 42 production; amyloid beta plaque pathology; spatial learning and memory\\\",\\\"additional_text\\\":\\\"Based
+        on R-flurbiprofen's selective lowering of A\u03B242, reduced COX activity
+        and safety profile in humans we have previously suggested that this drug was
+        a good candidate for clinical testing in AD.\\\",\\\"reasoning\\\":\\\"The
+        intervention was evaluated for effects on A\u03B242, plaque pathology, and
+        cognition/spatial learning.\\\"},\\\"attribute_8\\\":{\\\"output_data\\\":\\\"chronic
+        R-flurbiprofen administration\\\",\\\"additional_text\\\":\\\"R-Flurbiprofen
+        was administered at a concentration of 10 mg/kg/day for all experiments.\\\",\\\"reasoning\\\":\\\"The
+        therapeutic intervention evaluated was R-flurbiprofen, administered preventatively
+        or therapeutically.\\\"},\\\"attribute_41\\\":{\\\"output_data\\\":\\\"Morris
+        water maze spatial reference memory task; visible-platform cue training; hidden-platform
+        search error; interpolated probe trials measuring spatial bias; strategy preference
+        test\\\",\\\"additional_text\\\":\\\"At the conclusion of the drug-treatment
+        phase, mice were assessed for spatial reference memory in the Morris water
+        maze.\\\",\\\"reasoning\\\":\\\"The study measured sensory-motor performance,
+        spatial learning, spatial bias, and place-versus-cue strategy using water-maze
+        paradigms.\\\"},\\\"attribute_33\\\":{\\\"output_data\\\":\\\"detergent-soluble
         amyloid beta 40 levels; detergent-soluble amyloid beta 42 levels; formic-acid-soluble
         amyloid beta 40 levels; formic-acid-soluble amyloid beta 42 levels; brain
         R-flurbiprofen levels; brain S-flurbiprofen levels\\\",\\\"additional_text\\\":\\\"We
         observed no significant differences in detergent soluble A\u03B240 or A\u03B242
-        levels between the treated and control groups\\\",\\\"reasoning\\\":\\\"The
-        experiment quantified soluble and formic-acid-soluble A\u03B240/A\u03B242
-        and measured R- and S-flurbiprofen concentrations in brain tissue.\\\"},\\\"attribute_34\\\":{\\\"output_data\\\":\\\"amyloid
-        beta plaque burden; amyloid beta 40 levels; amyloid beta 42 levels\\\",\\\"additional_text\\\":\\\"Assessment
-        of total A\u03B2 plaque load using immunohistochemical quantification failed
-        to reveal significant differences after long-term R-flurbiprofen treatment\\\",\\\"reasoning\\\":\\\"A\u03B2
-        levels and plaque burden were used as indicators of amyloid pathology and
-        disease status.\\\"},\\\"attribute_42\\\":{\\\"output_data\\\":\\\"Not reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The
-        document does not report a distinct cell-biology outcome measure.\\\"},\\\"attribute_53\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The document
-        does not report a distinct cell-chemistry outcome measure separate from the
-        molecular and biochemical A\u03B2 measurements.\\\"},\\\"attribute_56\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No electron
-        microscopy experiment or electron microscopy outcome is described.\\\"},\\\"attribute_46\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No electrophysiology
-        recording or electrophysiological outcome is described.\\\"},\\\"attribute_35\\\":{\\\"output_data\\\":\\\"amyloid
-        beta plaque burden\\\",\\\"additional_text\\\":\\\"Brain sections of representative
-        Control and R-flurbiprofen-treated mice from water maze Experiment 3 were
-        stained for A\u03B2 plaques\\\",\\\"reasoning\\\":\\\"Histological assessment
-        included staining and quantification of amyloid beta plaques in brain sections.\\\"},\\\"attribute_57\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"Although
-        figures display representative swim paths, the document does not describe
-        a distinct imaging outcome category beyond behavioral tracking and histological
-        quantification.\\\"},\\\"attribute_36\\\":{\\\"output_data\\\":\\\"immunohistochemical
-        quantification of amyloid beta plaque burden\\\",\\\"additional_text\\\":\\\"Assessment
-        of total A\u03B2 plaque load using immunohistochemical quantification failed
-        to reveal significant differences after long-term R-flurbiprofen treatment\\\",\\\"reasoning\\\":\\\"Immunohistochemistry
-        was used to quantify amyloid beta plaque burden.\\\"},\\\"attribute_49\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The document
-        describes antibody-based A\u03B2 assays and tissue staining, but does not
-        report a distinct immunology outcome such as an immune-response measurement.\\\"},\\\"attribute_43\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No standalone
-        microscopy outcome is reported; the relevant tissue assessment is reported
-        as immunohistochemical plaque quantification.\\\"},\\\"attribute_44\\\":{\\\"output_data\\\":\\\"swimming
-        speed\\\",\\\"additional_text\\\":\\\"mice treated with R-flurbiprofen, regardless
-        of length of administration, had modest but significantly lower swimming speed\\\",\\\"reasoning\\\":\\\"Swimming
-        speed was the reported motor-function measure.\\\"},\\\"attribute_45\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No genomics,
-        transcriptomics, proteomics, metabolomics, or other omics outcome is reported.\\\"},\\\"attribute_37\\\":{\\\"output_data\\\":\\\"selective
-        amyloid beta 42 lowering; amyloid beta plaque burden reduction\\\",\\\"additional_text\\\":\\\"This
-        approach resulted in a significant decrease in A\u03B2 plaque burden but no
-        significant improvement in spatial learning.\\\",\\\"reasoning\\\":\\\"Pharmacodynamic
-        effects were assessed through the drug-related lowering of A\u03B242 and reduction
-        of plaque burden.\\\"},\\\"attribute_48\\\":{\\\"output_data\\\":\\\"brain
+        levels between the treated and control groups in experiments 1, 2 or 3 (Fig
+        2) as measured by peptide specific sandwich ELISAs.\\\",\\\"reasoning\\\":\\\"The
+        experiment quantified A\u03B240/A\u03B242 biochemical levels and measured
+        R- and S-flurbiprofen concentrations in brain tissue.\\\"},\\\"attribute_34\\\":{\\\"output_data\\\":\\\"amyloid
+        beta plaque burden\\\",\\\"additional_text\\\":\\\"short-term treatment with
+        R-flurbiprofen at 20 months of age (experiment 3) resulted in a significant
+        decrease in A\u03B2 plaque burden\\\",\\\"reasoning\\\":\\\"Plaque burden
+        is the reported disease-related biomarker outcome.\\\"},\\\"attribute_42\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        distinct cell biology outcomes were reported; the study measured biochemical
+        A\u03B2 levels and tissue plaque burden rather than cell-level functional
+        outcomes.\\\"},\\\"attribute_53\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The
+        document does not report a distinct cell chemistry outcome category.\\\"},\\\"attribute_56\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        electron microscopy was used or reported.\\\"},\\\"attribute_46\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        electrophysiology measurements were reported.\\\"},\\\"attribute_35\\\":{\\\"output_data\\\":\\\"amyloid
+        beta plaque burden in neocortex\\\",\\\"additional_text\\\":\\\"Serial coronal
+        sections were stained with 33.1.1 and plaques were quantified (calculated
+        as proportional area of plaque burden) in the neocortex of the same plane
+        of section for each mouse (~10 sections per mouse) using MetaMorph 6.1 software.\\\",\\\"reasoning\\\":\\\"Histological
+        quantification measured the proportional area of amyloid plaque burden in
+        neocortical sections.\\\"},\\\"attribute_57\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"The
+        study used video tracking for water-maze behavior and histological quantification,
+        but did not report an imaging outcome as a distinct measured endpoint.\\\"},\\\"attribute_36\\\":{\\\"output_data\\\":\\\"amyloid
+        beta plaque immunoreactivity; activated microglia immunoreactivity; activated
+        astrocyte immunoreactivity\\\",\\\"additional_text\\\":\\\"Fixed, paraffin-embedded
+        sections were stained for activated microglia using anti-Iba1 (1:3000; Wako
+        Chemicals) and for activated astrocytes using anti-GFAP (1:1000, Chemicon).\\\",\\\"reasoning\\\":\\\"Immunohistological
+        staining assessed amyloid plaques and included markers for activated microglia
+        and astrocytes.\\\"},\\\"attribute_49\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"Although
+        antibodies were used for tissue staining and ELISA, the document does not
+        report an immunology outcome such as an immune response measurement.\\\"},\\\"attribute_43\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        microscopy outcome was reported separately from the histological and immunohistochemical
+        plaque quantification.\\\"},\\\"attribute_44\\\":{\\\"output_data\\\":\\\"swimming
+        speed\\\",\\\"additional_text\\\":\\\"Assessment of sensory and motor ability
+        was determined by measuring the latency of mice to escape to a visible platform
+        and their swimming speed.\\\",\\\"reasoning\\\":\\\"Swimming speed was explicitly
+        measured as a motor/sensory outcome.\\\"},\\\"attribute_45\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        genomics, transcriptomics, proteomics, or other omics outcomes were measured.\\\"},\\\"attribute_37\\\":{\\\"output_data\\\":\\\"brain
+        amyloid beta 42 lowering; brain amyloid beta plaque burden reduction\\\",\\\"additional_text\\\":\\\"A
+        2-week treatment of older Tg2576 with the same dose of R-flurbiprofen decreased
+        A\u03B2 plaque levels (p \\u003c 0.0001) but did not result in any significant
+        alteration in spatial learning.\\\",\\\"reasoning\\\":\\\"Pharmacodynamic
+        effects were assessed through changes in A\u03B242-related measures and plaque
+        burden after drug treatment.\\\"},\\\"attribute_48\\\":{\\\"output_data\\\":\\\"brain
         R-flurbiprofen concentration; brain S-flurbiprofen concentration; R-flurbiprofen
-        bioinversion to S-flurbiprofen\\\",\\\"additional_text\\\":\\\"R- and S-flurbiprofen
+        to S-flurbiprofen conversion\\\",\\\"additional_text\\\":\\\"R- and S-flurbiprofen
         levels in the brain of mice from one water maze (Exp. 3) were analyzed using
         liquid chromatography and mass spectrometry techniques and were found to be
         158 \xB1 14.7 and 76.0 \xB1 8.0 ng/gm brain tissue respectively.\\\",\\\"reasoning\\\":\\\"The
-        study measured brain distribution of both enantiomers and discussed conversion
-        of R-flurbiprofen to S-flurbiprofen.\\\"},\\\"attribute_50\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No separate
-        immunology outcome is explicitly measured and reported.\\\"},\\\"attribute_51\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No distinct
-        physiological outcome measure is reported apart from behavioral motor and
-        cognitive measures.\\\"},\\\"attribute_58\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No protein-structure
-        outcome is described.\\\"},\\\"attribute_38\\\":{\\\"output_data\\\":\\\"Not
-        reported\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"Liquid
-        chromatography-mass spectrometry was used for drug quantification, but no
-        spectroscopy outcome is reported as a separate experimental endpoint.\\\"},\\\"attribute_39\\\":{\\\"output_data\\\":\\\"mortality;
-        morbidity\\\",\\\"additional_text\\\":\\\"initial pilot longterm studies using
-        dosing regimens designed to deliver either 25 and 50 mg/kg day resulted in
-        85% and 100% mortality, respectively, within 2 weeks.\\\",\\\"reasoning\\\":\\\"Toxicity
-        was evaluated through mortality and morbidity during chronic dosing.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795165725,\"id\":\"chatcmpl-EmEtpG8kgQR3UEl6XarLNWPQdItcn\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r8-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":2010,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":425,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":5,\"engine_ttft_ms\":627,\"engine_ttlt_ms\":10663,\"pre_inference_ms\":201,\"service_tbt_ms\":5,\"service_ttft_ms\":1470,\"service_ttlt_ms\":11497,\"user_visible_ttft_ms\":1269},\"prompt_tokens\":24901,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":24898},\"total_tokens\":26911}}\n"
+        study measured brain drug distribution and the S-enantiomer formed by bioinversion.\\\"},\\\"attribute_50\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        separate immunology outcome was reported.\\\"},\\\"attribute_51\\\":{\\\"output_data\\\":\\\"swimming
+        speed; latency to escape to a visible platform\\\",\\\"additional_text\\\":\\\"Assessment
+        of sensory and motor ability was determined by measuring the latency of mice
+        to escape to a visible platform and their swimming speed.\\\",\\\"reasoning\\\":\\\"These
+        physiological/sensorimotor measures were explicitly assessed.\\\"},\\\"attribute_58\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"No
+        protein structure outcome was measured.\\\"},\\\"attribute_38\\\":{\\\"output_data\\\":\\\"\\\",\\\"additional_text\\\":\\\"\\\",\\\"reasoning\\\":\\\"Although
+        liquid chromatography-mass spectrometry was used to quantify drug levels,
+        no spectroscopy outcome was reported as an experimental endpoint.\\\"},\\\"attribute_39\\\":{\\\"output_data\\\":\\\"mortality;
+        morbidity; body weight; general health\\\",\\\"additional_text\\\":\\\"Kibble
+        consumption, general health and body weight were monitored on a weekly basis.\\\",\\\"reasoning\\\":\\\"The
+        study monitored toxicity-related survival, morbidity, health, and body weight,
+        and reported mortality at higher doses.\\\"}}\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1795171720,\"id\":\"chatcmpl-EmGSWHJDMvRUuUuEzptapZzbNvHlB\",\"model\":\"gpt-5.6-luna-2026-07-09\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"detected\":false,\"filtered\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"routing\":{\"serving_pipereplica\":\"d20261114101034-7dfcb1a8-prefill-r7-dp0-prefill\"},\"service_tier\":\"default\",\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":1722,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":101,\"rejected_prediction_tokens\":0},\"latency_checkpoint\":{\"engine_tbt_ms\":5,\"engine_ttft_ms\":120,\"engine_ttlt_ms\":8589,\"pre_inference_ms\":128,\"service_tbt_ms\":5,\"service_ttft_ms\":655,\"service_ttlt_ms\":9119,\"user_visible_ttft_ms\":527},\"prompt_tokens\":24901,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cache_write_tokens\":0,\"cached_tokens\":24898},\"total_tokens\":26623}}\n"
     headers:
       apim-request-id:
-      - 9fb53f68-c2ea-49b2-b2f3-1981c3f7945b
+      - 909c6bce-9250-42d4-b6df-ad360df0840d
       azureai-fe-is-streaming:
       - 'False'
       azureai-fe-offer-type:
@@ -1159,11 +1153,11 @@ interactions:
       azureml-model-session:
       - d20261114101034-7dfcb1a8
       content-length:
-      - '9519'
+      - '9521'
       content-type:
       - application/json
       date:
-      - Fri, 20 Nov 2026 09:08:44 GMT
+      - Fri, 20 Nov 2026 10:48:39 GMT
       server:
       - istio-envoy
       skip-error-remapping:
@@ -1177,7 +1171,7 @@ interactions:
       x-content-type-options:
       - nosniff
       x-http2-stream-id:
-      - '865'
+      - '35'
       x-ms-is-spilled-over:
       - 'false'
       x-ms-rai-invoked:
@@ -1207,7 +1201,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - '2'
       x-request-id:
-      - d172ab97-4b09-404a-919e-76e6cb49e077
+      - 505a70a2-ad7f-413d-bd2b-e0eefd80220a
     status:
       code: 200
       message: OK
