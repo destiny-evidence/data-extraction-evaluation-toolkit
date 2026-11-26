@@ -533,6 +533,7 @@ class BaseDataExtractor(ABC):
             stats=PerDocumentExtractionStats(
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
+                cached_input_tokens=result.cached_input_tokens,
                 parsing_seconds=parsing.parsing_seconds,
                 parsing_skipped=parsing.parsing_skipped,
                 llm_call_seconds=result.llm_call_seconds,
@@ -605,6 +606,7 @@ class BaseDataExtractor(ABC):
         llm_annotated_docs: list[GoldStandardAnnotatedDocument] = []
         total_input_tokens = 0
         total_output_tokens = 0
+        total_cached_input_tokens = 0
         total_cost: float | None = None
 
         documents = list(documents)
@@ -654,6 +656,7 @@ class BaseDataExtractor(ABC):
             per_document[doc_id_str] = bundle.stats
             total_input_tokens += result.input_tokens
             total_output_tokens += result.output_tokens
+            total_cached_input_tokens += result.cached_input_tokens
             if result.total_cost_usd is not None:
                 total_cost = (total_cost or 0.0) + result.total_cost_usd
 
@@ -665,6 +668,7 @@ class BaseDataExtractor(ABC):
             model=self.config.model,
             total_input_tokens=total_input_tokens,
             total_output_tokens=total_output_tokens,
+            total_cached_input_tokens=total_cached_input_tokens,
             total_cost_usd=round(total_cost, 6) if total_cost is not None else None,
             per_document=per_document,
             failed_documents=failed_documents,

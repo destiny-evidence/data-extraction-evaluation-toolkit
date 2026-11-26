@@ -2,6 +2,52 @@
 
 <!-- version list -->
 
+## v0.5.0-dev.6 (2026-11-19)
+
+### Chores
+
+- More explicit typing for litellm ModelResponse and Usage objects
+  ([`dd76179`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/dd76179b5b66b0c6313f63c6aea32137b2b9c52f))
+
+- Restrict renovate to python patch updates
+  ([#472](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/pull/472),
+  [`21a2421`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/21a24218163feb0a230c6bab0b3b5777633a1d80))
+
+- **deps**: Lock file maintenance
+  ([`05d3a75`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/05d3a759210df20e97cff45289343668a5c06eab))
+
+- **deps**: Lock file maintenance
+  ([`199a4cb`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/199a4cba7d3739558d8b9579cc02ee4d0883f0c6))
+
+- **deps**: Pin dependencies
+  ([`25e3fbc`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/25e3fbc62a7b56fd45e9e69207645a4d732b3625))
+
+- **deps**: Update actions/download-artifact action to v8.0.2
+  ([`a636b4b`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/a636b4b71c6bcfb9f97a604e4813055f44c9b660))
+
+- **deps**: Update astral-sh/setup-uv action to v10.3.2
+  ([`ab4f79f`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/ab4f79fd986ff748f4072d5b8e40b1bea0ada049))
+
+- **deps**: Update astral-sh/setup-uv action to v10.3.3
+  ([`0ed82cb`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/0ed82cbb42ebbef1cee34f8738a12e1d9df6735c))
+
+- **deps**: Update dependency litellm to v1.102.2 [security]
+  ([`375715d`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/375715d6ad442a59cbb00c083cdf76aeb206e791))
+
+- **deps**: Update dependency nltk to v3.10.4 [security]
+  ([`5dadf99`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/5dadf99c749910a5e3818284f307523105e6c432))
+
+### Features
+
+- Record LiteLLM reported cost and cached prompt tokens
+  ([`39a70a3`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/39a70a32436e062137e0341919dfe809bfba0b2e))
+
+### Refactoring
+
+- Read cached prompt tokens from LiteLLM usage details
+  ([`7518ef5`](https://github.com/destiny-evidence/data-extraction-evaluation-toolkit/commit/7518ef565817fcc7c8068cf948a5c4131f3310fd))
+
+
 ## v0.5.0-dev.5 (2026-11-02)
 
 ### Bug Fixes
