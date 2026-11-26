@@ -17,7 +17,6 @@ class ExtractionPipelineStage(StrEnum):
     prompt_population = "prompt_population"
     document_preparation = "document_preparation"
     llm_extraction = "llm_extraction"
-    artifact_export = "artifact_export"
 
 
 PIPELINE_STAGE_NOTES: Final[dict[ExtractionPipelineStage, str]] = {
@@ -33,9 +32,6 @@ PIPELINE_STAGE_NOTES: Final[dict[ExtractionPipelineStage, str]] = {
     ),
     ExtractionPipelineStage.llm_extraction: (
         "LLM extraction for each document. See per_document.llm_call_seconds."
-    ),
-    ExtractionPipelineStage.artifact_export: (
-        "Write prompts snapshot, config snapshot, and this metadata file."
     ),
 }
 
