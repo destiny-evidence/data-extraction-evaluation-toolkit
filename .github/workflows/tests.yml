@@ -44,23 +44,7 @@ jobs:
         env:
           AZURE_API_KEY: "DUMMY_SECRET"
           AZURE_API_BASE: "https://dummy.secret"
-        run: |
-          TARGET_BRANCH=""
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
-          else
-            TARGET_BRANCH="${{ github.ref_name }}"
-          fi
-
-          echo "Target branch is: $TARGET_BRANCH"
-
-          if [ "$TARGET_BRANCH" = "main" ]; then
-            echo "Running all tests (including real files)..."
-            uv run pytest --cov=deet --cov-report=xml --record-mode=none
-          else
-            echo "Omitting real file parser tests..."
-            uv run pytest --cov=deet --cov-report=xml --ignore=tests/test_parser_real_files.py  --record-mode=none
-          fi
+        run: uv run pytest --cov=deet --cov-report=xml --record-mode=none
 
       - name: Code coverage reporting
         uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
