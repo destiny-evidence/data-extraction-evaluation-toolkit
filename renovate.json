@@ -48,6 +48,16 @@
                 "pep621"
             ],
             "enabled": false
+        },
+        {
+            "description": "Dependency groups are not published, so their floors track the lock: lowest-direct CI then runs the same dev tools as the locked environment.",
+            "matchManagers": [
+                "pep621"
+            ],
+            "matchDepTypes": [
+                "dependency-groups"
+            ],
+            "rangeStrategy": "bump"
         }
     ]
 }

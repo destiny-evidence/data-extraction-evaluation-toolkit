@@ -4,18 +4,18 @@ requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.17.1",
-    "pre-commit>=4.3.0",
-    "pytest-cov>=6.2.1",
-    "pytest-env>=1.1.5",
-    "pytest-mock>=3.14.1",
-    "pytest-recording>=0.13.4",
-    "pytest>=8.4.1",
-    "python-semantic-release>=10.6.1",
-    "ruff>=0.12.11",
-    "types-PyYAML>=6.0.12.20250915",
-    "types-cachetools>=4.2.9.0",
-    "types-toml>=0.10.8.20240310",
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
+    "pytest-cov>=7.1.0",
+    "pytest-env>=1.8.6",
+    "pytest-mock>=3.17.0",
+    "pytest-recording>=0.15.0",
+    "pytest>=9.2.0",
+    "python-semantic-release>=10.7.0",
+    "ruff>=0.17.5",
+    "types-PyYAML>=6.0.12.20261122",
+    "types-cachetools>=7.0.0.20260713",
+    "types-toml>=0.10.8.20260518",
 ]
 docs = [
     "griffe-pydantic>=1.3.1",
@@ -65,7 +65,7 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "pyyaml>=6.0.2",
     "rapidfuzz>=3.9.0",
-    "scikit-learn>=1.7.1",
+    "scikit-learn>=1.8.0",
     "tabulate>=0.9.0",
     "typer>=0.21.2",
 ]
@@ -111,44 +111,14 @@ omit = [
 source = ["deet"]
 
 [[tool.mypy.overrides]]
+# Modules from optional extras, so mypy passes with or without the extras installed.
 ignore_missing_imports = true
-module = "pypandoc.*"
+module = ["fastembed.*", "marker.*", "nltk.*", "pypandoc.*"]
 
 [[tool.mypy.overrides]]
+# Installed dependencies that ship no type information.
 ignore_missing_imports = true
-module = "marker.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "nltk.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "diskcache.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "pdfminer.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "loguru.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "tabulate.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "sentence_transformers.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "sklearn.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "vcr.*"
+module = ["diskcache.*", "sklearn.*", "tabulate.*", "vcr.*"]
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]

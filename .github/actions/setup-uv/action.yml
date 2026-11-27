@@ -1,0 +1,55 @@
+name: Set up uv
+description: Install the uv version pinned in pyproject.toml and optionally sync the project environment.
+
+inputs:
+  sync:
+    description: Arguments for `uv sync`; the environment is not synced when empty.
+    required: false
+    default: ""
+  resolution:
+    description: >-
+      "locked" installs exactly uv.lock. "lowest-direct" re-resolves with every direct
+      dependency at its pyproject.toml floor, and sets UV_RESOLUTION for the rest of the
+      job so later `uv run` calls keep that resolution.
+    required: false
+    default: "locked"
+  enable-cache:
+    description: >-
+      Passed to setup-uv's enable-cache. The cache saves building packages from source and
+      the per-request overhead of fetching many small wheels, so "auto" suits environments
+      of many small packages. Use "false" for environments dominated by a few large
+      pre-built wheels: restoring them costs about as much as downloading them, and each
+      save evicts smaller caches from the repository's 10 GB limit.
+    required: false
+    default: "auto"
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+      with:
+        resolution-strategy: "lowest" # installs the floor of pyproject's [tool.uv].required-version
+        enable-cache: ${{ inputs.enable-cache }}
+        cache-suffix: ${{ github.job }} # jobs syncing different extras or groups keep separate caches
+
+    - name: Sync the environment
+      if: inputs.sync != ''
+      shell: bash
+      env:
+        SYNC_ARGS: ${{ inputs.sync }}
+        RESOLUTION: ${{ inputs.resolution }}
+      run: |
+        case "$RESOLUTION" in
+          locked)
+            uv sync --locked $SYNC_ARGS
+            ;;
+          lowest-direct)
+            echo "UV_RESOLUTION=lowest-direct" >> "$GITHUB_ENV"
+            uv sync --resolution lowest-direct $SYNC_ARGS
+            ;;
+          *)
+            echo "::error::unknown resolution '$RESOLUTION'"
+            exit 1
+            ;;
+        esac

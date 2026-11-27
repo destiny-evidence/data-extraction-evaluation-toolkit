@@ -25,9 +25,9 @@ jobs:
       - name: merge pr commits for preview
         run: git merge --no-ff origin/${{ github.head_ref }} --no-edit
 
-      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with:
-          resolution-strategy: "lowest"
+      - name: Set up uv
+        uses: ./.github/actions/setup-uv
+
       - name: get version preview
         id: preview
         run: |
