@@ -128,7 +128,7 @@ class CSVAnnotationConverter(AnnotationConverter):
     and produces attributes, documents, and annotated document records.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         base_output_dir: str | Path | None = DEFAULT_BASE_OUTPUT_DIR,
         attributes_filename: str = DEFAULT_ATTRIBUTES_FILENAME,
@@ -733,7 +733,7 @@ class CSVAnnotationConverter(AnnotationConverter):
             raise NotImplementedError(msg)
         logger.info(f"Processing annotation file: {file_path}")
 
-        colnames, reference_fields, attribute_fields, rows = self.load_csv(
+        _colnames, reference_fields, attribute_fields, rows = self.load_csv(
             file_path, attribute_fields, reference_fields
         )
 

@@ -13,6 +13,9 @@ dev = [
     "pytest>=8.4.1",
     "python-semantic-release>=10.6.1",
     "ruff>=0.12.11",
+    "types-PyYAML>=6.0.12.20250915",
+    "types-cachetools>=4.2.9.0",
+    "types-toml>=0.10.8.20240310",
 ]
 docs = [
     "griffe-pydantic>=1.3.1",
@@ -139,6 +142,14 @@ module = "tabulate.*"
 ignore_missing_imports = true
 module = "sentence_transformers.*"
 
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "sklearn.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "vcr.*"
+
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
 filterwarnings = [
@@ -166,6 +177,7 @@ ignore = [
     "ANN003", # kwargs type annotation required
     "ARG002", # kwargs unused
     "COM812", # trailing commas (ruff-format recommended)
+    "CPY001", # no per-file copyright headers in this repo
     "D104", # module docstring
     "D203", # no-blank-line-before-class
     "D205", # missing-blank-line-after-summary
@@ -180,7 +192,7 @@ ignore = [
     "TD002", # name for TO DO
     "TD003", # pedantic issue number requester in to dos
 ]
-per-file-ignores = {"deet/processors/parser.py" = ["PLC0415"], "deet/utils/assess_text_quality.py" = ["PLC0415"], "tests*" = ["ANN001", "ANN201", "ANN202", "ARG001", "D100", "D103", "INP001", "PLR0913", "PLR2004", "S101", "SLF001"]}
+per-file-ignores = {"deet/data_models/processed_gold_standard_annotations.py" = ["PLC0415"], "deet/data_models/project.py" = ["PLC0415"], "deet/extractors/keyword/semantic_keyword_extractor.py" = ["PLC0415"], "deet/processors/converter_register.py" = ["PLC0415"], "deet/processors/parser.py" = ["PLC0415"], "deet/scripts/commands/project.py" = ["PT028"], "deet/utils/assess_text_quality.py" = ["PLC0415"], "tests*" = ["ANN001", "ANN201", "ANN202", "ARG001", "D100", "D103", "INP001", "PLC0415", "PLR0913", "PLR0917", "PLR2004", "S101", "SLF001"]}
 select = ["ALL"]
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = ["classmethod"]

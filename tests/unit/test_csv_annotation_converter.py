@@ -108,7 +108,7 @@ def csv_content():
 def test_loads_valid_csv(converter, csv_content, mocker):
     """Valid CSV loads with correct columns and row count."""
     mocker.patch.object(Path, "open", return_value=io.StringIO(csv_content))
-    colnames, ref_fields, attr_fields, rows = converter.load_csv("fake.csv")
+    colnames, _, _, rows = converter.load_csv("fake.csv")
     assert "name" in colnames
     assert "document_id" in colnames
     assert len(rows) == 2
@@ -201,7 +201,7 @@ def test_loads_quoted_fields_with_embedded_delimiter(converter, mocker):
         '"Paper; B",2,70,f\n'
     )
     mocker.patch.object(Path, "open", return_value=io.StringIO(content))
-    colnames, _, _, rows = converter.load_csv("fake.csv")
+    _, _, _, rows = converter.load_csv("fake.csv")
     assert len(rows) == 2
     assert rows[0]["name"] == "Paper, A"
     assert rows[1]["name"] == "Paper; B"
@@ -312,8 +312,10 @@ def add_white_space(string: str) -> str:
 def sample_csv_fixture() -> str:
     random.seed(42)
     rows = [
-        "document_id, name, publication_year, journal, authors, "
-        "about_adaptation, num_patients"
+        (
+            "document_id, name, publication_year, journal, authors, "
+            "about_adaptation, num_patients"
+        )
     ]
 
     journal_names = [

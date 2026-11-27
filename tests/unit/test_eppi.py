@@ -90,7 +90,7 @@ def amended_csv_file(test_csv_file: Path) -> Path:
         rows = list(reader)
 
     for i, row in enumerate(rows):
-        row["prompt"] = f"Test prompt {i+1}"
+        row["prompt"] = f"Test prompt {i + 1}"
 
     with test_csv_file.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

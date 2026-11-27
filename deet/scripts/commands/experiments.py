@@ -64,7 +64,7 @@ PromptPathOption = Annotated[
 
 @app.command()
 @project_required
-def evaluate(  # noqa: PLR0913
+def evaluate(  # noqa: PLR0913, PLR0917
     typer_context: typer.Context,
     config_path: ConfigPathOption = None,
     prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,
@@ -123,7 +123,7 @@ def evaluate(  # noqa: PLR0913
 
 @app.command()
 @project_required
-def predict(  # noqa: PLR0913
+def predict(  # noqa: PLR0913, PLR0917
     typer_context: typer.Context,
     config_path: ConfigPathOption = None,
     prompt_population: PromptPopulationOption = CustomPromptPopulationMethod.FILE,

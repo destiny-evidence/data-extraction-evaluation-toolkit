@@ -24,7 +24,7 @@ MEASURED_RUNS = 3
 def _time_help_invocation() -> float:
     """Run ``deet --help`` in a fresh interpreter and return wall-clock seconds."""
     start = time.perf_counter()
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(
         [sys.executable, "-m", "deet.scripts.cli", "--help"],
         capture_output=True,
         text=True,

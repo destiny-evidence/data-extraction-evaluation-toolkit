@@ -241,7 +241,7 @@ def inquire_pydantic_field(  # noqa: PLR0913
     widget_args: dict[str, Any] = {
         "message": field_info.description,
         "default": default,
-        "validate": lambda ans: pydantic_validate(ans),
+        "validate": pydantic_validate,
         "invalid_message": ui.valid,
         "instruction": ui.instructions,
         "filter": lambda ans: ans.strip() if isinstance(ans, str) else ans,

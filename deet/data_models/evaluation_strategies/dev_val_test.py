@@ -101,10 +101,9 @@ STAGE_ACTIONS: dict[DevValTestEvaluationStage, list[EvaluationDecisionSpec]] = {
         {
             "name": "add-dev",
             "description": "Add documents to development set",
-            "execute": lambda strategy,
-            project_ids,
-            size,
-            _experiment: strategy.add_to_development(project_ids, size),
+            "execute": lambda strategy, project_ids, size, _experiment: (
+                strategy.add_to_development(project_ids, size)
+            ),
         }
     ],
     DevValTestEvaluationStage.VALIDATION: [
@@ -114,10 +113,9 @@ STAGE_ACTIONS: dict[DevValTestEvaluationStage, list[EvaluationDecisionSpec]] = {
                 "Accept: lock this configuration, and do a"
                 " final test on all remaining documents"
             ),
-            "execute": lambda strategy,
-            project_ids,
-            _size,
-            _experiment: strategy.accept_validation(project_ids),
+            "execute": lambda strategy, project_ids, _size, _experiment: (
+                strategy.accept_validation(project_ids)
+            ),
         },
         {
             "name": "reject",
@@ -125,10 +123,9 @@ STAGE_ACTIONS: dict[DevValTestEvaluationStage, list[EvaluationDecisionSpec]] = {
                 "Reject: add validation documents to "
                 " development set and continue iterating."
             ),
-            "execute": lambda strategy,
-            _project_ids,
-            _size,
-            _experiment: strategy.reject_validation(),
+            "execute": lambda strategy, _project_ids, _size, _experiment: (
+                strategy.reject_validation()
+            ),
         },
     ],
 }
@@ -136,11 +133,10 @@ STAGE_ACTIONS: dict[DevValTestEvaluationStage, list[EvaluationDecisionSpec]] = {
 ADD_TO_DEVELOPMENT: EvaluationDecisionSpec = {
     "description": "Move to validation",
     "name": "validate",
-    "execute": lambda strategy,
-    project_ids,
-    size,
-    experiment: strategy.run_validation_interactive(
-        project_ids, size=size, experiment=experiment
+    "execute": lambda strategy, project_ids, size, experiment: (
+        strategy.run_validation_interactive(
+            project_ids, size=size, experiment=experiment
+        )
     ),
 }
 

@@ -240,7 +240,7 @@ class DocumentIdentity(BaseModel):
             return hash_n_strings_to_document_id(payload)
 
         bad_doc_id = (
-            "Cannot generate ID from EXTERNAL_ID " "source because external_id is None."
+            "Cannot generate ID from EXTERNAL_ID source because external_id is None."
         )
         raise BadDocumentIdError(bad_doc_id)
 

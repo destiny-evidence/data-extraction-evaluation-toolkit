@@ -277,7 +277,7 @@ class MappingImporter:
 
         return parts_a[: len(parts_a) - overlap] + parts_b
 
-    def _resolve_file_path(self, file_path: str | None | Path) -> Path | None:
+    def _resolve_file_path(self, file_path: str | Path | None) -> Path | None:
         """
         Resolve file path, handling absolute
         paths and document_base_dir.
