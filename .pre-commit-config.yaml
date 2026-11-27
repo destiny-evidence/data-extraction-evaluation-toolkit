@@ -11,15 +11,25 @@ repos:
         stages: [commit-msg]
         args: []  # optionally list allowed types: [feat, fix, chore, ...]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.5
+  - repo: local
     hooks:
-      - id: ruff
-        args:
-          - --config=pyproject.toml
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --frozen ruff check --config=pyproject.toml
+        language: system
+        types_or: [python, pyi]
+
       - id: ruff-format
-        args:
-          - --config=pyproject.toml
+        name: ruff format
+        entry: uv run --frozen ruff format --config=pyproject.toml
+        language: system
+        types_or: [python, pyi]
+
+      - id: mypy
+        name: mypy
+        entry: uv run --frozen mypy --config-file=pyproject.toml
+        language: system
+        types_or: [python, pyi]
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.43.0
@@ -42,12 +52,6 @@ repos:
         args: ["--check"]
         exclude: '^(uv\.lock)$'
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
-    hooks:
-      - id: mypy
-        args: [--config-file=pyproject.toml, --ignore-missing-imports]
-        additional_dependencies: [pytest, pydantic, types-cachetools, types-PyYAML, types-toml]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:

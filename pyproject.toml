@@ -13,6 +13,9 @@ dev = [
     "pytest>=8.4.1",
     "python-semantic-release>=10.6.1",
     "ruff>=0.12.11",
+    "types-PyYAML>=6.0.12.20250915",
+    "types-cachetools>=4.2.9.0",
+    "types-toml>=0.10.8.20240310",
 ]
 docs = [
     "griffe-pydantic>=1.3.1",
@@ -138,6 +141,14 @@ module = "tabulate.*"
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "sentence_transformers.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "sklearn.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "vcr.*"
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
