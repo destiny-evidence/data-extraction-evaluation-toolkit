@@ -22,7 +22,8 @@ jobs:
       - name: Set up uv
         uses: ./.github/actions/setup-uv
         with:
-          sync: --all-extras
+          # parsers pulls in torch, and its packages ship no type information for mypy to use
+          sync: --all-extras --no-extra parsers
 
       - name: Run pre-commit
         run: uv run --frozen pre-commit run --all-files --color always --verbose
