@@ -1,0 +1,34 @@
+name: Set up uv
+description: Install the uv version pinned in pyproject.toml and optionally sync the locked environment.
+
+inputs:
+  sync:
+    description: Arguments for `uv sync --locked`; the environment is not synced when empty.
+    required: false
+    default: ""
+  enable-cache:
+    description: >-
+      Passed to setup-uv's enable-cache. The cache saves building packages from source and
+      the per-request overhead of fetching many small wheels, so "auto" suits environments
+      of many small packages. Use "false" for environments dominated by a few large
+      pre-built wheels: restoring them costs about as much as downloading them, and each
+      save evicts smaller caches from the repository's 10 GB limit.
+    required: false
+    default: "auto"
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+      with:
+        resolution-strategy: "lowest" # installs the floor of pyproject's [tool.uv].required-version
+        enable-cache: ${{ inputs.enable-cache }}
+        cache-suffix: ${{ github.job }} # jobs syncing different extras or groups keep separate caches
+
+    - name: Sync the locked environment
+      if: inputs.sync != ''
+      shell: bash
+      env:
+        SYNC_ARGS: ${{ inputs.sync }}
+      run: uv sync --locked $SYNC_ARGS

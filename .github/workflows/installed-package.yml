@@ -26,10 +26,8 @@ jobs:
         id: python
         run: echo "version=$(tr -d '[:space:]' < .python-version)" >> "$GITHUB_OUTPUT"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with:
-          resolution-strategy: "lowest"
+      - name: Set up uv
+        uses: ./.github/actions/setup-uv
 
       - name: Build both distributions
         # The release builds both, and package-data reaching the sdist is

@@ -27,19 +27,8 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with:
-          resolution-strategy: "lowest"
-
-      - name: Restore uv cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.os == 'Windows' && format('{0}\.uv-cache', runner.temp) || '/tmp/.uv-cache' }}
-          key: uv-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            uv-${{ matrix.os }}-${{ matrix.python-version }}
-            uv-${{ matrix.os }}
+      - name: Set up uv
+        uses: ./.github/actions/setup-uv
 
       - name: Install pandoc (Ubuntu)
         if: runner.os == 'Linux'
