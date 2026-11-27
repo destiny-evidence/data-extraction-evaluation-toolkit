@@ -315,8 +315,39 @@ class CSVAnnotationConverter(AnnotationConverter):
                 row_num += 1
 
         resolved_column_types: dict[str, AttributeType] = {}
-        for col_name, col_types in column_type_evidence.items():
-            resolved_column_types[col_name] = self._resolve_types(col_types)
+        empty_columns: list[str] = []
+        mixed_type_columns: dict[str, set[type]] = {}
+
+        for col_name in column_names:
+            col_types = column_type_evidence[col_name]
+            if not col_types:
+                empty_columns.append(col_name)
+                continue
+            try:
+                resolved_column_types[col_name] = self._resolve_types(col_types)
+            except ColumnTypeInferenceError:
+                mixed_type_columns[col_name] = set(col_types) - {None}
+
+        if mixed_type_columns or empty_columns:
+            messages = []
+            if mixed_type_columns:
+                details = "; ".join(
+                    f"{col!r} ({', '.join(sorted(t.__name__ for t in types))})"
+                    for col, types in mixed_type_columns.items()
+                )
+                messages.append(
+                    f"{len(mixed_type_columns)} column(s) contain mixed value "
+                    f"types: {details}. Each column must hold a single type "
+                    "(all numbers, all true/false, or all text)."
+                )
+            if empty_columns:
+                details = ", ".join(repr(col) for col in empty_columns)
+                messages.append(
+                    f"{len(empty_columns)} column(s) have no values, so their "
+                    f"type cannot be inferred: {details}. Fill them in or "
+                    "exclude them from the attribute fields."
+                )
+            raise ColumnTypeInferenceError(" ".join(messages))
 
         return resolved_column_types
 

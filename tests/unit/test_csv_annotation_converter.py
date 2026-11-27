@@ -78,6 +78,24 @@ def test_incompatible_types_raises(converter):
         converter._resolve_types([str, int])
 
 
+# --- _infer_column_types ---
+
+
+def test_infer_column_types_reports_empty_and_mixed_columns(converter):
+    """Empty and mixed-type columns are all reported in one error."""
+    rows = [
+        {"age": "42", "notes": "", "flag": "t", "blank": ""},
+        {"age": "36", "notes": "", "flag": "7", "blank": " "},
+    ]
+    with pytest.raises(ColumnTypeInferenceError) as exc_info:
+        converter._infer_column_types(rows, ["age", "notes", "flag", "blank"])
+    msg = str(exc_info.value)
+    assert "'flag' (bool, int)" in msg
+    assert "2 column(s) have no values" in msg
+    assert "'notes', 'blank'" in msg
+    assert "'age'" not in msg
+
+
 # --- _find_duplicate_column_names ---
 
 
