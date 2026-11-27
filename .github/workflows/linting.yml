@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   lint-this-repo:
     runs-on: ubuntu-latest
@@ -27,3 +30,23 @@ jobs:
 
       - name: Run pre-commit
         run: uv run --frozen pre-commit run --all-files --color always --verbose
+
+  # Type-checks against the dependency floors in pyproject.toml. Ruff runs only in the job
+  # above, since its findings do not depend on the installed dependencies.
+  mypy-lowest-direct:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: ./.github/actions/setup-uv
+        with:
+          # parsers pulls in torch, and its packages ship no type information for mypy to use
+          sync: --all-extras --no-extra parsers
+          resolution: lowest-direct
+
+      - name: Run mypy
+        run: uv run --frozen pre-commit run mypy --all-files --color always --verbose

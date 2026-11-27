@@ -18,9 +18,11 @@ jobs:
   data-extraction-evaluation-toolkit_tests:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false # a failure at the dependency floors must not cancel the locked run
       matrix:
         python-version:
           - "3.12.16"
+        resolution: [locked, lowest-direct]
     if: github.event.pull_request.draft == false
     env:
       DEET_STARTUP_BUDGET_S: 0.6 # Maximum time deet --help an take before tests break
@@ -36,6 +38,7 @@ jobs:
         uses: ./.github/actions/setup-uv
         with:
           sync: --all-extras
+          resolution: ${{ matrix.resolution }}
           # This environment is mostly a few large pre-built wheels (torch), so a cache saves
           # little over downloading them and each save evicts smaller caches.
           enable-cache: false
@@ -47,6 +50,7 @@ jobs:
         run: uv run pytest --cov=deet --cov-report=xml --record-mode=none
 
       - name: Code coverage reporting
+        if: matrix.resolution == 'locked'
         uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
         with:
           filename: coverage.xml
@@ -60,6 +64,7 @@ jobs:
           thresholds: "80 90"
 
       - name: Add title to coverage markdown file
+        if: matrix.resolution == 'locked'
         run: |
           echo '## data-extraction-evaluation-toolkit coverage' > data-extraction-evaluation-toolkit.md
           echo '---' >> data-extraction-evaluation-toolkit.md
@@ -67,7 +72,7 @@ jobs:
 
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.resolution == 'locked'
         with:
           header: "data-extraction-evaluation-toolkit Coverage"
           recreate: true
