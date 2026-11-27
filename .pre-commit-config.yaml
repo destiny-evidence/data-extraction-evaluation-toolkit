@@ -17,19 +17,22 @@ repos:
         name: ruff check
         entry: uv run --frozen ruff check --config=pyproject.toml
         language: system
-        types_or: [python, pyi]
+        types_or: [python, pyi, jupyter]
+        require_serial: true
 
       - id: ruff-format
         name: ruff format
         entry: uv run --frozen ruff format --config=pyproject.toml
         language: system
-        types_or: [python, pyi]
+        types_or: [python, pyi, jupyter]
+        require_serial: true
 
       - id: mypy
         name: mypy
-        entry: uv run --frozen mypy --config-file=pyproject.toml
+        entry: uv run --frozen mypy --config-file=pyproject.toml --scripts-are-modules
         language: system
         types_or: [python, pyi]
+        require_serial: true
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.43.0
