@@ -400,7 +400,7 @@ class BaseDataExtractor(ABC):
             ),
         )
 
-    def extract_from_documents(  # noqa: PLR0913
+    def extract_from_documents(  # noqa: PLR0913, PLR0917
         self,
         attributes: list[Attribute],
         documents: Sequence[Document],

@@ -281,7 +281,7 @@ def test_mapping_importer_load_json_invalid_style(tmp_path):
     json_file.write_text('"just a string"')
 
     importer = MappingImporter(mapping_file_path=json_file)
-    with pytest.raises(JsonStyleError, match="list.*dict"):
+    with pytest.raises(JsonStyleError, match=r"list.*dict"):
         importer.import_mapping()
 
 
@@ -326,7 +326,7 @@ def test_mapping_importer_load_csv_missing_columns(tmp_path):
     csv_file.write_text("id,path\n12345678,/fake/path.pdf\n")
 
     importer = MappingImporter(mapping_file_path=csv_file)
-    with pytest.raises(ValueError, match="document_id.*file_path"):
+    with pytest.raises(ValueError, match=r"document_id.*file_path"):
         importer.import_mapping()
 
 
@@ -397,7 +397,7 @@ def test_mapping_importer_resolve_nonexistent_file(tmp_path):
     )
 
     importer = MappingImporter(mapping_file_path=json_file)
-    with pytest.raises(FileNotFoundError, match="does not exist or is not defined."):
+    with pytest.raises(FileNotFoundError, match=r"does not exist or is not defined\."):
         importer.import_mapping()
 
 

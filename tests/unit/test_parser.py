@@ -143,7 +143,7 @@ def test_documentparser_parser_none_raises_value_error(
         "detect_filetype",
         lambda *args, **kwargs: "pdf",  # noqa: ARG005
     )  # PT011: give a match string so Ruff knows this is a real test
-    with pytest.raises(ValueError, match="no parser supplied."):
+    with pytest.raises(ValueError, match=r"no parser supplied\."):
         p("any.pdf")
     monkeypatch.undo()
 

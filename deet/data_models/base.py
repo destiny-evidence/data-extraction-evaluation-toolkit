@@ -636,5 +636,5 @@ def build_llm_response_model(
     return create_model(
         "DynamicLLMResponse",
         __base__=DynamicLLMResponseBase,
-        **cast(Any, response_fields),
+        **cast("Any", response_fields),
     )

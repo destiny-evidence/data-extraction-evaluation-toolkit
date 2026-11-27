@@ -190,7 +190,7 @@ class MarkerParser(ParserLibrary):
 
         converter = cls._get_converter()
         rendered = converter(str(input_))
-        text, extension, images = text_from_rendered(rendered)
+        text, _, images = text_from_rendered(rendered)
         out = {"text": text}
         if return_metadata:
             out["metadata"] = rendered.metadata
@@ -577,7 +577,9 @@ class DocumentParser:
             logger.debug(f"`out_path` {out_path} points to a dir.")
             # we now have to get our filename base from somewhere...
             dir_base = Path(out_path)
-            filename_base = text.split("\n")[0][:15].replace(" ", "_").lower()
+            filename_base = (
+                text.split("\n", maxsplit=1)[0][:15].replace(" ", "_").lower()
+            )
 
         for ext in required_outfiles:
             out = dir_base / (filename_base + "." + ext)

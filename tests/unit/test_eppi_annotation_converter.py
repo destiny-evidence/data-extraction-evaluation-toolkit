@@ -168,9 +168,9 @@ def test_convert_to_eppi_attributes_default(sample_eppi_data: dict) -> None:
     assert hasattr(first_attr, "attribute_id")
     assert hasattr(first_attr, "attribute_label")
     assert hasattr(first_attr, "output_data_type")
-    assert (
-        first_attr.output_data_type == AttributeType.BOOL.value
-    ), "Should be bool for EPPI"
+    assert first_attr.output_data_type == AttributeType.BOOL.value, (
+        "Should be bool for EPPI"
+    )
     assert first_attr.prompt in (None, ""), "Should be empty for EPPI"
 
 

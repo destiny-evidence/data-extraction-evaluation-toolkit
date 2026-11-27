@@ -211,7 +211,7 @@ class GoldStandardLLMEvaluator:
     "gold-standard" ground truth data.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         gold_standard_annotated_documents: Sequence[GoldStandardAnnotatedDocument],
         llm_annotated_documents: Sequence[GoldStandardAnnotatedDocument],

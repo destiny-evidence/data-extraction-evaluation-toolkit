@@ -127,12 +127,8 @@ class ScriptExecutor(BaseExecutor):
         python_which = shutil.which("python")
         r_which = shutil.which("R")
 
-        self.python_path = (
-            python_path
-            if python_path
-            else (Path(python_which) if python_which else None)
-        )
-        self.r_path = r_path if r_path else (Path(r_which) if r_which else None)
+        self.python_path = python_path or (Path(python_which) if python_which else None)
+        self.r_path = r_path or (Path(r_which) if r_which else None)
         self.bash_path = bash_path
 
         logger.debug(f"python path: {self.python_path}")
@@ -191,7 +187,7 @@ class ScriptExecutor(BaseExecutor):
 
     def python_executor(
         self, script_path: Path, args: list[str] | None, *, capture_output: bool = True
-    ) -> None | str:
+    ) -> str | None:
         """
         Execute a python script.
 
@@ -201,7 +197,7 @@ class ScriptExecutor(BaseExecutor):
             capture_output (bool, optional): Defaults to True.
 
         Returns:
-            None | str: output from stdout or None.
+            str | None: output from stdout or None.
 
         """
         self.verify_filetype(script_path.name, ".py")
@@ -232,7 +228,7 @@ class ScriptExecutor(BaseExecutor):
 
     def r_executor(
         self, script_path: Path, args: list[str] | None, *, capture_output: bool = True
-    ) -> None | str:
+    ) -> str | None:
         """Execute an R script."""
         self.verify_filetype(script_path.name, ".R")
         if self.r_path is None:
@@ -266,7 +262,7 @@ class ScriptExecutor(BaseExecutor):
 
     def bash_executor(
         self, script_path: Path, args: list[str] | None, *, capture_output: bool = True
-    ) -> None | str:
+    ) -> str | None:
         """Execute a bash script."""
         self.verify_filetype(script_path.name, ".sh")
         if self.r_path is None:
@@ -359,7 +355,7 @@ class Job(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def run_job(self) -> None | str:
+    def run_job(self) -> str | None:
         """Run the job defined in this model instance."""
         logger.debug(f"Running job {self.name}")
         logger.debug(f"func args: {self.func_args}")
