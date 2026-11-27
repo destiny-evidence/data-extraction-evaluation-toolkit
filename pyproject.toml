@@ -111,44 +111,14 @@ omit = [
 source = ["deet"]
 
 [[tool.mypy.overrides]]
+# Modules from optional extras, so mypy passes with or without the extras installed.
 ignore_missing_imports = true
-module = "pypandoc.*"
+module = ["fastembed.*", "marker.*", "nltk.*", "pypandoc.*"]
 
 [[tool.mypy.overrides]]
+# Installed dependencies that ship no type information.
 ignore_missing_imports = true
-module = "marker.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "nltk.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "diskcache.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "pdfminer.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "loguru.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "tabulate.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "sentence_transformers.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "sklearn.*"
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = "vcr.*"
+module = ["diskcache.*", "sklearn.*", "tabulate.*", "vcr.*"]
 
 [tool.pytest.ini_options]
 addopts = ["--color=yes", "--import-mode=importlib", "--verbose"]
