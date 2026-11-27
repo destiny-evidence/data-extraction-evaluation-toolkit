@@ -13,6 +13,7 @@ from deet.data_models.extraction import (
     ExtractionRunOutput,
     PerDocumentExtractionStats,
 )
+from deet.exceptions import RunAbortingError
 from deet.extractors.cli_helpers import (
     load_or_init_config,
     prepare_documents,
@@ -178,6 +179,33 @@ def test_run_extraction_pipeline_writes_run_metadata(tmp_path, config):
     assert written["total_cached_input_tokens"] == 40
     assert written["total_cost_usd"] == 0.0123
     assert written["per_document"]["doc-1"]["cached_input_tokens"] == 40
+
+
+def test_run_extraction_pipeline_propagates_run_aborting_error(tmp_path, config):
+    """A RunAbortingError from extraction reaches the caller unchanged."""
+    mock_project = MagicMock()
+    mock_project.experiments_dir = tmp_path / "experiments"
+    mock_project.process_data.return_value.documents = [MagicMock()]
+
+    error = RunAbortingError("simulated abort")
+    mock_extractor = MagicMock()
+    mock_extractor.config = config
+    mock_extractor.extract_from_documents.side_effect = error
+
+    with (
+        patch("deet.extractors.cli_helpers.load_or_init_config", return_value=config),
+        patch(
+            "deet.extractors.cli_helpers.get_data_extractor",
+            return_value=mock_extractor,
+        ),
+        patch("deet.extractors.cli_helpers.prepare_documents", return_value=([], {})),
+        pytest.raises(RunAbortingError) as exc_info,
+    ):
+        run_extraction_pipeline(
+            deet_project=mock_project, prompt_population=None, prompt_csv_path=None
+        )
+
+    assert exc_info.value is error
 
 
 def test_run_extraction_pipeline_fails_when_project_has_no_documents(tmp_path, config):
