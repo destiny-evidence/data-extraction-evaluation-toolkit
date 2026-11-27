@@ -787,18 +787,18 @@ provides-extras = ["lang-quality", "parsers", "semantic"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mypy", specifier = ">=1.17.1" },
-    { name = "pre-commit", specifier = ">=4.3.0" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
-    { name = "pytest-env", specifier = ">=1.1.5" },
-    { name = "pytest-mock", specifier = ">=3.14.1" },
-    { name = "pytest-recording", specifier = ">=0.13.4" },
-    { name = "python-semantic-release", specifier = ">=10.6.1" },
-    { name = "ruff", specifier = ">=0.12.11" },
-    { name = "types-cachetools", specifier = ">=4.2.9.0" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
-    { name = "types-toml", specifier = ">=0.10.8.20240310" },
+    { name = "mypy", specifier = ">=2.4.1" },
+    { name = "pre-commit", specifier = ">=4.7.0" },
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "pytest-env", specifier = ">=1.8.6" },
+    { name = "pytest-mock", specifier = ">=3.17.0" },
+    { name = "pytest-recording", specifier = ">=0.15.0" },
+    { name = "python-semantic-release", specifier = ">=10.7.0" },
+    { name = "ruff", specifier = ">=0.17.5" },
+    { name = "types-cachetools", specifier = ">=7.0.0.20260713" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20261122" },
+    { name = "types-toml", specifier = ">=0.10.8.20260518" },
 ]
 docs = [
     { name = "griffe-pydantic", specifier = ">=1.3.1" },
